@@ -1,0 +1,15 @@
+# FORMATTER NOTE: The versions of ufmt, black and usort should be consistent everywhere
+# (pre-commit, environment.yml, requirements.txt, pyproject.toml, ...)
+
+repos:
+- repo: https://github.com/astral-sh/ruff-pre-commit
+  rev: v0.1.6
+  hooks:
+  - id: ruff
+    name: "ruff"
+  - id: ruff-format
+- repo: https://github.com/crate-ci/typos
+  rev: v1.16.23
+  hooks:
+    - id: typos
+      args: [] # empty args to avoid typos automatically correcting the typos

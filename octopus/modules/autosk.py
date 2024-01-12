@@ -1,0 +1,123 @@
+"""Module: Autosklern."""
+import autosklearn.classification
+import autosklearn.regression
+import pandas as pd
+from attrs import define, field, validators
+
+from octopus.experiment import OctoExperiment
+
+# Notes:
+# - implement that predictions are done on the reduced features
+# - autosklearn refit() functionality
+# - autosklearn in version 0.15 requires numpy==1.23.5, otherwise some jobs will fail
+
+
+@define
+class Autosklearn:
+    """Autosklearn."""
+
+    experiment: OctoExperiment = field(
+        validator=[validators.instance_of(OctoExperiment)]
+    )
+    model = field(init=False)
+
+    @property
+    def x_train(self) -> pd.DataFrame:
+        """x_train."""
+        return self.experiment.data_traindev[self.experiment.feature_columns]
+
+    @property
+    def y_train(self) -> pd.DataFrame:
+        """y_train."""
+        return self.experiment.data_traindev[
+            self.experiment.target_assignments.values()
+        ]
+
+    @property
+    def x_test(self) -> pd.DataFrame:
+        """x_test."""
+        return self.experiment.data_test[self.experiment.feature_columns]
+
+    @property
+    def y_test(self) -> pd.DataFrame:
+        """y_test."""
+        return self.experiment.data_test[self.experiment.target_assignments.values()]
+
+    @property
+    def params(self) -> pd.DataFrame:
+        """Auto-sklearn parameters."""
+        return self.experiment.ml_config["config"]
+
+    def run_experiment(self):
+        """Run experiment."""
+        # overwrite tmp directory
+        # self.params['tmp_folder']=......
+
+        if self.experiment.ml_type == "classification":
+            self.model = autosklearn.classification.AutoSklearnClassifier(**self.params)
+        elif self.experiment.ml_type == "regression":
+            self.model = autosklearn.regression.AutoSklearnRegressor(**self.params)
+        else:
+            raise ValueError(
+                f"Autosklearn ml_type {self.experiment.ml_type} not supported"
+            )
+
+        self.model.fit(
+            self.x_train,
+            self.y_train,
+            dataset_name=f"Octopus experiment:{self.experiment.id}",
+        )
+        print("fitting completed")
+
+        # for debugging, why jobs crashed, etc....
+        # print('AutoSk Debug info',self.model.automl_.runhistory_.data)
+
+        # print('Show models:')
+        # pprint(self.model.show_models(), indent=4)
+
+        print("Leaderboard:")
+        print(self.model.leaderboard())
+
+        print("Statistics:")
+        print(self.model.sprint_statistics())
+
+        print("Best result:")
+        results_df = pd.DataFrame(self.model.cv_results_)
+        # display(results_df)
+        best_validation_result_df = results_df[results_df["rank_test_scores"] == 1]
+        # display(best_validation_result_df)
+        self.experiment.results["best_validation_result_df"] = best_validation_result_df
+
+        # predict on test set
+        preds = self.model.predict(self.x_test)
+        test_predictions_df = pd.DataFrame()
+        test_predictions_df[self.experiment.row_column] = self.experiment.data_test[
+            self.experiment.row_column
+        ]
+        test_predictions_df["prediction"] = preds
+        test_predictions_df["target"] = self.y_test
+
+        if self.experiment.ml_type == "classification":
+            probs_df = pd.DataFrame(self.model.predict_proba(self.x_test))
+            probs_df.columns = ["prob_" + str(x) for x in probs_df.columns]
+            test_predictions_df = pd.concat([test_predictions_df, probs_df], axis=1)
+        self.experiment.results["test_predictions_df"] = test_predictions_df
+
+        # save model
+        self.experiment.models["model_0"] = self.model
+
+        # return updated experiment object
+        return self.experiment
+
+    def predict(self, dataset: pd.DataFrame):
+        """Predict on new dataset."""
+        model = self.experiment.models["model_0"]
+        return model.predict(dataset[self.experiment.feature_columns])
+
+    def predict_proba(self, dataset: pd.DataFrame):
+        """Predict_proba on new dataset."""
+        if self.experiment.ml_type == "classification":
+            self.model = self.experiment.models["model_0"]
+            return self.model.predict_proba(dataset[self.experiment.feature_columns])
+        else:
+            raise ValueError("predict_proba only supported for classifications")

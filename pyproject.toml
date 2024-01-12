@@ -150,3 +150,7 @@ local_scheme = "dirty-tag"
 
 [tool.setuptools]
 packages = ["baybe"]
+
+[tool.isort]
+# make it compatible with black
+profile = "black" 

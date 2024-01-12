@@ -2,6 +2,12 @@
 # (pre-commit, environment.yml, requirements.txt, pyproject.toml, ...)
 
 repos:
+- repo: https://github.com/pycqa/flake8
+  rev: 7.0.0
+  hooks:
+    - id: flake8
+      additional_dependencies: [pydoclint]  
+      args: [--select=DOC, --config=pydoclint.toml]
 - repo: https://github.com/astral-sh/ruff-pre-commit
   rev: v0.1.6
   hooks:
@@ -13,3 +19,4 @@ repos:
   hooks:
     - id: typos
       args: [] # empty args to avoid typos automatically correcting the typos
+      exclude: ^datasets/ # do not check the example data

@@ -23,13 +23,13 @@ class OctoML:
         """Create outer experiments."""
         # create study folder
         path_study = Path(self.oconfig.output_path, self.oconfig.study_name)
-        path_study.mkdir(parents=True, exist_ok=False)
+        path_study.mkdir(parents=True, exist_ok=not self.oconfig.production_mode)
         print("Path to study:", path_study)
 
         # create subfolders
         for subdir in ["data", "config", "tmp", "experiments"]:
             path_sub = path_study.joinpath(subdir)
-            path_sub.mkdir(parents=False, exist_ok=False)
+            path_sub.mkdir(parents=False, exist_ok=not self.oconfig.production_mode)
 
         # save files
         if subdir == "data":

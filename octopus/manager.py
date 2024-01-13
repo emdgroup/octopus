@@ -8,7 +8,12 @@ from attrs import define, field, validators
 
 from octopus.config import OctoConfig
 from octopus.experiment import OctoExperiment
-from octopus.modules.autosk import Autosklearn
+
+try:
+    from octopus.modules.autosk import Autosklearn
+except ImportError:
+    print("Auto-Sklearn not installed in this conda environment")
+
 from octopus.modules.linear_regression import LinearRegressionAve, LinearRegressionUni
 
 

@@ -21,6 +21,10 @@ class OctoConfig:
     )
 
     # --- Outer loop config ---
+    production_mode: bool = field(
+        default=True, validator=[validators.instance_of(bool)]
+    )
+
     k_outer: int = field(default=5, validator=[validators.instance_of(int)])
     target_metric: str = field(
         default="AUCROC",
@@ -39,15 +43,6 @@ class OctoConfig:
     datasplit_seed_outer: int = field(
         default=1234, validator=[validators.instance_of(int)]
     )
-
-    # --- octo Manager config ---
-    ml_execution: str = field(
-        default="parallel",
-        validator=[
-            validators.in_(["parallel", "sequential"]),
-        ],
-    )
-    ml_only_first: bool = field(default=False, validator=[validators.instance_of(int)])
 
     def to_json(self, filename):
         """Save config to json file."""

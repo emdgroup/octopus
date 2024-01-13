@@ -30,6 +30,7 @@ data_input = {
     "row_id": "patient_id",  # must be unique!
     # ['sample','group_sample', 'group_sample_and_features']
     "datasplit_type": "group_sample_and_features",
+    "disable_checknan": True,
     "target_columns": {"progression": float},
     "feature_columns": {
         "age": float,

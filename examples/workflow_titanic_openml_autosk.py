@@ -48,7 +48,7 @@ data_input = {
     "datasplit_type": "group_sample_and_features",
     "feature_columns": {
         "pclass": int,
-        "age": float,
+        "age": int,
         "sibsp": int,
         "parch": int,
         "fare": float,
@@ -68,6 +68,7 @@ config_study = {
     # OctoML
     "study_name": "20240110B",
     "output_path": "./studies/",
+    "production_mode": False,
     "ml_type": "classification",  # ['classification','regression','timetoevent']
     "k_outer": 5,
     "target_metric": "AUCROC",
@@ -77,7 +78,7 @@ config_study = {
 
 # configure manager
 config_manager = {
-    "ml_execution": "sequential",  # ['parallel', 'sequential']
+    "ml_execution": "parallel",  # ['parallel', 'sequential']
     # only process first outer loop experiment, for quick testing
     "ml_only_first": True,
 }

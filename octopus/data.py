@@ -161,7 +161,7 @@ class OctoData:
         result = list()
         # stratification column
         if stratification_column:
-            result.append(self.data[stratification_column].dtype.kind not in "iubf")
+            result.append(self.data[stratification_column].dtype.kind not in "iub")
 
         for column in feature_columns:
             result.append(self.data[column].dtype.kind not in "iuf")  # int/unit/float

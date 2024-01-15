@@ -8,13 +8,7 @@ from attrs import define, field, validators
 
 from octopus.config import OctoConfig
 from octopus.experiment import OctoExperiment
-
-try:
-    from octopus.modules.autosk import Autosklearn
-except ImportError:
-    print("Auto-Sklearn not installed in this conda environment")
-
-from octopus.modules.linear_regression import LinearRegressionAve, LinearRegressionUni
+from octopus.modules.config import modules_inventory
 
 
 @define
@@ -96,13 +90,9 @@ class OctoManager:
             if cnt > 0:
                 experiment.features = selected_features
 
-            # select defined module
-            if experiment.ml_module == "autosklearn":
-                module = Autosklearn(experiment)
-            elif experiment.ml_module == "linear_regression_ave":
-                module = LinearRegressionAve(experiment)
-            elif experiment.ml_module == "linear_regression_uni":
-                module = LinearRegressionUni(experiment)
+            # get desired module and intitialze with experiment
+            if experiment.ml_module in modules_inventory:
+                module = modules_inventory[experiment.ml_module](experiment)
             else:
                 raise ValueError(f"ml_module {experiment.ml_module} not supported")
 

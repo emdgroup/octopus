@@ -1,6 +1,10 @@
 """Module: Autosklern."""
-import autosklearn.classification
-import autosklearn.regression
+try:
+    import autosklearn.classification
+    import autosklearn.regression
+except ImportError:
+    print("Auto-Sklearn not installed in this conda environment")
+
 import pandas as pd
 from attrs import define, field, validators
 

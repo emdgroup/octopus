@@ -29,7 +29,7 @@ class OctoData:
     disable_checknan: bool = field(
         default=False, validator=[validators.instance_of(bool)]
     )
-    target_asignments = field(default={}, validator=[validators.instance_of(dict)])
+    target_asignments = field(default={}, validator=[validators.instance_of(dict)])  #
     stratification_column = field(default={}, validator=[validators.instance_of(dict)])
 
     @property

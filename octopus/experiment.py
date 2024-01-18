@@ -11,7 +11,7 @@ class OctoExperiment:
 
     id: str = field(validator=[validators.instance_of(str)])
     config: dict = field(validator=[validators.instance_of(dict)])
-    sample_column: str = field(validator=[validators.instance_of(str)])
+    datasplit_column: str = field(validator=[validators.instance_of(str)])
     row_column: str = field(validator=[validators.instance_of(str)])
     feature_columns: list = field(validator=[validators.instance_of(list)])
     stratification_column: str = field(validator=[validators.instance_of(str)])

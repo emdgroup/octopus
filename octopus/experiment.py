@@ -25,16 +25,16 @@ class OctoExperiment:
         init=False, default="", validator=[validators.instance_of(str)]
     )
     ml_config: dict = field(
-        init=False, default={}, validator=[validators.instance_of(dict)]
+        init=False, default=dict(), validator=[validators.instance_of(dict)]
     )
     selected_features: list = field(
-        init=False, default=[], validator=[validators.instance_of(list)]
+        init=False, default=list(), validator=[validators.instance_of(list)]
     )
     results: dict = field(
-        init=False, default={}, validator=[validators.instance_of(dict)]
+        init=False, default=dict(), validator=[validators.instance_of(dict)]
     )
     models: dict = field(
-        init=False, default={}, validator=[validators.instance_of(dict)]
+        init=False, default=dict(), validator=[validators.instance_of(dict)]
     )
 
     @property

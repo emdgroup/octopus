@@ -272,13 +272,13 @@ class OctoData:
         # with open(path.joinpath('column_info.json'), "w", encoding="utf-8") as file:
         #    json.dump(column_info, file)
 
-    def to_pickle(self, filename):
+    def to_pickle(self, path):
         """Save pickle file."""
-        with open(filename, "wb") as file:
+        with open(path, "wb") as file:
             pickle.dump(self, file)
 
     @classmethod
-    def from_pickle(cls, filename):
+    def from_pickle(cls, path):
         """Load pickle file."""
-        with open(filename, "rb") as file:
+        with open(path, "rb") as file:
             return pickle.load(file)

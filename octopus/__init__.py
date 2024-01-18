@@ -4,8 +4,9 @@ import sys
 
 from octopus.config import OctoConfig  # noqa: F401
 from octopus.data import OctoData  # noqa: F401
-from octopus.experiment import OctoExperiment  # noqa: F401
-from octopus.manager import OctoManager  # noqa: F401
+
+# from octopus.experiment import OctoExperiment  # noqa: F401
+# from octopus.manager import OctoManager  # noqa: F401
 from octopus.ml import OctoML  # noqa: F401
 
 if not sys.version_info >= (3, 8):

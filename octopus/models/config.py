@@ -14,17 +14,12 @@ model_inventory = {
 
 def extratreeclass_suggest(trial):
     """Suggest function for ExtraTreeClassifier."""
-    max_depth = (trial.suggest_int("max_depth", 2, 32),)
-    min_samples_split = (trial.suggest_int("min_samples_split", 2, 100),)
-    min_samples_leaf = (trial.suggest_int("min_samples_leaf", 1, 50),)
-    max_features = (trial.suggest_float("max_features", 0.1, 1),)
-    nestimators = (trial.suggest_int("n_estimators", 100, 500, log=False),)
     params = {
-        "max_depth": max_depth,
-        "min_samples_split": min_samples_split,
-        "min_samples_leaf": min_samples_leaf,
-        "max_features": max_features,
-        "nestimators": nestimators,
+        "max_depth": (trial.suggest_int("max_depth", 2, 32),),
+        "min_samples_split": (trial.suggest_int("min_samples_split", 2, 100),),
+        "min_samples_leaf": (trial.suggest_int("min_samples_leaf", 1, 50),),
+        "max_features": (trial.suggest_float("max_features", 0.1, 1),),
+        "n_estimators": (trial.suggest_int("n_estimators", 100, 500, log=False),),
     }
     return params
 

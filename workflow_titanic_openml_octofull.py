@@ -93,9 +93,9 @@ config_sequence = [
             "k_inner": 5,  # number of inner folds
             "ml_seed": 0,  # seed to make ML algo deterministic
             "dim_red_methods": ["pca", "ica"],  # ['pca','ica','wgcna', etc..]
-            "ml_model_types:": ["extratree", "xgboost"],
+            "ml_model_types:": ["ExtraTreesClassifier", "xgboost"],
             "num_outl": 0,
-            "n_jobs": 4,  # number of parallel jobs for ML
+            "ml_jobs": 4,  # number of parallel jobs for ML
             "class_weights": False,
             "HPO_method": "Optuna_050722A",
             "HOP_trials": 50,  # number of HPO trial

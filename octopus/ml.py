@@ -74,7 +74,7 @@ class OctoML:
                 OctoExperiment(
                     id=str(key),
                     config=asdict(self.oconfig),
-                    sample_column=sample_col,
+                    datasplit_column=datasplit_col,
                     row_column=row_col,
                     feature_columns=feature_cols,
                     stratification_column=stratification_col,

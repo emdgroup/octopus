@@ -1,5 +1,6 @@
 """Octo Experiment module."""
 import pickle
+from pathlib import Path
 
 import pandas as pd
 from attrs import define, field, validators
@@ -10,6 +11,9 @@ class OctoExperiment:
     """Experiment."""
 
     id: str = field(validator=[validators.instance_of(str)])
+    experiment_id: int = field(validator=[validators.instance_of(int)])
+    sequence_item_id: int = field(validator=[validators.instance_of(int)])
+    path_sequence_item: Path = field(validator=[validators.instance_of(Path)])
     config: dict = field(validator=[validators.instance_of(dict)])
     datasplit_column: str = field(validator=[validators.instance_of(str)])
     row_column: str = field(validator=[validators.instance_of(str)])
@@ -36,6 +40,11 @@ class OctoExperiment:
     models: dict = field(
         init=False, default=dict(), validator=[validators.instance_of(dict)]
     )
+
+    @property
+    def path_study(self) -> Path:
+        """Path study."""
+        return Path(self.config["output_path"], self.config["study_name"])
 
     @property
     def ml_type(self) -> str:

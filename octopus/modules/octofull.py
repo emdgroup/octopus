@@ -1,5 +1,6 @@
 """OctoFull Module."""
 import concurrent.futures
+import time
 from pathlib import Path
 from statistics import mean
 
@@ -74,17 +75,65 @@ class OctoFull:
 
     def run_experiment(self):
         """Run experiment."""
-        self.run_single_hpset_optimization()
+        # self.run_globalhp_optimization()
+        self.run_individualhp_optimization()
 
         return self.experiment
 
-    def run_single_hpset_optimization(self):
-        """Optimization run with a singleHPset over all inner folds."""
-        print("Running Optuna Optimization with single HP set")
+    def run_globalhp_optimization(self):
+        """Optimization run with a global HP set over all inner folds."""
+        print("Running Optuna Optimization with a global HP set")
+
+        # run Optuna study with a global HP set
+        self.optimize_splits(self.data_splits)
+
+    def run_individualhp_optimization(self):
+        """Optimization runs with an individual HP set for each inner datasplit."""
+        print("Running Optuna Optimizations for each inner datasplit separately")
+
+        def wait_func():
+            time.sleep(10)
+            print("10s waited")
+
+        # covert to list of dicts for compatibility with OptimizeOptuna
+        splits = [{key: value} for key, value in self.data_splits.items()]
+
+        # For the parallelization of Optuna tasks, we have several options:
+        # (a) n_jobs parameter in Optuna, however this is a threaded operation.
+        #     In this case, the splits are executed sequentially but each split
+        #     uses several optuna instances
+        # (b) we parallelize the Optuna execution per split
+        optuna_execution = "parallel"
+        max_workers = 5
+
+        if optuna_execution == "sequential":
+            for split in splits:
+                # self.optimize_splits(split)
+                wait_func()
+                print("Optimization of single split completed")
+        elif optuna_execution == "parallel":
+            # max_tasks_per_child=1 requires Python3.11
+            with concurrent.futures.ProcessPoolExecutor(
+                max_workers=max_workers,
+            ) as executor:
+                futures = [
+                    # executor.submit(self.optimize_splits(split)) for split in splits
+                    executor.submit(wait_func())
+                    for split in splits
+                ]
+                for _ in concurrent.futures.as_completed(futures):
+                    print("Optimization of single split completed")
+        else:
+            raise ValueError("Execution type not supported")
+
+    def optimize_splits(self, splits):
+        """Optimize splits.
+
+        Works if splits contain several splits as well as
+        when splits only contains a single split
+        """
         # set up Optuna study
-        objective = ObjectiveSingleHPset(
-            experiment=self.experiment, data_splits=self.data_splits
-        )
+        objective = ObjectiveOptuna(experiment=self.experiment, data_splits=splits)
 
         sampler = optuna.samplers.TPESampler(
             multivariate=True, group=True
@@ -97,7 +146,9 @@ class OctoFull:
         )
 
         study.optimize(
-            objective, n_trials=self.experiment.ml_config["config"]["HPO_trials"]
+            objective,
+            n_jobs=1,
+            n_trials=self.experiment.ml_config["config"]["HPO_trials"],
         )
         # optuna.study.get_all_study_summaries(storage="sqlite:///example.db")
         # best_parameters = len(innersplit) * [study.best_params]
@@ -122,7 +173,7 @@ class OctoFull:
             raise ValueError("predict_proba only supported for classifications")
 
 
-class ObjectiveSingleHPset:
+class ObjectiveOptuna:
     """Callable optuna objective for a single HP set (unique)."""
 
     def __init__(

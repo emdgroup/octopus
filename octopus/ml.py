@@ -27,7 +27,7 @@ class OctoML:
         print("Path to study:", path_study)
 
         # create subfolders
-        for subdir in ["data", "config", "tmp", "experiments"]:
+        for subdir in ["data", "config", "tmp"]:
             path_sub = path_study.joinpath(subdir)
             path_sub.mkdir(parents=False, exist_ok=not self.oconfig.production_mode)
 
@@ -69,9 +69,17 @@ class OctoML:
         ).get_datasplits()
 
         for key, value in data_splits.items():
+            # create path for experiment
+            path_experiment = Path(f"experiment{key}")
+            path_study.joinpath(path_experiment).mkdir(
+                parents=True, exist_ok=not self.oconfig.production_mode
+            )
             self.experiments.append(
                 OctoExperiment(
                     id=str(key),
+                    experiment_id=int(key),
+                    sequence_item_id=-1,  # indicating base experiment
+                    path_sequence_item=path_experiment,  # indicating base experiment
                     config=asdict(self.oconfig),
                     datasplit_column=datasplit_col,
                     row_column=row_col,

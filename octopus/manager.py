@@ -76,16 +76,25 @@ class OctoManager:
             experiment.ml_module = element["ml_module"]
             experiment.ml_config = element
             experiment.id = experiment.id + "_" + str(cnt)
-            print("Running experiment: ", experiment.id)
+            experiment.sequence_item_id = cnt
+            experiment.path_sequence_item = Path(
+                f"experiment{experiment.experiment_id}", f"sequence{cnt}"
+            )
 
+            # create directory for sequence item
+            path_study_sequence = experiment.path_study.joinpath(
+                experiment.path_sequence_item
+            )
+            path_study_sequence.mkdir(
+                parents=True, exist_ok=not self.oconfig.production_mode
+            )
+            print("Running experiment: ", experiment.id)
             # save experiment before running experiment
-            path_study = Path(self.oconfig.output_path).joinpath(
-                self.oconfig.study_name
+            path_save = path_study_sequence.joinpath(
+                f"exp{experiment.experiment_id}_{experiment.sequence_item_id}.pkl"
             )
-            path_experiment = path_study.joinpath(
-                "experiments", f"exp{experiment.id}.pkl"
-            )
-            experiment.to_pickle(path_experiment)
+            experiment.to_pickle(path_save)
+
             # update features with selected features from previous run
             if cnt > 0:
                 experiment.features = selected_features
@@ -103,4 +112,4 @@ class OctoManager:
             selected_features = experiment.selected_features
 
             # save experiment
-            experiment.to_pickle(path_experiment)
+            experiment.to_pickle(path_save)

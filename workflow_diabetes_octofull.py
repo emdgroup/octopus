@@ -1,4 +1,4 @@
-"""Workflow script for the titanic example."""
+"""Workflow script for the diabetes regression example."""
 import os
 import socket
 
@@ -12,49 +12,37 @@ print("Conda environment on server:", os.environ["CONDA_DEFAULT_ENV"])
 # show directory name
 print("Working directory: ", os.getcwd())
 
+# Regression Analysis on Diabetes Dataset
+# http://statweb.lsu.edu/faculty/li/teach/exst7142/diabetes.html
+# https://shap.readthedocs.io/en/latest/example_notebooks/tabular_examples/model_agnostic/Diabetes%20regression.html
+# https://automl.github.io/auto-sklearn/master/examples/20_basic/example_regression.html
+
 # load data from csv and perform pre-processing
-# all features should be numeric (and not bool)
-data_df = (
-    pd.read_csv(
-        os.path.join(os.getcwd(), "datasets", "titanic_openml.csv"), index_col=0
-    )
-    .astype({"age": float})
-    .assign(
-        age=lambda df_: df_["age"].fillna(df_["age"].median()).astype(int),
-        embarked=lambda df_: df_["embarked"].fillna(df_["embarked"].mode()[0]),
-        fare=lambda df_: df_["fare"].fillna(df_["fare"].median()),
-    )
-    .astype({"survived": bool})
-    .pipe(
-        lambda df_: df_.reindex(
-            columns=["survived"] + list([a for a in df_.columns if a != "survived"])
-        )
-    )
-    .pipe(
-        lambda df_: df_.reindex(
-            columns=["name"] + list([a for a in df_.columns if a != "name"])
-        )
-    )
-    .pipe(pd.get_dummies, columns=["embarked", "sex"], drop_first=True, dtype=int)
+data_df = pd.read_csv(
+    os.path.join(os.getcwd(), "datasets", "diabetes.csv"), index_col=0
 )
 
+
 # define input for Octodata
-# all features need to be numeric
 data_input = {
     "data": data_df,
-    "sample_id": "name",  # sample_id may contain duplicates
-    "target_columns": {"survived": bool},
-    "stratification_column": {"survived": bool},
+    "sample_id": "patient_id",  # sample_id may contain duplicates
+    "row_id": "patient_id",  # must be unique!
+    # ['sample','group_sample', 'group_sample_and_features']
     "datasplit_type": "group_sample_and_features",
+    "disable_checknan": True,
+    "target_columns": {"progression": float},
     "feature_columns": {
-        "pclass": int,
-        "age": int,
-        "sibsp": int,
-        "parch": int,
-        "fare": float,
-        "embarked_Q": int,
-        "embarked_S": int,
-        "sex_male": int,
+        "age": float,
+        "sex": float,
+        "bmi": float,
+        "bp": float,
+        "s1": float,
+        "s2": float,
+        "s3": float,
+        "s4": float,
+        "s5": float,
+        "s6": float,
     },
 }
 
@@ -66,24 +54,29 @@ data = OctoData(**data_input)
 # configure study
 config_study = {
     # OctoML
-    "study_name": "20240110B",
+    "study_name": "20231221B",
     "output_path": "./studies/",
     "production_mode": False,
-    "ml_type": "classification",  # ['classification','regression','timetoevent']
+    # ['classification','regression','timetoevent']
+    "ml_type": "regression",
     "k_outer": 5,
-    "target_metric": "AUCROC",
-    "metrics": ["AUCROC", "ACCBAL", "ACC", "LOGLOSS"],
+    "target_metric": "R2",
+    "metrics": ["MSE", "MAE", "R2"],
     "datasplit_seed_outer": 1234,
 }
 
 # configure manager
 config_manager = {
-    "ml_execution": "parallel",  # ['parallel', 'sequential']
+    # ['parallel', 'sequential']-type of execution of outer loop experiments
+    "ml_execution": "parallel",
     # only process first outer loop experiment, for quick testing
     "ml_only_first": True,
 }
 
 # configure modules and model sequences
+# https://www.kaggle.com/code/rupakroy/auto-sklearn-regression
+# https://github.com/automl/auto-sklearn/tree/development/autosklearn/pipeline/components/regression
+
 config_sequence = [
     {
         "ml_module": "octofull",
@@ -95,9 +88,9 @@ config_sequence = [
             "ml_seed": 0,  # seed to make ML algo deterministic
             "dim_red_methods": [""],  # Optuna
             "ml_model_types": [
-                "ExtraTreesClassifier",
-                "RandomForestClassifier",
-                # "XGBClassifier",
+                "ExtraTreesRegressor",
+                "RandomForestRegressor",
+                # "XGBRegressor",
             ],  # Optuna
             "max_outl": 5,  # Optuna
             "execution_type": "sequential",

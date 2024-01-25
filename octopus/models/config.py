@@ -5,25 +5,36 @@ https://scikit-learn.org/stable/developers/develop.html
 Template:
 https://github.com/scikit-learn-contrib/project-template/blob/master/skltemplate/_template.py
 """
-from sklearn.ensemble import ExtraTreesClassifier
+
+from sklearn.ensemble import (
+    ExtraTreesClassifier,
+    ExtraTreesRegressor,
+    RandomForestClassifier,
+    RandomForestRegressor,
+)
+from xgboost import XGBClassifier, XGBRegressor
+
+from octopus.models.extratree import (
+    extratree_class_parameters,
+    extratree_reg_parameters,
+)
+from octopus.models.rf import rf_class_parameters, rf_reg_parameters
+from octopus.models.xgb import xgb_class_parameters, xgb_reg_parameters
 
 model_inventory = {
     "ExtraTreesClassifier": ExtraTreesClassifier,
+    "ExtraTreesRegressor": ExtraTreesRegressor,
+    "RandomForestClassifier": RandomForestClassifier,
+    "RandomForestRegressor": RandomForestRegressor,
+    "XGBRegressor": XGBRegressor,
+    "XGBClassifier": XGBClassifier,
 }
 
-
-def extratreeclass_suggest(trial):
-    """Suggest function for ExtraTreeClassifier."""
-    params = {
-        "max_depth": (trial.suggest_int("max_depth", 2, 32),),
-        "min_samples_split": (trial.suggest_int("min_samples_split", 2, 100),),
-        "min_samples_leaf": (trial.suggest_int("min_samples_leaf", 1, 50),),
-        "max_features": (trial.suggest_float("max_features", 0.1, 1),),
-        "n_estimators": (trial.suggest_int("n_estimators", 100, 500, log=False),),
-    }
-    return params
-
-
-optuna_inventory = {
-    "ExtraTreesClassifier": extratreeclass_suggest,
+parameters_inventory = {
+    "ExtraTreesClassifier": extratree_class_parameters,
+    "ExtraTreesRegressor": extratree_reg_parameters,
+    "RandomForestClassifier": rf_class_parameters,
+    "RandomForestRegressor": rf_reg_parameters,
+    "XGBRegressor": xgb_class_parameters,
+    "XGBClassifier": xgb_reg_parameters,
 }

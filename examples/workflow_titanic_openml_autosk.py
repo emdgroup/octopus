@@ -72,7 +72,7 @@ config_study = {
     "ml_type": "classification",  # ['classification','regression','timetoevent']
     "k_outer": 5,
     "target_metric": "AUCROC",
-    "metrics": ["AUCROC", "ACCBAL", "ACC", "F1", "nLogloss"],
+    "metrics": ["AUCROC", "ACCBAL", "ACC", "LOGLOSS"],
     "datasplit_seed_outer": 1234,
 }
 

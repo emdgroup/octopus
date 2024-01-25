@@ -56,9 +56,14 @@ def get_score(metric: str, y_true: np.array, y_pred: np.array) -> float:
 
 def optuna_direction(metric: str) -> str:
     """Calculate selected metric."""
-    if metric == "MAE":
-        return "minimize"
-    elif metric == "R2":
-        return "maximize"
-    elif metric == "MSE":
-        return "minimize"
+    direction = {
+        "MAE": "minimize",
+        "MSE": "minimize",
+        "R2": "maximize",
+        "ACC": "maximize",
+        "ACCBAL": "maximize",
+        "LOGLOSS": "minimize",
+        "AUCROC": "maximize",
+    }
+
+    return direction[metric]

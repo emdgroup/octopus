@@ -95,7 +95,7 @@ config_sequence = [
             "execution_type": "parallel",
             "num_workers": 5,
             "HPO_max_features": 70,
-            "HPO_trials": 50,  # number of HPO trial
+            "HPO_trials": 30,  # number of HPO trial
         },
     },
 ]

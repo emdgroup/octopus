@@ -1,5 +1,6 @@
 """OctoFull Module."""
 import concurrent.futures
+import shutil
 from pathlib import Path
 from statistics import mean
 
@@ -23,25 +24,22 @@ from octopus.models.config import model_inventory, parameters_inventory
 from octopus.modules.utils import optuna_direction
 
 # TOBEDONE OCTOFULL
-# - folder structure!!!
+# - (1) config and switch for global and individual hp optimization
 # - default values for octofull
 # - show best results with performance metrics after optuna completion
 # - xgoost class weights need to be set in training! How to solve that?
 # - validate input parameters: dim_reduction_methods, ml_model_types
-# - develop MultiTraining
-# - parallelization (HPO)
 # - saving of trainings
-
-# FOLDER STRUCTURE -- just create it parallel to existing structure
-# Experiment_0/Sequenc_0/ with
-# - experiment.pkl
-# - Trials/
-# - Optuna/
-
+# - add exception catching for parallalization at manager.py
 
 # TOBEDONE OPTUNA
-# - save in db
-# - define study name
+# - check "Exception occurred with execution task", global hp optimization
+# - Enqueue trials - how to implement that?
+# - Bring optuna parallelization to the next level (process based!):
+#   (a) multiple parallel optuna optimization instances per split in
+#       run_individualhp_optimization for individual split HP optimizations
+#   (b) multiple parallel executions of self.run_individualhp_optimization()
+#       to parallelize the optuna study with global HPs
 
 
 # TOBEDONE TRAINING
@@ -62,6 +60,21 @@ class OctoFull:
     # model = field(init=False)
     data_splits = field(default=dict(), validator=[validators.instance_of(dict)])
 
+    @property
+    def path_module(self) -> Path:
+        """Module path."""
+        return self.experiment.path_study.joinpath(self.experiment.path_sequence_item)
+
+    @property
+    def path_optuna(self) -> Path:
+        """Optuna db path."""
+        return self.path_module.joinpath("optuna")
+
+    @property
+    def path_trials(self) -> Path:
+        """Trials path."""
+        return self.path_module.joinpath("trials")
+
     def __attrs_post_init__(self):
         # create datasplit during init
         self.data_splits = DataSplit(
@@ -71,11 +84,19 @@ class OctoFull:
             num_folds=self.experiment.ml_config["config"]["k_inner"],
             stratification_col=self.experiment.stratification_column,
         ).get_datasplits()
+        # delete directories /trials /optuna to ensure clean state
+        # of module when restarted, required for parallel optuna runs
+        # as optuna.create(...,load_if_exists=True)
+        # create directory if it does not exist
+        for directory in [self.path_optuna, self.path_trials]:
+            if directory.exists():
+                shutil.rmtree(directory)
+            directory.mkdir(parents=True, exist_ok=True)
 
     def run_experiment(self):
         """Run experiment."""
-        # self.run_globalhp_optimization()
-        self.run_individualhp_optimization()
+        self.run_globalhp_optimization()
+        # self.run_individualhp_optimization()
 
         return self.experiment
 
@@ -97,16 +118,24 @@ class OctoFull:
         # (a) n_jobs parameter in Optuna, however this is a threaded operation.
         #     In this case, the splits are executed sequentially but each split
         #     uses several optuna instances
-        # (b) we parallelize the Optuna execution per split
-        optuna_execution = "sequential"
-        max_workers = 5
+        # (b) we parallelize the Optuna execution per split, as shown below.
+        # (c) In addition to (b) we could start multiple optuna optimizations
+        #     per split and so achieve an even faster execution of trials.
+        #     One could also only do (c) with increased parallelization to
+        #     achieve the same effect as (b)+(c).
+
+        # same config parameters also used for parallelization of bag trainings
+        optuna_execution = self.experiment.ml_config["config"]["execution_type"]
+        max_workers = self.experiment.ml_config["config"]["num_workers"]
 
         if optuna_execution == "sequential":
+            print("Sequential execution of Optuna optimizations for individual HPs")
             for split in splits:
                 self.optimize_splits(split)
-                print("Optimization of single split completed")
+                print(f"Optimization of split:{split.keys()} completed")
         elif optuna_execution == "parallel":
-            #    # max_tasks_per_child=1 requires Python3.11
+            print("Parallel execution of Optuna optimizations for individual HPs")
+            # max_tasks_per_child=1 requires Python3.11
             with concurrent.futures.ProcessPoolExecutor(
                 max_workers=max_workers
             ) as executor:
@@ -115,13 +144,13 @@ class OctoFull:
                     try:
                         future = executor.submit(self.optimize_splits, split)
                         futures.append(future)
-                    except Exception as e:
+                    except Exception as e:  # pylint: disable=broad-except
                         print(f"Exception occurred while submitting task: {e}")
                 for future in concurrent.futures.as_completed(futures):
                     try:
-                        _ = future.result()  # Get result of the completed task
+                        _ = future.result()
                         print("Optimization of single split completed")
-                    except Exception as e:
+                    except Exception as e:  # pylint: disable=broad-except
                         print(f"Exception occurred while executing task: {e}")
         else:
             raise ValueError("Execution type not supported")
@@ -135,14 +164,19 @@ class OctoFull:
         # set up Optuna study
         objective = ObjectiveOptuna(experiment=self.experiment, data_splits=splits)
 
-        sampler = optuna.samplers.TPESampler(
-            multivariate=True, group=True
-        )  # multivariate
+        # multivariate sampler with group option
+        sampler = optuna.samplers.TPESampler(multivariate=True, group=True)
+
+        # create study with unique name and database
+        joined_keys_splits = "_".join([str(key) for key in splits.keys()])
+        db_path = self.path_optuna.joinpath(joined_keys_splits + ".db")
+        storage = optuna.storages.RDBStorage(url=f"sqlite:///{db_path}")
         study = optuna.create_study(
-            study_name="test",
+            study_name=joined_keys_splits,
             direction=optuna_direction(self.experiment.config["target_metric"]),
             sampler=sampler,
-            # storage="sqlite:///example.db",
+            storage=storage,
+            load_if_exists=True,
         )
 
         study.optimize(
@@ -150,8 +184,7 @@ class OctoFull:
             n_jobs=1,
             n_trials=self.experiment.ml_config["config"]["HPO_trials"],
         )
-        # optuna.study.get_all_study_summaries(storage="sqlite:///example.db")
-        # best_parameters = len(innersplit) * [study.best_params]
+
         print()
         best_parameters = study.best_params
         print("best parameters:", best_parameters)
@@ -265,7 +298,7 @@ class ObjectiveOptuna:
                     target_metric=self.experiment.config["target_metric"],
                 )
             )
-
+        # create bag with all provided trainings
         bag_trainings = TrainingsBag(
             trainings=trainings,
             execution_type=self.execution_type,
@@ -275,6 +308,7 @@ class ObjectiveOptuna:
             # path?
         )
 
+        # train all models in bag
         bag_trainings.run_trainings()
 
         # evaluate trainings using target metric
@@ -425,6 +459,8 @@ class TrainingsBag:
     """
 
     trainings: list = field(validator=[validators.instance_of(list)])
+    # same config parameters (execution type, num_workers) also used for
+    # parallelization of optuna optimizations of individual inner loop trainings
     execution_type: str = field(validator=[validators.instance_of(str)])
     num_workers: int = field(validator=[validators.instance_of(int)])
     target_metric: str = field(validator=[validators.instance_of(str)])
@@ -443,9 +479,19 @@ class TrainingsBag:
             with concurrent.futures.ProcessPoolExecutor(
                 max_workers=self.num_workers,
             ) as executor:
-                futures = [executor.submit(i.run_training()) for i in self.trainings]
-                for _ in concurrent.futures.as_completed(futures):
-                    print("Inner parallel training completed")
+                futures = []
+                for i in self.trainings:
+                    try:
+                        future = executor.submit(i.run_training())
+                        futures.append(future)
+                    except Exception as e:  # pylint: disable=broad-except
+                        print(f"Exception occurred while submitting task: {e}")
+                for future in concurrent.futures.as_completed(futures):
+                    try:
+                        _ = future.result()
+                        print("Inner parallel training completed")
+                    except Exception as e:  # pylint: disable=broad-except
+                        print(f"Exception occurred while executing task: {e}")
         else:
             raise ValueError("Execution type not supported")
         self.train_status = True

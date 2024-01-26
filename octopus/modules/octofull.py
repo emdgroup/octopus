@@ -1,6 +1,5 @@
 """OctoFull Module."""
 import concurrent.futures
-import time
 from pathlib import Path
 from statistics import mean
 
@@ -60,7 +59,7 @@ class OctoFull:
     experiment: OctoExperiment = field(
         validator=[validators.instance_of(OctoExperiment)]
     )
-    model = field(init=False)
+    # model = field(init=False)
     data_splits = field(default=dict(), validator=[validators.instance_of(dict)])
 
     def __attrs_post_init__(self):
@@ -91,10 +90,6 @@ class OctoFull:
         """Optimization runs with an individual HP set for each inner datasplit."""
         print("Running Optuna Optimizations for each inner datasplit separately")
 
-        def wait_func():
-            time.sleep(10)
-            print("10s waited")
-
         # covert to list of dicts for compatibility with OptimizeOptuna
         splits = [{key: value} for key, value in self.data_splits.items()]
 
@@ -103,26 +98,31 @@ class OctoFull:
         #     In this case, the splits are executed sequentially but each split
         #     uses several optuna instances
         # (b) we parallelize the Optuna execution per split
-        optuna_execution = "parallel"
+        optuna_execution = "sequential"
         max_workers = 5
 
         if optuna_execution == "sequential":
             for split in splits:
-                # self.optimize_splits(split)
-                wait_func()
+                self.optimize_splits(split)
                 print("Optimization of single split completed")
         elif optuna_execution == "parallel":
-            # max_tasks_per_child=1 requires Python3.11
+            #    # max_tasks_per_child=1 requires Python3.11
             with concurrent.futures.ProcessPoolExecutor(
-                max_workers=max_workers,
+                max_workers=max_workers
             ) as executor:
-                futures = [
-                    # executor.submit(self.optimize_splits(split)) for split in splits
-                    executor.submit(wait_func())
-                    for split in splits
-                ]
-                for _ in concurrent.futures.as_completed(futures):
-                    print("Optimization of single split completed")
+                futures = []
+                for split in splits:
+                    try:
+                        future = executor.submit(self.optimize_splits, split)
+                        futures.append(future)
+                    except Exception as e:
+                        print(f"Exception occurred while submitting task: {e}")
+                for future in concurrent.futures.as_completed(futures):
+                    try:
+                        _ = future.result()  # Get result of the completed task
+                        print("Optimization of single split completed")
+                    except Exception as e:
+                        print(f"Exception occurred while executing task: {e}")
         else:
             raise ValueError("Execution type not supported")
 
@@ -160,17 +160,17 @@ class OctoFull:
     def predict(self, dataset: pd.DataFrame):
         """Predict on new dataset."""
         # this is old and not working code
-        model = self.experiment.models["model_0"]
-        return model.predict(dataset[self.experiment.feature_columns])
+        # model = self.experiment.models["model_0"]
+        # return model.predict(dataset[self.experiment.feature_columns])
 
     def predict_proba(self, dataset: pd.DataFrame):
         """Predict_proba on new dataset."""
         # this is old and not working code
-        if self.experiment.ml_type == "classification":
-            self.model = self.experiment.models["model_0"]
-            return self.model.predict_proba(dataset[self.experiment.feature_columns])
-        else:
-            raise ValueError("predict_proba only supported for classifications")
+        # if self.experiment.ml_type == "classification":
+        #    self.model = self.experiment.models["model_0"]
+        #    return self.model.predict_proba(dataset[self.experiment.feature_columns])
+        # else:
+        #    raise ValueError("predict_proba only supported for classifications")
 
 
 class ObjectiveOptuna:

@@ -17,11 +17,12 @@ from sklearn.metrics import (
     roc_auc_score,
 )
 
-# from sklearn.inspection import permutation_importance
-from octopus.datasplit import DataSplit
 from octopus.experiment import OctoExperiment
 from octopus.models.config import model_inventory, parameters_inventory
 from octopus.modules.utils import optuna_direction
+
+# from sklearn.inspection import permutation_importance
+from octopus.utils import DataSplit
 
 # TOBEDONE OCTOFULL
 # - all model parameters in default model config

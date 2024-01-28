@@ -5,9 +5,9 @@ from attrs import asdict, define, field, validators
 
 from octopus.config import OctoConfig
 from octopus.data import OctoData
-from octopus.datasplit import DataSplit
 from octopus.experiment import OctoExperiment
 from octopus.manager import OctoManager
+from octopus.utils import DataSplit
 
 
 @define

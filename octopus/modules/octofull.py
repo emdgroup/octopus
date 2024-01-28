@@ -24,23 +24,23 @@ from octopus.modules.utils import optuna_direction
 # from sklearn.inspection import permutation_importance
 from octopus.utils import DataSplit
 
+# TOBEDONE BASE
+# - experiment.num_assigned_cpus -- consider ("ml_only_first": True) status
+
+
 # TOBEDONE OCTOFULL
-# - all model parameters in default model config
-#   (seed, njobs)
-# - functionality to overwrite single defaults
-# - models code should be universal and should not be specific to octofull
+# - (1) models code should be universal and should not be specific to octofull
 #   --> have model default params in octofull
+# - (2) all model parameters in default model config
+#   (seed, njobs) - is that really a good idea?
+# - (3) saving of bags
+# - (4) show best results with performance metrics after optuna completion
+# - default: num_workers set to k_inner as default, warning if num_workers != k_inner
+# - check_resources: consider real n_jobs parameter
+
+# - functionality to overwrite single defaults in model default parameter config
 # - module are big and should be directories
 # - create final bags to collect result in the two streams
-# - (!!) base fix
-#   + manaer num cpus available max
-#   + parallel execution try except
-#   + metrics fixes
-#   + dataplits in utils.py
-# - (2) saving of bags
-# - (1) config and switch for global and individual hp optimization
-# - default values for octofull
-# - (3) show best results with performance metrics after optuna completion
 # - xgoost class weights need to be set in training! How to solve that?
 # - validate input parameters: dim_reduction_methods, ml_model_types
 # - add exception catching for parallalization at manager.py
@@ -88,6 +88,11 @@ class OctoFull:
         """Trials path."""
         return self.path_module.joinpath("trials")
 
+    @property
+    def hpo_type(self) -> str:
+        """Trials path."""
+        return self.experiment.ml_config["config"]["HPO_type"]
+
     def __attrs_post_init__(self):
         # create datasplit during init
         self.data_splits = DataSplit(
@@ -105,11 +110,41 @@ class OctoFull:
             if directory.exists():
                 shutil.rmtree(directory)
             directory.mkdir(parents=True, exist_ok=True)
+        # check if there is a mismatch between configured resources
+        # and resources assigned to the experiment
+        self.check_resources()
+
+    def check_resources(self):
+        """Check resources, assigned vs requested."""
+        print()
+        print("Checking resources:")
+        print(
+            "Number of CPUs available to this experiment:",
+            self.experiment.num_assigned_cpus,
+        )
+        exec_type = self.experiment.ml_config["config"]["execution_type"]
+        num_workers = self.experiment.ml_config["config"]["num_workers"]
+
+        # assuming n_jobs=1 for every model
+        if exec_type == "parallel":
+            num_requested_cpus = num_workers  # n_jobs=1
+        else:
+            num_requested_cpus = 1  # n_jobs=1
+
+        print(
+            f"Number of requested CPUs for this experiment: {num_requested_cpus}"
+            f" (assuming n_jobs=1 for every model)."
+        )
+        print()
 
     def run_experiment(self):
         """Run experiment."""
-        self.run_globalhp_optimization()
-        # self.run_individualhp_optimization()
+        if self.hpo_type == "global":
+            self.run_globalhp_optimization()
+        elif self.hpo_type == "individual":
+            self.run_individualhp_optimization()
+        else:
+            raise ValueError(f"HPO type: {self.hpo_type} not supported")
 
         return self.experiment
 

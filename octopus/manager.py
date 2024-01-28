@@ -88,9 +88,16 @@ class OctoManager:
             experiment.path_sequence_item = Path(
                 f"experiment{experiment.experiment_id}", f"sequence{cnt}"
             )
-            experiment.num_assigned_cpus = math.floor(
-                cpu_count() / self.oconfig.k_outer
-            )
+
+            # calculating number of CPUs available to every experiment
+            if self.oconfig.cfg_manager["ml_execution"] == "parallel":
+                experiment.num_assigned_cpus = math.floor(
+                    cpu_count() / self.oconfig.k_outer
+                )
+            else:
+                experiment.num_assigned_cpus = cpu_count()
+            if self.oconfig.cfg_manager["ml_only_first"] is True:
+                experiment.num_assigned_cpus = cpu_count()
 
             # create directory for sequence item
             path_study_sequence = experiment.path_study.joinpath(

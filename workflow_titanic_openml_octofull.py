@@ -100,10 +100,11 @@ config_sequence = [
                 # "XGBClassifier",
             ],  # Optuna
             "max_outl": 5,  # Optuna
-            "execution_type": "sequential",
+            "execution_type": "parallel",
             "num_workers": 5,
+            "HPO_type": "global",  # ["global","individual"]
             "HPO_max_features": 70,
-            "HPO_trials": 50,  # number of HPO trial
+            "HPO_trials": 5,  # number of HPO trial
         },
     },
 ]

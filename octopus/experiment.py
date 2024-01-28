@@ -28,6 +28,11 @@ class OctoExperiment:
     ml_module: str = field(
         init=False, default="", validator=[validators.instance_of(str)]
     )
+    # number of cpus available for each experiment
+    num_assigned_cpus: int = field(
+        init=False, default=0, validator=[validators.instance_of(int)]
+    )
+
     ml_config: dict = field(
         init=False, default={}, validator=[validators.instance_of(dict)]
     )

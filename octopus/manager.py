@@ -1,6 +1,7 @@
 """OctoManager."""
 import concurrent.futures
 import copy
+import math
 from os import cpu_count
 from pathlib import Path
 
@@ -54,12 +55,19 @@ class OctoManager:
             with concurrent.futures.ProcessPoolExecutor(
                 max_workers=num_workers,
             ) as executor:
-                futures = [
-                    executor.submit(self.create_execute_mlmodules, i)
-                    for i in self.base_experiments
-                ]
-                for _ in concurrent.futures.as_completed(futures):
-                    print("Outer fold completed")
+                futures = []
+                for i in self.base_experiments:
+                    try:
+                        future = executor.submit(self.create_execute_mlmodules, i)
+                        futures.append(future)
+                    except Exception as e:  # pylint: disable=broad-except
+                        print(f"Exception occurred while submitting task: {e}")
+                for future in concurrent.futures.as_completed(futures):
+                    try:
+                        _ = future.result()
+                        print("Outer fold completed")
+                    except Exception as e:  # pylint: disable=broad-except
+                        print(f"Exception occurred while executing task: {e}")
         else:
             raise ValueError("Execution type not supported")
 
@@ -79,6 +87,9 @@ class OctoManager:
             experiment.sequence_item_id = cnt
             experiment.path_sequence_item = Path(
                 f"experiment{experiment.experiment_id}", f"sequence{cnt}"
+            )
+            experiment.num_assigned_cpus = math.floor(
+                cpu_count() / self.oconfig.k_outer
             )
 
             # create directory for sequence item

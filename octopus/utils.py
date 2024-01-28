@@ -1,5 +1,4 @@
 """Utils."""
-
 import pandas as pd
 from attrs import define, field, validators
 from sklearn.model_selection import KFold, StratifiedKFold
@@ -7,7 +6,7 @@ from sklearn.model_selection import KFold, StratifiedKFold
 
 @define
 class DataSplit:
-    """Data Split for OctoMl and any modules if desired.
+    """Data Split.
 
     We don't use groupKFold as it does not offer the shuffle option.
     StratifiedGroupKfold would work but is not available for sklearn 0.24.3

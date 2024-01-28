@@ -24,12 +24,24 @@ from octopus.models.config import model_inventory, parameters_inventory
 from octopus.modules.utils import optuna_direction
 
 # TOBEDONE OCTOFULL
+# - all model parameters in default model config
+#   (seed, njobs)
+# - functionality to overwrite single defaults
+# - models code should be universal and should not be specific to octofull
+#   --> have model default params in octofull
+# - module are big and should be directories
+# - create final bags to collect result in the two streams
+# - (!!) base fix
+#   + manaer num cpus available max
+#   + parallel execution try except
+#   + metrics fixes
+#   + dataplits in utils.py
+# - (2) saving of bags
 # - (1) config and switch for global and individual hp optimization
 # - default values for octofull
-# - show best results with performance metrics after optuna completion
+# - (3) show best results with performance metrics after optuna completion
 # - xgoost class weights need to be set in training! How to solve that?
 # - validate input parameters: dim_reduction_methods, ml_model_types
-# - saving of trainings
 # - add exception catching for parallalization at manager.py
 
 # TOBEDONE OPTUNA

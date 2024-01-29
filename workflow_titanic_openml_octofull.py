@@ -102,9 +102,9 @@ config_sequence = [
             "max_outl": 5,  # Optuna
             "execution_type": "parallel",
             "num_workers": 5,
-            "HPO_type": "global",  # ["global","individual"]
-            "HPO_max_features": 70,
+            "HPO_type": "individual",  # ["global","individual"]
             "HPO_trials": 5,  # number of HPO trial
+            "HPO_max_features": 70,
         },
     },
 ]

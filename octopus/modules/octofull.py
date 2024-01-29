@@ -31,14 +31,15 @@ from octopus.utils import DataSplit
 # - fix experiment.num_assigned_cpus -- consider ("ml_only_first": True) status
 #   copy from moduleAW
 
-# TOBEDONE OCTOFULL
-# - (4) show best results with performance metrics after optuna completion
+# TOBEDONE
+# - attach results to experiment
+# - improve create_best_bags - use a direct way
+# - delete trials after completion and saving of best bags
 # - default: num_workers set to k_inner as default, warning if num_workers != k_inner
 # - better study name for global studies - problem with large k_outer -> "0-89"
 # - check_resources: consider real n_jobs parameter
 # - functionality to overwrite single defaults in model default parameter config
 # - module are big and should be directories
-# - create final bags to collect result in the two streams
 # - xgoost class weights need to be set in training! How to solve that?
 # - validate input parameters: dim_reduction_methods, ml_model_types
 # - implement survival model
@@ -88,6 +89,11 @@ class OctoFull:
         return self.path_module.joinpath("trials")
 
     @property
+    def path_results(self) -> Path:
+        """Results path."""
+        return self.path_module.joinpath("results")
+
+    @property
     def hpo_type(self) -> str:
         """Trials path."""
         return self.experiment.ml_config["config"]["HPO_type"]
@@ -101,11 +107,11 @@ class OctoFull:
             num_folds=self.experiment.ml_config["config"]["k_inner"],
             stratification_col=self.experiment.stratification_column,
         ).get_datasplits()
-        # delete directories /trials /optuna to ensure clean state
+        # delete directories /trials /optuna /results to ensure clean state
         # of module when restarted, required for parallel optuna runs
         # as optuna.create(...,load_if_exists=True)
         # create directory if it does not exist
-        for directory in [self.path_optuna, self.path_trials]:
+        for directory in [self.path_optuna, self.path_trials, self.path_results]:
             if directory.exists():
                 shutil.rmtree(directory)
             directory.mkdir(parents=True, exist_ok=True)
@@ -145,7 +151,48 @@ class OctoFull:
         else:
             raise ValueError(f"HPO type: {self.hpo_type} not supported")
 
+        # create best bag in results directory
+        self.create_best_bag()
+
+        # update experiment - attach best bag
+
         return self.experiment
+
+    def create_best_bag(self):
+        """Create best bag from bags found in results.
+
+        This code here is only meant to show the desired functionality
+        and needs to be improved.
+        It shows an indirect way of creating the best bag. It
+        would be preferable to access the optuna results and
+        then create the best bag from them.
+        """
+        path_bags = list(self.path_results.rglob("*.pkl"))
+
+        if len(path_bags) == 1:
+            # only single bag found - copy to best bag
+            shutil.copy(path_bags[0], self.path_results.joinpath("best_bag.pkl"))
+        elif len(path_bags) > 1:
+            # collect all trainings from bags
+            trainings = list()
+            for file in path_bags:
+                if file.is_file():
+                    bag = TrainingsBag.from_pickle(file)
+                    trainings.extend(bag.trainings)
+            # create best bag
+            best_bag = TrainingsBag(
+                trainings=trainings,
+                execution_type=self.experiment.ml_config["config"]["execution_type"],
+                num_workers=self.experiment.ml_config["config"]["num_workers"],
+                target_metric=self.experiment.config["target_metric"],
+                row_column=self.experiment.row_column,
+            )
+            # save best bag
+            best_bag.to_pickle(self.path_results.joinpath("best_bag.pkl"))
+        else:
+            raise ValueError("No bags founds in results directory")
+
+        # delete found initial bags?
 
     def run_globalhp_optimization(self):
         """Optimization run with a global HP set over all inner folds."""
@@ -153,6 +200,8 @@ class OctoFull:
 
         # run Optuna study with a global HP set
         self.optimize_splits(self.data_splits)
+
+        # collect best bag and save
 
     def run_individualhp_optimization(self):
         """Optimization runs with an individual HP set for each inner datasplit."""
@@ -202,6 +251,8 @@ class OctoFull:
         else:
             raise ValueError("Execution type not supported")
 
+        # collect best bag and save
+
     def optimize_splits(self, splits):
         """Optimize splits.
 
@@ -212,7 +263,9 @@ class OctoFull:
         study_name = "_".join([str(key) for key in splits.keys()])
         # set up Optuna study
         objective = ObjectiveOptuna(
-            experiment=self.experiment, data_splits=splits, study_name=study_name
+            experiment=self.experiment,
+            data_splits=splits,
+            study_name=study_name,
         )
 
         # multivariate sampler with group option
@@ -235,10 +288,28 @@ class OctoFull:
             n_trials=self.experiment.ml_config["config"]["HPO_trials"],
         )
 
+        # copy bag of best trial to results
+        source = self.experiment.path_study.joinpath(
+            self.experiment.path_sequence_item,
+            "trials",
+            f"study{study_name}trial{study.best_trial.number}_bag.pkl",
+        )
+        shutil.copy(source, self.path_results / source.name)
+
+        # display results
         print()
-        best_parameters = study.best_params
-        print("best parameters:", best_parameters)
-        print("Experiment completed")
+        print("Optimization results: ")
+        # print("Best trial:", study.best_trial) #full info
+        print("Best trial number:", study.best_trial.number)
+        print("Best target value:", study.best_value)
+        user_attrs = study.best_trial.user_attrs
+        performance_info = {
+            key: v for key, v in user_attrs.items() if key not in ["config_training"]
+        }
+        print("Best parameters:", user_attrs["config_training"])
+        print("Performance Info:", performance_info)
+
+        print("Optimization completed")
 
     def predict(self, dataset: pd.DataFrame):
         """Predict on new dataset."""
@@ -336,6 +407,13 @@ class ObjectiveOptuna:
         for key, value in fixed_global_parameters.items():
             model_params[translate[key]] = value
 
+        config_training = {
+            "dim_reduction": dim_reduction,
+            "outl_reduction": num_outl,
+            "ml_model_type": ml_model_type,
+            "ml_model_params": model_params,
+        }
+
         # create trainings
         row_column = self.experiment.row_column
         trainings = list()
@@ -350,10 +428,7 @@ class ObjectiveOptuna:
                     data_train=split["train"],  # inner datasplit, train
                     data_dev=split["test"],  # inner datasplit, dev
                     data_test=self.experiment.data_test,
-                    dim_reduction=dim_reduction,
-                    outl_reduction=num_outl,
-                    ml_model_type=ml_model_type,
-                    ml_model_params=model_params,
+                    config_training=config_training,
                     target_metric=self.experiment.config["target_metric"],
                 )
             )
@@ -385,6 +460,9 @@ class ObjectiveOptuna:
         for key, value in scores.items():
             trial.set_user_attr(key, value)
 
+        # add config_training to user attributes
+        trial.set_user_attr("config_training", config_training)
+
         # print scores info to console
         print(f"Trial scores for metric: {self.experiment.config['target_metric']}")
         for key, value in scores.items():
@@ -408,13 +486,32 @@ class Training:
     data_train: pd.DataFrame = field(validator=[validators.instance_of(pd.DataFrame)])
     data_dev: pd.DataFrame = field(validator=[validators.instance_of(pd.DataFrame)])
     data_test: pd.DataFrame = field(validator=[validators.instance_of(pd.DataFrame)])
-    dim_reduction: str = field(validator=[validators.instance_of(str)])
-    outl_reduction: int = field(validator=[validators.instance_of(int)])
-    ml_model_type: str = field(validator=[validators.instance_of(str)])
-    ml_model_params: dict = field(validator=[validators.instance_of(dict)])
     target_metric: str = field(validator=[validators.instance_of(str)])
+    # configuration for training
+    config_training: dict = field(validator=[validators.instance_of(dict)])
+    # training output
     model = field(init=False)
     predictions: dict = field(default=dict(), validator=[validators.instance_of(dict)])
+
+    @property
+    def dim_reduction(self) -> str:
+        """Dimension reduction method."""
+        return self.config_training["dim_reduction"]
+
+    @property
+    def outl_reduction(self) -> int:
+        """Parameter outlier reduction method."""
+        return self.config_training["outl_reduction"]
+
+    @property
+    def ml_model_type(self) -> str:
+        """Dimension reduction method."""
+        return self.config_training["ml_model_type"]
+
+    @property
+    def ml_model_params(self) -> dict:
+        """Dimension reduction method."""
+        return self.config_training["ml_model_params"]
 
     @property
     def x_train(self):

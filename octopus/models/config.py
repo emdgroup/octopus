@@ -12,14 +12,8 @@ from sklearn.ensemble import (
     RandomForestClassifier,
     RandomForestRegressor,
 )
+from sklearn.linear_model import Ridge
 from xgboost import XGBClassifier, XGBRegressor
-
-from octopus.models.extratree import (
-    extratree_class_parameters,
-    extratree_reg_parameters,
-)
-from octopus.models.rf import rf_class_parameters, rf_reg_parameters
-from octopus.models.xgb import xgb_class_parameters, xgb_reg_parameters
 
 model_inventory = {
     "ExtraTreesClassifier": ExtraTreesClassifier,
@@ -28,13 +22,5 @@ model_inventory = {
     "RandomForestRegressor": RandomForestRegressor,
     "XGBRegressor": XGBRegressor,
     "XGBClassifier": XGBClassifier,
-}
-
-parameters_inventory = {
-    "ExtraTreesClassifier": extratree_class_parameters,
-    "ExtraTreesRegressor": extratree_reg_parameters,
-    "RandomForestClassifier": rf_class_parameters,
-    "RandomForestRegressor": rf_reg_parameters,
-    "XGBRegressor": xgb_class_parameters,
-    "XGBClassifier": xgb_reg_parameters,
+    "RidgeRegressor": Ridge,
 }

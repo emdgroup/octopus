@@ -1,14 +1,14 @@
 """Model utility functions."""
 
 
-def create_trialparams_from_config(trial, hps):
+def create_trialparams_from_config(trial, hp_settings):
     """Create trial parameters from optuna config.
 
     We support int/float/categorical/fixed.
     Fixed is used to overwrite default model values
     """
     params = dict()
-    for dtype, config in hps:
+    for dtype, config in hp_settings:
         # check if log and step are specified
         if all(key in config for key in ["log", "step"]):
             raise ValueError("Optuna config must not contain log and step parameter")
@@ -24,4 +24,5 @@ def create_trialparams_from_config(trial, hps):
             params[config["name"]] = config["value"]
         else:
             raise ValueError("HP type not supported")
+
     return params

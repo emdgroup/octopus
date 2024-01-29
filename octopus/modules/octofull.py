@@ -1,5 +1,6 @@
 """OctoFull Module."""
 import concurrent.futures
+import pickle
 import shutil
 from pathlib import Path
 from statistics import mean
@@ -18,32 +19,30 @@ from sklearn.metrics import (
 )
 
 from octopus.experiment import OctoExperiment
-from octopus.models.config import model_inventory, parameters_inventory
+from octopus.models.config import model_inventory
+from octopus.models.parameters import parameters_inventory
+from octopus.models.utils import create_trialparams_from_config
 from octopus.modules.utils import optuna_direction
 
 # from sklearn.inspection import permutation_importance
 from octopus.utils import DataSplit
 
 # TOBEDONE BASE
-# - experiment.num_assigned_cpus -- consider ("ml_only_first": True) status
-
+# - fix experiment.num_assigned_cpus -- consider ("ml_only_first": True) status
+#   copy from moduleAW
 
 # TOBEDONE OCTOFULL
-# - (1) models code should be universal and should not be specific to octofull
-#   --> have model default params in octofull
-# - (2) all model parameters in default model config
-#   (seed, njobs) - is that really a good idea?
-# - (3) saving of bags
 # - (4) show best results with performance metrics after optuna completion
 # - default: num_workers set to k_inner as default, warning if num_workers != k_inner
+# - better study name for global studies - problem with large k_outer -> "0-89"
 # - check_resources: consider real n_jobs parameter
-
 # - functionality to overwrite single defaults in model default parameter config
 # - module are big and should be directories
 # - create final bags to collect result in the two streams
 # - xgoost class weights need to be set in training! How to solve that?
 # - validate input parameters: dim_reduction_methods, ml_model_types
-# - add exception catching for parallalization at manager.py
+# - implement survival model
+
 
 # TOBEDONE OPTUNA
 # - check "Exception occurred with execution task", global hp optimization
@@ -209,18 +208,21 @@ class OctoFull:
         Works if splits contain several splits as well as
         when splits only contains a single split
         """
+        # define study name by joined keys of splits
+        study_name = "_".join([str(key) for key in splits.keys()])
         # set up Optuna study
-        objective = ObjectiveOptuna(experiment=self.experiment, data_splits=splits)
+        objective = ObjectiveOptuna(
+            experiment=self.experiment, data_splits=splits, study_name=study_name
+        )
 
         # multivariate sampler with group option
         sampler = optuna.samplers.TPESampler(multivariate=True, group=True)
 
         # create study with unique name and database
-        joined_keys_splits = "_".join([str(key) for key in splits.keys()])
-        db_path = self.path_optuna.joinpath(joined_keys_splits + ".db")
+        db_path = self.path_optuna.joinpath(study_name + ".db")
         storage = optuna.storages.RDBStorage(url=f"sqlite:///{db_path}")
         study = optuna.create_study(
-            study_name=joined_keys_splits,
+            study_name=study_name,
             direction=optuna_direction(self.experiment.config["target_metric"]),
             sampler=sampler,
             storage=storage,
@@ -255,15 +257,20 @@ class OctoFull:
 
 
 class ObjectiveOptuna:
-    """Callable optuna objective for a single HP set (unique)."""
+    """Callable optuna objective.
+
+    A single solution for global and individual HP optimizations.
+    """
 
     def __init__(
         self,
         experiment,
         data_splits,
+        study_name,
     ):
         self.experiment = experiment
         self.data_splits = data_splits
+        self.study_name = study_name
         # parameters potentially used for optimizations
         self.ml_model_types = self.experiment.ml_config["config"]["ml_model_types"]
         self.dim_red_methods = self.experiment.ml_config["config"]["dim_red_methods"]
@@ -283,10 +290,8 @@ class ObjectiveOptuna:
             the training
         (b) model parameters that are varied by optuna
             (defined by default or optuna_model_settings)
-        (c) model parameters that are kept constant
-            during the training and are non-default -
-            these should go into (b) using 'fixed' dtype.
-
+        (c) global parameters that have to be translated
+            in fixed model specific parameters
         """
         # get non-model parameters
         # (1) dimension reduction
@@ -311,19 +316,25 @@ class ObjectiveOptuna:
         else:
             num_outl = 0
 
-        #  fixed parameters
-        model_params_fixed = {
+        # get model parameters
+        optuna_model_settings = None  # use default
+        settings_default = parameters_inventory[ml_model_type]["default"]
+
+        if optuna_model_settings is None:
+            # use default model parameter settings
+            model_params = create_trialparams_from_config(trial, settings_default)
+        else:
+            # use model parameter settings as provided by config
+            model_params = create_trialparams_from_config(trial, optuna_model_settings)
+
+        # overwrite model parameters specified by global settings
+        fixed_global_parameters = {
             "ml_jobs": self.ml_jobs,
             "ml_seed": self.ml_seed,
         }
-
-        # overwrite optuna HP settings
-        optuna_model_settings = None  # use default
-
-        # get model parameters
-        model_params = parameters_inventory[ml_model_type](
-            trial, model_params_fixed, optuna_model_settings
-        )
+        translate = parameters_inventory[ml_model_type]["translate"]
+        for key, value in fixed_global_parameters.items():
+            model_params[translate[key]] = value
 
         # create trainings
         row_column = self.experiment.row_column
@@ -358,6 +369,14 @@ class ObjectiveOptuna:
 
         # train all models in bag
         bag_trainings.run_trainings()
+
+        # save bag
+        path_save = self.experiment.path_study.joinpath(
+            self.experiment.path_sequence_item,
+            "trials",
+            f"study{self.study_name}trial{trial.number}_bag.pkl",
+        )
+        bag_trainings.to_pickle(path_save)
 
         # evaluate trainings using target metric
         scores = bag_trainings.get_scores()
@@ -513,7 +532,7 @@ class TrainingsBag:
     num_workers: int = field(validator=[validators.instance_of(int)])
     target_metric: str = field(validator=[validators.instance_of(str)])
     row_column: str = field(validator=[validators.instance_of(str)])
-    path: Path = field(default=Path(), validator=[validators.instance_of(Path)])
+    # path: Path = field(default=Path(), validator=[validators.instance_of(Path)])
     train_status: bool = field(default=False)
 
     def run_trainings(self):
@@ -618,8 +637,12 @@ class TrainingsBag:
         return scores
 
     def to_pickle(self, path):
-        """Save Bag."""
+        """Save Bag using pickle."""
+        with open(path, "wb") as file:
+            pickle.dump(self, file)
 
     @classmethod
     def from_pickle(cls, path):
-        """Load Bag."""
+        """Load Bag from pickle file."""
+        with open(path, "rb") as file:
+            return pickle.load(file)

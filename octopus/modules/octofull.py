@@ -32,17 +32,22 @@ from octopus.utils import DataSplit
 #   copy from moduleAW
 
 # TOBEDONE
-# - attach results to experiment
-# - improve create_best_bags - use a direct way
-# - delete trials after completion and saving of best bags
+# - (1) delete trials after completion? add configuration
+# - (2) check_resources: consider real n_jobs parameter
+# - (3) implement survival model
+# - (4) fix parallelization error
+# - (5) fix bag name
+# - (6) fix optuna experimental warning
+# - how not to save all bags -- create issue
+# - return best trial in function optimize
+# - attach results (best_bag) to experiment
+# - improve create_best_bags - use a direct wa, from returned best trial or optuna.db
 # - default: num_workers set to k_inner as default, warning if num_workers != k_inner
 # - better study name for global studies - problem with large k_outer -> "0-89"
-# - check_resources: consider real n_jobs parameter
 # - functionality to overwrite single defaults in model default parameter config
 # - module are big and should be directories
 # - xgoost class weights need to be set in training! How to solve that?
 # - validate input parameters: dim_reduction_methods, ml_model_types
-# - implement survival model
 
 
 # TOBEDONE OPTUNA
@@ -58,6 +63,7 @@ from octopus.utils import DataSplit
 # TOBEDONE TRAINING
 # - all multi target models are done separately, shap and permutation
 #   importance may not work anyways
+# - add scaling
 # - include shapley and permutation importance
 # - include dimensionality reduction
 # - include outlier elimination
@@ -192,7 +198,8 @@ class OctoFull:
         else:
             raise ValueError("No bags founds in results directory")
 
-        # delete found initial bags?
+        # since we have best bag - remove trials to save disk space
+        # on "HPO_remove_trials": True,
 
     def run_globalhp_optimization(self):
         """Optimization run with a global HP set over all inner folds."""

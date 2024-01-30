@@ -104,6 +104,7 @@ config_sequence = [
             "num_workers": 5,
             "HPO_type": "individual",  # ["global","individual"]
             "HPO_trials": 5,  # number of HPO trial
+            "HPO_remove_trials": False,
             "HPO_max_features": 70,
         },
     },

@@ -59,7 +59,7 @@ config_study = {
     "production_mode": False,
     # ['classification','regression','timetoevent']
     "ml_type": "regression",
-    "k_outer": 5,
+    "n_folds_outer": 5,
     "target_metric": "MAE",
     "metrics": ["MSE", "MAE", "R2"],
     "datasplit_seed_outer": 1234,
@@ -67,8 +67,7 @@ config_study = {
 
 # configure manager
 config_manager = {
-    # ['parallel', 'sequential']-type of execution of outer loop experiments
-    "ml_execution": "parallel",
+    "outer_parallelization": True,
     # only process first outer loop experiment, for quick testing
     "ml_only_first": False,
 }
@@ -79,7 +78,7 @@ config_manager = {
 
 config_sequence = [
     {
-        "ml_module": "autosklearn",
+        "module": "autosklearn",
         "description": "step1_autosklearn",
         "config": {
             "time_left_for_this_task": 1 * 60,

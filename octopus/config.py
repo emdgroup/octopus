@@ -25,7 +25,7 @@ class OctoConfig:
         default=True, validator=[validators.instance_of(bool)]
     )
 
-    k_outer: int = field(default=5, validator=[validators.instance_of(int)])
+    n_folds_outer: int = field(default=5, validator=[validators.instance_of(int)])
     target_metric: str = field(
         default="AUCROC",
         validator=[

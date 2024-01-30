@@ -31,6 +31,7 @@ from octopus.utils import DataSplit
 # TOBEDONE BASE
 # - fix experiment.num_assigned_cpus -- consider ("ml_only_first": True) status
 #   copy from moduleAW
+# - check module type
 
 # TOBEDONE
 # - (1) delete trials after completion? add configuration
@@ -39,6 +40,8 @@ from octopus.utils import DataSplit
 # - (4) fix parallelization error
 # - (5) fix bag name
 # - (6) fix optuna experimental warning
+# - check that for classification only classification modules are used
+# - sequence config -- module is fixed
 # - how not to save all bags -- create issue
 # - return best trial in function optimize
 # - attach results (best_bag) to experiment
@@ -110,7 +113,7 @@ class OctoFull:
         self.data_splits = DataSplit(
             dataset=self.experiment.data_traindev,
             datasplit_col=self.experiment.datasplit_column,
-            seed=self.experiment.ml_config["seed"],
+            seed=self.experiment.ml_config["datasplit_seed_inner"],
             num_folds=self.experiment.ml_config["n_folds_inner"],
             stratification_col=self.experiment.stratification_column,
         ).get_datasplits()
@@ -347,7 +350,7 @@ class ObjectiveOptuna:
         self.dim_red_methods = self.experiment.ml_config["dim_red_methods"]
         self.max_outl = self.experiment.ml_config["max_outl"]
         # fixed parameters
-        self.ml_seed = self.experiment.ml_config["seed"]
+        self.ml_seed = self.experiment.ml_config["model_seed"]
         self.ml_jobs = self.experiment.ml_config["n_jobs"]
         # training parameters
         self.parallel_execution = self.experiment.ml_config["inner_parallelization"]
@@ -400,8 +403,8 @@ class ObjectiveOptuna:
 
         # overwrite model parameters specified by global settings
         fixed_global_parameters = {
-            "ml_jobs": self.ml_jobs,
-            "ml_seed": self.ml_seed,
+            "n_jobs": self.ml_jobs,
+            "model_seed": self.ml_seed,
         }
         translate = parameters_inventory[ml_model_type]["translate"]
         for key, value in fixed_global_parameters.items():
@@ -759,29 +762,42 @@ class OctopusFullConfig:
 
     description: str = field(validator=[validators.instance_of(str)], default=None)
     """Description."""
-
+    # datasplit
     n_folds_inner: int = field(validator=[validators.instance_of(int)], default=5)
     """Number of inner folds."""
 
-    n_trials: int = field(validator=[validators.instance_of(int)], default=100)
-    """Number of Optuna trials."""
-
-    seed: int = field(validator=[validators.instance_of(int)], default=0)
+    datasplit_seed_inner: int = field(
+        validator=[validators.instance_of(int)], default=0
+    )
     """Data split seed for inner loops."""
+    # model training
+
+    model_seed: int = field(validator=[validators.instance_of(int)], default=0)
+    """Model seed."""
 
     n_jobs: int = field(validator=[validators.instance_of(int)], default=1)
     """Number of parallel jobs."""
 
-    n_workers: int = field(validator=[validators.instance_of(int)], default=1)
-    """Number of workers."""
-
     dim_red_methods: List = field(default=[""])
     """Methods for dimension reduction."""
 
+    max_outl: int = field(validator=[validators.instance_of(int)], default=5)
+    """?"""
+    # parallelization
+    inner_parallelization: bool = field(
+        validator=[validators.instance_of(bool)], default=False
+    )
+
+    n_workers: int = field(validator=[validators.instance_of(int)], default=5)
+    """Number of workers."""
+    # hyperparamter optimization
     global_hyperparameter: bool = field(
         validator=[validators.in_([True, False])], default=True
     )
     """Selection of hyperparameter set."""
+
+    n_trials: int = field(validator=[validators.instance_of(int)], default=100)
+    """Number of Optuna trials."""
 
     hyperparameter: dict = field(validator=[validators.instance_of(dict)], default={})
     """Bring own hyperparameter space."""
@@ -789,9 +805,4 @@ class OctopusFullConfig:
     max_features: int = field(validator=[validators.instance_of(int)], default=-1)
     """Maximum features."""
 
-    max_outl: int = field(validator=[validators.instance_of(int)], default=5)
-    """?"""
-
-    inner_parallelization: bool = field(
-        validator=[validators.instance_of(bool)], default=False
-    )
+    remove_trials: bool = field(validator=[validators.instance_of(bool)], default=False)

@@ -63,7 +63,7 @@ config_study = {
     "output_path": "./studies/",
     "production_mode": False,
     "ml_type": "regression",
-    "k_outer": 5,
+    "n_folds_outer": 5,
     "target_metric": "R2",
     "metrics": ["MSE", "MAE", "R2"],
     "datasplit_seed_outer": 1234,
@@ -71,50 +71,37 @@ config_study = {
 
 # configure manager
 config_manager = {
-    # ['parallel', 'sequential']-type of execution of outer loop experiments
+    # outer loop
     "outer_parallelization": True,
     # only process first outer loop experiment, for quick testing
     "ml_only_first": True,
 }
 
-config_sequence = [
-    {
-        "ml_module": "octofull",
-        "description": "step1_octofull",
-        "config": {
-            "datasplit_seed_inner": 0,  # data split seed for inner loops
-            "k_inner": 5,  # number of inner folds
-            "ml_jobs": 1,  # number of parallel jobs for ML
-            "ml_seed": 0,  # seed to make ML algo deterministic
-            "dim_red_methods": [""],  # Optuna
-            "ml_model_types": [
-                "ExtraTreesRegressor",
-                "RandomForestRegressor",
-                # "XGBRegressor",
-            ],  # Optuna
-            "max_outl": 5,  # Optuna
-            # ["parallel","sequential"]
-            "execution_type": "parallel",
-            "num_workers": 5,
-            "HPO_type": "global",  # ["global","individual"]
-            "HPO_max_features": 70,
-            "HPO_remove_trials": False,
-            "HPO_trials": 5,  # number of HPO trial
-        },
-    },
-]
-
-
-sequence_1 = OctopusFullConfig(
-    models=["ExtraTreesRegressor", "RandomForestRegressor"],
+# define processing sequence
+sequence_item_1 = OctopusFullConfig(
     description="step1_octofull",
-    global_hyperparameter=True,
-    max_features=70,
+    # datasplit
+    n_folds_inner=5,
+    datasplit_seed_inner=0,
+    # model training
+    models=["ExtraTreesRegressor", "RandomForestRegressor"],
+    model_seed=0,
+    n_jobs=1,
+    dim_red_methods=[""],
+    max_outl=5,
+    # parallelization
     inner_parallelization=True,
+    n_workers=5,
+    # HPO
+    global_hyperparameter=True,
     n_trials=5,
+    max_features=70,
+    remove_trials=False,
 )
 
-config_sequence = [attrs.asdict(sequence_1)]
+config_sequence = [attrs.asdict(sequence_item_1)]
+
+print(config_sequence)
 
 # create study config
 octo_config = OctoConfig(config_manager, config_sequence, **config_study)

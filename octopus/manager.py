@@ -32,9 +32,9 @@ class OctoManager:
         print("Only first experiment:", self.oconfig.cfg_manager["ml_only_first"])
         print()
         print("Parallel execution info")
-        print("Number of outer folds: ", self.oconfig.k_outer)
+        print("Number of outer folds: ", self.oconfig.n_folds_outer)
         print("Number of logical CPUs:", cpu_count())
-        num_workers = min([self.oconfig.k_outer, cpu_count()])
+        num_workers = min([self.oconfig.n_folds_outer, cpu_count()])
         print("Number of outer fold workers:", num_workers)
         print()
 
@@ -45,9 +45,14 @@ class OctoManager:
             print("Only running first experiment")
             self.create_execute_mlmodules(self.base_experiments[0])
 
+        elif self.oconfig.cfg_manager["outer_parallelization"] is False:  # sequential
+            for cnt, base_experiment in enumerate(self.base_experiments):
+                print("#### Outerfold:", cnt)
+                self.create_execute_mlmodules(base_experiment)
+                print()
         # tobedone: suppress output
         # tobedone: show which outer fold has been completed
-        if self.oconfig.cfg_manager["outer_parallelization"]:
+        elif self.oconfig.cfg_manager["outer_parallelization"] is True:  # parallel
             # max_tasks_per_child=1 requires Python3.11
             with concurrent.futures.ProcessPoolExecutor(
                 max_workers=num_workers,
@@ -65,11 +70,6 @@ class OctoManager:
                         print("Outer fold completed")
                     except Exception as e:  # pylint: disable=broad-except
                         print(f"Exception occurred while executing task: {e}")
-        else:
-            for cnt, base_experiment in enumerate(self.base_experiments):
-                print("#### Outerfold:", cnt)
-                self.create_execute_mlmodules(base_experiment)
-                print()
 
     def create_execute_mlmodules(self, base_experiment: OctoExperiment):
         """Create and execute ml modules."""
@@ -92,7 +92,7 @@ class OctoManager:
             # calculating number of CPUs available to every experiment
             if self.oconfig.cfg_manager["outer_parallelization"]:
                 experiment.num_assigned_cpus = math.floor(
-                    cpu_count() / self.oconfig.k_outer
+                    cpu_count() / self.oconfig.n_folds_outer
                 )
             else:
                 experiment.num_assigned_cpus = cpu_count()

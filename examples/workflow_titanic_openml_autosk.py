@@ -70,7 +70,7 @@ config_study = {
     "output_path": "./studies/",
     "production_mode": False,
     "ml_type": "classification",  # ['classification','regression','timetoevent']
-    "k_outer": 5,
+    "n_folds_outer": 5,
     "target_metric": "AUCROC",
     "metrics": ["AUCROC", "ACCBAL", "ACC", "LOGLOSS"],
     "datasplit_seed_outer": 1234,
@@ -78,15 +78,15 @@ config_study = {
 
 # configure manager
 config_manager = {
-    "ml_execution": "parallel",  # ['parallel', 'sequential']
+    "outer_parallelization": True,
     # only process first outer loop experiment, for quick testing
-    "ml_only_first": True,
+    "ml_only_first": False,
 }
 
 # configure modules and model sequences
 config_sequence = [
     {
-        "ml_module": "autosklearn",
+        "module": "autosklearn",
         "description": "step1_autosklearn",
         "config": {
             "time_left_for_this_task": 1 * 60,

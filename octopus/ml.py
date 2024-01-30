@@ -64,7 +64,7 @@ class OctoML:
             dataset=data_clean_df,
             datasplit_col=datasplit_col,
             seed=self.oconfig.datasplit_seed_outer,
-            num_folds=self.oconfig.k_outer,
+            num_folds=self.oconfig.n_folds_outer,
             stratification_col=stratification_col,
         ).get_datasplits()
 

@@ -16,8 +16,8 @@ extratree_class = {
         ("categorical", {"name": "class_weight", "choices": [None, "balanced"]}),
     ],
     "translate": {
-        "ml_jobs": "n_jobs",
-        "ml_seed": "random_state",
+        "n_jobs": "n_jobs",
+        "model_seed": "random_state",
     },
 }
 
@@ -31,8 +31,8 @@ extratree_reg = {
         ("int", {"name": "n_estimators", "low": 100, "high": 500, "log": False}),
     ],
     "translate": {
-        "ml_jobs": "n_jobs",
-        "ml_seed": "random_state",
+        "n_jobs": "n_jobs",
+        "model_seed": "random_state",
     },
 }
 
@@ -47,8 +47,8 @@ rf_class = {
         ("categorical", {"name": "class_weight", "choices": [None, "balanced"]}),
     ],
     "translate": {
-        "ml_jobs": "n_jobs",
-        "ml_seed": "random_state",
+        "n_jobs": "n_jobs",
+        "model_seed": "random_state",
     },
 }
 
@@ -62,8 +62,8 @@ rf_reg = {
         ("int", {"name": "n_estimators", "low": 100, "high": 500, "log": False}),
     ],
     "translate": {
-        "ml_jobs": "n_jobs",
-        "ml_seed": "random_state",
+        "n_jobs": "n_jobs",
+        "model_seed": "random_state",
     },
 }
 
@@ -79,8 +79,8 @@ xgboost_class = {
         # missing: pos_class_weight
     ],
     "translate": {
-        "ml_jobs": "n_jobs",
-        "ml_seed": "random_state",
+        "n_jobs": "n_jobs",
+        "model_seed": "random_state",
     },
 }
 
@@ -95,8 +95,8 @@ xgboost_reg = {
         # ("float", {"name": "lambda", "low": 1e-8, "high": 1, "log": True}),
     ],
     "translate": {
-        "ml_jobs": "n_jobs",
-        "ml_seed": "random_state",
+        "n_jobs": "n_jobs",
+        "model_seed": "random_state",
     },
 }
 
@@ -107,8 +107,8 @@ ridge_reg = {
         ("categorical", {"name": "fit_intercept", "categories": [True, False]}),
     ],
     "translate": {
-        "ml_jobs": "n_jobs",
-        "ml_seed": "random_state",
+        "n_jobs": "n_jobs",
+        "model_seed": "random_state",
     },
 }
 

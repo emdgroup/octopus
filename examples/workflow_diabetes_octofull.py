@@ -1,9 +1,18 @@
 """Workflow script for the diabetes regression example."""
 import os
+import socket
 
+import attrs
 import pandas as pd
 
 from octopus import OctoConfig, OctoData, OctoML
+from octopus.modules.octofull import OctopusFullConfig
+
+# Conda and Host information
+print("Notebook kernel is running on server:", socket.gethostname())
+print("Conda environment on server:", os.environ["CONDA_DEFAULT_ENV"])
+# show directory name
+print("Working directory: ", os.getcwd())
 
 # Regression Analysis on Diabetes Dataset
 # http://statweb.lsu.edu/faculty/li/teach/exst7142/diabetes.html
@@ -15,13 +24,16 @@ data_df = pd.read_csv(
     os.path.join(os.getcwd(), "datasets", "diabetes.csv"), index_col=0
 )
 
+
 # define input for Octodata
 data_input = {
     "data": data_df,
     "sample_id": "patient_id",  # sample_id may contain duplicates
     "row_id": "patient_id",  # must be unique!
+    # ['sample','group_sample', 'group_sample_and_features']
+    "datasplit_type": "group_sample_and_features",
+    "disable_checknan": True,
     "target_columns": {"progression": float},
-    "datasplit_type": "sample",
     "feature_columns": {
         "age": float,
         "sex": float,
@@ -39,36 +51,53 @@ data_input = {
 # create OctoData object
 data = OctoData(**data_input)
 
+
+# define inputs for OctoConfig
 # configure study
 config_study = {
-    "study_name": "20231220B",
+    # OctoML
+    "study_name": "20231221B",
     "output_path": "./studies/",
-    "ml_type": "regression",  # prediction_task
-    "k_outer": 5,
-    "target_metric": "MAE",  # only metric?
-    "metrics": ["MSE", "MAE", "R2"],  # what is this for? calculate these metrics
+    "production_mode": False,
+    # ['classification','regression','timetoevent']
+    "ml_type": "regression",
+    "n_folds_outer": 5,
+    "target_metric": "R2",
+    "metrics": ["MSE", "MAE", "R2"],
     "datasplit_seed_outer": 1234,
 }
 
 # configure manager
 config_manager = {
-    "ml_execution": "sequential",  # computation / mode?
+    # outer loop parallelization
+    "outer_parallelization": True,
     # only process first outer loop experiment, for quick testing
-    # just "first_only"???
     "ml_only_first": True,
 }
 
-config_sequence = [
-    {
-        "ml_module": "linear_regression_ave",  # module
-        "description": "step1_autosklearn",
-        "config": {
-            "optuna_trails": 50,
-            "alpha": [0.001, 1],
-            "fit_intercept": [True, False],
-        },
-    }
-]
+# define processing sequence
+sequence_item_1 = OctopusFullConfig(
+    description="step1_octofull",
+    # datasplit
+    n_folds_inner=5,
+    datasplit_seed_inner=0,
+    # model training
+    models=["ExtraTreesRegressor", "RandomForestRegressor"],
+    model_seed=0,
+    n_jobs=1,
+    dim_red_methods=[""],
+    max_outl=5,
+    # parallelization
+    inner_parallelization=True,
+    n_workers=5,
+    # HPO
+    global_hyperparameter=True,
+    n_trials=5,
+    max_features=70,
+    remove_trials=False,
+)
+
+config_sequence = [attrs.asdict(sequence_item_1)]
 
 
 # create study config
@@ -76,10 +105,10 @@ octo_config = OctoConfig(config_manager, config_sequence, **config_study)
 
 # create ML object
 oml = OctoML(data, octo_config)
+# print(oml)
 
 oml.create_outer_experiments()
 
 oml.run_outer_experiments()
 
-print("done")
-print("done")
+print("Workflow completed")

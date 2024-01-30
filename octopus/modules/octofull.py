@@ -136,7 +136,7 @@ class OctoFull:
         )
 
         # assuming n_jobs=1 for every model
-        if self.experiment.ml_config["parallel_execution"] is True:
+        if self.experiment.ml_config["inner_parallelization"] is True:
             num_requested_cpus = self.experiment.ml_config["n_workers"]
         else:
             num_requested_cpus = 1  # n_jobs=1
@@ -350,7 +350,7 @@ class ObjectiveOptuna:
         self.ml_seed = self.experiment.ml_config["seed"]
         self.ml_jobs = self.experiment.ml_config["n_jobs"]
         # training parameters
-        self.parallel_execution = self.experiment.ml_config["parallel_execution"]
+        self.parallel_execution = self.experiment.ml_config["inner_parallelization"]
         self.num_workers = self.experiment.ml_config["n_workers"]
 
     def __call__(self, trial):
@@ -792,6 +792,6 @@ class OctopusFullConfig:
     max_outl: int = field(validator=[validators.instance_of(int)], default=5)
     """?"""
 
-    parallel_execution: bool = field(
-        validator=[validators.in_([True, False])], default=False
+    inner_parallelization: bool = field(
+        validator=[validators.instance_of(bool)], default=False
     )

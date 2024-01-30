@@ -72,7 +72,7 @@ config_study = {
 # configure manager
 config_manager = {
     # ['parallel', 'sequential']-type of execution of outer loop experiments
-    "ml_execution": "parallel",
+    "outer_parallelization": True,
     # only process first outer loop experiment, for quick testing
     "ml_only_first": True,
 }
@@ -110,7 +110,7 @@ sequence_1 = OctopusFullConfig(
     description="step1_octofull",
     global_hyperparameter=True,
     max_features=70,
-    parallel_execution=True,
+    inner_parallelization=True,
     n_trials=5,
 )
 

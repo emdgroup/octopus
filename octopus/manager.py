@@ -26,7 +26,9 @@ class OctoManager:
     def run_outer_experiments(self):
         """Run outer experiments."""
         print("Preparing execution of experiments.......")
-        print("Execution:", self.oconfig.cfg_manager["ml_execution"])
+        print(
+            "Outer parallelization:", self.oconfig.cfg_manager["outer_parallelization"]
+        )
         print("Only first experiment:", self.oconfig.cfg_manager["ml_only_first"])
         print()
         print("Parallel execution info")
@@ -43,14 +45,9 @@ class OctoManager:
             print("Only running first experiment")
             self.create_execute_mlmodules(self.base_experiments[0])
 
-        elif self.oconfig.cfg_manager["ml_execution"] == "sequential":
-            for cnt, base_experiment in enumerate(self.base_experiments):
-                print("#### Outerfold:", cnt)
-                self.create_execute_mlmodules(base_experiment)
-                print()
         # tobedone: suppress output
         # tobedone: show which outer fold has been completed
-        elif self.oconfig.cfg_manager["ml_execution"] == "parallel":
+        if self.oconfig.cfg_manager["outer_parallelization"]:
             # max_tasks_per_child=1 requires Python3.11
             with concurrent.futures.ProcessPoolExecutor(
                 max_workers=num_workers,
@@ -69,7 +66,10 @@ class OctoManager:
                     except Exception as e:  # pylint: disable=broad-except
                         print(f"Exception occurred while executing task: {e}")
         else:
-            raise ValueError("Execution type not supported")
+            for cnt, base_experiment in enumerate(self.base_experiments):
+                print("#### Outerfold:", cnt)
+                self.create_execute_mlmodules(base_experiment)
+                print()
 
     def create_execute_mlmodules(self, base_experiment: OctoExperiment):
         """Create and execute ml modules."""
@@ -90,7 +90,7 @@ class OctoManager:
             )
 
             # calculating number of CPUs available to every experiment
-            if self.oconfig.cfg_manager["ml_execution"] == "parallel":
+            if self.oconfig.cfg_manager["outer_parallelization"]:
                 experiment.num_assigned_cpus = math.floor(
                     cpu_count() / self.oconfig.k_outer
                 )

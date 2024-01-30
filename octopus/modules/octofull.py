@@ -4,6 +4,7 @@ import pickle
 import shutil
 from pathlib import Path
 from statistics import mean
+from typing import List
 
 import optuna
 import pandas as pd
@@ -99,18 +100,18 @@ class OctoFull:
         """Results path."""
         return self.path_module.joinpath("results")
 
-    @property
-    def hpo_type(self) -> str:
-        """Trials path."""
-        return self.experiment.ml_config["config"]["HPO_type"]
+    # @property
+    # def hpo_type(self) -> str:
+    #     """Trials path."""
+    #     return self.experiment.ml_config["config"]["HPO_type"]
 
     def __attrs_post_init__(self):
         # create datasplit during init
         self.data_splits = DataSplit(
             dataset=self.experiment.data_traindev,
             datasplit_col=self.experiment.datasplit_column,
-            seed=self.experiment.ml_config["config"]["datasplit_seed_inner"],
-            num_folds=self.experiment.ml_config["config"]["k_inner"],
+            seed=self.experiment.ml_config["seed"],
+            num_folds=self.experiment.ml_config["n_folds_inner"],
             stratification_col=self.experiment.stratification_column,
         ).get_datasplits()
         # delete directories /trials /optuna /results to ensure clean state
@@ -133,12 +134,10 @@ class OctoFull:
             "Number of CPUs available to this experiment:",
             self.experiment.num_assigned_cpus,
         )
-        exec_type = self.experiment.ml_config["config"]["execution_type"]
-        num_workers = self.experiment.ml_config["config"]["num_workers"]
 
         # assuming n_jobs=1 for every model
-        if exec_type == "parallel":
-            num_requested_cpus = num_workers  # n_jobs=1
+        if self.experiment.ml_config["parallel_execution"] is True:
+            num_requested_cpus = self.experiment.ml_config["n_workers"]
         else:
             num_requested_cpus = 1  # n_jobs=1
 
@@ -150,12 +149,10 @@ class OctoFull:
 
     def run_experiment(self):
         """Run experiment."""
-        if self.hpo_type == "global":
+        if self.experiment.ml_config["global_hyperparameter"]:
             self.run_globalhp_optimization()
-        elif self.hpo_type == "individual":
-            self.run_individualhp_optimization()
         else:
-            raise ValueError(f"HPO type: {self.hpo_type} not supported")
+            self.run_individualhp_optimization()
 
         # create best bag in results directory
         self.create_best_bag()
@@ -228,19 +225,12 @@ class OctoFull:
         #     achieve the same effect as (b)+(c).
 
         # same config parameters also used for parallelization of bag trainings
-        optuna_execution = self.experiment.ml_config["config"]["execution_type"]
-        max_workers = self.experiment.ml_config["config"]["num_workers"]
 
-        if optuna_execution == "sequential":
-            print("Sequential execution of Optuna optimizations for individual HPs")
-            for split in splits:
-                self.optimize_splits(split)
-                print(f"Optimization of split:{split.keys()} completed")
-        elif optuna_execution == "parallel":
+        if self.experiment.ml_config["parallel_execution"]:
             print("Parallel execution of Optuna optimizations for individual HPs")
             # max_tasks_per_child=1 requires Python3.11
             with concurrent.futures.ProcessPoolExecutor(
-                max_workers=max_workers
+                max_workers=self.experiment.ml_config["n_workers"]
             ) as executor:
                 futures = []
                 for split in splits:
@@ -256,7 +246,10 @@ class OctoFull:
                     except Exception as e:  # pylint: disable=broad-except
                         print(f"Exception occurred while executing task: {e}")
         else:
-            raise ValueError("Execution type not supported")
+            print("Sequential execution of Optuna optimizations for individual HPs")
+            for split in splits:
+                self.optimize_splits(split)
+                print(f"Optimization of split:{split.keys()} completed")
 
         # collect best bag and save
 
@@ -292,7 +285,7 @@ class OctoFull:
         study.optimize(
             objective,
             n_jobs=1,
-            n_trials=self.experiment.ml_config["config"]["HPO_trials"],
+            n_trials=self.experiment.ml_config["n_trials"],
         )
 
         # copy bag of best trial to results
@@ -350,15 +343,15 @@ class ObjectiveOptuna:
         self.data_splits = data_splits
         self.study_name = study_name
         # parameters potentially used for optimizations
-        self.ml_model_types = self.experiment.ml_config["config"]["ml_model_types"]
-        self.dim_red_methods = self.experiment.ml_config["config"]["dim_red_methods"]
-        self.max_outl = self.experiment.ml_config["config"]["max_outl"]
+        self.ml_model_types = self.experiment.ml_config["models"]
+        self.dim_red_methods = self.experiment.ml_config["dim_red_methods"]
+        self.max_outl = self.experiment.ml_config["max_outl"]
         # fixed parameters
-        self.ml_seed = self.experiment.ml_config["config"]["ml_seed"]
-        self.ml_jobs = self.experiment.ml_config["config"]["ml_jobs"]
+        self.ml_seed = self.experiment.ml_config["seed"]
+        self.ml_jobs = self.experiment.ml_config["n_jobs"]
         # training parameters
-        self.execution_type = self.experiment.ml_config["config"]["execution_type"]
-        self.num_workers = self.experiment.ml_config["config"]["num_workers"]
+        self.parallel_execution = self.experiment.ml_config["parallel_execution"]
+        self.num_workers = self.experiment.ml_config["n_workers"]
 
     def __call__(self, trial):
         """Call.
@@ -442,7 +435,7 @@ class ObjectiveOptuna:
         # create bag with all provided trainings
         bag_trainings = TrainingsBag(
             trainings=trainings,
-            execution_type=self.execution_type,
+            parallel_execution=self.parallel_execution,
             num_workers=self.num_workers,
             target_metric=self.experiment.config["target_metric"],
             row_column=self.experiment.row_column,
@@ -632,7 +625,7 @@ class TrainingsBag:
     trainings: list = field(validator=[validators.instance_of(list)])
     # same config parameters (execution type, num_workers) also used for
     # parallelization of optuna optimizations of individual inner loop trainings
-    execution_type: str = field(validator=[validators.instance_of(str)])
+    parallel_execution: bool = field(validator=[validators.instance_of(bool)])
     num_workers: int = field(validator=[validators.instance_of(int)])
     target_metric: str = field(validator=[validators.instance_of(str)])
     row_column: str = field(validator=[validators.instance_of(str)])
@@ -641,11 +634,7 @@ class TrainingsBag:
 
     def run_trainings(self):
         """Run all available trainings."""
-        if self.execution_type == "sequential":
-            for training in self.trainings:
-                training.run_training()
-                print("Inner sequential training completed")
-        elif self.execution_type == "parallel":
+        if self.parallel_execution is True:
             # max_tasks_per_child=1 requires Python3.11
             with concurrent.futures.ProcessPoolExecutor(
                 max_workers=self.num_workers,
@@ -663,8 +652,12 @@ class TrainingsBag:
                         print("Inner parallel training completed")
                     except Exception as e:  # pylint: disable=broad-except
                         print(f"Exception occurred while executing task: {e}")
+
         else:
-            raise ValueError("Execution type not supported")
+            for training in self.trainings:
+                training.run_training()
+                print("Inner sequential training completed")
+
         self.train_status = True
 
     def get_scores(self):
@@ -750,3 +743,55 @@ class TrainingsBag:
         """Load Bag from pickle file."""
         with open(path, "rb") as file:
             return pickle.load(file)
+
+
+@define
+class OctopusFullConfig:
+    """OctopusLightConfig."""
+
+    models: List = field(
+        # validator=[validators.in_(["ExtraTreesRegressor", "RandomForestRegressor"])],
+    )
+    """Models for ML."""
+
+    module: List = field(default="octofull")
+    """Models for ML."""
+
+    description: str = field(validator=[validators.instance_of(str)], default=None)
+    """Description."""
+
+    n_folds_inner: int = field(validator=[validators.instance_of(int)], default=5)
+    """Number of inner folds."""
+
+    n_trials: int = field(validator=[validators.instance_of(int)], default=100)
+    """Number of Optuna trials."""
+
+    seed: int = field(validator=[validators.instance_of(int)], default=0)
+    """Data split seed for inner loops."""
+
+    n_jobs: int = field(validator=[validators.instance_of(int)], default=1)
+    """Number of parallel jobs."""
+
+    n_workers: int = field(validator=[validators.instance_of(int)], default=1)
+    """Number of workers."""
+
+    dim_red_methods: List = field(default=[""])
+    """Methods for dimension reduction."""
+
+    global_hyperparameter: bool = field(
+        validator=[validators.in_([True, False])], default=True
+    )
+    """Selection of hyperparameter set."""
+
+    hyperparameter: dict = field(validator=[validators.instance_of(dict)], default={})
+    """Bring own hyperparameter space."""
+
+    max_features: int = field(validator=[validators.instance_of(int)], default=-1)
+    """Maximum features."""
+
+    max_outl: int = field(validator=[validators.instance_of(int)], default=5)
+    """?"""
+
+    parallel_execution: bool = field(
+        validator=[validators.in_([True, False])], default=False
+    )

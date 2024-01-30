@@ -75,13 +75,13 @@ class OctoManager:
         """Create and execute ml modules."""
         selected_features = []
         for cnt, element in enumerate(self.oconfig.cfg_sequence):
-            print("ml step:", cnt)
-            print("ml_module:", element["ml_module"])
+            print("step:", cnt)
+            print("module:", element["module"])
             print("description:", element["description"])
 
             # add config to experiment
             experiment = copy.deepcopy(base_experiment)
-            experiment.ml_module = element["ml_module"]
+            experiment.ml_module = element["module"]
             experiment.ml_config = element
             experiment.id = experiment.id + "_" + str(cnt)
             experiment.sequence_item_id = cnt

@@ -2,9 +2,11 @@
 import os
 import socket
 
+import attrs
 import pandas as pd
 
 from octopus import OctoConfig, OctoData, OctoML
+from octopus.modules.octofull import OctopusFullConfig
 
 # Conda and Host information
 print("Notebook kernel is running on server:", socket.gethostname())
@@ -101,6 +103,18 @@ config_sequence = [
         },
     },
 ]
+
+
+sequence_1 = OctopusFullConfig(
+    models=["ExtraTreesRegressor", "RandomForestRegressor"],
+    description="step1_octofull",
+    global_hyperparameter=True,
+    max_features=70,
+    parallel_execution=True,
+    n_trials=5,
+)
+
+config_sequence = [attrs.asdict(sequence_1)]
 
 # create study config
 octo_config = OctoConfig(config_manager, config_sequence, **config_study)

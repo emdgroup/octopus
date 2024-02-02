@@ -154,6 +154,7 @@ cython_debug/
 
 # custom
 studies/
+datasets_local/
 *.ipynb
 *.pickle
 *.pkl

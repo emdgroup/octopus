@@ -79,7 +79,7 @@ data = OctoData(**data_input)
 
 # configure study
 config_study = {
-    "study_name": "20240202A_Martin_Autosk",
+    "study_name": "20240203A_Martin_wf1_autosk_ardreg",
     "output_path": "./studies/",
     "production_mode": False,
     "ml_type": "regression",
@@ -92,9 +92,9 @@ config_study = {
 # configure manager
 config_manager = {
     # outer loop
-    "outer_parallelization": True,
+    "outer_parallelization": False,
     # only process first outer loop experiment, for quick testing
-    "ml_only_first": True,
+    "ml_only_first": False,
 }
 
 # define processing sequence
@@ -104,7 +104,7 @@ config_sequence = [
         "description": "step1_autosklearn",
         "config": {
             "time_left_for_this_task": 60 * 60,
-            "per_run_time_limit": 5 * 60,
+            "per_run_time_limit": 12 * 60,
             # "n_jobs": 1,
             "include": {
                 # regressors_ = [

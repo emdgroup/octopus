@@ -104,7 +104,8 @@ config_sequence = [
         "description": "step1_autosklearn",
         "config": {
             "time_left_for_this_task": 60 * 60,
-            "per_run_time_limit": 12 * 60,
+            "per_run_time_limit": 5 * 60,
+            # "n_jobs": 1,
             "include": {
                 # regressors_ = [
                 # "adaboost",

@@ -6,13 +6,19 @@ try:
 except ImportError:
     print("Auto-Sklearn not installed in this conda environment")
 
+import json
+from pathlib import Path
+
 import pandas as pd
 from attrs import define, field, validators
 from sklearn.metrics import mean_absolute_error
 
 from octopus.experiment import OctoExperiment
 
-# Notes:
+# TOBEDONE:
+# - selection of autosk metric based on octoconfig, then no need to import autosk in workflow
+# - saving of resutls
+# - check config regardning available CPUs
 # - implement that predictions are done on the reduced features
 # - autosklearn refit() functionality
 # - autosklearn in version 0.15 requires numpy==1.23.5, otherwise some jobs will fail
@@ -26,6 +32,16 @@ class Autosklearn:
         validator=[validators.instance_of(OctoExperiment)]
     )
     model = field(init=False)
+
+    @property
+    def path_module(self) -> Path:
+        """Module path."""
+        return self.experiment.path_study.joinpath(self.experiment.path_sequence_item)
+
+    @property
+    def path_results(self) -> Path:
+        """Results path."""
+        return self.path_module.joinpath("results")
 
     @property
     def x_train(self) -> pd.DataFrame:
@@ -109,11 +125,20 @@ class Autosklearn:
             test_predictions_df = pd.concat([test_predictions_df, probs_df], axis=1)
         self.experiment.results["test_predictions_df"] = test_predictions_df
 
-        # show test results, MAE
+        # show and save test results, MAE
         print(
             f"Experiment: {self.experiment.id} "
             f"Test MAE: {mean_absolute_error(self.y_test, preds)}"
         )
+        results_test = {
+            "experiment_id": self.experiment.id,
+            "test MAE": mean_absolute_error(self.y_test, preds),
+            "test predictions": preds,
+        }
+        with open(
+            self.path_results.joinpath("results_test.json"), "w", encoding="utf-8"
+        ) as f:
+            json.dump(results_test, f)
 
         # save model
         self.experiment.models["model_0"] = self.model

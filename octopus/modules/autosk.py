@@ -7,6 +7,7 @@ except ImportError:
     print("Auto-Sklearn not installed in this conda environment")
 
 import json
+import shutil
 from pathlib import Path
 
 import pandas as pd
@@ -16,8 +17,9 @@ from sklearn.metrics import mean_absolute_error
 from octopus.experiment import OctoExperiment
 
 # TOBEDONE:
-# - selection of autosk metric based on octoconfig, then no need to import autosk in workflow
-# - saving of resutls
+# - selection of autosk metric based on octoconfig,
+#    then no need to import autosk in workflow
+# - saving of results
 # - check config regardning available CPUs
 # - implement that predictions are done on the reduced features
 # - autosklearn refit() functionality
@@ -69,6 +71,16 @@ class Autosklearn:
     def params(self) -> pd.DataFrame:
         """Auto-sklearn parameters."""
         return self.experiment.ml_config["config"]
+
+    def __attrs_post_init__(self):
+        # delete directories /trials /optuna /results to ensure clean state
+        # of module when restarted, required for parallel optuna runs
+        # as optuna.create(...,load_if_exists=True)
+        # create directory if it does not exist
+        for directory in [self.path_results]:
+            if directory.exists():
+                shutil.rmtree(directory)
+            directory.mkdir(parents=True, exist_ok=True)
 
     def run_experiment(self):
         """Run experiment."""
@@ -133,7 +145,7 @@ class Autosklearn:
         results_test = {
             "experiment_id": self.experiment.id,
             "test MAE": mean_absolute_error(self.y_test, preds),
-            "test predictions": preds,
+            # "test predictions": preds, #json error
         }
         with open(
             self.path_results.joinpath("results_test.json"), "w", encoding="utf-8"

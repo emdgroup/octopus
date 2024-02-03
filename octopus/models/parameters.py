@@ -113,7 +113,7 @@ ridge_reg = {
 }
 
 # Linear ridge regression parameter settings
-adr_reg = {
+ard_reg = {
     "default": [
         ("float", {"name": "alpha_1", "low": 1e-10, "high": 1e-3, "log": True}),
         ("float", {"name": "alpha_2", "low": 1e-10, "high": 1e-3, "log": True}),
@@ -136,5 +136,5 @@ parameters_inventory = {
     "XGBClassifier": xgboost_class,
     "XGBRegressor": xgboost_reg,
     "RidgeRegressor": ridge_reg,
-    "ADRRegressor": adr_reg,
+    "ARDRegressor": ard_reg,
 }

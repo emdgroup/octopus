@@ -112,6 +112,22 @@ ridge_reg = {
     },
 }
 
+# Linear ridge regression parameter settings
+adr_reg = {
+    "default": [
+        ("float", {"name": "alpha_1", "low": 1e-10, "high": 1e-3, "log": True}),
+        ("float", {"name": "alpha_2", "low": 1e-10, "high": 1e-3, "log": True}),
+        ("float", {"name": "lambda_1", "low": 1e-10, "high": 1e-3, "log": True}),
+        ("float", {"name": "lambda_2", "low": 1e-10, "high": 1e-3, "log": True}),
+        ("float", {"name": "threshold_lambda", "low": 1e3, "high": 1e5, "log": True}),
+        ("categorical", {"name": "fit_intercept", "categories": [True, False]}),
+    ],
+    "translate": {
+        "n_jobs": "n_jobs",
+        "model_seed": "random_state",
+    },
+}
+
 parameters_inventory = {
     "ExtraTreesClassifier": extratree_class,
     "ExtraTreesRegressor": extratree_reg,
@@ -120,4 +136,5 @@ parameters_inventory = {
     "XGBClassifier": xgboost_class,
     "XGBRegressor": xgboost_reg,
     "RidgeRegressor": ridge_reg,
+    "ADRRegressor": adr_reg,
 }

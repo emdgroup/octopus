@@ -1,4 +1,5 @@
 """Module: Autosklern."""
+
 try:
     import autosklearn.classification
     import autosklearn.regression
@@ -7,6 +8,7 @@ except ImportError:
 
 import pandas as pd
 from attrs import define, field, validators
+from sklearn.metrics import mean_absolute_error
 
 from octopus.experiment import OctoExperiment
 
@@ -106,6 +108,12 @@ class Autosklearn:
             probs_df.columns = ["prob_" + str(x) for x in probs_df.columns]
             test_predictions_df = pd.concat([test_predictions_df, probs_df], axis=1)
         self.experiment.results["test_predictions_df"] = test_predictions_df
+
+        # show test results, MAE
+        print(
+            f"Experiment: {self.experiment.id} "
+            f"Test MAE: {mean_absolute_error(self.y_test, preds)}"
+        )
 
         # save model
         self.experiment.models["model_0"] = self.model

@@ -20,6 +20,13 @@ from octopus.experiment import OctoExperiment
 # - selection of autosk metric based on octoconfig,
 #    then no need to import autosk in workflow
 # - saving of results
+# - crash of two experiments in 2hour run! 7x6 nCV Martin
+# - openblas issue: export OPENBLAS_NUM_THREADS=1 (set in terminal)
+#   check: https://stackoverflow.com/questions/30791550/limit-number-of-threads-in-numpy
+#   try to set in the code, maybe in manager
+#   https://superfastpython.com/numpy-number-blas-threads/
+#   #Need_to_Configure_the_Number_of_Threads_Used_By_BLAS
+#   it needs to be set before Autosk is imported, tests needed
 # - check config regardning available CPUs
 # - implement that predictions are done on the reduced features
 # - autosklearn refit() functionality

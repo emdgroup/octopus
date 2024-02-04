@@ -3,10 +3,17 @@
 import os
 import socket
 
+import attrs
+
+# OPENBLASE config needs to be before pandas, autosk
+# os.environ["OPENBLAS_NUM_THREADS"] = "1"
 import pandas as pd
-from autosklearn.metrics import mean_absolute_error
 
 from octopus import OctoConfig, OctoData, OctoML
+from octopus.modules.octofull import OctopusFullConfig
+
+# from sklearn.preprocessing import  StandardScaler
+
 
 # Conda and Host information
 print("Notebook kernel is running on server:", socket.gethostname())
@@ -50,6 +57,32 @@ ls_features = ls_numbers + ls_props + ls_graph + ls_morgan_fp + ls_rd_fp
 ls_targets = ["T_SETARAM"]
 id_data = ["MATERIAL_ID"]
 
+
+# scaler = StandardScaler()
+# cols = ls_graph + ls_props
+# data[cols] = scaler.fit_transform(data[cols])
+# data.max().sort_values(ascending=False)
+# scaler2 = MaxAbsScaler()
+# cols = ls_numbers + ls_morgan_fp + ls_rd_fp
+# data[cols] = scaler2.fit_transform(data[cols])
+
+
+# reduce constant features
+def find_constant_columns(df):
+    """Find constand columns."""
+    constant_columns = []
+    for column in df.columns:
+        if df[column].nunique() == 1:
+            constant_columns.append(column)
+    return constant_columns
+
+
+ls_features_const = find_constant_columns(data)
+# Remove constant columns from other_cols list
+print("Number of original features:", len(ls_features))
+ls_features = [col for col in ls_features if col not in ls_features_const]
+print("Number of features after removal of const. features:", len(ls_features))
+
 # pre-process data
 # there are NaNs in the target column
 target_column = data[ls_targets[0]]
@@ -79,7 +112,7 @@ data = OctoData(**data_input)
 
 # configure study
 config_study = {
-    "study_name": "20240203A_Martin_wf1_autosk_ardreg",
+    "study_name": "20240204A_Martin_wf2_octofull_7x5_global_ridge",
     "output_path": "./studies/",
     "production_mode": False,
     "ml_type": "regression",
@@ -92,47 +125,34 @@ config_study = {
 # configure manager
 config_manager = {
     # outer loop
-    "outer_parallelization": False,
+    "outer_parallelization": True,
     # only process first outer loop experiment, for quick testing
     "ml_only_first": False,
 }
 
 # define processing sequence
-config_sequence = [
-    {
-        "module": "autosklearn",
-        "description": "step1_autosklearn",
-        "config": {
-            "time_left_for_this_task": 60 * 60,
-            "per_run_time_limit": 12 * 60,
-            # "n_jobs": 1,
-            "include": {
-                # regressors_ = [
-                # "adaboost",
-                # "ard_regression",
-                # "decision_tree",
-                # "extra_trees",
-                # "gaussian_process",
-                # "gradient_boosting",
-                # "k_nearest_neighbors",
-                # "libsvm_svr",
-                # "mlp",
-                # "random_forest",]
-                "regressor": ["ard_regression"],
-                # ["no_preprocessing","polynomial","select_percentile_classification"],
-                "feature_preprocessor": ["no_preprocessing"],
-            },
-            # "ensemble_kwargs": {"ensemble_size": 1},
-            # "initial_configurations_via_metalearning": 0,
-            # 'resampling_strategy':'holdout',
-            # 'resampling_strategy_arguments':None,
-            "resampling_strategy": "cv",
-            "resampling_strategy_arguments": {"folds": 6},
-            "metric": mean_absolute_error,
-        },
-    },
-]
+sequence_item_1 = OctopusFullConfig(
+    description="step1_octofull",
+    # datasplit
+    n_folds_inner=5,
+    datasplit_seed_inner=0,
+    # model training
+    models=["RidgeRegressor"],
+    model_seed=0,
+    n_jobs=1,
+    dim_red_methods=[""],
+    max_outl=0,
+    # parallelization
+    inner_parallelization=True,
+    n_workers=5,
+    # HPO
+    global_hyperparameter=True,
+    n_trials=50,
+    max_features=70,
+    remove_trials=False,
+)
 
+config_sequence = [attrs.asdict(sequence_item_1)]
 # create study config
 octo_config = OctoConfig(config_manager, config_sequence, **config_study)
 
@@ -143,4 +163,5 @@ oml.create_outer_experiments()
 
 oml.run_outer_experiments()
 
+print("Workflow completed")
 print("Workflow completed")

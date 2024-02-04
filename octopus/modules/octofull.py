@@ -1,5 +1,7 @@
 """OctoFull Module."""
+
 import concurrent.futures
+import json
 import pickle
 import shutil
 from pathlib import Path
@@ -18,6 +20,7 @@ from sklearn.metrics import (
     r2_score,
     roc_auc_score,
 )
+from sklearn.preprocessing import StandardScaler
 
 from octopus.experiment import OctoExperiment
 from octopus.models.config import model_inventory
@@ -40,6 +43,8 @@ from octopus.utils import DataSplit
 # - (4) fix parallelization error
 # - (5) fix bag name
 # - (6) fix optuna experimental warning
+# - deepchecks - https://docs.deepchecks.com/0.18/tabular/auto_checks/data_integrity/index.html
+# - outer parallelizaion can lead to very differing execution times per experiment!
 # - check that for classification only classification modules are used
 # - sequence config -- module is fixed
 # - how not to save all bags -- create issue
@@ -178,6 +183,9 @@ class OctoFull:
         if len(path_bags) == 1:
             # only single bag found - copy to best bag
             shutil.copy(path_bags[0], self.path_results.joinpath("best_bag.pkl"))
+            file = path_bags[0]
+            if file.is_file():
+                best_bag = TrainingsBag.from_pickle(file)
         elif len(path_bags) > 1:
             # collect all trainings from bags
             trainings = list()
@@ -188,8 +196,8 @@ class OctoFull:
             # create best bag
             best_bag = TrainingsBag(
                 trainings=trainings,
-                execution_type=self.experiment.ml_config["config"]["execution_type"],
-                num_workers=self.experiment.ml_config["config"]["num_workers"],
+                parallel_execution=self.experiment.ml_config["inner_parallelization"],
+                num_workers=self.experiment.ml_config["n_workers"],
                 target_metric=self.experiment.config["target_metric"],
                 row_column=self.experiment.row_column,
             )
@@ -197,6 +205,20 @@ class OctoFull:
             best_bag.to_pickle(self.path_results.joinpath("best_bag.pkl"))
         else:
             raise ValueError("No bags founds in results directory")
+
+        # save performance valuescof best bag
+        best_bag_scores = best_bag.get_scores()
+        # show and save test results, MAE
+        print(
+            f"Experiment: {self.experiment.id} "
+            f"Test_avg {self.experiment.config['target_metric']}:"
+            f"{best_bag_scores['test_avg']}"
+        )
+
+        with open(
+            self.path_results.joinpath("best_bag_scores.json"), "w", encoding="utf-8"
+        ) as f:
+            json.dump(best_bag_scores, f)
 
         # since we have best bag - remove trials to save disk space
         # on "HPO_remove_trials": True,
@@ -229,7 +251,7 @@ class OctoFull:
 
         # same config parameters also used for parallelization of bag trainings
 
-        if self.experiment.ml_config["parallel_execution"]:
+        if self.experiment.ml_config["inner_parallelization"]:
             print("Parallel execution of Optuna optimizations for individual HPs")
             # max_tasks_per_child=1 requires Python3.11
             with concurrent.futures.ProcessPoolExecutor(
@@ -408,7 +430,8 @@ class ObjectiveOptuna:
         }
         translate = parameters_inventory[ml_model_type]["translate"]
         for key, value in fixed_global_parameters.items():
-            model_params[translate[key]] = value
+            if translate[key] != "NA":  # NA=ignore
+                model_params[translate[key]] = value
 
         config_training = {
             "dim_reduction": dim_reduction,
@@ -495,6 +518,8 @@ class Training:
     # training output
     model = field(init=False)
     predictions: dict = field(default=dict(), validator=[validators.instance_of(dict)])
+    # scaler
+    scaler = field(init=False)
 
     @property
     def dim_reduction(self) -> str:
@@ -546,6 +571,9 @@ class Training:
         """y_dev."""
         return self.data_test[self.target_assignments.values()]
 
+    def __attrs_post_init__(self):
+        self.scaler = StandardScaler()
+
     # perform:
     # (1) dim_reduction
     # (2) outlier removal
@@ -560,51 +588,64 @@ class Training:
     # (3) feature_importances, which
     # (4)
 
-    def __attrs_post_init__(self):
-        # reset index
-        pass
-
     def run_training(self):
         """Run trainings."""
-        # missing: dim reduction
-        # missing: outlier removal
+        # missing:
+        # (1) missing: outlier removal
+        # (2) scaling
+        # (3) missinf dim reduction
+
+        # scaling (!after outlier removal)
+        # x_train_scaled = self.scaler.fit_transform(self.x_train)
+        # x_dev_scaled = self.scaler.transform(self.x_dev)
+        # x_test_scaled = self.scaler.transform(self.x_test)
+
         self.model = model_inventory[self.ml_model_type](**self.ml_model_params)
 
         if len(self.target_assignments) == 1:
             # standard sklearn single target models
             self.model.fit(
+                # x_train_scaled,
                 self.x_train,
                 self.y_train.squeeze(axis=1),
             )
         else:
             # multi target models, incl. time2event
+            # self.model.fit(x_train_scaled, self.y_train)
             self.model.fit(self.x_train, self.y_train)
 
-        # missing: include row_id
         self.predictions["train"] = pd.DataFrame()
         self.predictions["train"][self.row_column] = self.data_train[self.row_column]
         self.predictions["train"]["target"] = self.y_train.squeeze(axis=1)
+        # self.predictions["train"]["prediction"] = self.model.predict(x_train_scaled)
         self.predictions["train"]["prediction"] = self.model.predict(self.x_train)
 
         self.predictions["dev"] = pd.DataFrame()
         self.predictions["dev"][self.row_column] = self.data_dev[self.row_column]
         self.predictions["dev"]["target"] = self.y_dev.squeeze(axis=1)
+        # self.predictions["dev"]["prediction"] = self.model.predict(x_dev_scaled)
         self.predictions["dev"]["prediction"] = self.model.predict(self.x_dev)
 
         self.predictions["test"] = pd.DataFrame()
         self.predictions["test"][self.row_column] = self.data_test[self.row_column]
         self.predictions["test"]["target"] = self.y_test.squeeze(axis=1)
+        # self.predictions["test"]["prediction"] = self.model.predict(x_test_scaled)
         self.predictions["test"]["prediction"] = self.model.predict(self.x_test)
 
         if self.ml_type == "classification":
             columns = [int(x) for x in self.model.classes_]  # column names --> int
+            # self.predictions["train"][columns] = self.model.predict_proba(
+            #    x_train_scaled
+            # )
             self.predictions["train"][columns] = self.model.predict_proba(self.x_train)
+            # self.predictions["dev"][columns]=self.model.predict_proba(x_dev_scaled)
             self.predictions["dev"][columns] = self.model.predict_proba(self.x_dev)
+            # self.predictions["test"][columns]=self.model.predict_proba(x_test_scaled)
             self.predictions["test"][columns] = self.model.predict_proba(self.x_test)
 
-        # missing: other feature reduction methods
+        # missing: other feature importance methods
         # result = permutation_importance(
-        #    self.model, X=self.x_dev, y=self.y_dev, n_repeats=10, random_state=0
+        #    self.model, X=x_dev_scaled, y=self.y_dev, n_repeats=10, random_state=0
         # )
         # print(result)
 

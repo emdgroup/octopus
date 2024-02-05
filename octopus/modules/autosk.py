@@ -17,6 +17,8 @@ from sklearn.metrics import mean_absolute_error
 from octopus.experiment import OctoExperiment
 
 # TOBEDONE:
+# - inspect data-preprocessinf, feature-processing:
+#   https://github.com/automl/auto-sklearn/issues/1633
 # - selection of autosk metric based on octoconfig,
 #    then no need to import autosk in workflow
 # - saving of results
@@ -117,10 +119,17 @@ class Autosklearn:
         # pprint(self.model.show_models(), indent=4)
 
         print("Leaderboard:")
-        print(self.model.leaderboard())
+        leaderboard = self.model.leaderboard(
+            detailed=True,
+        )
+        print(leaderboard)
+        leaderboard.to_csv(self.path_results.joinpath("leaderboard.csv"))
 
         print("Statistics:")
         print(self.model.sprint_statistics())
+
+        print("Show models:")
+        print(self.model.show_models())
 
         print("Best result:")
         results_df = pd.DataFrame(self.model.cv_results_)

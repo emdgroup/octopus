@@ -54,6 +54,23 @@ ls_features = ls_numbers + ls_props + ls_graph + ls_morgan_fp + ls_rd_fp
 ls_targets = ["T_SETARAM"]
 id_data = ["MATERIAL_ID"]
 
+
+# reduce constant features
+def find_constant_columns(df):
+    """Find constand columns."""
+    constant_columns = []
+    for column in df.columns:
+        if df[column].nunique() == 1:
+            constant_columns.append(column)
+    return constant_columns
+
+
+ls_features_const = find_constant_columns(data)
+# Remove constant columns from other_cols list
+print("Number of original features:", len(ls_features))
+ls_features = [col for col in ls_features if col not in ls_features_const]
+print("Number of features after removal of const. features:", len(ls_features))
+
 # pre-process data
 # there are NaNs in the target column
 target_column = data[ls_targets[0]]
@@ -98,7 +115,7 @@ config_manager = {
     # outer loop
     "outer_parallelization": True,
     # only process first outer loop experiment, for quick testing
-    "ml_only_first": True,
+    "ml_only_first": False,
 }
 
 # define processing sequence
@@ -118,7 +135,7 @@ sequence_item_1 = OctopusFullConfig(
     n_workers=5,
     # HPO
     global_hyperparameter=True,
-    n_trials=50,
+    n_trials=25,
     max_features=70,
     remove_trials=False,
 )

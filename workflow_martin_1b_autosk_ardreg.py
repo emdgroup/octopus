@@ -52,6 +52,23 @@ ls_features = ls_numbers + ls_props + ls_graph + ls_morgan_fp + ls_rd_fp
 ls_targets = ["T_SETARAM"]
 id_data = ["MATERIAL_ID"]
 
+
+# reduce constant features
+def find_constant_columns(df):
+    """Find constand columns."""
+    constant_columns = []
+    for column in df.columns:
+        if df[column].nunique() == 1:
+            constant_columns.append(column)
+    return constant_columns
+
+
+ls_features_const = find_constant_columns(data)
+# Remove constant columns from other_cols list
+print("Number of original features:", len(ls_features))
+ls_features = [col for col in ls_features if col not in ls_features_const]
+print("Number of features after removal of const. features:", len(ls_features))
+
 # pre-process data
 # there are NaNs in the target column
 target_column = data[ls_targets[0]]
@@ -81,9 +98,9 @@ data = OctoData(**data_input)
 
 # configure study
 config_study = {
-    "study_name": "20240203B_Martin_wf1b_autosk_ardreg_2h",
+    "study_name": "20240203B_Martin_wf1b_autosk_ardreg_1h",
     "output_path": "./studies/",
-    "production_mode": True,
+    "production_mode": False,
     "ml_type": "regression",
     "n_folds_outer": 7,
     "target_metric": "MAE",
@@ -96,7 +113,7 @@ config_manager = {
     # outer loop
     "outer_parallelization": True,
     # only process first outer loop experiment, for quick testing
-    "ml_only_first": False,
+    "ml_only_first": True,
 }
 
 # define processing sequence
@@ -125,6 +142,7 @@ config_sequence = [
                 "feature_preprocessor": ["no_preprocessing"],
             },
             # "ensemble_kwargs": {"ensemble_size": 1},
+            # "memory_limit": 6144,
             # "initial_configurations_via_metalearning": 0,
             # 'resampling_strategy':'holdout',
             # 'resampling_strategy_arguments':None,

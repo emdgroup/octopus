@@ -112,7 +112,7 @@ data = OctoData(**data_input)
 
 # configure study
 config_study = {
-    "study_name": "20240204A_Martin_wf2_octofull_7x5_global_ridge",
+    "study_name": "20240204A_Martin_wf2_octofull_7x6_individual_ridge",
     "output_path": "./studies/",
     "production_mode": False,
     "ml_type": "regression",
@@ -134,7 +134,7 @@ config_manager = {
 sequence_item_1 = OctopusFullConfig(
     description="step1_octofull",
     # datasplit
-    n_folds_inner=5,
+    n_folds_inner=6,
     datasplit_seed_inner=0,
     # model training
     models=["RidgeRegressor"],
@@ -146,8 +146,8 @@ sequence_item_1 = OctopusFullConfig(
     inner_parallelization=True,
     n_workers=5,
     # HPO
-    global_hyperparameter=True,
-    n_trials=50,
+    global_hyperparameter=False,
+    n_trials=25,
     max_features=70,
     remove_trials=False,
 )

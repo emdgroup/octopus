@@ -43,6 +43,7 @@ from octopus.utils import DataSplit
 # - (4) fix parallelization error
 # - (5) fix bag name
 # - (6) fix optuna experimental warning
+# - save intermediate best results to save space (see ardregression)
 # - deepchecks - https://docs.deepchecks.com/0.18/tabular/auto_checks/data_integrity/index.html
 # - outer parallelizaion can lead to very differing execution times per experiment!
 # - check that for classification only classification modules are used
@@ -70,9 +71,11 @@ from octopus.utils import DataSplit
 
 
 # TOBEDONE TRAINING
+# - variance selection threshold could be a HP, scaling before
 # - all multi target models are done separately, shap and permutation
 #   importance may not work anyways
-# - add scaling
+# - add outlier removal
+# - add scaling, as a HP?
 # - include shapley and permutation importance
 # - include dimensionality reduction
 # - include outlier elimination

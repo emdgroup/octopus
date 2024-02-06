@@ -7,6 +7,7 @@ import socket
 os.environ["OPENBLAS_NUM_THREADS"] = "1"
 import pandas as pd
 from autosklearn.metrics import mean_absolute_error
+from sklearn.preprocessing import PolynomialFeatures
 
 from octopus import OctoConfig, OctoData, OctoML
 
@@ -53,21 +54,13 @@ ls_targets = ["T_SETARAM"]
 id_data = ["MATERIAL_ID"]
 
 
-# reduce constant features
-def find_constant_columns(df):
-    """Find constand columns."""
-    constant_columns = []
-    for column in df.columns:
-        if df[column].nunique() == 1:
-            constant_columns.append(column)
-    return constant_columns
-
-
-ls_features_const = find_constant_columns(data)
-# Remove constant columns from other_cols list
-print("Number of original features:", len(ls_features))
-ls_features = [col for col in ls_features if col not in ls_features_const]
-print("Number of features after removal of const. features:", len(ls_features))
+# scaler = StandardScaler()
+# cols = ls_graph + ls_props
+# data[cols] = scaler.fit_transform(data[cols])
+# data.max().sort_values(ascending=False)
+# scaler2 = MaxAbsScaler()
+# cols = ls_numbers + ls_morgan_fp + ls_rd_fp
+# data[cols] = scaler2.fit_transform(data[cols])
 
 # pre-process data
 # there are NaNs in the target column
@@ -80,17 +73,48 @@ data_reduced = data[non_nan_targets].reset_index(drop=True)
 data_relevant = data_reduced[ls_features + ls_targets + id_data]
 assert not pd.isna(data_relevant).any().any()
 
+# add polynomial features
+data_poly_input = data_reduced[ls_numbers + ls_props + ls_graph]
+poly = PolynomialFeatures(degree=2, interaction_only=True)
+data_poly = pd.DataFrame(poly.fit_transform(data_poly_input))
+data_poly.columns = data_poly.columns.astype(str)  # column names must be string
+ls_poly = data_poly.columns.tolist()
+data_final = pd.concat(
+    [data_poly, data_reduced[ls_morgan_fp + ls_rd_fp + ls_targets + id_data]], axis=1
+)
+ls_final = ls_poly + ls_morgan_fp + ls_rd_fp
+
+
+# reduce constant features
+def find_constant_columns(df):
+    """Find constand columns."""
+    constant_columns = []
+    for column in df.columns:
+        if df[column].nunique() == 1:
+            constant_columns.append(column)
+    return constant_columns
+
+
+ls_features_const = find_constant_columns(data_final)
+# Remove constant columns from other_cols list
+print("Number of original features:", len(ls_final))
+ls_final = [col for col in ls_final if col not in ls_features_const]
+print("Number of features after removal of const. features:", len(ls_final))
+
+
 # define data_input, use data_reduced
 data_input = {
-    "data": data_reduced,
+    "data": data_final,
     "sample_id": id_data[0],
-    "target_columns": {ls_targets[0]: data_reduced[ls_targets[0]].dtype},
+    "target_columns": {ls_targets[0]: data_final[ls_targets[0]].dtype},
     "datasplit_type": "sample",
     "feature_columns": dict(),
 }
 
-for feature in ls_features:
-    data_input["feature_columns"][feature] = data_reduced[feature].dtype
+# for feature in ls_features:
+#    data_input["feature_columns"][feature] = data_reduced[feature].dtype
+for feature in ls_final:
+    data_input["feature_columns"][feature] = data_final[feature].dtype
 
 
 # create OctoData object
@@ -98,7 +122,7 @@ data = OctoData(**data_input)
 
 # configure study
 config_study = {
-    "study_name": "20240203B_Martin_wf1b_autosk_ardreg_1h",
+    "study_name": "20240206B_Martin_wf1_poly_autosk_ardreg_2h",
     "output_path": "./studies/",
     "production_mode": False,
     "ml_type": "regression",
@@ -113,7 +137,7 @@ config_manager = {
     # outer loop
     "outer_parallelization": True,
     # only process first outer loop experiment, for quick testing
-    "ml_only_first": True,
+    "ml_only_first": False,
 }
 
 # define processing sequence
@@ -122,8 +146,8 @@ config_sequence = [
         "module": "autosklearn",
         "description": "step1_autosklearn",
         "config": {
-            "time_left_for_this_task": 60 * 60,
-            "per_run_time_limit": 12 * 60,
+            "time_left_for_this_task": 120 * 60,
+            "per_run_time_limit": 20 * 60,
             "n_jobs": 1,
             "include": {
                 # regressor:[

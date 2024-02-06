@@ -8,14 +8,11 @@ import attrs
 # OPENBLASE config needs to be before pandas, autosk
 # os.environ["OPENBLAS_NUM_THREADS"] = "1"
 import pandas as pd
+from sklearn.preprocessing import PolynomialFeatures
 
 from octopus import OctoConfig, OctoData, OctoML
 from octopus.modules.octofull import OctopusFullConfig
 
-# from sklearn.preprocessing import  StandardScaler
-
-
-# Conda and Host information
 print("Notebook kernel is running on server:", socket.gethostname())
 print("Conda environment on server:", os.environ["CONDA_DEFAULT_ENV"])
 # show directory name
@@ -66,23 +63,6 @@ id_data = ["MATERIAL_ID"]
 # cols = ls_numbers + ls_morgan_fp + ls_rd_fp
 # data[cols] = scaler2.fit_transform(data[cols])
 
-
-# reduce constant features
-def find_constant_columns(df):
-    """Find constand columns."""
-    constant_columns = []
-    for column in df.columns:
-        if df[column].nunique() == 1:
-            constant_columns.append(column)
-    return constant_columns
-
-
-ls_features_const = find_constant_columns(data)
-# Remove constant columns from other_cols list
-print("Number of original features:", len(ls_features))
-ls_features = [col for col in ls_features if col not in ls_features_const]
-print("Number of features after removal of const. features:", len(ls_features))
-
 # pre-process data
 # there are NaNs in the target column
 target_column = data[ls_targets[0]]
@@ -94,17 +74,48 @@ data_reduced = data[non_nan_targets].reset_index(drop=True)
 data_relevant = data_reduced[ls_features + ls_targets + id_data]
 assert not pd.isna(data_relevant).any().any()
 
+# add polynomial features
+data_poly_input = data_reduced[ls_numbers + ls_props + ls_graph]
+poly = PolynomialFeatures(degree=2, interaction_only=True)
+data_poly = pd.DataFrame(poly.fit_transform(data_poly_input))
+data_poly.columns = data_poly.columns.astype(str)  # column names must be string
+ls_poly = data_poly.columns.tolist()
+data_final = pd.concat(
+    [data_poly, data_reduced[ls_morgan_fp + ls_rd_fp + ls_targets + id_data]], axis=1
+)
+ls_final = ls_poly + ls_morgan_fp + ls_rd_fp
+
+
+# reduce constant features
+def find_constant_columns(df):
+    """Find constand columns."""
+    constant_columns = []
+    for column in df.columns:
+        if df[column].nunique() == 1:
+            constant_columns.append(column)
+    return constant_columns
+
+
+ls_features_const = find_constant_columns(data_final)
+# Remove constant columns from other_cols list
+print("Number of original features:", len(ls_final))
+ls_final = [col for col in ls_final if col not in ls_features_const]
+print("Number of features after removal of const. features:", len(ls_final))
+
+
 # define data_input, use data_reduced
 data_input = {
-    "data": data_reduced,
+    "data": data_final,
     "sample_id": id_data[0],
-    "target_columns": {ls_targets[0]: data_reduced[ls_targets[0]].dtype},
+    "target_columns": {ls_targets[0]: data_final[ls_targets[0]].dtype},
     "datasplit_type": "sample",
     "feature_columns": dict(),
 }
 
-for feature in ls_features:
-    data_input["feature_columns"][feature] = data_reduced[feature].dtype
+# for feature in ls_features:
+#    data_input["feature_columns"][feature] = data_reduced[feature].dtype
+for feature in ls_final:
+    data_input["feature_columns"][feature] = data_final[feature].dtype
 
 
 # create OctoData object
@@ -112,7 +123,7 @@ data = OctoData(**data_input)
 
 # configure study
 config_study = {
-    "study_name": "20240204A_Martin_wf2_octofull_7x6_individual_ridge",
+    "study_name": "20240207A_Martin_wf2_octofull_7x6_poly_individual_ridge",
     "output_path": "./studies/",
     "production_mode": False,
     "ml_type": "regression",

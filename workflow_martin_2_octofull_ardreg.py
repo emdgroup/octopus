@@ -100,7 +100,7 @@ data = OctoData(**data_input)
 
 # configure study
 config_study = {
-    "study_name": "20240204A_Martin_wf2_octofull_7x5_global_ardreg",
+    "study_name": "20240206B_Martin_wf2_octofull_7x5_individual_ardreg",
     "output_path": "./studies/",
     "production_mode": False,
     "ml_type": "regression",
@@ -134,7 +134,7 @@ sequence_item_1 = OctopusFullConfig(
     inner_parallelization=True,
     n_workers=5,
     # HPO
-    global_hyperparameter=True,
+    global_hyperparameter=False,
     n_trials=25,
     max_features=70,
     remove_trials=False,

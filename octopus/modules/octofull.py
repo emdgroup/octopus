@@ -20,7 +20,7 @@ from sklearn.metrics import (
     r2_score,
     roc_auc_score,
 )
-from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import MinMaxScaler
 
 from octopus.experiment import OctoExperiment
 from octopus.models.config import model_inventory
@@ -575,7 +575,7 @@ class Training:
         return self.data_test[self.target_assignments.values()]
 
     def __attrs_post_init__(self):
-        self.scaler = StandardScaler()
+        self.scaler = MinMaxScaler()
 
     # perform:
     # (1) dim_reduction
@@ -641,9 +641,9 @@ class Training:
             #    x_train_scaled
             # )
             self.predictions["train"][columns] = self.model.predict_proba(self.x_train)
-            # self.predictions["dev"][columns]=self.model.predict_proba(x_dev_scaled)
+            # self.predictions["dev"][columns] = self.model.predict_proba(x_dev_scaled)
             self.predictions["dev"][columns] = self.model.predict_proba(self.x_dev)
-            # self.predictions["test"][columns]=self.model.predict_proba(x_test_scaled)
+            # self.predictions["test"][columns] =self.model.predict_proba(x_test_scaled)
             self.predictions["test"][columns] = self.model.predict_proba(self.x_test)
 
         # missing: other feature importance methods

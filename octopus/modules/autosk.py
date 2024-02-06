@@ -112,24 +112,42 @@ class Autosklearn:
         )
         print("fitting completed")
 
-        # for debugging, why jobs crashed, etc....
-        # print('AutoSk Debug info',self.model.automl_.runhistory_.data)
+        # save debug info - interesting in case of crashes
+        with open(
+            self.path_results.joinpath("debug_info.txt"), "w", encoding="utf-8"
+        ) as text_file:
+            print(self.model.automl_.runhistory_.data, file=text_file)
 
-        # print('Show models:')
-        # pprint(self.model.show_models(), indent=4)
-
-        print("Leaderboard:")
+        # save leaderboard
         leaderboard = self.model.leaderboard(
             detailed=True,
         )
-        print(leaderboard)
         leaderboard.to_csv(self.path_results.joinpath("leaderboard.csv"))
 
-        print("Statistics:")
-        print(self.model.sprint_statistics())
+        # save detailed model info with all parameters
+        models = self.model.show_models()
+        model_configs = dict()
+        for key in models.keys():
+            sel_model = models[key]
+            model_id = sel_model["model_id"]
+            model_dict = dict(self.model.automl_.runhistory_.ids_config[model_id])
+            model_dict["model_id"] = model_id
+            model_dict["rank"] = sel_model["rank"]
+            model_dict["ensemble_weight"] = sel_model["ensemble_weight"]
+            model_configs[str(key)] = model_dict
+        with open(
+            self.path_results.joinpath("model_configs.json"), "w", encoding="utf-8"
+        ) as f:
+            json.dump(model_configs, f, default=int)
 
-        print("Show models:")
-        print(self.model.show_models())
+        # show and save model statistics
+        print("Statistics:")
+        statistics = self.model.sprint_statistics()
+        print(statistics)
+        with open(
+            self.path_results.joinpath("model_stats.txt"), "w", encoding="utf-8"
+        ) as text_file:
+            print(statistics, file=text_file)
 
         print("Best result:")
         results_df = pd.DataFrame(self.model.cv_results_)

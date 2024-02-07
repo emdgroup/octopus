@@ -17,21 +17,25 @@ from sklearn.metrics import mean_absolute_error
 from octopus.experiment import OctoExperiment
 
 # TOBEDONE:
-# - inspect data-preprocessinf, feature-processing:
-#   https://github.com/automl/auto-sklearn/issues/1633
-# - selection of autosk metric based on octoconfig,
+# - (1) selection of autosk metric based on octoconfig,
 #    then no need to import autosk in workflow
-# - saving of results
-# - crash of two experiments in 2hour run! 7x6 nCV Martin
+# - (2) check config regarding available CPUs
+# - (3) save feature importances in experiment
+# - (4) use defined properties in predict function
+# - (5) autosklearn refit() functionality
+# - (6) check what other functionality from autosk is missing
+# - turn off data preprocessing:
+#   https://automl.github.io/auto-sklearn/development/examples/
+#   80_extending/example_extending_data_preprocessor.html
+#   #sphx-glr-examples-80-extending-example-extending-data-preprocessor-py
 # - openblas issue: export OPENBLAS_NUM_THREADS=1 (set in terminal)
 #   check: https://stackoverflow.com/questions/30791550/limit-number-of-threads-in-numpy
 #   try to set in the code, maybe in manager
 #   https://superfastpython.com/numpy-number-blas-threads/
 #   #Need_to_Configure_the_Number_of_Threads_Used_By_BLAS
 #   it needs to be set before Autosk is imported, tests needed
-# - check config regardning available CPUs
-# - implement that predictions are done on the reduced features
-# - autosklearn refit() functionality
+
+# Notes:
 # - autosklearn in version 0.15 requires numpy==1.23.5, otherwise some jobs will fail
 
 

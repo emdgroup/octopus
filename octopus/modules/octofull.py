@@ -37,13 +37,15 @@ from octopus.utils import DataSplit
 # - check module type
 
 # TOBEDONE
-# - (1) delete trials after completion? add configuration
-# - (2) check_resources: consider real n_jobs parameter
-# - (3) implement survival model
-# - (4) fix parallelization error
-# - (5) fix bag name
-# - (6) fix optuna experimental warning
-# - save intermediate best results to save space (see ardregression)
+# - (1) training should a get compelte config that can be store in optuna.db
+# - (2) save intermediate best results to save space (see ardregression)
+# - (3) delete trials after completion? add configuration
+# - (4) check_resources: consider real n_jobs parameter
+# - (5) implement survival model
+# - (6) fix parallelization error
+# - (7) fix bag name
+# - (8) fix optuna experimental warning
+# - automatically remove features with a single value! and provide user feedback
 # - deepchecks - https://docs.deepchecks.com/0.18/tabular/auto_checks/data_integrity/index.html
 # - outer parallelizaion can lead to very differing execution times per experiment!
 # - check that for classification only classification modules are used

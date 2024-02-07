@@ -5,17 +5,72 @@ import socket
 
 # OPENBLASE config needs to be before pandas, autosk
 os.environ["OPENBLAS_NUM_THREADS"] = "1"
+from pprint import pprint
+from typing import Optional
+
+import autosklearn.classification
+import autosklearn.pipeline.components.data_preprocessing
 import pandas as pd
+from autosklearn.askl_typing import FEAT_TYPE_TYPE
 from autosklearn.metrics import mean_absolute_error
+from autosklearn.pipeline.components.base import AutoSklearnPreprocessingAlgorithm
+from autosklearn.pipeline.constants import DENSE, INPUT, SPARSE, UNSIGNED_DATA
+from ConfigSpace.configuration_space import ConfigurationSpace
 from sklearn.preprocessing import PolynomialFeatures
 
 from octopus import OctoConfig, OctoData, OctoML
+
+
+class NoPreprocessing(AutoSklearnPreprocessingAlgorithm):
+    """Noprepro."""
+
+    def __init__(self, **kwargs):
+        """Preprocessors does not change the data."""
+        # Some internal checks makes sure parameters are set
+        for key, val in kwargs.items():
+            setattr(self, key, val)
+
+    def fit(self, X, Y=None):
+        """Fit."""
+        return self
+
+    def transform(self, X):
+        """Transform."""
+        return X
+
+    @staticmethod
+    def get_properties(dataset_properties=None):
+        """Get properites."""
+        return {
+            "shortname": "NoPreprocessing",
+            "name": "NoPreprocessing",
+            "handles_regression": True,
+            "handles_classification": True,
+            "handles_multiclass": True,
+            "handles_multilabel": True,
+            "handles_multioutput": True,
+            "is_deterministic": True,
+            "input": (SPARSE, DENSE, UNSIGNED_DATA),
+            "output": (INPUT,),
+        }
+
+    @staticmethod
+    def get_hyperparameter_search_space(
+        feat_type: Optional[FEAT_TYPE_TYPE] = None, dataset_properties=None
+    ):
+        """Get hp search space."""
+        return ConfigurationSpace()  # Return an empty configuration as there is None
+
+
+# Add NoPreprocessing component to auto-sklearn.
+autosklearn.pipeline.components.data_preprocessing.add_preprocessor(NoPreprocessing)
 
 # Conda and Host information
 print("Notebook kernel is running on server:", socket.gethostname())
 print("Conda environment on server:", os.environ["CONDA_DEFAULT_ENV"])
 # show directory name
 print("Working directory: ", os.getcwd())
+# show directory name
 
 
 # load test dataset from Martin from csv and perform pre-processing
@@ -122,7 +177,7 @@ data = OctoData(**data_input)
 
 # configure study
 config_study = {
-    "study_name": "20240206B_Martin_wf1_poly_autosk_ardreg_2h",
+    "study_name": "20240207C_Martin_wf1_poly_autosk_ardreg_nodatapre_1h",
     "output_path": "./studies/",
     "production_mode": False,
     "ml_type": "regression",
@@ -147,8 +202,8 @@ config_sequence = [
         "module": "autosklearn",
         "description": "step1_autosklearn",
         "config": {
-            "time_left_for_this_task": 120 * 60,
-            "per_run_time_limit": 20 * 60,
+            "time_left_for_this_task": 60 * 60,
+            "per_run_time_limit": 12 * 60,
             "n_jobs": 1,
             "include": {
                 # regressor:[
@@ -162,11 +217,12 @@ config_sequence = [
                 # "libsvm_svr",
                 # "mlp",
                 # "random_forest",]
+                "data_preprocessor": ["NoPreprocessing"],
                 "regressor": ["ard_regression"],
                 # ["no_preprocessing","polynomial","select_percentile_classification"],
                 "feature_preprocessor": ["no_preprocessing"],
             },
-            # "ensemble_kwargs": {"ensemble_size": 1},
+            "ensemble_kwargs": {"ensemble_size": 1},
             # "memory_limit": 6144,
             # "initial_configurations_via_metalearning": 0,
             # 'resampling_strategy':'holdout',

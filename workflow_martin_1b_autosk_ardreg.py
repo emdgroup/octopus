@@ -53,15 +53,6 @@ ls_features = ls_numbers + ls_props + ls_graph + ls_morgan_fp + ls_rd_fp
 ls_targets = ["T_SETARAM"]
 id_data = ["MATERIAL_ID"]
 
-
-# scaler = StandardScaler()
-# cols = ls_graph + ls_props
-# data[cols] = scaler.fit_transform(data[cols])
-# data.max().sort_values(ascending=False)
-# scaler2 = MaxAbsScaler()
-# cols = ls_numbers + ls_morgan_fp + ls_rd_fp
-# data[cols] = scaler2.fit_transform(data[cols])
-
 # pre-process data
 # there are NaNs in the target column
 target_column = data[ls_targets[0]]
@@ -87,7 +78,7 @@ ls_final = ls_poly + ls_morgan_fp + ls_rd_fp
 
 # reduce constant features
 def find_constant_columns(df):
-    """Find constand columns."""
+    """Find constant columns."""
     constant_columns = []
     for column in df.columns:
         if df[column].nunique() == 1:

@@ -5,6 +5,7 @@ import socket
 
 # OPENBLASE config needs to be before pandas, autosk
 os.environ["OPENBLAS_NUM_THREADS"] = "1"
+from pprint import pprint
 from typing import Optional
 
 import autosklearn.classification
@@ -24,6 +25,7 @@ class NoPreprocessing(AutoSklearnPreprocessingAlgorithm):
     """Noprepro."""
 
     def __init__(self, **kwargs):
+        """Preprocessors does not change the data."""
         # Some internal checks makes sure parameters are set
         for key, val in kwargs.items():
             setattr(self, key, val)
@@ -38,7 +40,7 @@ class NoPreprocessing(AutoSklearnPreprocessingAlgorithm):
 
     @staticmethod
     def get_properties(dataset_properties=None):
-        """Get properties."""
+        """Get properites."""
         return {
             "shortname": "NoPreprocessing",
             "name": "NoPreprocessing",
@@ -131,7 +133,7 @@ ls_final = ls_poly + ls_morgan_fp + ls_rd_fp
 
 # reduce constant features
 def find_constant_columns(df):
-    """Find constant columns."""
+    """Find constand columns."""
     constant_columns = []
     for column in df.columns:
         if df[column].nunique() == 1:
@@ -166,7 +168,7 @@ data = OctoData(**data_input)
 
 # configure study
 config_study = {
-    "study_name": "20240207C_Martin_wf1_poly_autosk_ardreg_nodatapre_1h",
+    "study_name": "20240208a_Martin_wf1_poly_autosk_ardreg_nodatapre_nometa_1h",
     "output_path": "./studies/",
     "production_mode": False,
     "ml_type": "regression",
@@ -206,14 +208,16 @@ config_sequence = [
                 # "libsvm_svr",
                 # "mlp",
                 # "random_forest",]
-                "data_preprocessor": ["NoPreprocessing"],
+                "data_preprocessor": ["NoPreprocessing"],  # non data preprocessing
                 "regressor": ["ard_regression"],
                 # ["no_preprocessing","polynomial","select_percentile_classification"],
-                "feature_preprocessor": ["no_preprocessing"],
+                "feature_preprocessor": [
+                    "no_preprocessing"
+                ],  # no feature preprocessing
             },
-            "ensemble_kwargs": {"ensemble_size": 1},
+            "ensemble_kwargs": {"ensemble_size": 1},  # no ensembling
             # "memory_limit": 6144,
-            # "initial_configurations_via_metalearning": 0,
+            "initial_configurations_via_metalearning": 0,  # no meta learning
             # 'resampling_strategy':'holdout',
             # 'resampling_strategy_arguments':None,
             "resampling_strategy": "cv",

@@ -8,6 +8,7 @@ import attrs
 # OPENBLASE config needs to be before pandas, autosk
 # os.environ["OPENBLAS_NUM_THREADS"] = "1"
 import pandas as pd
+from sklearn.preprocessing import PolynomialFeatures
 
 from octopus import OctoConfig, OctoData, OctoML
 from octopus.modules.octofull import OctopusFullConfig
@@ -54,10 +55,32 @@ ls_features = ls_numbers + ls_props + ls_graph + ls_morgan_fp + ls_rd_fp
 ls_targets = ["T_SETARAM"]
 id_data = ["MATERIAL_ID"]
 
+# pre-process data
+# there are NaNs in the target column
+target_column = data[ls_targets[0]]
+non_nan_targets = ~pd.isna(target_column)  # pylint: disable=E1130
+target_column = target_column[non_nan_targets]
+print("Number of samples with target values:", len(target_column))
+data_reduced = data[non_nan_targets].reset_index(drop=True)
+# check for NaNs
+data_relevant = data_reduced[ls_features + ls_targets + id_data]
+assert not pd.isna(data_relevant).any().any()
+
+# add polynomial features
+data_poly_input = data_reduced[ls_numbers + ls_props + ls_graph]
+poly = PolynomialFeatures(degree=2, interaction_only=True)
+data_poly = pd.DataFrame(poly.fit_transform(data_poly_input))
+data_poly.columns = data_poly.columns.astype(str)  # column names must be string
+ls_poly = data_poly.columns.tolist()
+data_final = pd.concat(
+    [data_poly, data_reduced[ls_morgan_fp + ls_rd_fp + ls_targets + id_data]], axis=1
+)
+ls_final = ls_poly + ls_morgan_fp + ls_rd_fp
+
 
 # reduce constant features
 def find_constant_columns(df):
-    """Find constand columns."""
+    """Find constant columns."""
     constant_columns = []
     for column in df.columns:
         if df[column].nunique() == 1:
@@ -100,7 +123,7 @@ data = OctoData(**data_input)
 
 # configure study
 config_study = {
-    "study_name": "20240206B_Martin_wf2_octofull_7x5_individual_ardreg",
+    "study_name": "20240208C_Martin_wf2_octofull_7x6_individual_ardreg",
     "output_path": "./studies/",
     "production_mode": False,
     "ml_type": "regression",
@@ -122,7 +145,7 @@ config_manager = {
 sequence_item_1 = OctopusFullConfig(
     description="step1_octofull",
     # datasplit
-    n_folds_inner=5,
+    n_folds_inner=6,
     datasplit_seed_inner=0,
     # model training
     models=["ARDRegressor"],
@@ -132,12 +155,12 @@ sequence_item_1 = OctopusFullConfig(
     max_outl=0,
     # parallelization
     inner_parallelization=True,
-    n_workers=5,
+    n_workers=6,
     # HPO
     global_hyperparameter=False,
-    n_trials=25,
+    n_trials=250,
     max_features=70,
-    remove_trials=False,
+    save_trials=False,
 )
 
 config_sequence = [attrs.asdict(sequence_item_1)]

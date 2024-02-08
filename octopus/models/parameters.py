@@ -105,6 +105,7 @@ ridge_reg = {
     "default": [
         ("float", {"name": "alpha", "low": 1e-2, "high": 1e5, "log": True}),
         ("categorical", {"name": "fit_intercept", "choices": [True, False]}),
+        ("fixed", {"name": "solver", "value": "svd"}),
     ],
     "translate": {
         "n_jobs": "NA",  # NA=ignore, model does not support this key
@@ -122,6 +123,7 @@ ard_reg = {
         ("float", {"name": "threshold_lambda", "low": 1e3, "high": 1e5, "log": True}),
         ("float", {"name": "tol", "low": 1e-5, "high": 1e-1, "log": True}),
         ("categorical", {"name": "fit_intercept", "choices": [True, False]}),
+        # ("fixed", {"name": "copy_X", "value": False}),
     ],
     "translate": {
         "n_jobs": "NA",  # NA=ignore, model does not support this key

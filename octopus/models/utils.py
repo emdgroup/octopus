@@ -20,7 +20,7 @@ def create_trialparams_from_config(trial, hp_settings):
             params[config["name"]] = trial.suggest_categorical(
                 name=config["name"], choices=config["choices"]
             )
-        elif dtype == "fixed":
+        elif dtype == "fixed":  # overwrite default model values
             params[config["name"]] = config["value"]
         else:
             raise ValueError("HP type not supported")

@@ -55,14 +55,6 @@ ls_targets = ["T_SETARAM"]
 id_data = ["MATERIAL_ID"]
 
 
-# scaler = StandardScaler()
-# cols = ls_graph + ls_props
-# data[cols] = scaler.fit_transform(data[cols])
-# data.max().sort_values(ascending=False)
-# scaler2 = MaxAbsScaler()
-# cols = ls_numbers + ls_morgan_fp + ls_rd_fp
-# data[cols] = scaler2.fit_transform(data[cols])
-
 # pre-process data
 # there are NaNs in the target column
 target_column = data[ls_targets[0]]
@@ -88,7 +80,7 @@ ls_final = ls_poly + ls_morgan_fp + ls_rd_fp
 
 # reduce constant features
 def find_constant_columns(df):
-    """Find constand columns."""
+    """Find constant columns."""
     constant_columns = []
     for column in df.columns:
         if df[column].nunique() == 1:
@@ -123,7 +115,7 @@ data = OctoData(**data_input)
 
 # configure study
 config_study = {
-    "study_name": "20240207A_Martin_wf2_octofull_7x6_poly_individual_ridge",
+    "study_name": "20240208B_Martin_wf2_octofull_7x6_poly_individual_ridge",
     "output_path": "./studies/",
     "production_mode": False,
     "ml_type": "regression",
@@ -138,7 +130,7 @@ config_manager = {
     # outer loop
     "outer_parallelization": True,
     # only process first outer loop experiment, for quick testing
-    "ml_only_first": False,
+    "ml_only_first": True,
 }
 
 # define processing sequence
@@ -158,9 +150,9 @@ sequence_item_1 = OctopusFullConfig(
     n_workers=5,
     # HPO
     global_hyperparameter=False,
-    n_trials=25,
+    n_trials=5,
     max_features=70,
-    remove_trials=False,
+    save_trials=False,
 )
 
 config_sequence = [attrs.asdict(sequence_item_1)]

@@ -13,6 +13,7 @@ from sklearn.preprocessing import PolynomialFeatures
 from octopus import OctoConfig, OctoData, OctoML
 from octopus.modules.octofull import OctopusFullConfig
 
+# Conda and Host information
 print("Notebook kernel is running on server:", socket.gethostname())
 print("Conda environment on server:", os.environ["CONDA_DEFAULT_ENV"])
 # show directory name
@@ -54,7 +55,6 @@ ls_features = ls_numbers + ls_props + ls_graph + ls_morgan_fp + ls_rd_fp
 ls_targets = ["T_SETARAM"]
 id_data = ["MATERIAL_ID"]
 
-
 # pre-process data
 # there are NaNs in the target column
 target_column = data[ls_targets[0]]
@@ -88,26 +88,34 @@ def find_constant_columns(df):
     return constant_columns
 
 
-ls_features_const = find_constant_columns(data_final)
+ls_features_const = find_constant_columns(data)
 # Remove constant columns from other_cols list
-print("Number of original features:", len(ls_final))
-ls_final = [col for col in ls_final if col not in ls_features_const]
-print("Number of features after removal of const. features:", len(ls_final))
+print("Number of original features:", len(ls_features))
+ls_features = [col for col in ls_features if col not in ls_features_const]
+print("Number of features after removal of const. features:", len(ls_features))
 
+# pre-process data
+# there are NaNs in the target column
+target_column = data[ls_targets[0]]
+non_nan_targets = ~pd.isna(target_column)  # pylint: disable=E1130
+target_column = target_column[non_nan_targets]
+print("Number of samples with target values:", len(target_column))
+data_reduced = data[non_nan_targets].reset_index(drop=True)
+# check for NaNs
+data_relevant = data_reduced[ls_features + ls_targets + id_data]
+assert not pd.isna(data_relevant).any().any()
 
 # define data_input, use data_reduced
 data_input = {
-    "data": data_final,
+    "data": data_reduced,
     "sample_id": id_data[0],
-    "target_columns": {ls_targets[0]: data_final[ls_targets[0]].dtype},
+    "target_columns": {ls_targets[0]: data_reduced[ls_targets[0]].dtype},
     "datasplit_type": "sample",
     "feature_columns": dict(),
 }
 
-# for feature in ls_features:
-#    data_input["feature_columns"][feature] = data_reduced[feature].dtype
-for feature in ls_final:
-    data_input["feature_columns"][feature] = data_final[feature].dtype
+for feature in ls_features:
+    data_input["feature_columns"][feature] = data_reduced[feature].dtype
 
 
 # create OctoData object
@@ -115,7 +123,7 @@ data = OctoData(**data_input)
 
 # configure study
 config_study = {
-    "study_name": "20240208B_Martin_wf2_octofull_7x6_poly_individual_ridge",
+    "study_name": "20240210A_Martin_wf2_octofull_7x6_global_ardreg_serial",
     "output_path": "./studies/",
     "production_mode": False,
     "ml_type": "regression",
@@ -128,9 +136,9 @@ config_study = {
 # configure manager
 config_manager = {
     # outer loop
-    "outer_parallelization": True,
+    "outer_parallelization": False,
     # only process first outer loop experiment, for quick testing
-    "ml_only_first": True,
+    "ml_only_first": False,
 }
 
 # define processing sequence
@@ -140,17 +148,18 @@ sequence_item_1 = OctopusFullConfig(
     n_folds_inner=6,
     datasplit_seed_inner=0,
     # model training
-    models=["RidgeRegressor"],
+    models=["ARDRegressor"],
     model_seed=0,
     n_jobs=1,
     dim_red_methods=[""],
     max_outl=0,
     # parallelization
     inner_parallelization=True,
-    n_workers=5,
+    n_workers=6,
     # HPO
-    global_hyperparameter=False,
-    n_trials=5,
+    resume_optimization=False,
+    global_hyperparameter=True,
+    n_trials=30,
     max_features=70,
     save_trials=False,
 )

@@ -40,7 +40,7 @@ class NoPreprocessing(AutoSklearnPreprocessingAlgorithm):
 
     @staticmethod
     def get_properties(dataset_properties=None):
-        """Get properites."""
+        """Get properties."""
         return {
             "shortname": "NoPreprocessing",
             "name": "NoPreprocessing",
@@ -133,7 +133,7 @@ ls_final = ls_poly + ls_morgan_fp + ls_rd_fp
 
 # reduce constant features
 def find_constant_columns(df):
-    """Find constand columns."""
+    """Find constant columns."""
     constant_columns = []
     for column in df.columns:
         if df[column].nunique() == 1:

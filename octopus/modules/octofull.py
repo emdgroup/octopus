@@ -4,6 +4,7 @@ import concurrent.futures
 import json
 import pickle
 import shutil
+import warnings
 from pathlib import Path
 from statistics import mean
 from typing import List
@@ -11,6 +12,7 @@ from typing import List
 import optuna
 import pandas as pd
 from attrs import define, field, validators
+from optuna.samplers._tpe.sampler import ExperimentalWarning
 from sklearn.metrics import (
     accuracy_score,
     balanced_accuracy_score,
@@ -31,16 +33,32 @@ from octopus.modules.utils import optuna_direction
 # from sklearn.inspection import permutation_importance
 from octopus.utils import DataSplit
 
+# ignore two Optuna experimental warnings
+# !may be specific to optuna version due to sline number
+warnings.filterwarnings(
+    "ignore",
+    category=ExperimentalWarning,
+    module="optuna.samplers._tpe.sampler",
+    lineno=319,
+)
+warnings.filterwarnings(
+    "ignore",
+    category=ExperimentalWarning,
+    module="optuna.samplers._tpe.sampler",
+    lineno=330,
+)
 # TOBEDONE BASE
 # - check module type
 
-# TOBEDONE
+# TOBEDONE OCTOFULL
+# - (0) change production mode: request user confirmation when directory exists
+# - (1) change my_only_first to specify experiment number. This would allow us
+#       to train experiment one by one. give experiment fixed order.
+# - (2) use screen for training
 # - (1) do we need n_workers?
 # - (5) implement survival model
-# - (6) fix parallelization error
 # - (7) fix bag name - better study name for global studies
 #   (problem with large k_outer -> "0-89")
-# - (8) fix optuna experimental warning
 # - automatically remove features with a single value! and provide user feedback
 # - deepchecks - https://docs.deepchecks.com/0.18/tabular/auto_checks/data_integrity/index.html
 # - outer parallelizaion can lead to very differing execution times per experiment!
@@ -54,14 +72,13 @@ from octopus.utils import DataSplit
 
 
 # TOBEDONE OPTUNA
-# - check "Exception occurred with execution task", global hp optimization
 # - Enqueue trials - how to implement that?
 # - Bring optuna parallelization to the next level (process based!):
 #   (a) multiple parallel optuna optimization instances per split in
 #       run_individualhp_optimization for individual split HP optimizations
 #   (b) multiple parallel executions of self.run_individualhp_optimization()
 #       to parallelize the optuna study with global HPs
-# - stop Optuna trials early, pruning Trials
+# - pruning Trials (parallel execution,check first for pruning)
 
 
 # TOBEDONE TRAINING
@@ -119,14 +136,17 @@ class OctoFull:
             num_folds=self.experiment.ml_config["n_folds_inner"],
             stratification_col=self.experiment.stratification_column,
         ).get_datasplits()
+        # if we don't want to resume optimization:
         # delete directories /trials /optuna /results to ensure clean state
         # of module when restarted, required for parallel optuna runs
         # as optuna.create(...,load_if_exists=True)
         # create directory if it does not exist
         for directory in [self.path_optuna, self.path_trials, self.path_results]:
-            if directory.exists():
-                shutil.rmtree(directory)
+            if not self.experiment.ml_config["resume_optimization"]:
+                if directory.exists():
+                    shutil.rmtree(directory)
             directory.mkdir(parents=True, exist_ok=True)
+
         # check if there is a mismatch between configured resources
         # and resources assigned to the experiment
         self.check_resources()
@@ -367,6 +387,8 @@ class OctoFull:
             )
         )
 
+        return True
+
     def create_trainings_and_bag(self, splits, config):
         """Create trainings from splits and bundle in bag."""
         trainings = list()
@@ -578,7 +600,7 @@ class Training:
     # configuration for training
     config_training: dict = field(validator=[validators.instance_of(dict)])
     # training output
-    model = field(init=False)
+    model = field(default=None)
     predictions: dict = field(default=dict(), validator=[validators.instance_of(dict)])
     # scaler
     scaler = field(init=False)
@@ -661,7 +683,6 @@ class Training:
         # x_train_scaled = self.scaler.fit_transform(self.x_train)
         # x_dev_scaled = self.scaler.transform(self.x_dev)
         # x_test_scaled = self.scaler.transform(self.x_test)
-
         self.model = model_inventory[self.ml_model_type](**self.ml_model_params)
 
         if len(self.target_assignments) == 1:
@@ -710,6 +731,7 @@ class Training:
         #    self.model, X=x_dev_scaled, y=self.y_dev, n_repeats=10, random_state=0
         # )
         # print(result)
+        return self
 
     def to_pickle(self, path):
         """Save training."""
@@ -746,18 +768,23 @@ class TrainingsBag:
                 max_workers=self.num_workers,
             ) as executor:
                 futures = []
+                train_results = []
                 for i in self.trainings:
                     try:
-                        future = executor.submit(i.run_training())
+                        future = executor.submit(i.run_training)
                         futures.append(future)
                     except Exception as e:  # pylint: disable=broad-except
                         print(f"Exception occurred while submitting task: {e}")
                 for future in concurrent.futures.as_completed(futures):
                     try:
-                        _ = future.result()
+                        train_results.append(future.result())
                         print("Inner parallel training completed")
                     except Exception as e:  # pylint: disable=broad-except
                         print(f"Exception occurred while executing task: {e}")
+                        print(f"Exception: {type(e).__name__}")
+                # replace trainings with processed trainings
+                # order in self.trainings may change!
+                self.trainings = train_results
 
         else:
             for training in self.trainings:
@@ -910,3 +937,8 @@ class OctopusFullConfig:
 
     save_trials: bool = field(validator=[validators.instance_of(bool)], default=False)
     """Save trials (bags)."""
+
+    resume_optimization: bool = field(
+        validator=[validators.instance_of(bool)], default=False
+    )
+    """Resume HPO, use existing optuna.db, don't delete optuna.de"""

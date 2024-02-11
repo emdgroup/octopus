@@ -45,11 +45,11 @@ dependencies:
   - brotli-python=1.1.0=py38h17151c0_1
   - bzip2=1.0.8=hd590300_5
   - c-ares=1.24.0=hd590300_0
-  - ca-certificates=2023.11.17=hbcca054_0
+  - ca-certificates=2024.2.2=hbcca054_0
   - cached-property=1.5.2=hd8ed1ab_1
   - cached_property=1.5.2=pyha770c72_1
   - cachetools=5.3.2=pyhd8ed1ab_0
-  - certifi=2023.11.17=pyhd8ed1ab_0
+  - certifi=2024.2.2=pyhd8ed1ab_0
   - cffi=1.16.0=py38h6d47a40_0
   - cfgv=3.3.1=pyhd8ed1ab_0
   - charset-normalizer=3.3.2=pyhd8ed1ab_0
@@ -213,7 +213,7 @@ dependencies:
   - numba=0.58.1=py38h4144172_0
   - numpy=1.23.5=py38h7042d01_0
   - openjpeg=2.5.0=h488ebb8_3
-  - openssl=3.2.0=hd590300_1
+  - openssl=3.2.1=hd590300_0
   - optuna=3.5.0=pyhd8ed1ab_0
   - orc=1.9.2=h4b38347_0
   - overrides=7.4.0=pyhd8ed1ab_0

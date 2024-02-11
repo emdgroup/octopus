@@ -8,10 +8,12 @@ import attrs
 # OPENBLASE config needs to be before pandas, autosk
 # os.environ["OPENBLAS_NUM_THREADS"] = "1"
 import pandas as pd
-from sklearn.preprocessing import PolynomialFeatures
 
 from octopus import OctoConfig, OctoData, OctoML
 from octopus.modules.octofull import OctopusFullConfig
+
+# from sklearn.preprocessing import PolynomialFeatures
+
 
 print("Notebook kernel is running on server:", socket.gethostname())
 print("Conda environment on server:", os.environ["CONDA_DEFAULT_ENV"])
@@ -67,15 +69,15 @@ data_relevant = data_reduced[ls_features + ls_targets + id_data]
 assert not pd.isna(data_relevant).any().any()
 
 # add polynomial features
-data_poly_input = data_reduced[ls_numbers + ls_props + ls_graph]
-poly = PolynomialFeatures(degree=2, interaction_only=True)
-data_poly = pd.DataFrame(poly.fit_transform(data_poly_input))
-data_poly.columns = data_poly.columns.astype(str)  # column names must be string
-ls_poly = data_poly.columns.tolist()
-data_final = pd.concat(
-    [data_poly, data_reduced[ls_morgan_fp + ls_rd_fp + ls_targets + id_data]], axis=1
-)
-ls_final = ls_poly + ls_morgan_fp + ls_rd_fp
+# data_poly_input = data_reduced[ls_numbers + ls_props + ls_graph]
+# poly = PolynomialFeatures(degree=2, interaction_only=True)
+# data_poly = pd.DataFrame(poly.fit_transform(data_poly_input))
+# data_poly.columns = data_poly.columns.astype(str)  # column names must be string
+# ls_poly = data_poly.columns.tolist()
+# data_final = pd.concat(
+#    [data_poly, data_reduced[ls_morgan_fp + ls_rd_fp + ls_targets + id_data]], axis=1
+# )
+# ls_final = ls_poly + ls_morgan_fp + ls_rd_fp
 
 
 # reduce constant features
@@ -88,18 +90,18 @@ def find_constant_columns(df):
     return constant_columns
 
 
-ls_features_const = find_constant_columns(data_final)
+ls_features_const = find_constant_columns(data_relevant)
 # Remove constant columns from other_cols list
-print("Number of original features:", len(ls_final))
-ls_final = [col for col in ls_final if col not in ls_features_const]
-print("Number of features after removal of const. features:", len(ls_final))
+print("Number of original features:", len(ls_features))
+ls_final = [col for col in ls_features if col not in ls_features_const]
+print("Number of f#eatures after removal of const. features:", len(ls_final))
 
 
 # define data_input, use data_reduced
 data_input = {
-    "data": data_final,
+    "data": data_relevant,
     "sample_id": id_data[0],
-    "target_columns": {ls_targets[0]: data_final[ls_targets[0]].dtype},
+    "target_columns": {ls_targets[0]: data_relevant[ls_targets[0]].dtype},
     "datasplit_type": "sample",
     "feature_columns": dict(),
 }
@@ -107,7 +109,7 @@ data_input = {
 # for feature in ls_features:
 #    data_input["feature_columns"][feature] = data_reduced[feature].dtype
 for feature in ls_final:
-    data_input["feature_columns"][feature] = data_final[feature].dtype
+    data_input["feature_columns"][feature] = data_relevant[feature].dtype
 
 
 # create OctoData object
@@ -115,7 +117,7 @@ data = OctoData(**data_input)
 
 # configure study
 config_study = {
-    "study_name": "20240210B_Martin_wf2_octofull_7x6_poly_global_ridge_serial",
+    "study_name": "20240211C_Martin_wf2_octofull_7x6_nopoly_individual_ridge",
     "output_path": "./studies/",
     "production_mode": False,
     "ml_type": "regression",
@@ -150,7 +152,7 @@ sequence_item_1 = OctopusFullConfig(
     n_workers=6,
     # HPO
     resume_optimization=False,
-    global_hyperparameter=True,
+    global_hyperparameter=False,
     n_trials=50,
     max_features=70,
     save_trials=False,

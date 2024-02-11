@@ -24,6 +24,8 @@ from octopus.experiment import OctoExperiment
 # - (4) use defined properties in predict function
 # - (5) autosklearn refit() functionality
 # - (6) check what other functionality from autosk is missing
+# - (7) understand autosk cost function!!
+#       https://github.com/automl/auto-sklearn/issues/1717
 # - turn off data preprocessing:
 #   https://automl.github.io/auto-sklearn/development/examples/
 #   80_extending/example_extending_data_preprocessor.html
@@ -34,6 +36,10 @@ from octopus.experiment import OctoExperiment
 #   https://superfastpython.com/numpy-number-blas-threads/
 #   #Need_to_Configure_the_Number_of_Threads_Used_By_BLAS
 #   it needs to be set before Autosk is imported, tests needed
+# - how to run vanilla autosklearn:
+#   ensemble_class=autosklearn.ensembles.SingleBest
+#   initial_configurations_via_metalearning=0
+#   https://automl.github.io/auto-sklearn/master/faq.html
 
 # Notes:
 # - autosklearn in version 0.15 requires numpy==1.23.5, otherwise some jobs will fail

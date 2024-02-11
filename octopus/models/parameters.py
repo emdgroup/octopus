@@ -103,12 +103,31 @@ xgboost_reg = {
 # Linear ridge regression parameter settings
 ridge_reg = {
     "default": [
-        ("float", {"name": "alpha", "low": 1e-2, "high": 1e4, "log": True}),
-        ("categorical", {"name": "fit_intercept", "categories": [True, False]}),
+        ("float", {"name": "alpha", "low": 1e-2, "high": 1e5, "log": True}),
+        ("categorical", {"name": "fit_intercept", "choices": [True, False]}),
+        ("fixed", {"name": "solver", "value": "svd"}),
     ],
     "translate": {
-        "n_jobs": "n_jobs",
+        "n_jobs": "NA",  # NA=ignore, model does not support this key
         "model_seed": "random_state",
+    },
+}
+
+# Linear ridge regression parameter settings
+ard_reg = {
+    "default": [
+        ("float", {"name": "alpha_1", "low": 1e-10, "high": 1e-3, "log": True}),
+        ("float", {"name": "alpha_2", "low": 1e-10, "high": 1e-3, "log": True}),
+        ("float", {"name": "lambda_1", "low": 1e-10, "high": 1e-3, "log": True}),
+        ("float", {"name": "lambda_2", "low": 1e-10, "high": 1e-3, "log": True}),
+        ("float", {"name": "threshold_lambda", "low": 1e3, "high": 1e5, "log": True}),
+        ("float", {"name": "tol", "low": 1e-5, "high": 1e-1, "log": True}),
+        ("categorical", {"name": "fit_intercept", "choices": [True, False]}),
+        # ("fixed", {"name": "copy_X", "value": False}),
+    ],
+    "translate": {
+        "n_jobs": "NA",  # NA=ignore, model does not support this key
+        "model_seed": "NA",  # NA=ignore, model does not support this key
     },
 }
 
@@ -120,4 +139,5 @@ parameters_inventory = {
     "XGBClassifier": xgboost_class,
     "XGBRegressor": xgboost_reg,
     "RidgeRegressor": ridge_reg,
+    "ARDRegressor": ard_reg,
 }

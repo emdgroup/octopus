@@ -1,18 +1,47 @@
 """Module: Autosklern."""
+
 try:
     import autosklearn.classification
     import autosklearn.regression
 except ImportError:
     print("Auto-Sklearn not installed in this conda environment")
 
+import json
+import shutil
+from pathlib import Path
+
 import pandas as pd
 from attrs import define, field, validators
+from sklearn.metrics import mean_absolute_error
 
 from octopus.experiment import OctoExperiment
 
+# TOBEDONE:
+# - (1) selection of autosk metric based on octoconfig,
+#    then no need to import autosk in workflow
+# - (2) check config regarding available CPUs
+# - (3) save feature importances in experiment
+# - (4) use defined properties in predict function
+# - (5) autosklearn refit() functionality
+# - (6) check what other functionality from autosk is missing
+# - (7) understand autosk cost function!!
+#       https://github.com/automl/auto-sklearn/issues/1717
+# - turn off data preprocessing:
+#   https://automl.github.io/auto-sklearn/development/examples/
+#   80_extending/example_extending_data_preprocessor.html
+#   #sphx-glr-examples-80-extending-example-extending-data-preprocessor-py
+# - openblas issue: export OPENBLAS_NUM_THREADS=1 (set in terminal)
+#   check: https://stackoverflow.com/questions/30791550/limit-number-of-threads-in-numpy
+#   try to set in the code, maybe in manager
+#   https://superfastpython.com/numpy-number-blas-threads/
+#   #Need_to_Configure_the_Number_of_Threads_Used_By_BLAS
+#   it needs to be set before Autosk is imported, tests needed
+# - how to run vanilla autosklearn:
+#   ensemble_class=autosklearn.ensembles.SingleBest
+#   initial_configurations_via_metalearning=0
+#   https://automl.github.io/auto-sklearn/master/faq.html
+
 # Notes:
-# - implement that predictions are done on the reduced features
-# - autosklearn refit() functionality
 # - autosklearn in version 0.15 requires numpy==1.23.5, otherwise some jobs will fail
 
 
@@ -24,6 +53,16 @@ class Autosklearn:
         validator=[validators.instance_of(OctoExperiment)]
     )
     model = field(init=False)
+
+    @property
+    def path_module(self) -> Path:
+        """Module path."""
+        return self.experiment.path_study.joinpath(self.experiment.path_sequence_item)
+
+    @property
+    def path_results(self) -> Path:
+        """Results path."""
+        return self.path_module.joinpath("results")
 
     @property
     def x_train(self) -> pd.DataFrame:
@@ -52,6 +91,16 @@ class Autosklearn:
         """Auto-sklearn parameters."""
         return self.experiment.ml_config["config"]
 
+    def __attrs_post_init__(self):
+        # delete directories /trials /optuna /results to ensure clean state
+        # of module when restarted, required for parallel optuna runs
+        # as optuna.create(...,load_if_exists=True)
+        # create directory if it does not exist
+        for directory in [self.path_results]:
+            if directory.exists():
+                shutil.rmtree(directory)
+            directory.mkdir(parents=True, exist_ok=True)
+
     def run_experiment(self):
         """Run experiment."""
         # overwrite tmp directory
@@ -73,17 +122,42 @@ class Autosklearn:
         )
         print("fitting completed")
 
-        # for debugging, why jobs crashed, etc....
-        # print('AutoSk Debug info',self.model.automl_.runhistory_.data)
+        # save debug info - interesting in case of crashes
+        with open(
+            self.path_results.joinpath("debug_info.txt"), "w", encoding="utf-8"
+        ) as text_file:
+            print(self.model.automl_.runhistory_.data, file=text_file)
 
-        # print('Show models:')
-        # pprint(self.model.show_models(), indent=4)
+        # save leaderboard
+        leaderboard = self.model.leaderboard(
+            detailed=True,
+        )
+        leaderboard.to_csv(self.path_results.joinpath("leaderboard.csv"))
 
-        print("Leaderboard:")
-        print(self.model.leaderboard())
+        # save detailed model info with all parameters
+        models = self.model.show_models()
+        model_configs = dict()
+        for key in models.keys():
+            sel_model = models[key]
+            model_id = sel_model["model_id"]
+            model_dict = dict(self.model.automl_.runhistory_.ids_config[model_id])
+            model_dict["model_id"] = model_id
+            model_dict["rank"] = sel_model["rank"]
+            model_dict["ensemble_weight"] = sel_model["ensemble_weight"]
+            model_configs[str(key)] = model_dict
+        with open(
+            self.path_results.joinpath("model_configs.json"), "w", encoding="utf-8"
+        ) as f:
+            json.dump(model_configs, f, default=int)
 
+        # show and save model statistics
         print("Statistics:")
-        print(self.model.sprint_statistics())
+        statistics = self.model.sprint_statistics()
+        print(statistics)
+        with open(
+            self.path_results.joinpath("model_stats.txt"), "w", encoding="utf-8"
+        ) as text_file:
+            print(statistics, file=text_file)
 
         print("Best result:")
         results_df = pd.DataFrame(self.model.cv_results_)
@@ -106,6 +180,21 @@ class Autosklearn:
             probs_df.columns = ["prob_" + str(x) for x in probs_df.columns]
             test_predictions_df = pd.concat([test_predictions_df, probs_df], axis=1)
         self.experiment.results["test_predictions_df"] = test_predictions_df
+
+        # show and save test results, MAE
+        print(
+            f"Experiment: {self.experiment.id} "
+            f"Test MAE: {mean_absolute_error(self.y_test, preds)}"
+        )
+        results_test = {
+            "experiment_id": self.experiment.id,
+            "test MAE": mean_absolute_error(self.y_test, preds),
+            # "test predictions": preds, #json error
+        }
+        with open(
+            self.path_results.joinpath("results_test.json"), "w", encoding="utf-8"
+        ) as f:
+            json.dump(results_test, f)
 
         # save model
         self.experiment.models["model_0"] = self.model

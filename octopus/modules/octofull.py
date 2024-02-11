@@ -1,7 +1,10 @@
 """OctoFull Module."""
+
 import concurrent.futures
+import json
 import pickle
 import shutil
+import warnings
 from pathlib import Path
 from statistics import mean
 from typing import List
@@ -9,6 +12,7 @@ from typing import List
 import optuna
 import pandas as pd
 from attrs import define, field, validators
+from optuna.samplers._tpe.sampler import ExperimentalWarning
 from sklearn.metrics import (
     accuracy_score,
     balanced_accuracy_score,
@@ -18,6 +22,7 @@ from sklearn.metrics import (
     r2_score,
     roc_auc_score,
 )
+from sklearn.preprocessing import MinMaxScaler
 
 from octopus.experiment import OctoExperiment
 from octopus.models.config import model_inventory
@@ -28,46 +33,65 @@ from octopus.modules.utils import optuna_direction
 # from sklearn.inspection import permutation_importance
 from octopus.utils import DataSplit
 
+# ignore two Optuna experimental warnings
+# !may be specific to optuna version due to sline number
+warnings.filterwarnings(
+    "ignore",
+    category=ExperimentalWarning,
+    module="optuna.samplers._tpe.sampler",
+    lineno=319,
+)
+warnings.filterwarnings(
+    "ignore",
+    category=ExperimentalWarning,
+    module="optuna.samplers._tpe.sampler",
+    lineno=330,
+)
 # TOBEDONE BASE
-# - fix experiment.num_assigned_cpus -- consider ("ml_only_first": True) status
-#   copy from moduleAW
 # - check module type
+# - any issues due to missing .copy() statements, Python
 
-# TOBEDONE
-# - (1) delete trials after completion? add configuration
-# - (2) check_resources: consider real n_jobs parameter
-# - (3) implement survival model
-# - (4) fix parallelization error
-# - (5) fix bag name
-# - (6) fix optuna experimental warning
+# TOBEDONE OCTOFULL
+# - (0) change production mode: request user confirmation when directory exists
+# - (1) change my_only_first to specify experiment number. This would allow us
+#       to train experiment one by one. give experiment fixed order.
+# - (2) use screen for training
+# - (3) set optuna seed in sampler
+# - (4) do we need n_workers?
+# - (5) implement survival model
+# - (6) fix bag name - better study name for global studies
+# - (7) understand autosk cost function?
+#   (problem with large k_outer -> "0-89")
+# - Performance evaluation generalize: ensemble_hard, ensemble_soft
+# - automatically remove features with a single value! and provide user feedback
+# - deepchecks - https://docs.deepchecks.com/0.18/tabular/auto_checks/data_integrity/index.html
+# - outer parallelizaion can lead to very differing execution times per experiment!
 # - check that for classification only classification modules are used
 # - sequence config -- module is fixed
-# - how not to save all bags -- create issue
-# - return best trial in function optimize
 # - attach results (best_bag) to experiment
-# - improve create_best_bags - use a direct wa, from returned best trial or optuna.db
+# - improve create_best_bags - use a direct way, from returned best trial or optuna.db
 # - default: num_workers set to k_inner as default, warning if num_workers != k_inner
-# - better study name for global studies - problem with large k_outer -> "0-89"
-# - functionality to overwrite single defaults in model default parameter config
 # - module are big and should be directories
 # - xgoost class weights need to be set in training! How to solve that?
-# - validate input parameters: dim_reduction_methods, ml_model_types
 
 
 # TOBEDONE OPTUNA
-# - check "Exception occurred with execution task", global hp optimization
 # - Enqueue trials - how to implement that?
 # - Bring optuna parallelization to the next level (process based!):
 #   (a) multiple parallel optuna optimization instances per split in
 #       run_individualhp_optimization for individual split HP optimizations
 #   (b) multiple parallel executions of self.run_individualhp_optimization()
 #       to parallelize the optuna study with global HPs
+# - pruning Trials (parallel execution,check first for pruning)
+# - set optuna seed in sampler
 
 
 # TOBEDONE TRAINING
+# - variance selection threshold could be a HP, scaling before
 # - all multi target models are done separately, shap and permutation
 #   importance may not work anyways
-# - add scaling
+# - add outlier removal
+# - add scaling, as a HP?
 # - include shapley and permutation importance
 # - include dimensionality reduction
 # - include outlier elimination
@@ -117,14 +141,17 @@ class OctoFull:
             num_folds=self.experiment.ml_config["n_folds_inner"],
             stratification_col=self.experiment.stratification_column,
         ).get_datasplits()
+        # if we don't want to resume optimization:
         # delete directories /trials /optuna /results to ensure clean state
         # of module when restarted, required for parallel optuna runs
         # as optuna.create(...,load_if_exists=True)
         # create directory if it does not exist
         for directory in [self.path_optuna, self.path_trials, self.path_results]:
-            if directory.exists():
-                shutil.rmtree(directory)
+            if not self.experiment.ml_config["resume_optimization"]:
+                if directory.exists():
+                    shutil.rmtree(directory)
             directory.mkdir(parents=True, exist_ok=True)
+
         # check if there is a mismatch between configured resources
         # and resources assigned to the experiment
         self.check_resources()
@@ -140,14 +167,14 @@ class OctoFull:
 
         # assuming n_jobs=1 for every model
         if self.experiment.ml_config["inner_parallelization"] is True:
-            num_requested_cpus = self.experiment.ml_config["n_workers"]
+            num_requested_cpus = (
+                self.experiment.ml_config["n_workers"]
+                * self.experiment.ml_config["n_jobs"]
+            )
         else:
-            num_requested_cpus = 1  # n_jobs=1
+            num_requested_cpus = self.experiment.ml_config["n_jobs"]
 
-        print(
-            f"Number of requested CPUs for this experiment: {num_requested_cpus}"
-            f" (assuming n_jobs=1 for every model)."
-        )
+        print(f"Number of requested CPUs for this experiment: {num_requested_cpus}")
         print()
 
     def run_experiment(self):
@@ -178,6 +205,9 @@ class OctoFull:
         if len(path_bags) == 1:
             # only single bag found - copy to best bag
             shutil.copy(path_bags[0], self.path_results.joinpath("best_bag.pkl"))
+            file = path_bags[0]
+            if file.is_file():
+                best_bag = TrainingsBag.from_pickle(file)
         elif len(path_bags) > 1:
             # collect all trainings from bags
             trainings = list()
@@ -188,8 +218,8 @@ class OctoFull:
             # create best bag
             best_bag = TrainingsBag(
                 trainings=trainings,
-                execution_type=self.experiment.ml_config["config"]["execution_type"],
-                num_workers=self.experiment.ml_config["config"]["num_workers"],
+                parallel_execution=self.experiment.ml_config["inner_parallelization"],
+                num_workers=self.experiment.ml_config["n_workers"],
                 target_metric=self.experiment.config["target_metric"],
                 row_column=self.experiment.row_column,
             )
@@ -198,8 +228,19 @@ class OctoFull:
         else:
             raise ValueError("No bags founds in results directory")
 
-        # since we have best bag - remove trials to save disk space
-        # on "HPO_remove_trials": True,
+        # save performance values of best bag
+        best_bag_scores = best_bag.get_scores()
+        # show and save test results, MAE
+        print(
+            f"Experiment: {self.experiment.id} "
+            f"Test (ensembled predictions) {self.experiment.config['target_metric']}:"
+            f"{best_bag_scores['test_pool_hard']}"
+        )
+
+        with open(
+            self.path_results.joinpath("best_bag_scores.json"), "w", encoding="utf-8"
+        ) as f:
+            json.dump(best_bag_scores, f)
 
     def run_globalhp_optimization(self):
         """Optimization run with a global HP set over all inner folds."""
@@ -229,7 +270,7 @@ class OctoFull:
 
         # same config parameters also used for parallelization of bag trainings
 
-        if self.experiment.ml_config["parallel_execution"]:
+        if self.experiment.ml_config["inner_parallelization"]:
             print("Parallel execution of Optuna optimizations for individual HPs")
             # max_tasks_per_child=1 requires Python3.11
             with concurrent.futures.ProcessPoolExecutor(
@@ -269,6 +310,7 @@ class OctoFull:
             experiment=self.experiment,
             data_splits=splits,
             study_name=study_name,
+            save_trials=self.experiment.ml_config["save_trials"],
         )
 
         # multivariate sampler with group option
@@ -292,12 +334,13 @@ class OctoFull:
         )
 
         # copy bag of best trial to results
-        source = self.experiment.path_study.joinpath(
-            self.experiment.path_sequence_item,
-            "trials",
-            f"study{study_name}trial{study.best_trial.number}_bag.pkl",
-        )
-        shutil.copy(source, self.path_results / source.name)
+        # not needed anymore
+        # source = self.experiment.path_study.joinpath(
+        #    self.experiment.path_sequence_item,
+        #    "trials",
+        #    f"study{study_name}trial{study.best_trial.number}_bag.pkl",
+        # )
+        # shutil.copy(source, self.path_results / source.name)
 
         # display results
         print()
@@ -311,8 +354,45 @@ class OctoFull:
         }
         print("Best parameters:", user_attrs["config_training"])
         print("Performance Info:", performance_info)
-
         print("Optimization completed")
+
+        # create best bag from optuna info
+        best_trainings = list()
+        for key, split in splits.items():
+            best_trainings.append(
+                Training(
+                    training_id=self.experiment.id + "_" + str(key),
+                    ml_type=self.experiment.ml_type,
+                    target_assignments=self.experiment.target_assignments,
+                    feature_columns=self.experiment.feature_columns,
+                    row_column=self.experiment.row_column,
+                    data_train=split["train"],  # inner datasplit, train
+                    data_dev=split["test"],  # inner datasplit, dev
+                    data_test=self.experiment.data_test,
+                    config_training=user_attrs["config_training"],
+                    target_metric=self.experiment.config["target_metric"],
+                )
+            )
+        # create bag with all provided trainings
+        best_bag = TrainingsBag(
+            trainings=best_trainings,
+            parallel_execution=self.experiment.ml_config["inner_parallelization"],
+            num_workers=self.experiment.ml_config["n_workers"],
+            target_metric=self.experiment.config["target_metric"],
+            row_column=self.experiment.row_column,
+            # path?
+        )
+
+        # train all models in best_bag
+        best_bag.run_trainings()
+        # save best bag
+        best_bag.to_pickle(
+            self.path_results.joinpath(
+                f"study{study_name}trial{study.best_trial.number}_bag.pkl"
+            )
+        )
+
+        return True
 
     def predict(self, dataset: pd.DataFrame):
         """Predict on new dataset."""
@@ -341,10 +421,12 @@ class ObjectiveOptuna:
         experiment,
         data_splits,
         study_name,
+        save_trials,
     ):
         self.experiment = experiment
         self.data_splits = data_splits
         self.study_name = study_name
+        self.save_trials = save_trials
         # parameters potentially used for optimizations
         self.ml_model_types = self.experiment.ml_config["models"]
         self.dim_red_methods = self.experiment.ml_config["dim_red_methods"]
@@ -408,7 +490,8 @@ class ObjectiveOptuna:
         }
         translate = parameters_inventory[ml_model_type]["translate"]
         for key, value in fixed_global_parameters.items():
-            model_params[translate[key]] = value
+            if translate[key] != "NA":  # NA=ignore
+                model_params[translate[key]] = value
 
         config_training = {
             "dim_reduction": dim_reduction,
@@ -418,7 +501,6 @@ class ObjectiveOptuna:
         }
 
         # create trainings
-        row_column = self.experiment.row_column
         trainings = list()
         for key, split in self.data_splits.items():
             trainings.append(
@@ -427,7 +509,7 @@ class ObjectiveOptuna:
                     ml_type=self.experiment.ml_type,
                     target_assignments=self.experiment.target_assignments,
                     feature_columns=self.experiment.feature_columns,
-                    row_column=row_column,
+                    row_column=self.experiment.row_column,
                     data_train=split["train"],  # inner datasplit, train
                     data_dev=split["test"],  # inner datasplit, dev
                     data_test=self.experiment.data_test,
@@ -448,13 +530,14 @@ class ObjectiveOptuna:
         # train all models in bag
         bag_trainings.run_trainings()
 
-        # save bag
-        path_save = self.experiment.path_study.joinpath(
-            self.experiment.path_sequence_item,
-            "trials",
-            f"study{self.study_name}trial{trial.number}_bag.pkl",
-        )
-        bag_trainings.to_pickle(path_save)
+        # save bag if desired
+        if self.save_trials:
+            path_save = self.experiment.path_study.joinpath(
+                self.experiment.path_sequence_item,
+                "trials",
+                f"study{self.study_name}trial{trial.number}_bag.pkl",
+            )
+            bag_trainings.to_pickle(path_save)
 
         # evaluate trainings using target metric
         scores = bag_trainings.get_scores()
@@ -493,8 +576,10 @@ class Training:
     # configuration for training
     config_training: dict = field(validator=[validators.instance_of(dict)])
     # training output
-    model = field(init=False)
+    model = field(default=None)
     predictions: dict = field(default=dict(), validator=[validators.instance_of(dict)])
+    # scaler
+    scaler = field(init=False)
 
     @property
     def dim_reduction(self) -> str:
@@ -546,6 +631,9 @@ class Training:
         """y_dev."""
         return self.data_test[self.target_assignments.values()]
 
+    def __attrs_post_init__(self):
+        self.scaler = MinMaxScaler()
+
     # perform:
     # (1) dim_reduction
     # (2) outlier removal
@@ -560,53 +648,66 @@ class Training:
     # (3) feature_importances, which
     # (4)
 
-    def __attrs_post_init__(self):
-        # reset index
-        pass
-
     def run_training(self):
         """Run trainings."""
-        # missing: dim reduction
-        # missing: outlier removal
+        # missing:
+        # (1) missing: outlier removal
+        # (2) scaling
+        # (3) missinf dim reduction
+
+        # scaling (!after outlier removal)
+        # x_train_scaled = self.scaler.fit_transform(self.x_train)
+        # x_dev_scaled = self.scaler.transform(self.x_dev)
+        # x_test_scaled = self.scaler.transform(self.x_test)
         self.model = model_inventory[self.ml_model_type](**self.ml_model_params)
 
         if len(self.target_assignments) == 1:
             # standard sklearn single target models
             self.model.fit(
+                # x_train_scaled,
                 self.x_train,
                 self.y_train.squeeze(axis=1),
             )
         else:
             # multi target models, incl. time2event
+            # self.model.fit(x_train_scaled, self.y_train)
             self.model.fit(self.x_train, self.y_train)
 
-        # missing: include row_id
         self.predictions["train"] = pd.DataFrame()
         self.predictions["train"][self.row_column] = self.data_train[self.row_column]
         self.predictions["train"]["target"] = self.y_train.squeeze(axis=1)
+        # self.predictions["train"]["prediction"] = self.model.predict(x_train_scaled)
         self.predictions["train"]["prediction"] = self.model.predict(self.x_train)
 
         self.predictions["dev"] = pd.DataFrame()
         self.predictions["dev"][self.row_column] = self.data_dev[self.row_column]
         self.predictions["dev"]["target"] = self.y_dev.squeeze(axis=1)
+        # self.predictions["dev"]["prediction"] = self.model.predict(x_dev_scaled)
         self.predictions["dev"]["prediction"] = self.model.predict(self.x_dev)
 
         self.predictions["test"] = pd.DataFrame()
         self.predictions["test"][self.row_column] = self.data_test[self.row_column]
         self.predictions["test"]["target"] = self.y_test.squeeze(axis=1)
+        # self.predictions["test"]["prediction"] = self.model.predict(x_test_scaled)
         self.predictions["test"]["prediction"] = self.model.predict(self.x_test)
 
         if self.ml_type == "classification":
             columns = [int(x) for x in self.model.classes_]  # column names --> int
+            # self.predictions["train"][columns] = self.model.predict_proba(
+            #    x_train_scaled
+            # )
             self.predictions["train"][columns] = self.model.predict_proba(self.x_train)
+            # self.predictions["dev"][columns] = self.model.predict_proba(x_dev_scaled)
             self.predictions["dev"][columns] = self.model.predict_proba(self.x_dev)
+            # self.predictions["test"][columns] =self.model.predict_proba(x_test_scaled)
             self.predictions["test"][columns] = self.model.predict_proba(self.x_test)
 
-        # missing: other feature reduction methods
+        # missing: other feature importance methods
         # result = permutation_importance(
-        #    self.model, X=self.x_dev, y=self.y_dev, n_repeats=10, random_state=0
+        #    self.model, X=x_dev_scaled, y=self.y_dev, n_repeats=10, random_state=0
         # )
         # print(result)
+        return self
 
     def to_pickle(self, path):
         """Save training."""
@@ -643,18 +744,23 @@ class TrainingsBag:
                 max_workers=self.num_workers,
             ) as executor:
                 futures = []
+                train_results = []
                 for i in self.trainings:
                     try:
-                        future = executor.submit(i.run_training())
+                        future = executor.submit(i.run_training)
                         futures.append(future)
                     except Exception as e:  # pylint: disable=broad-except
                         print(f"Exception occurred while submitting task: {e}")
                 for future in concurrent.futures.as_completed(futures):
                     try:
-                        _ = future.result()
+                        train_results.append(future.result())
                         print("Inner parallel training completed")
                     except Exception as e:  # pylint: disable=broad-except
                         print(f"Exception occurred while executing task: {e}")
+                        print(f"Exception: {type(e).__name__}")
+                # replace trainings with processed trainings
+                # order in self.trainings may change!
+                self.trainings = train_results
 
         else:
             for training in self.trainings:
@@ -805,4 +911,10 @@ class OctopusFullConfig:
     max_features: int = field(validator=[validators.instance_of(int)], default=-1)
     """Maximum features."""
 
-    remove_trials: bool = field(validator=[validators.instance_of(bool)], default=False)
+    save_trials: bool = field(validator=[validators.instance_of(bool)], default=False)
+    """Save trials (bags)."""
+
+    resume_optimization: bool = field(
+        validator=[validators.instance_of(bool)], default=False
+    )
+    """Resume HPO, use existing optuna.db, don't delete optuna.de"""

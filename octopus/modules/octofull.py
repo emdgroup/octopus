@@ -49,16 +49,20 @@ warnings.filterwarnings(
 )
 # TOBEDONE BASE
 # - check module type
+# - any issues due to missing .copy() statements, Python
 
 # TOBEDONE OCTOFULL
 # - (0) change production mode: request user confirmation when directory exists
 # - (1) change my_only_first to specify experiment number. This would allow us
 #       to train experiment one by one. give experiment fixed order.
 # - (2) use screen for training
-# - (1) do we need n_workers?
+# - (3) set optuna seed in sampler
+# - (4) do we need n_workers?
 # - (5) implement survival model
-# - (7) fix bag name - better study name for global studies
+# - (6) fix bag name - better study name for global studies
+# - (7) understand autosk cost function?
 #   (problem with large k_outer -> "0-89")
+# - Performance evaluation generalize: ensemble_hard, ensemble_soft
 # - automatically remove features with a single value! and provide user feedback
 # - deepchecks - https://docs.deepchecks.com/0.18/tabular/auto_checks/data_integrity/index.html
 # - outer parallelizaion can lead to very differing execution times per experiment!
@@ -79,6 +83,7 @@ warnings.filterwarnings(
 #   (b) multiple parallel executions of self.run_individualhp_optimization()
 #       to parallelize the optuna study with global HPs
 # - pruning Trials (parallel execution,check first for pruning)
+# - set optuna seed in sampler
 
 
 # TOBEDONE TRAINING
@@ -228,8 +233,8 @@ class OctoFull:
         # show and save test results, MAE
         print(
             f"Experiment: {self.experiment.id} "
-            f"Test_avg {self.experiment.config['target_metric']}:"
-            f"{best_bag_scores['test_avg']}"
+            f"Test (ensembled predictions) {self.experiment.config['target_metric']}:"
+            f"{best_bag_scores['test_pool_hard']}"
         )
 
         with open(
@@ -388,35 +393,6 @@ class OctoFull:
         )
 
         return True
-
-    def create_trainings_and_bag(self, splits, config):
-        """Create trainings from splits and bundle in bag."""
-        trainings = list()
-        for key, split in splits.items():
-            trainings.append(
-                Training(
-                    training_id=self.experiment.id + "_" + str(key),
-                    ml_type=self.experiment.ml_type,
-                    target_assignments=self.experiment.target_assignments,
-                    feature_columns=self.experiment.feature_columns,
-                    row_column=self.experiment.row_column,
-                    data_train=split["train"],  # inner datasplit, train
-                    data_dev=split["test"],  # inner datasplit, dev
-                    data_test=self.experiment.data_test,
-                    config_training=config,
-                    target_metric=self.experiment.config["target_metric"],
-                )
-            )
-        # create bag with all provided trainings
-        bag = TrainingsBag(
-            trainings=trainings,
-            parallel_execution=self.experiment.ml_config["inner_parallelization"],
-            num_workers=self.experiment.ml_config["n_workers"],
-            target_metric=self.experiment.config["target_metric"],
-            row_column=self.experiment.row_column,
-            # path?
-        )
-        return bag
 
     def predict(self, dataset: pd.DataFrame):
         """Predict on new dataset."""

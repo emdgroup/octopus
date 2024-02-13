@@ -138,7 +138,7 @@ config_manager = {
     # outer loop
     "outer_parallelization": False,
     # only process first outer loop experiment, for quick testing
-    "ml_only_first": False,
+    "run_single_experiment_num": 3,
 }
 
 # define processing sequence
@@ -157,6 +157,7 @@ sequence_item_1 = OctopusFullConfig(
     inner_parallelization=True,
     n_workers=6,
     # HPO
+    optuna_seed=0,
     resume_optimization=False,
     global_hyperparameter=True,
     n_trials=15,

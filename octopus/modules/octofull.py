@@ -33,39 +33,28 @@ from octopus.modules.utils import optuna_direction
 # from sklearn.inspection import permutation_importance
 from octopus.utils import DataSplit
 
-# ignore two Optuna experimental warnings
+# ignore three Optuna experimental warnings
 # !may be specific to optuna version due to sline number
-warnings.filterwarnings(
-    "ignore",
-    category=ExperimentalWarning,
-    module="optuna.samplers._tpe.sampler",
-    lineno=319,
-)
-warnings.filterwarnings(
-    "ignore",
-    category=ExperimentalWarning,
-    module="optuna.samplers._tpe.sampler",
-    lineno=330,
-)
+for line in [319, 330, 338]
+    warnings.filterwarnings(
+        "ignore",
+        category=ExperimentalWarning,
+        module="optuna.samplers._tpe.sampler",
+        lineno=line,
+    )
 # TOBEDONE BASE
 # - check module type
 # - any issues due to missing .copy() statements???
-# - autosk with serial processing of outer folds does not use sign. CPU??
+# - autosk with serial processing of outer folds does not use significant CPU??
 
 # TOBEDONE OCTOFULL
-# - (1) select outer fold instead of ml_first_only
-# - (0) change production mode: request user confirmation when directory exists
-# - (1) change my_only_first to specify experiment number. This would allow us
-#       to train experiment one by one. give experiment fixed order.
-# - (2) use screen for training
-# - (3) set optuna seed in sampler
-# - (4) do we need n_workers?
-# - (5) implement survival model
-# - (6) fix bag name - better study name for global studies
-# - (7) understand autosk cost function?
-#   (problem with large k_outer -> "0-89")
-# - (8) Make use of default model parameters, see autosk, optuna
-# - (9) ardreg - fix fit_intercept
+# - (1) fix ardreg performance drop compared to autosk
+#       (a) read optuna db and compare with trials - maybe error in final bag
+#       (b) bug in datasplit?
+#       (c) bug in metric calculation?
+# - (2) basic analytics class
+# - (3) implement survival model
+# - (4) Make use of default model parameters, see autosk, optuna
 # - Performance evaluation generalize: ensemble_hard, ensemble_soft
 # - automatically remove features with a single value! and provide user feedback
 # - deepchecks - https://docs.deepchecks.com/0.18/tabular/auto_checks/data_integrity/index.html
@@ -74,7 +63,6 @@ warnings.filterwarnings(
 # - sequence config -- module is fixed
 # - attach results (best_bag) to experiment
 # - improve create_best_bags - use a direct way, from returned best trial or optuna.db
-# - default: num_workers set to k_inner as default, warning if num_workers != k_inner
 # - module are big and should be directories
 # - xgoost class weights need to be set in training! How to solve that?
 # - check disk space and inform about disk space requirements
@@ -88,7 +76,6 @@ warnings.filterwarnings(
 #   (b) multiple parallel executions of self.run_individualhp_optimization()
 #       to parallelize the optuna study with global HPs
 # - pruning Trials (parallel execution,check first for pruning)
-# - set optuna seed in sampler
 
 
 # TOBEDONE TRAINING
@@ -131,11 +118,6 @@ class OctoFull:
     def path_results(self) -> Path:
         """Results path."""
         return self.path_module.joinpath("results")
-
-    # @property
-    # def hpo_type(self) -> str:
-    #     """Trials path."""
-    #     return self.experiment.ml_config["config"]["HPO_type"]
 
     def __attrs_post_init__(self):
         # create datasplit during init
@@ -309,7 +291,8 @@ class OctoFull:
         when splits only contains a single split
         """
         # define study name by joined keys of splits
-        study_name = "_".join([str(key) for key in splits.keys()])
+        study_name = str(sum([int(key) for key in splits.keys()]))
+
         # set up Optuna study
         objective = ObjectiveOptuna(
             experiment=self.experiment,
@@ -319,7 +302,12 @@ class OctoFull:
         )
 
         # multivariate sampler with group option
-        sampler = optuna.samplers.TPESampler(multivariate=True, group=True, seed=0)
+        sampler = optuna.samplers.TPESampler(
+            multivariate=True,
+            group=True,
+            constant_liar=True,
+            seed=self.experiment.ml_config["optuna_seed"],
+        )
 
         # create study with unique name and database
         db_path = self.path_optuna.joinpath(study_name + ".db")
@@ -899,9 +887,12 @@ class OctopusFullConfig:
         validator=[validators.instance_of(bool)], default=False
     )
 
-    n_workers: int = field(validator=[validators.instance_of(int)], default=5)
+    n_workers: int = field(validator=[validators.instance_of(int)], default=None)
     """Number of workers."""
     # hyperparamter optimization
+    optuna_seed: int = field(validator=[validators.instance_of(int)], default=None)
+    """Seed for Optuna TPESampler, default=no seed"""
+
     global_hyperparameter: bool = field(
         validator=[validators.in_([True, False])], default=True
     )
@@ -923,3 +914,13 @@ class OctopusFullConfig:
         validator=[validators.instance_of(bool)], default=False
     )
     """Resume HPO, use existing optuna.db, don't delete optuna.de"""
+
+    def __attrs_post_init__(self):
+        # set default of n_workers to n_folds_inner
+        if self.n_workers is None:
+            self.n_workers = self.n_folds_inner
+        if self.n_workers != self.n_folds_inner:
+            print(
+                f"Octofull Warning: n_workers ({self.n_workers}) "
+                f"does not match n_folds_inner ({self.n_folds_inner})",
+            )

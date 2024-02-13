@@ -3,73 +3,20 @@
 import os
 import socket
 
-# OPENBLASE config needs to be before pandas, autosk
-os.environ["OPENBLAS_NUM_THREADS"] = "1"
-from typing import Optional
+import attrs
 
-import autosklearn.classification
-import autosklearn.pipeline.components.data_preprocessing
+# OPENBLASE config needs to be before pandas, autosk
+# os.environ["OPENBLAS_NUM_THREADS"] = "1"
 import pandas as pd
-from autosklearn.askl_typing import FEAT_TYPE_TYPE
-from autosklearn.ensembles import SingleBest
-from autosklearn.metrics import mean_absolute_error
-from autosklearn.pipeline.components.base import AutoSklearnPreprocessingAlgorithm
-from autosklearn.pipeline.constants import DENSE, INPUT, SPARSE, UNSIGNED_DATA
-from ConfigSpace.configuration_space import ConfigurationSpace
 from sklearn.preprocessing import PolynomialFeatures
 
 from octopus import OctoConfig, OctoData, OctoML
+from octopus.modules.octofull import OctopusFullConfig
 
-
-class NoPreprocessing(AutoSklearnPreprocessingAlgorithm):
-    """Noprepro."""
-
-    def __init__(self, **kwargs):
-        # Some internal checks makes sure parameters are set
-        for key, val in kwargs.items():
-            setattr(self, key, val)
-
-    def fit(self, X, Y=None):
-        """Fit."""
-        return self
-
-    def transform(self, X):
-        """Transform."""
-        return X
-
-    @staticmethod
-    def get_properties(dataset_properties=None):
-        """Get properties."""
-        return {
-            "shortname": "NoPreprocessing",
-            "name": "NoPreprocessing",
-            "handles_regression": True,
-            "handles_classification": True,
-            "handles_multiclass": True,
-            "handles_multilabel": True,
-            "handles_multioutput": True,
-            "is_deterministic": True,
-            "input": (SPARSE, DENSE, UNSIGNED_DATA),
-            "output": (INPUT,),
-        }
-
-    @staticmethod
-    def get_hyperparameter_search_space(
-        feat_type: Optional[FEAT_TYPE_TYPE] = None, dataset_properties=None
-    ):
-        """Get hp search space."""
-        return ConfigurationSpace()  # Return an empty configuration as there is None
-
-
-# Add NoPreprocessing component to auto-sklearn.
-autosklearn.pipeline.components.data_preprocessing.add_preprocessor(NoPreprocessing)
-
-# Conda and Host information
 print("Notebook kernel is running on server:", socket.gethostname())
 print("Conda environment on server:", os.environ["CONDA_DEFAULT_ENV"])
 # show directory name
 print("Working directory: ", os.getcwd())
-# show directory name
 
 
 # load test dataset from Martin from csv and perform pre-processing
@@ -106,6 +53,7 @@ ls_rd_fp = [f"rdfp_{i}" for i in range(2048)]
 ls_features = ls_numbers + ls_props + ls_graph + ls_morgan_fp + ls_rd_fp
 ls_targets = ["T_SETARAM"]
 id_data = ["MATERIAL_ID"]
+
 
 # pre-process data
 # there are NaNs in the target column
@@ -167,7 +115,7 @@ data = OctoData(**data_input)
 
 # configure study
 config_study = {
-    "study_name": "20240211D_Martin_wf1_poly_autosk_ardreg_nodatapre_noens_nometa_1h",
+    "study_name": "20240212A_Martin_wf2_octofull_7x6_poly_global_betterridgeparams",
     "output_path": "./studies/",
     "production_mode": False,
     "ml_type": "regression",
@@ -180,53 +128,35 @@ config_study = {
 # configure manager
 config_manager = {
     # outer loop
-    "outer_parallelization": False,
+    "outer_parallelization": True,
     # only process first outer loop experiment, for quick testing
     "ml_only_first": False,
 }
 
-
 # define processing sequence
-config_sequence = [
-    {
-        "module": "autosklearn",
-        "description": "step1_autosklearn",
-        "config": {
-            "time_left_for_this_task": 60 * 60,
-            "per_run_time_limit": 12 * 60,
-            "n_jobs": 1,
-            "include": {
-                # regressor:[
-                # "adaboost",
-                # "ard_regression",
-                # "decision_tree",
-                # "extra_trees",
-                # "gaussian_process",
-                # "gradient_boosting",
-                # "k_nearest_neighbors",
-                # "libsvm_svr",
-                # "mlp",
-                # "random_forest",]
-                "data_preprocessor": ["NoPreprocessing"],  # non data preprocessing
-                "regressor": ["ard_regression"],
-                # ["no_preprocessing","polynomial","select_percentile_classification"],
-                "feature_preprocessor": [
-                    "no_preprocessing"
-                ],  # no feature preprocessing
-            },
-            # "ensemble_kwargs": {"ensemble_size": 1},  # no ensembling
-            "ensemble_class": SingleBest,
-            # "memory_limit": 6144,
-            "initial_configurations_via_metalearning": 0,  # no meta learning
-            # 'resampling_strategy':'holdout',
-            # 'resampling_strategy_arguments':None,
-            "resampling_strategy": "cv",
-            "resampling_strategy_arguments": {"folds": 6},
-            "metric": mean_absolute_error,
-        },
-    },
-]
+sequence_item_1 = OctopusFullConfig(
+    description="step1_octofull",
+    # datasplit
+    n_folds_inner=6,
+    datasplit_seed_inner=0,
+    # model training
+    models=["RidgeRegressor"],
+    model_seed=0,
+    n_jobs=1,
+    dim_red_methods=[""],
+    max_outl=0,
+    # parallelization
+    inner_parallelization=True,
+    n_workers=6,
+    # HPO
+    resume_optimization=False,
+    global_hyperparameter=True,
+    n_trials=50,
+    max_features=70,
+    save_trials=False,
+)
 
+config_sequence = [attrs.asdict(sequence_item_1)]
 # create study config
 octo_config = OctoConfig(config_manager, config_sequence, **config_study)
 
@@ -237,4 +167,5 @@ oml.create_outer_experiments()
 
 oml.run_outer_experiments()
 
+print("Workflow completed")
 print("Workflow completed")

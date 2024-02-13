@@ -24,7 +24,10 @@ from octopus.experiment import OctoExperiment
 # - (4) use defined properties in predict function
 # - (5) autosklearn refit() functionality
 # - (6) check what other functionality from autosk is missing
-# - (7) understand autosk cost function!!
+# - (7) place tmp directory in experiment path for transparency.
+#       currently, "/tmp" is used and users may not find used
+#       used up disk space, especially after potential crashes
+# - (8) understand autosk cost function!!
 #       https://github.com/automl/auto-sklearn/issues/1717
 # - turn off data preprocessing:
 #   https://automl.github.io/auto-sklearn/development/examples/

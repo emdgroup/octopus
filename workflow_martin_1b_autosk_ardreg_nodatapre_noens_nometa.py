@@ -5,6 +5,7 @@ import socket
 
 # OPENBLASE config needs to be before pandas, autosk
 os.environ["OPENBLAS_NUM_THREADS"] = "1"
+from pprint import pprint
 from typing import Optional
 
 import autosklearn.classification
@@ -25,6 +26,7 @@ class NoPreprocessing(AutoSklearnPreprocessingAlgorithm):
     """Noprepro."""
 
     def __init__(self, **kwargs):
+        """Preprocessors does not change the data."""
         # Some internal checks makes sure parameters are set
         for key, val in kwargs.items():
             setattr(self, key, val)
@@ -180,7 +182,7 @@ config_study = {
 # configure manager
 config_manager = {
     # outer loop
-    "outer_parallelization": False,
+    "outer_parallelization": True,
     # only process first outer loop experiment, for quick testing
     "ml_only_first": False,
 }

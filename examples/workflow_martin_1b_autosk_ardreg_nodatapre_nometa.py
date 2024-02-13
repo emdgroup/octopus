@@ -5,7 +5,6 @@ import socket
 
 # OPENBLASE config needs to be before pandas, autosk
 os.environ["OPENBLAS_NUM_THREADS"] = "1"
-from pprint import pprint
 from typing import Optional
 
 import autosklearn.classification
@@ -25,7 +24,6 @@ class NoPreprocessing(AutoSklearnPreprocessingAlgorithm):
     """Noprepro."""
 
     def __init__(self, **kwargs):
-        """Preprocessors does not change the data."""
         # Some internal checks makes sure parameters are set
         for key, val in kwargs.items():
             setattr(self, key, val)

@@ -103,7 +103,7 @@ xgboost_reg = {
 # Linear ridge regression parameter settings
 ridge_reg = {
     "default": [
-        ("float", {"name": "alpha", "low": 1e-2, "high": 1e5, "log": True}),
+        ("float", {"name": "alpha", "low": 1e-5, "high": 1e5, "log": True}),
         ("categorical", {"name": "fit_intercept", "choices": [True, False]}),
         ("fixed", {"name": "solver", "value": "svd"}),
     ],
@@ -122,7 +122,8 @@ ard_reg = {
         ("float", {"name": "lambda_2", "low": 1e-10, "high": 1e-3, "log": True}),
         ("float", {"name": "threshold_lambda", "low": 1e3, "high": 1e5, "log": True}),
         ("float", {"name": "tol", "low": 1e-5, "high": 1e-1, "log": True}),
-        ("categorical", {"name": "fit_intercept", "choices": [True, False]}),
+        ("fixed", {"name": "fit_intercept", "value": True}),
+        # ("categorical", {"name": "fit_intercept", "choices": [True, False]}),
         # ("fixed", {"name": "copy_X", "value": False}),
     ],
     "translate": {

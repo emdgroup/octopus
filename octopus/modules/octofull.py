@@ -49,9 +49,11 @@ warnings.filterwarnings(
 )
 # TOBEDONE BASE
 # - check module type
-# - any issues due to missing .copy() statements, Python
+# - any issues due to missing .copy() statements???
+# - autosk with serial processing of outer folds does not use sign. CPU??
 
 # TOBEDONE OCTOFULL
+# - (1) select outer fold instead of ml_first_only
 # - (0) change production mode: request user confirmation when directory exists
 # - (1) change my_only_first to specify experiment number. This would allow us
 #       to train experiment one by one. give experiment fixed order.
@@ -62,6 +64,8 @@ warnings.filterwarnings(
 # - (6) fix bag name - better study name for global studies
 # - (7) understand autosk cost function?
 #   (problem with large k_outer -> "0-89")
+# - (8) Make use of default model parameters, see autosk, optuna
+# - (9) ardreg - fix fit_intercept
 # - Performance evaluation generalize: ensemble_hard, ensemble_soft
 # - automatically remove features with a single value! and provide user feedback
 # - deepchecks - https://docs.deepchecks.com/0.18/tabular/auto_checks/data_integrity/index.html
@@ -73,6 +77,7 @@ warnings.filterwarnings(
 # - default: num_workers set to k_inner as default, warning if num_workers != k_inner
 # - module are big and should be directories
 # - xgoost class weights need to be set in training! How to solve that?
+# - check disk space and inform about disk space requirements
 
 
 # TOBEDONE OPTUNA
@@ -314,7 +319,7 @@ class OctoFull:
         )
 
         # multivariate sampler with group option
-        sampler = optuna.samplers.TPESampler(multivariate=True, group=True)
+        sampler = optuna.samplers.TPESampler(multivariate=True, group=True, seed=0)
 
         # create study with unique name and database
         db_path = self.path_optuna.joinpath(study_name + ".db")

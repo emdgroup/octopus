@@ -1,4 +1,5 @@
 """OctoML module."""
+
 from pathlib import Path
 
 from attrs import asdict, define, field, validators
@@ -21,15 +22,26 @@ class OctoML:
 
     def create_outer_experiments(self):
         """Create outer experiments."""
-        # create study folder
+        # create study folder and check if it exists in prod mode
         path_study = Path(self.oconfig.output_path, self.oconfig.study_name)
-        path_study.mkdir(parents=True, exist_ok=not self.oconfig.production_mode)
+        if self.oconfig.production_mode:
+            if path_study.exists():
+                confirmation = input(
+                    "Study exists, do you want to continue (resume)? (yes/no): "
+                )
+                if confirmation.lower() == "yes":
+                    print("Continuing...")
+                else:
+                    print("Exiting...")
+                    exit()
+            else:
+                path_study.mkdir(parents=True, exist_ok=True)
         print("Path to study:", path_study)
 
         # create subfolders
-        for subdir in ["data", "config", "tmp"]:
+        for subdir in ["data", "config"]:
             path_sub = path_study.joinpath(subdir)
-            path_sub.mkdir(parents=False, exist_ok=not self.oconfig.production_mode)
+            path_sub.mkdir(parents=False, exist_ok=True)
 
         # save files
         if subdir == "data":
@@ -71,9 +83,7 @@ class OctoML:
         for key, value in data_splits.items():
             # create path for experiment
             path_experiment = Path(f"experiment{key}")
-            path_study.joinpath(path_experiment).mkdir(
-                parents=True, exist_ok=not self.oconfig.production_mode
-            )
+            path_study.joinpath(path_experiment).mkdir(parents=True, exist_ok=True)
             self.experiments.append(
                 OctoExperiment(
                     id=str(key),

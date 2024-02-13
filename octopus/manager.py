@@ -1,4 +1,5 @@
 """OctoManager."""
+
 import concurrent.futures
 import copy
 import math
@@ -23,13 +24,22 @@ class OctoManager:
         validator=[validators.instance_of(OctoConfig)],
     )
 
+    def __attrs_post_init__(self):
+        # set defaults in cfg_manager
+        self.oconfig.cfg_manager.setdefault("run_single_experiment_num", -1)
+        self.oconfig.cfg_manager.setdefault("outer_parallelization", False)
+
     def run_outer_experiments(self):
         """Run outer experiments."""
         print("Preparing execution of experiments.......")
         print(
             "Outer parallelization:", self.oconfig.cfg_manager["outer_parallelization"]
         )
-        print("Only first experiment:", self.oconfig.cfg_manager["ml_only_first"])
+        single_exp = self.oconfig.cfg_manager["run_single_experiment_num"]
+        if single_exp == -1:
+            print("Run all experiments")
+        else:
+            print("Run single experiment:", single_exp)
         print()
         print("Parallel execution info")
         print("Number of outer folds: ", self.oconfig.n_folds_outer)
@@ -41,9 +51,9 @@ class OctoManager:
         if len(self.base_experiments) == 0:
             raise ValueError("No experiments defined")
 
-        if self.oconfig.cfg_manager["ml_only_first"] is True:
-            print("Only running first experiment")
-            self.create_execute_mlmodules(self.base_experiments[0])
+        if single_exp != -1:
+            print("Only running experiment:", single_exp)
+            self.create_execute_mlmodules(self.base_experiments[single_exp])
 
         elif self.oconfig.cfg_manager["outer_parallelization"] is False:  # sequential
             for cnt, base_experiment in enumerate(self.base_experiments):
@@ -96,16 +106,14 @@ class OctoManager:
                 )
             else:
                 experiment.num_assigned_cpus = cpu_count()
-            if self.oconfig.cfg_manager["ml_only_first"] is True:
+            if self.oconfig.cfg_manager["run_single_experiment_num"] != -1:
                 experiment.num_assigned_cpus = cpu_count()
 
             # create directory for sequence item
             path_study_sequence = experiment.path_study.joinpath(
                 experiment.path_sequence_item
             )
-            path_study_sequence.mkdir(
-                parents=True, exist_ok=not self.oconfig.production_mode
-            )
+            path_study_sequence.mkdir(parents=True, exist_ok=True)
             print("Running experiment: ", experiment.id)
             # save experiment before running experiment
             path_save = path_study_sequence.joinpath(

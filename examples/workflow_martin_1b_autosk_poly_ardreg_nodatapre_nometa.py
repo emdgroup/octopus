@@ -11,7 +11,6 @@ import autosklearn.classification
 import autosklearn.pipeline.components.data_preprocessing
 import pandas as pd
 from autosklearn.askl_typing import FEAT_TYPE_TYPE
-from autosklearn.ensembles import SingleBest
 from autosklearn.metrics import mean_absolute_error
 from autosklearn.pipeline.components.base import AutoSklearnPreprocessingAlgorithm
 from autosklearn.pipeline.constants import DENSE, INPUT, SPARSE, UNSIGNED_DATA
@@ -167,7 +166,7 @@ data = OctoData(**data_input)
 
 # configure study
 config_study = {
-    "study_name": "20240211D_Martin_wf1_poly_autosk_ardreg_nodatapre_noens_nometa_1h",
+    "study_name": "20240214G_Martin_wf1_poly_autosk_ardreg_nodatapre_nometa_1h",
     "output_path": "./studies/",
     "production_mode": False,
     "ml_type": "regression",
@@ -180,9 +179,9 @@ config_study = {
 # configure manager
 config_manager = {
     # outer loop
-    "outer_parallelization": False,
+    "outer_parallelization": True,
     # only process first outer loop experiment, for quick testing
-    "ml_only_first": False,
+    # "run_single_experiment_num": 3,
 }
 
 
@@ -214,8 +213,7 @@ config_sequence = [
                     "no_preprocessing"
                 ],  # no feature preprocessing
             },
-            # "ensemble_kwargs": {"ensemble_size": 1},  # no ensembling
-            "ensemble_class": SingleBest,
+            "ensemble_kwargs": {"ensemble_size": 1},  # no ensembling
             # "memory_limit": 6144,
             "initial_configurations_via_metalearning": 0,  # no meta learning
             # 'resampling_strategy':'holdout',

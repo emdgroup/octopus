@@ -115,7 +115,7 @@ data = OctoData(**data_input)
 
 # configure study
 config_study = {
-    "study_name": "20240211A_Martin_wf2_octofull_7x6_poly_global_ridge_serial_serial",
+    "study_name": "20240214F_Martin_wf2_octofull_7x6_poly_global_ridge",
     "output_path": "./studies/",
     "production_mode": False,
     "ml_type": "regression",
@@ -128,9 +128,9 @@ config_study = {
 # configure manager
 config_manager = {
     # outer loop
-    "outer_parallelization": False,
-    # only process first outer loop experiment, for quick testing
-    "ml_only_first": False,
+    "outer_parallelization": True,
+    # only run specific single experiment, for quick testing
+    # "run_single_experiment_num": 0,
 }
 
 # define processing sequence
@@ -146,9 +146,11 @@ sequence_item_1 = OctopusFullConfig(
     dim_red_methods=[""],
     max_outl=0,
     # parallelization
-    inner_parallelization=False,
+    inner_parallelization=True,
     n_workers=6,
     # HPO
+    optuna_seed=0,
+    n_optuna_startup_trials=10,
     resume_optimization=False,
     global_hyperparameter=True,
     n_trials=50,

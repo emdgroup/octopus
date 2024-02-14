@@ -34,8 +34,7 @@ class OctoML:
                 else:
                     print("Exiting...")
                     exit()
-            else:
-                path_study.mkdir(parents=True, exist_ok=True)
+        path_study.mkdir(parents=True, exist_ok=True)
         print("Path to study:", path_study)
 
         # create subfolders

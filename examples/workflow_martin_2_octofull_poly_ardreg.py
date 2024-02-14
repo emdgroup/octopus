@@ -88,42 +88,33 @@ def find_constant_columns(df):
     return constant_columns
 
 
-ls_features_const = find_constant_columns(data)
+ls_features_const = find_constant_columns(data_final)
 # Remove constant columns from other_cols list
-print("Number of original features:", len(ls_features))
-ls_features = [col for col in ls_features if col not in ls_features_const]
-print("Number of features after removal of const. features:", len(ls_features))
+print("Number of original features:", len(ls_final))
+ls_final = [col for col in ls_final if col not in ls_features_const]
+print("Number of features after removal of const. features:", len(ls_final))
 
-# pre-process data
-# there are NaNs in the target column
-target_column = data[ls_targets[0]]
-non_nan_targets = ~pd.isna(target_column)  # pylint: disable=E1130
-target_column = target_column[non_nan_targets]
-print("Number of samples with target values:", len(target_column))
-data_reduced = data[non_nan_targets].reset_index(drop=True)
-# check for NaNs
-data_relevant = data_reduced[ls_features + ls_targets + id_data]
-assert not pd.isna(data_relevant).any().any()
 
 # define data_input, use data_reduced
 data_input = {
-    "data": data_reduced,
+    "data": data_final,
     "sample_id": id_data[0],
-    "target_columns": {ls_targets[0]: data_reduced[ls_targets[0]].dtype},
+    "target_columns": {ls_targets[0]: data_final[ls_targets[0]].dtype},
     "datasplit_type": "sample",
     "feature_columns": dict(),
 }
 
-for feature in ls_features:
-    data_input["feature_columns"][feature] = data_reduced[feature].dtype
-
+# for feature in ls_features:
+#    data_input["feature_columns"][feature] = data_reduced[feature].dtype
+for feature in ls_final:
+    data_input["feature_columns"][feature] = data_final[feature].dtype
 
 # create OctoData object
 data = OctoData(**data_input)
 
 # configure study
 config_study = {
-    "study_name": "20240210A_Martin_wf2_octofull_7x6_global_ardreg_serial",
+    "study_name": "20240214B_Martin_wf2_octofull_7x6_global_ardreg",
     "output_path": "./studies/",
     "production_mode": False,
     "ml_type": "regression",
@@ -138,7 +129,7 @@ config_manager = {
     # outer loop
     "outer_parallelization": False,
     # only process first outer loop experiment, for quick testing
-    "ml_only_first": False,
+    # "run_single_experiment_num": 3,
 }
 
 # define processing sequence
@@ -157,9 +148,11 @@ sequence_item_1 = OctopusFullConfig(
     inner_parallelization=True,
     n_workers=6,
     # HPO
+    optuna_seed=0,
+    n_optuna_startup_trials=10,
     resume_optimization=False,
     global_hyperparameter=True,
-    n_trials=30,
+    n_trials=15,
     max_features=70,
     save_trials=False,
 )

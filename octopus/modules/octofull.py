@@ -34,8 +34,8 @@ from octopus.modules.utils import optuna_direction
 from octopus.utils import DataSplit
 
 # ignore three Optuna experimental warnings
-# !may be specific to optuna version due to sline number
-for line in [319, 330, 338]
+# !may be specific to optuna version due to line number
+for line in [319, 330, 338]:
     warnings.filterwarnings(
         "ignore",
         category=ExperimentalWarning,
@@ -48,10 +48,11 @@ for line in [319, 330, 338]
 # - autosk with serial processing of outer folds does not use significant CPU??
 
 # TOBEDONE OCTOFULL
-# - (1) fix ardreg performance drop compared to autosk
-#       (a) read optuna db and compare with trials - maybe error in final bag
-#       (b) bug in datasplit?
-#       (c) bug in metric calculation?
+# - (1) fix this error: autosk and when autsk arr regression is called
+#    File "/home/ec2-user/Octopus/octopus/ml.py", line 50, in create_outer_experiments
+#    self.oconfig.to_json(path_sub.joinpath("config.json"))  # human readable
+#    File "/home/ec2-user/Octopus/octopus/config.py", line 48, in to_json
+#    json.dump(asdict(self), file)
 # - (2) basic analytics class
 # - (3) implement survival model
 # - (4) Make use of default model parameters, see autosk, optuna
@@ -291,7 +292,7 @@ class OctoFull:
         when splits only contains a single split
         """
         # define study name by joined keys of splits
-        study_name = str(sum([int(key) for key in splits.keys()]))
+        study_name = "optuna_" + str(sum([int(key) for key in splits.keys()]))
 
         # set up Optuna study
         objective = ObjectiveOptuna(
@@ -307,6 +308,7 @@ class OctoFull:
             group=True,
             constant_liar=True,
             seed=self.experiment.ml_config["optuna_seed"],
+            n_startup_trials=self.experiment.ml_config["n_optuna_startup_trials"],
         )
 
         # create study with unique name and database
@@ -892,6 +894,11 @@ class OctopusFullConfig:
     # hyperparamter optimization
     optuna_seed: int = field(validator=[validators.instance_of(int)], default=None)
     """Seed for Optuna TPESampler, default=no seed"""
+
+    n_optuna_startup_trials: int = field(
+        validator=[validators.instance_of(int)], default=10
+    )
+    """Number of Optuna startup trials (random sampler)"""
 
     global_hyperparameter: bool = field(
         validator=[validators.in_([True, False])], default=True

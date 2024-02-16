@@ -46,6 +46,7 @@ for line in [319, 330, 338]:
 # - check module type
 # - any issues due to missing .copy() statements???
 # - autosk with serial processing of outer folds does not use significant CPU??
+# - check that openblas settings are correct and suggest solutions
 
 # TOBEDONE OCTOFULL
 # - (1) fix this error: autosk and when autsk arr regression is called
@@ -237,8 +238,6 @@ class OctoFull:
         # run Optuna study with a global HP set
         self.optimize_splits(self.data_splits)
 
-        # collect best bag and save
-
     def run_individualhp_optimization(self):
         """Optimization runs with an individual HP set for each inner datasplit."""
         print("Running Optuna Optimizations for each inner datasplit separately")
@@ -282,8 +281,6 @@ class OctoFull:
             for split in splits:
                 self.optimize_splits(split)
                 print(f"Optimization of split:{split.keys()} completed")
-
-        # collect best bag and save
 
     def optimize_splits(self, splits):
         """Optimize splits.
@@ -379,7 +376,7 @@ class OctoFull:
         )
 
         # train all models in best_bag
-        best_bag.run_trainings()
+        best_bag.fit()
         # save best bag
         best_bag.to_pickle(
             self.path_results.joinpath(
@@ -523,7 +520,7 @@ class ObjectiveOptuna:
         )
 
         # train all models in bag
-        bag_trainings.run_trainings()
+        bag_trainings.fit()
 
         # save bag if desired
         if self.save_trials:
@@ -643,7 +640,7 @@ class Training:
     # (3) feature_importances, which
     # (4)
 
-    def run_training(self):
+    def fit(self):
         """Run trainings."""
         # missing:
         # (1) missing: outlier removal
@@ -731,7 +728,7 @@ class TrainingsBag:
     # path: Path = field(default=Path(), validator=[validators.instance_of(Path)])
     train_status: bool = field(default=False)
 
-    def run_trainings(self):
+    def fit(self):
         """Run all available trainings."""
         if self.parallel_execution is True:
             # max_tasks_per_child=1 requires Python3.11
@@ -742,7 +739,7 @@ class TrainingsBag:
                 train_results = []
                 for i in self.trainings:
                     try:
-                        future = executor.submit(i.run_training)
+                        future = executor.submit(i.fit)
                         futures.append(future)
                     except Exception as e:  # pylint: disable=broad-except
                         print(f"Exception occurred while submitting task: {e}")
@@ -759,7 +756,7 @@ class TrainingsBag:
 
         else:
             for training in self.trainings:
-                training.run_training()
+                training.fit()
                 print("Inner sequential training completed")
 
         self.train_status = True
@@ -768,7 +765,7 @@ class TrainingsBag:
         """Get scores."""
         if not self.train_status:
             print("Running trainings first to be able to get scores")
-            self.run_trainings()
+            self.fit()
 
         scores = dict()
         metrics_inventory = {

@@ -5,30 +5,42 @@ import socket
 
 # OPENBLASE config needs to be before pandas, autosk
 os.environ["OPENBLAS_NUM_THREADS"] = "1"
-from typing import Optional
+from typing import Optional  # noqa: E402  # pylint: disable=C0413
 
-import autosklearn.classification
-import autosklearn.pipeline.components.data_preprocessing
-import pandas as pd
-from autosklearn.askl_typing import FEAT_TYPE_TYPE
-from autosklearn.metrics import mean_absolute_error
-from autosklearn.pipeline.components.base import AutoSklearnPreprocessingAlgorithm
-from autosklearn.pipeline.constants import DENSE, INPUT, SPARSE, UNSIGNED_DATA
-from ConfigSpace.configuration_space import ConfigurationSpace
-from sklearn.preprocessing import PolynomialFeatures
+import autosklearn.classification  # noqa: E402  # pylint: disable=C0413
+import autosklearn.pipeline.components.data_preprocessing  # noqa: E402  # pylint: disable=C0413
+import pandas as pd  # noqa: E402  # pylint: disable=C0413
+from autosklearn.askl_typing import (  # noqa: E402  # pylint: disable=C0413
+    FEAT_TYPE_TYPE,
+)
+from autosklearn.pipeline.components.base import (  # noqa: E402  # pylint: disable=C0413
+    AutoSklearnPreprocessingAlgorithm,
+)
+from autosklearn.pipeline.constants import (  # noqa: E402  # pylint: disable=C0413
+    DENSE,
+    INPUT,
+    SPARSE,
+    UNSIGNED_DATA,
+)
+from ConfigSpace.configuration_space import (  # noqa: E402 # pylint: disable=E0611, C0413
+    ConfigurationSpace,
+)
+from sklearn.preprocessing import (  # noqa: E402  # pylint: disable=C0413
+    PolynomialFeatures,
+)
 
-from octopus import OctoConfig, OctoData, OctoML
+from octopus import OctoConfig, OctoData, OctoML  # noqa: E402  # pylint: disable=C0413
 
 
 class NoPreprocessing(AutoSklearnPreprocessingAlgorithm):
     """Noprepro."""
 
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs):  # pylint: disable=W0231
         # Some internal checks makes sure parameters are set
         for key, val in kwargs.items():
             setattr(self, key, val)
 
-    def fit(self, X, Y=None):
+    def fit(self, X, Y=None):  # pylint: disable=W0613, W0237
         """Fit."""
         return self
 
@@ -220,7 +232,6 @@ config_sequence = [
             # 'resampling_strategy_arguments':None,
             "resampling_strategy": "cv",
             "resampling_strategy_arguments": {"folds": 6},
-            "metric": mean_absolute_error,
         },
     },
 ]

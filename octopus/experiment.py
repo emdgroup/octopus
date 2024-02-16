@@ -1,4 +1,5 @@
 """Octo Experiment module."""
+
 import pickle
 from pathlib import Path
 
@@ -36,6 +37,7 @@ class OctoExperiment:
     ml_config: dict = field(
         init=False, default=dict(), validator=[validators.instance_of(dict)]
     )
+    # experiment outputs:
     selected_features: list = field(
         init=False, default=list(), validator=[validators.instance_of(list)]
     )
@@ -43,6 +45,14 @@ class OctoExperiment:
         init=False, default=dict(), validator=[validators.instance_of(dict)]
     )
     models: dict = field(
+        init=False, default=dict(), validator=[validators.instance_of(dict)]
+    )
+
+    feature_importances: dict = field(
+        init=False, default=dict(), validator=[validators.instance_of(dict)]
+    )
+
+    scores: dict = field(
         init=False, default=dict(), validator=[validators.instance_of(dict)]
     )
 

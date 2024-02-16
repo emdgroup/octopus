@@ -49,15 +49,19 @@ for line in [319, 330, 338]:
 # - check that openblas settings are correct and suggest solutions
 
 # TOBEDONE OCTOFULL
-# - (1) fix this error: autosk and when autsk arr regression is called
-#    File "/home/ec2-user/Octopus/octopus/ml.py", line 50, in create_outer_experiments
-#    self.oconfig.to_json(path_sub.joinpath("config.json"))  # human readable
-#    File "/home/ec2-user/Octopus/octopus/config.py", line 48, in to_json
-#    json.dump(asdict(self), file)
-# - (2) basic analytics class
-# - (3) implement survival model
-# - (4) Make use of default model parameters, see autosk, optuna
+# - (1) make bag compatible with sklearn
+#   +very difficult as sklearn differentiates between regression, classification
+#   RegressionBag, ClassBag
+#   +we also want to include T2E
+# - (2) bag feature importances (standard, permutation, shapley)
+# - (3) training feature importances (standard, permutation, shapley)
+# - (4) return selected features
+# - (5) basic analytics class
+# - (6) implement survival model
+# - (7) Make use of default model parameters, see autosk, optuna
+# - (8) octofull module is big and should be directory
 # - Performance evaluation generalize: ensemble_hard, ensemble_soft
+
 # - automatically remove features with a single value! and provide user feedback
 # - deepchecks - https://docs.deepchecks.com/0.18/tabular/auto_checks/data_integrity/index.html
 # - outer parallelizaion can lead to very differing execution times per experiment!
@@ -65,7 +69,6 @@ for line in [319, 330, 338]:
 # - sequence config -- module is fixed
 # - attach results (best_bag) to experiment
 # - improve create_best_bags - use a direct way, from returned best trial or optuna.db
-# - module are big and should be directories
 # - xgoost class weights need to be set in training! How to solve that?
 # - check disk space and inform about disk space requirements
 
@@ -174,9 +177,9 @@ class OctoFull:
             self.run_individualhp_optimization()
 
         # create best bag in results directory
+        # - attach best bag to experiment
+        # - attach best bag scores to experiment
         self.create_best_bag()
-
-        # update experiment - attach best bag
 
         return self.experiment
 
@@ -230,6 +233,12 @@ class OctoFull:
             self.path_results.joinpath("best_bag_scores.json"), "w", encoding="utf-8"
         ) as f:
             json.dump(best_bag_scores, f)
+
+        # save best bag to the experiment
+        self.experiment.models["best"] = best_bag
+
+        # save best bag scores to the experiment
+        self.experiment.scores = best_bag_scores
 
     def run_globalhp_optimization(self):
         """Optimization run with a global HP set over all inner folds."""

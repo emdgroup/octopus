@@ -18,18 +18,18 @@ from sklearn.metrics import mean_absolute_error
 from octopus.experiment import OctoExperiment
 
 # TOBEDONE:
-# - (1) selection of autosk metric based on octoconfig,
-#    then no need to import autosk in workflow
-# - (2) check config regarding available CPUs
+# - (1) calculate scores and save to experiment (see octofull)
+# - (2) function to calculate feature importances (standard, permutation, shapley)
+#       https://automl.github.io/auto-sklearn/master/examples/
+#       40_advanced/example_inspect_predictions.html
 # - (3) save feature importances in experiment
-# - (4) use defined properties in predict function
-# - (5) autosklearn refit() functionality
-# - (6) check what other functionality from autosk is missing
-# - (7) place tmp directory in experiment path for transparency.
-#       currently, "/tmp" is used and users may not find used
-#       used up disk space, especially after potential crashes
-# - (8) understand autosk cost function!!
-#       https://github.com/automl/auto-sklearn/issues/1717
+# - (4) save selected features (needs features importances)
+# - (5) check config regarding available CPUs
+# - (6) use defined properties in predict function
+# - (7) autosklearn refit() functionality
+# - (8) check what other functionality from autosk is missing
+# - understand autosk cost function
+#   https://github.com/automl/auto-sklearn/issues/1717
 # - turn off data preprocessing:
 #   https://automl.github.io/auto-sklearn/development/examples/
 #   80_extending/example_extending_data_preprocessor.html
@@ -39,7 +39,7 @@ from octopus.experiment import OctoExperiment
 #   try to set in the code, maybe in manager
 #   https://superfastpython.com/numpy-number-blas-threads/
 #   #Need_to_Configure_the_Number_of_Threads_Used_By_BLAS
-#   it needs to be set before Autosk is imported, tests needed
+#   it needs to be set before autosk and even pandas is imported
 # - how to run vanilla autosklearn:
 #   ensemble_class=autosklearn.ensembles.SingleBest
 #   initial_configurations_via_metalearning=0
@@ -80,6 +80,11 @@ class Autosklearn:
         return self.path_module.joinpath("results")
 
     @property
+    def path_tmp(self) -> Path:
+        """Results path."""
+        return self.path_module.joinpath("tmp")
+
+    @property
     def x_train(self) -> pd.DataFrame:
         """x_train."""
         return self.experiment.data_traindev[self.experiment.feature_columns]
@@ -107,6 +112,8 @@ class Autosklearn:
         params = self.experiment.ml_config["config"]
         # add metric based on target metric
         params["metric"] = metrics_inventory[self.experiment.config["target_metric"]]
+        # overwrite tmp folder, makes temp space usage visible
+        params["tmp_folder"] = (str(self.path_tmp),)
         return params
 
     def __attrs_post_init__(self):
@@ -114,7 +121,7 @@ class Autosklearn:
         # of module when restarted, required for parallel optuna runs
         # as optuna.create(...,load_if_exists=True)
         # create directory if it does not exist
-        for directory in [self.path_results]:
+        for directory in [self.path_results, self.path_tmp]:
             if directory.exists():
                 shutil.rmtree(directory)
             directory.mkdir(parents=True, exist_ok=True)
@@ -199,6 +206,7 @@ class Autosklearn:
             test_predictions_df = pd.concat([test_predictions_df, probs_df], axis=1)
         self.experiment.results["test_predictions_df"] = test_predictions_df
 
+        # save scores to experiment (missing)
         # show and save test results, MAE
         print(
             f"Experiment: {self.experiment.id} "
@@ -215,20 +223,20 @@ class Autosklearn:
             json.dump(results_test, f)
 
         # save model
-        self.experiment.models["model_0"] = self.model
+        self.experiment.models["best"] = self.model
 
         # return updated experiment object
         return self.experiment
 
     def predict(self, dataset: pd.DataFrame):
         """Predict on new dataset."""
-        model = self.experiment.models["model_0"]
+        model = self.experiment.models["best"]
         return model.predict(dataset[self.experiment.feature_columns])
 
     def predict_proba(self, dataset: pd.DataFrame):
         """Predict_proba on new dataset."""
         if self.experiment.ml_type == "classification":
-            self.model = self.experiment.models["model_0"]
+            self.model = self.experiment.models["best"]
             return self.model.predict_proba(dataset[self.experiment.feature_columns])
         else:
             raise ValueError("predict_proba only supported for classifications")

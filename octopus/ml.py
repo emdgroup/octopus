@@ -1,5 +1,6 @@
 """OctoML module."""
 
+import sys
 from pathlib import Path
 
 from attrs import asdict, define, field, validators
@@ -33,7 +34,7 @@ class OctoML:
                     print("Continuing...")
                 else:
                     print("Exiting...")
-                    exit()
+                    sys.exit()
         path_study.mkdir(parents=True, exist_ok=True)
         print("Path to study:", path_study)
 

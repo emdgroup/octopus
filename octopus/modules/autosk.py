@@ -2,6 +2,7 @@
 
 try:
     import autosklearn.classification
+    import autosklearn.metrics
     import autosklearn.regression
 except ImportError:
     print("Auto-Sklearn not installed in this conda environment")
@@ -46,6 +47,17 @@ from octopus.experiment import OctoExperiment
 
 # Notes:
 # - autosklearn in version 0.15 requires numpy==1.23.5, otherwise some jobs will fail
+
+# mapping of metrics
+metrics_inventory = {
+    "AUCROC": autosklearn.metrics.roc_auc,
+    "ACC": autosklearn.metrics.accuracy,
+    "ACCBAL": autosklearn.metrics.balanced_accuracy,
+    "LOGLOSS": autosklearn.metrics.log_loss,
+    "MAE": autosklearn.metrics.mean_absolute_error,
+    "MSE": autosklearn.metrics.root_mean_squared_error,
+    "R2": autosklearn.metrics.r2,
+}
 
 
 @define
@@ -92,7 +104,10 @@ class Autosklearn:
     @property
     def params(self) -> pd.DataFrame:
         """Auto-sklearn parameters."""
-        return self.experiment.ml_config["config"]
+        params = self.experiment.ml_config["config"]
+        # add metric based on target metric
+        params["metric"] = metrics_inventory[self.experiment.config["target_metric"]]
+        return params
 
     def __attrs_post_init__(self):
         # delete directories /trials /optuna /results to ensure clean state

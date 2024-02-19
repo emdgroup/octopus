@@ -1,0 +1,89 @@
+"""Octopus Config."""
+
+from typing import List
+
+from attrs import define, field, validators
+
+
+@define
+class OctopusFullConfig:
+    """OctopusLightConfig."""
+
+    models: List = field(
+        # validator=[validators.in_(["ExtraTreesRegressor", "RandomForestRegressor"])],
+    )
+    """Models for ML."""
+
+    module: List = field(default="octofull")
+    """Models for ML."""
+
+    description: str = field(validator=[validators.instance_of(str)], default=None)
+    """Description."""
+    # datasplit
+    n_folds_inner: int = field(validator=[validators.instance_of(int)], default=5)
+    """Number of inner folds."""
+
+    datasplit_seed_inner: int = field(
+        validator=[validators.instance_of(int)], default=0
+    )
+    """Data split seed for inner loops."""
+    # model training
+
+    model_seed: int = field(validator=[validators.instance_of(int)], default=0)
+    """Model seed."""
+
+    n_jobs: int = field(validator=[validators.instance_of(int)], default=1)
+    """Number of parallel jobs."""
+
+    dim_red_methods: List = field(default=[""])
+    """Methods for dimension reduction."""
+
+    max_outl: int = field(validator=[validators.instance_of(int)], default=5)
+    """?"""
+    # parallelization
+    inner_parallelization: bool = field(
+        validator=[validators.instance_of(bool)], default=False
+    )
+
+    n_workers: int = field(validator=[validators.instance_of(int)], default=None)
+    """Number of workers."""
+    # hyperparamter optimization
+    optuna_seed: int = field(validator=[validators.instance_of(int)], default=None)
+    """Seed for Optuna TPESampler, default=no seed"""
+
+    n_optuna_startup_trials: int = field(
+        validator=[validators.instance_of(int)], default=10
+    )
+    """Number of Optuna startup trials (random sampler)"""
+
+    global_hyperparameter: bool = field(
+        validator=[validators.in_([True, False])], default=True
+    )
+    """Selection of hyperparameter set."""
+
+    n_trials: int = field(validator=[validators.instance_of(int)], default=100)
+    """Number of Optuna trials."""
+
+    hyperparameter: dict = field(validator=[validators.instance_of(dict)], default={})
+    """Bring own hyperparameter space."""
+
+    max_features: int = field(validator=[validators.instance_of(int)], default=-1)
+    """Maximum features."""
+
+    save_trials: bool = field(validator=[validators.instance_of(bool)], default=False)
+    """Save trials (bags)."""
+
+    resume_optimization: bool = field(
+        validator=[validators.instance_of(bool)], default=False
+    )
+    """Resume HPO, use existing optuna.db, don't delete optuna.de"""
+
+    def __attrs_post_init__(self):
+        # set default of n_workers to n_folds_inner
+        if self.n_workers is None:
+            self.n_workers = self.n_folds_inner
+        if self.n_workers != self.n_folds_inner:
+            print(
+                f"Octofull Warning: n_workers ({self.n_workers}) "
+                f"does not match n_folds_inner ({self.n_folds_inner})",
+            )

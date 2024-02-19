@@ -283,7 +283,9 @@ dependencies:
   - seaborn-base=0.12.2=pyhd8ed1ab_0
   - send2trash=1.8.2=pyh41d4057_0
   - setuptools=68.2.2=pyhd8ed1ab_0
+  - shap=0.44.0=cpu_py38hcb6d318_7
   - six=1.16.0=pyh6c4a22f_0
+  - slicer=0.0.7=pyhd8ed1ab_0
   - smac=1.2=pyhd8ed1ab_0
   - smmap=5.0.0=pyhd8ed1ab_0
   - snappy=1.1.10=h9fff704_0

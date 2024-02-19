@@ -13,6 +13,7 @@ import optuna
 import pandas as pd
 from attrs import define, field, validators
 from optuna.samplers._tpe.sampler import ExperimentalWarning
+from sklearn.inspection import permutation_importance
 from sklearn.metrics import (
     accuracy_score,
     balanced_accuracy_score,
@@ -49,13 +50,14 @@ for line in [319, 330, 338]:
 # - check that openblas settings are correct and suggest solutions
 
 # TOBEDONE OCTOFULL
+# - (A) return selected features to experiment
+# - (B) return ensembled test predictions to experiment
 # - (1) make bag compatible with sklearn
 #   +very difficult as sklearn differentiates between regression, classification
 #   RegressionBag, ClassBag
 #   +we also want to include T2E
 # - (2) bag feature importances (standard, permutation, shapley)
-# - (3) training feature importances (standard, permutation, shapley)
-# - (4) return selected features
+# - (3) training feature importances (shapley), .predict() for permutation, test!
 # - (5) basic analytics class
 # - (6) implement survival model
 # - (7) Make use of default model parameters, see autosk, optuna
@@ -239,6 +241,15 @@ class OctoFull:
 
         # save best bag scores to the experiment
         self.experiment.scores = best_bag_scores
+
+        # save selected features to experiment
+        self.experiment.selected_features = best_bag.get_selected_features()
+
+        # save feature importances to experiment
+        # self.experiment.feature_importances = best_bag.get_feature_importances()
+
+        # save test predictions to experiment
+        self.experiment.test_predictions = best_bag.get_test_predictions()
 
     def run_globalhp_optimization(self):
         """Optimization run with a global HP set over all inner folds."""
@@ -579,6 +590,10 @@ class Training:
     # training output
     model = field(default=None)
     predictions: dict = field(default=dict(), validator=[validators.instance_of(dict)])
+    feature_importances: dict = field(
+        default=dict(), validator=[validators.instance_of(dict)]
+    )
+
     # scaler
     scaler = field(init=False)
 
@@ -703,12 +718,30 @@ class Training:
             # self.predictions["test"][columns] =self.model.predict_proba(x_test_scaled)
             self.predictions["test"][columns] = self.model.predict_proba(self.x_test)
 
-        # missing: other feature importance methods
-        # result = permutation_importance(
-        #    self.model, X=x_dev_scaled, y=self.y_dev, n_repeats=10, random_state=0
-        # )
-        # print(result)
         return self
+
+    def calculate_fi_internal(self):
+        """Sklearn provided internal feature importance (based on train dataset)."""
+        if hasattr(self.model, "features_importances_"):
+            fi_df = pd.DataFrame()
+            fi_df["feature"] = self.feature_columns
+            fi_df["importance"] = self.model.features_importances_
+
+        else:
+            fi_df = pd.DataFrame(columns=["feature", "importance"])
+        self.feature_importances["internal"] = fi_df
+
+    def calculate_fi_permutation(self):
+        """Permutation feature importance on test dataset."""
+        print("Calculating permutation feature importances. This may take a while...")
+        perm_importance = permutation_importance(
+            self.model, X=self.x_test, y=self.y_test, n_repeats=2, random_state=0
+        )
+        fi_df = pd.DataFrame()
+        fi_df["feature"] = self.feature_columns
+        fi_df["importance"] = perm_importance.importances_mean
+        fi_df["importance_std"] = perm_importance.importances_std
+        self.feature_importances["permutation"] = fi_df
 
     def to_pickle(self, path):
         """Save training."""
@@ -735,6 +768,9 @@ class TrainingsBag:
     target_metric: str = field(validator=[validators.instance_of(str)])
     row_column: str = field(validator=[validators.instance_of(str)])
     # path: Path = field(default=Path(), validator=[validators.instance_of(Path)])
+    feature_importances: dict = field(
+        default=dict(), validator=[validators.instance_of(dict)]
+    )
     train_status: bool = field(default=False)
 
     def fit(self):
@@ -769,6 +805,23 @@ class TrainingsBag:
                 print("Inner sequential training completed")
 
         self.train_status = True
+
+    def get_test_predictions(self):
+        """Extract bag test predictions."""
+        if not self.train_status:
+            print("Running trainings first to be able to get scores")
+            self.fit()
+
+        pool = []
+        for training in self.trainings:
+            pool.append(training.predictions["test"])
+        pool = pd.concat(pool, axis=0)
+        ensemble = pool.groupby(by=self.row_column).mean()
+
+        if self.target_metric in ["AUCROC", "LOGLOSS"]:
+            ensemble["probability"] = ensemble[1]  # binary only!!
+
+        return ensemble
 
     def get_scores(self):
         """Get scores."""
@@ -842,6 +895,40 @@ class TrainingsBag:
                 )
 
         return scores
+
+    def calculate_fi_internal(self):
+        """Feature importances, model internal."""
+        fi = dict()
+        for training in self.trainings:
+            training.calculate_fi_internal()
+            fi[training.training_id] = training.feature_importances["internal"]
+
+        self.feature_importances["internal"] = fi
+
+    def calculate_fi_permutation(self):
+        """Feature importances, model internal."""
+        fi = dict()
+        for training in self.trainings:
+            training.calculate_fi_permutation()
+            fi[training.training_id] = training.feature_importances["permutation"]
+        self.feature_importances["permutation"] = fi
+
+    def get_selected_features(self):
+        """Extract selected bag features."""
+        self.calculate_fi_internal()
+        df_lst = list()
+        for _, value in self.feature_importances["internal"].items():
+            df_lst.append(value)
+        fi_df = pd.concat(df_lst, axis=0)
+        fi_df = fi_df[fi_df["importance"] != 0]
+        return fi_df["feature"].unique().tolist()
+
+    def get_feature_importances(self):
+        """Extract bag feature importances."""
+        # - add shap feature importance
+        self.calculate_fi_internal()
+        self.calculate_fi_permutation()
+        return self.feature_importances
 
     def to_pickle(self, path):
         """Save Bag using pickle."""

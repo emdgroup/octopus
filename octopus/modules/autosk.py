@@ -19,15 +19,16 @@ from octopus.experiment import OctoExperiment
 
 # TOBEDONE:
 # - (1) calculate scores and save to experiment (see octofull)
-# - (2) function to calculate feature importances (standard, permutation, shapley)
+# - (2) save test predictions to experiment
+# - (3) function to calculate feature importances (standard, permutation, shapley)
 #       https://automl.github.io/auto-sklearn/master/examples/
 #       40_advanced/example_inspect_predictions.html
-# - (3) save feature importances in experiment
-# - (4) save selected features (needs features importances)
-# - (5) check config regarding available CPUs
-# - (6) use defined properties in predict function
-# - (7) autosklearn refit() functionality
-# - (8) check what other functionality from autosk is missing
+# - (4) save feature importances to experiment
+# - (5) save selected features (needs features importances)
+# - (6) check config regarding available CPUs
+# - (7) use defined properties in predict function
+# - (8) autosklearn refit() functionality
+# - (9) check what other functionality from autosk is missing
 # - understand autosk cost function
 #   https://github.com/automl/auto-sklearn/issues/1717
 # - turn off data preprocessing:

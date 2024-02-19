@@ -2,36 +2,21 @@
 
 import concurrent.futures
 import json
-import pickle
 import shutil
 import warnings
 from pathlib import Path
-from statistics import mean
-from typing import List
 
 import optuna
 import pandas as pd
 from attrs import define, field, validators
 from optuna.samplers._tpe.sampler import ExperimentalWarning
-from sklearn.inspection import permutation_importance
-from sklearn.metrics import (
-    accuracy_score,
-    balanced_accuracy_score,
-    log_loss,
-    mean_absolute_error,
-    mean_squared_error,
-    r2_score,
-    roc_auc_score,
-)
-from sklearn.preprocessing import MinMaxScaler
 
 from octopus.experiment import OctoExperiment
-from octopus.models.config import model_inventory
 from octopus.models.parameters import parameters_inventory
 from octopus.models.utils import create_trialparams_from_config
+from octopus.modules.octo.bags import TrainingsBag
+from octopus.modules.octo.trainings import Training
 from octopus.modules.utils import optuna_direction
-
-# from sklearn.inspection import permutation_importance
 from octopus.utils import DataSplit
 
 # ignore three Optuna experimental warnings
@@ -43,33 +28,29 @@ for line in [319, 330, 338]:
         module="optuna.samplers._tpe.sampler",
         lineno=line,
     )
+
 # TOBEDONE BASE
 # - check module type
-# - any issues due to missing .copy() statements???
 # - autosk with serial processing of outer folds does not use significant CPU??
 # - check that openblas settings are correct and suggest solutions
 
 # TOBEDONE OCTOFULL
-# - (A) return selected features to experiment
-# - (B) return ensembled test predictions to experiment
-# - (1) make bag compatible with sklearn
+# - (1) return selected features, based on shap and dev dataset
+# - (2) is there a good way to determin which shap values are relevant, stats test?
+# - (3) make bag compatible with sklearn
 #   +very difficult as sklearn differentiates between regression, classification
 #   RegressionBag, ClassBag
 #   +we also want to include T2E
-# - (2) bag feature importances (standard, permutation, shapley)
-# - (3) training feature importances (shapley), .predict() for permutation, test!
-# - (5) basic analytics class
-# - (6) implement survival model
-# - (7) Make use of default model parameters, see autosk, optuna
-# - (8) octofull module is big and should be directory
+#   + check if a single predict function is sufficient for shap/permutation importance
+# - (4) basic analytics class
+# - (5) implement survival model
+# - (6) Make use of default model parameters, see autosk, optuna
 # - Performance evaluation generalize: ensemble_hard, ensemble_soft
-
 # - automatically remove features with a single value! and provide user feedback
 # - deepchecks - https://docs.deepchecks.com/0.18/tabular/auto_checks/data_integrity/index.html
 # - outer parallelizaion can lead to very differing execution times per experiment!
 # - check that for classification only classification modules are used
 # - sequence config -- module is fixed
-# - attach results (best_bag) to experiment
 # - improve create_best_bags - use a direct way, from returned best trial or optuna.db
 # - xgoost class weights need to be set in training! How to solve that?
 # - check disk space and inform about disk space requirements
@@ -91,7 +72,6 @@ for line in [319, 330, 338]:
 #   importance may not work anyways
 # - add outlier removal
 # - add scaling, as a HP?
-# - include shapley and permutation importance
 # - include dimensionality reduction
 # - include outlier elimination
 
@@ -244,9 +224,11 @@ class OctoFull:
 
         # save selected features to experiment
         self.experiment.selected_features = best_bag.get_selected_features()
+        print("Number of original features:", len(self.experiment.feature_columns))
+        print("Number of selected features:", len(self.experiment.selected_features))
 
         # save feature importances to experiment
-        # self.experiment.feature_importances = best_bag.get_feature_importances()
+        self.experiment.feature_importances = best_bag.get_feature_importances()
 
         # save test predictions to experiment
         self.experiment.test_predictions = best_bag.get_test_predictions()
@@ -570,457 +552,3 @@ class ObjectiveOptuna:
                 print(f"{key}:{value:.3f}")
 
         return scores["dev_avg"]  # dev target metric
-
-
-@define
-class Training:
-    """Model Training Class."""
-
-    training_id: str = field(validator=[validators.instance_of(str)])
-    ml_type: str = field(validator=[validators.instance_of(str)])
-    target_assignments: dict = field(validator=[validators.instance_of(dict)])
-    feature_columns: list = field(validator=[validators.instance_of(list)])
-    row_column: str = field(validator=[validators.instance_of(str)])
-    data_train: pd.DataFrame = field(validator=[validators.instance_of(pd.DataFrame)])
-    data_dev: pd.DataFrame = field(validator=[validators.instance_of(pd.DataFrame)])
-    data_test: pd.DataFrame = field(validator=[validators.instance_of(pd.DataFrame)])
-    target_metric: str = field(validator=[validators.instance_of(str)])
-    # configuration for training
-    config_training: dict = field(validator=[validators.instance_of(dict)])
-    # training output
-    model = field(default=None)
-    predictions: dict = field(default=dict(), validator=[validators.instance_of(dict)])
-    feature_importances: dict = field(
-        default=dict(), validator=[validators.instance_of(dict)]
-    )
-
-    # scaler
-    scaler = field(init=False)
-
-    @property
-    def dim_reduction(self) -> str:
-        """Dimension reduction method."""
-        return self.config_training["dim_reduction"]
-
-    @property
-    def outl_reduction(self) -> int:
-        """Parameter outlier reduction method."""
-        return self.config_training["outl_reduction"]
-
-    @property
-    def ml_model_type(self) -> str:
-        """Dimension reduction method."""
-        return self.config_training["ml_model_type"]
-
-    @property
-    def ml_model_params(self) -> dict:
-        """Dimension reduction method."""
-        return self.config_training["ml_model_params"]
-
-    @property
-    def x_train(self):
-        """x_train."""
-        return self.data_train[self.feature_columns]
-
-    @property
-    def x_dev(self):
-        """x_dev."""
-        return self.data_dev[self.feature_columns]
-
-    @property
-    def x_test(self):
-        """x_test."""
-        return self.data_test[self.feature_columns]
-
-    @property
-    def y_train(self):
-        """y_train."""
-        return self.data_train[self.target_assignments.values()]
-
-    @property
-    def y_dev(self):
-        """y_dev."""
-        return self.data_dev[self.target_assignments.values()]
-
-    @property
-    def y_test(self):
-        """y_dev."""
-        return self.data_test[self.target_assignments.values()]
-
-    def __attrs_post_init__(self):
-        self.scaler = MinMaxScaler()
-
-    # perform:
-    # (1) dim_reduction
-    # (2) outlier removal
-    # (3) training
-    # (4) standard feature importance
-    # (4) permutation feature importance
-    # (5) shapley feature importance
-
-    # output:
-    # (1) predictions
-    # (2) probabilities in case of classification
-    # (3) feature_importances, which
-    # (4)
-
-    def fit(self):
-        """Run trainings."""
-        # missing:
-        # (1) missing: outlier removal
-        # (2) scaling
-        # (3) missinf dim reduction
-
-        # scaling (!after outlier removal)
-        # x_train_scaled = self.scaler.fit_transform(self.x_train)
-        # x_dev_scaled = self.scaler.transform(self.x_dev)
-        # x_test_scaled = self.scaler.transform(self.x_test)
-        self.model = model_inventory[self.ml_model_type](**self.ml_model_params)
-
-        if len(self.target_assignments) == 1:
-            # standard sklearn single target models
-            self.model.fit(
-                # x_train_scaled,
-                self.x_train,
-                self.y_train.squeeze(axis=1),
-            )
-        else:
-            # multi target models, incl. time2event
-            # self.model.fit(x_train_scaled, self.y_train)
-            self.model.fit(self.x_train, self.y_train)
-
-        self.predictions["train"] = pd.DataFrame()
-        self.predictions["train"][self.row_column] = self.data_train[self.row_column]
-        self.predictions["train"]["target"] = self.y_train.squeeze(axis=1)
-        # self.predictions["train"]["prediction"] = self.model.predict(x_train_scaled)
-        self.predictions["train"]["prediction"] = self.model.predict(self.x_train)
-
-        self.predictions["dev"] = pd.DataFrame()
-        self.predictions["dev"][self.row_column] = self.data_dev[self.row_column]
-        self.predictions["dev"]["target"] = self.y_dev.squeeze(axis=1)
-        # self.predictions["dev"]["prediction"] = self.model.predict(x_dev_scaled)
-        self.predictions["dev"]["prediction"] = self.model.predict(self.x_dev)
-
-        self.predictions["test"] = pd.DataFrame()
-        self.predictions["test"][self.row_column] = self.data_test[self.row_column]
-        self.predictions["test"]["target"] = self.y_test.squeeze(axis=1)
-        # self.predictions["test"]["prediction"] = self.model.predict(x_test_scaled)
-        self.predictions["test"]["prediction"] = self.model.predict(self.x_test)
-
-        if self.ml_type == "classification":
-            columns = [int(x) for x in self.model.classes_]  # column names --> int
-            # self.predictions["train"][columns] = self.model.predict_proba(
-            #    x_train_scaled
-            # )
-            self.predictions["train"][columns] = self.model.predict_proba(self.x_train)
-            # self.predictions["dev"][columns] = self.model.predict_proba(x_dev_scaled)
-            self.predictions["dev"][columns] = self.model.predict_proba(self.x_dev)
-            # self.predictions["test"][columns] =self.model.predict_proba(x_test_scaled)
-            self.predictions["test"][columns] = self.model.predict_proba(self.x_test)
-
-        return self
-
-    def calculate_fi_internal(self):
-        """Sklearn provided internal feature importance (based on train dataset)."""
-        if hasattr(self.model, "features_importances_"):
-            fi_df = pd.DataFrame()
-            fi_df["feature"] = self.feature_columns
-            fi_df["importance"] = self.model.features_importances_
-
-        else:
-            fi_df = pd.DataFrame(columns=["feature", "importance"])
-        self.feature_importances["internal"] = fi_df
-
-    def calculate_fi_permutation(self):
-        """Permutation feature importance on test dataset."""
-        print("Calculating permutation feature importances. This may take a while...")
-        perm_importance = permutation_importance(
-            self.model, X=self.x_test, y=self.y_test, n_repeats=2, random_state=0
-        )
-        fi_df = pd.DataFrame()
-        fi_df["feature"] = self.feature_columns
-        fi_df["importance"] = perm_importance.importances_mean
-        fi_df["importance_std"] = perm_importance.importances_std
-        self.feature_importances["permutation"] = fi_df
-
-    def to_pickle(self, path):
-        """Save training."""
-
-    @classmethod
-    def from_pickle(cls, path):
-        """Load training."""
-
-
-@define
-class TrainingsBag:
-    """Container for Trainings.
-
-    Supports:
-    - execution of trainings, sequential/parallel
-    - saving/loading
-    """
-
-    trainings: list = field(validator=[validators.instance_of(list)])
-    # same config parameters (execution type, num_workers) also used for
-    # parallelization of optuna optimizations of individual inner loop trainings
-    parallel_execution: bool = field(validator=[validators.instance_of(bool)])
-    num_workers: int = field(validator=[validators.instance_of(int)])
-    target_metric: str = field(validator=[validators.instance_of(str)])
-    row_column: str = field(validator=[validators.instance_of(str)])
-    # path: Path = field(default=Path(), validator=[validators.instance_of(Path)])
-    feature_importances: dict = field(
-        default=dict(), validator=[validators.instance_of(dict)]
-    )
-    train_status: bool = field(default=False)
-
-    def fit(self):
-        """Run all available trainings."""
-        if self.parallel_execution is True:
-            # max_tasks_per_child=1 requires Python3.11
-            with concurrent.futures.ProcessPoolExecutor(
-                max_workers=self.num_workers,
-            ) as executor:
-                futures = []
-                train_results = []
-                for i in self.trainings:
-                    try:
-                        future = executor.submit(i.fit)
-                        futures.append(future)
-                    except Exception as e:  # pylint: disable=broad-except
-                        print(f"Exception occurred while submitting task: {e}")
-                for future in concurrent.futures.as_completed(futures):
-                    try:
-                        train_results.append(future.result())
-                        print("Inner parallel training completed")
-                    except Exception as e:  # pylint: disable=broad-except
-                        print(f"Exception occurred while executing task: {e}")
-                        print(f"Exception: {type(e).__name__}")
-                # replace trainings with processed trainings
-                # order in self.trainings may change!
-                self.trainings = train_results
-
-        else:
-            for training in self.trainings:
-                training.fit()
-                print("Inner sequential training completed")
-
-        self.train_status = True
-
-    def get_test_predictions(self):
-        """Extract bag test predictions."""
-        if not self.train_status:
-            print("Running trainings first to be able to get scores")
-            self.fit()
-
-        pool = []
-        for training in self.trainings:
-            pool.append(training.predictions["test"])
-        pool = pd.concat(pool, axis=0)
-        ensemble = pool.groupby(by=self.row_column).mean()
-
-        if self.target_metric in ["AUCROC", "LOGLOSS"]:
-            ensemble["probability"] = ensemble[1]  # binary only!!
-
-        return ensemble
-
-    def get_scores(self):
-        """Get scores."""
-        if not self.train_status:
-            print("Running trainings first to be able to get scores")
-            self.fit()
-
-        scores = dict()
-        metrics_inventory = {
-            "AUCROC": roc_auc_score,
-            "ACC": accuracy_score,
-            "ACCBAL": balanced_accuracy_score,
-            "LOGLOSS": log_loss,
-            "MAE": mean_absolute_error,
-            "MSE": mean_squared_error,
-            "R2": r2_score,
-        }
-
-        storage = {key: [] for key in ["train", "dev", "test"]}
-        pool = {key: [] for key in ["train", "dev", "test"]}
-
-        for training in self.trainings:
-            # averaging
-            if self.target_metric in ["AUCROC", "LOGLOSS"]:
-                for part in storage.keys():
-                    probabilities = training.predictions[part][1]  # binary only!!
-                    target = training.predictions[part]["target"]
-                    storage[part].append(
-                        metrics_inventory[self.target_metric](target, probabilities)
-                    )
-            else:
-                for part in storage.keys():
-                    predictions = training.predictions[part]["prediction"]
-                    target = training.predictions[part]["target"]
-                    storage[part].append(
-                        metrics_inventory[self.target_metric](target, predictions)
-                    )
-            # pooling
-            for part in pool.keys():
-                pool[part].append(training.predictions[part])
-
-        # calculate averaging scores
-        scores["train_avg"] = mean(storage["train"])
-        scores["train_lst"] = storage["train"]
-        scores["dev_avg"] = mean(storage["dev"])
-        scores["dev_lst"] = storage["dev"]
-        scores["test_avg"] = mean(storage["test"])
-        scores["test_lst"] = storage["test"]
-        # stack pooled data and groupby
-        for part in pool.keys():
-            pool[part] = pd.concat(pool[part], axis=0)
-            pool[part] = pool[part].groupby(by=self.row_column).mean()
-        # calculate pooling scores (soft and hard)
-        if self.target_metric in ["AUCROC", "LOGLOSS"]:
-            for part in pool.keys():
-                probabilities = pool[part][1]  # binary only!!
-                predictions = pool[part]["prediction"]
-                target = pool[part]["target"]
-                scores[part + "_pool_soft"] = metrics_inventory[self.target_metric](
-                    target, probabilities
-                )
-                scores[part + "_pool_hard"] = metrics_inventory[self.target_metric](
-                    target, predictions
-                )
-        else:
-            for part in pool.keys():
-                predictions = pool[part]["prediction"]
-                target = pool[part]["target"]
-                scores[part + "_pool_hard"] = metrics_inventory[self.target_metric](
-                    target, predictions
-                )
-
-        return scores
-
-    def calculate_fi_internal(self):
-        """Feature importances, model internal."""
-        fi = dict()
-        for training in self.trainings:
-            training.calculate_fi_internal()
-            fi[training.training_id] = training.feature_importances["internal"]
-
-        self.feature_importances["internal"] = fi
-
-    def calculate_fi_permutation(self):
-        """Feature importances, model internal."""
-        fi = dict()
-        for training in self.trainings:
-            training.calculate_fi_permutation()
-            fi[training.training_id] = training.feature_importances["permutation"]
-        self.feature_importances["permutation"] = fi
-
-    def get_selected_features(self):
-        """Extract selected bag features."""
-        self.calculate_fi_internal()
-        df_lst = list()
-        for _, value in self.feature_importances["internal"].items():
-            df_lst.append(value)
-        fi_df = pd.concat(df_lst, axis=0)
-        fi_df = fi_df[fi_df["importance"] != 0]
-        return fi_df["feature"].unique().tolist()
-
-    def get_feature_importances(self):
-        """Extract bag feature importances."""
-        # - add shap feature importance
-        self.calculate_fi_internal()
-        self.calculate_fi_permutation()
-        return self.feature_importances
-
-    def to_pickle(self, path):
-        """Save Bag using pickle."""
-        with open(path, "wb") as file:
-            pickle.dump(self, file)
-
-    @classmethod
-    def from_pickle(cls, path):
-        """Load Bag from pickle file."""
-        with open(path, "rb") as file:
-            return pickle.load(file)
-
-
-@define
-class OctopusFullConfig:
-    """OctopusLightConfig."""
-
-    models: List = field(
-        # validator=[validators.in_(["ExtraTreesRegressor", "RandomForestRegressor"])],
-    )
-    """Models for ML."""
-
-    module: List = field(default="octofull")
-    """Models for ML."""
-
-    description: str = field(validator=[validators.instance_of(str)], default=None)
-    """Description."""
-    # datasplit
-    n_folds_inner: int = field(validator=[validators.instance_of(int)], default=5)
-    """Number of inner folds."""
-
-    datasplit_seed_inner: int = field(
-        validator=[validators.instance_of(int)], default=0
-    )
-    """Data split seed for inner loops."""
-    # model training
-
-    model_seed: int = field(validator=[validators.instance_of(int)], default=0)
-    """Model seed."""
-
-    n_jobs: int = field(validator=[validators.instance_of(int)], default=1)
-    """Number of parallel jobs."""
-
-    dim_red_methods: List = field(default=[""])
-    """Methods for dimension reduction."""
-
-    max_outl: int = field(validator=[validators.instance_of(int)], default=5)
-    """?"""
-    # parallelization
-    inner_parallelization: bool = field(
-        validator=[validators.instance_of(bool)], default=False
-    )
-
-    n_workers: int = field(validator=[validators.instance_of(int)], default=None)
-    """Number of workers."""
-    # hyperparamter optimization
-    optuna_seed: int = field(validator=[validators.instance_of(int)], default=None)
-    """Seed for Optuna TPESampler, default=no seed"""
-
-    n_optuna_startup_trials: int = field(
-        validator=[validators.instance_of(int)], default=10
-    )
-    """Number of Optuna startup trials (random sampler)"""
-
-    global_hyperparameter: bool = field(
-        validator=[validators.in_([True, False])], default=True
-    )
-    """Selection of hyperparameter set."""
-
-    n_trials: int = field(validator=[validators.instance_of(int)], default=100)
-    """Number of Optuna trials."""
-
-    hyperparameter: dict = field(validator=[validators.instance_of(dict)], default={})
-    """Bring own hyperparameter space."""
-
-    max_features: int = field(validator=[validators.instance_of(int)], default=-1)
-    """Maximum features."""
-
-    save_trials: bool = field(validator=[validators.instance_of(bool)], default=False)
-    """Save trials (bags)."""
-
-    resume_optimization: bool = field(
-        validator=[validators.instance_of(bool)], default=False
-    )
-    """Resume HPO, use existing optuna.db, don't delete optuna.de"""
-
-    def __attrs_post_init__(self):
-        # set default of n_workers to n_folds_inner
-        if self.n_workers is None:
-            self.n_workers = self.n_folds_inner
-        if self.n_workers != self.n_folds_inner:
-            print(
-                f"Octofull Warning: n_workers ({self.n_workers}) "
-                f"does not match n_folds_inner ({self.n_folds_inner})",
-            )

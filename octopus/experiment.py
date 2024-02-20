@@ -56,10 +56,10 @@ class OctoExperiment:
         init=False, default=dict(), validator=[validators.instance_of(dict)]
     )
 
-    test_predictions: pd.DataFrame = field(
+    predictions: dict = field(
         init=False,
-        default=pd.DataFrame(),
-        validator=[validators.instance_of(pd.DataFrame)],
+        default=dict(),
+        validator=[validators.instance_of(dict)],
     )
 
     @property

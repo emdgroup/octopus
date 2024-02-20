@@ -31,7 +31,9 @@ class Training:
     feature_importances: dict = field(
         default=dict(), validator=[validators.instance_of(dict)]
     )
-
+    used_features: list = field(
+        default=list(), validator=[validators.instance_of(list)]
+    )
     # scaler
     scaler = field(init=False)
 
@@ -156,6 +158,16 @@ class Training:
             # self.predictions["test"][columns] =self.model.predict_proba(x_test_scaled)
             self.predictions["test"][columns] = self.model.predict_proba(self.x_test)
 
+        # populate used_features
+        # use internal fi first
+        if hasattr(self.model, "features_importances_"):
+            self.calculate_fi_internal()
+            fi_df = self.feature_importances["internal"]
+        else:  # alternatively use shap
+            self.calculate_fi_shap(partition="dev")
+            fi_df = self.feature_importances["shap_dev"]
+        self.used_features = fi_df[fi_df["importance"] != 0]["feature"].tolist()
+
         return self
 
     def calculate_fi_internal(self):
@@ -169,27 +181,37 @@ class Training:
             fi_df = pd.DataFrame(columns=["feature", "importance"])
         self.feature_importances["internal"] = fi_df
 
-    def calculate_fi_permutation(self):
-        """Permutation feature importance on test dataset."""
+    def calculate_fi_permutation(self, partition="dev"):
+        """Permutation feature importance."""
         print("Calculating permutation feature importances. This may take a while...")
-        perm_importance = permutation_importance(
-            self.model, X=self.x_test, y=self.y_test, n_repeats=2, random_state=0
-        )
+        if partition == "dev":
+            perm_importance = permutation_importance(
+                self.model, X=self.x_dev, y=self.y_dev, n_repeats=10, random_state=0
+            )
+        elif partition == "test":
+            perm_importance = permutation_importance(
+                self.model, X=self.x_test, y=self.y_test, n_repeats=10, random_state=0
+            )
         fi_df = pd.DataFrame()
         fi_df["feature"] = self.feature_columns
         fi_df["importance"] = perm_importance.importances_mean
         fi_df["importance_std"] = perm_importance.importances_std
-        self.feature_importances["permutation"] = fi_df
+        self.feature_importances["permutation" + "_" + partition] = fi_df
 
-    def calculate_fi_shap(self):
-        """Shap feature importance on test dataset."""
+    def calculate_fi_shap(self, partition="dev"):
+        """Shap feature importance."""
         print("Calculating shape feature importances. This may take a while...")
         # Initialize shape explainer using training data
         # improve speed by self.x_train.sample(n=100, replace=True, random_state=0)
         explainer = shap.Explainer(self.model, self.x_train)
 
-        # Calculate SHAP values for the test dataset
-        shap_values = explainer.shap_values(self.x_test)
+        # Calculate SHAP values for the dev dataset
+        if partition == "dev":
+            shap_values = explainer.shap_values(self.x_dev)
+        elif partition == "test":
+            shap_values = explainer.shap_values(self.x_test)
+        else:
+            raise ValueError("dataset type not supported")
 
         # Calculate the feature importances as the absolute mean of SHAP values
         feature_importances = np.abs(shap_values).mean(axis=0)
@@ -197,7 +219,7 @@ class Training:
         fi_df = pd.DataFrame()
         fi_df["feature"] = self.feature_columns
         fi_df["importance"] = feature_importances
-        self.feature_importances["shap"] = fi_df
+        self.feature_importances["shap" + "_" + partition] = fi_df
 
     def to_pickle(self, path):
         """Save training."""

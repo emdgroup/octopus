@@ -132,6 +132,22 @@ ard_reg = {
     },
 }
 
+# Linear ridge regression parameter settings
+elastic_reg = {
+    "default": [
+        ("float", {"name": "alpha", "low": 1e-10, "high": 1e2, "log": True}),
+        ("float", {"name": "l1_ratio", "low": 0, "high": 1, "log": False}),
+        ("categorical", {"name": "fit_intercept", "choices": [True, False]}),
+        ("float", {"name": "tol", "low": 1e-5, "high": 1e-1, "log": True}),
+        ("fixed", {"name": "max_iter", "value": 4000}),
+        ("fixed", {"name": "selection", "value": "random"}),
+    ],
+    "translate": {
+        "n_jobs": "NA",  # NA=ignore, model does not support this key
+        "model_seed": "random_state",
+    },
+}
+
 parameters_inventory = {
     "ExtraTreesClassifier": extratree_class,
     "ExtraTreesRegressor": extratree_reg,
@@ -141,4 +157,5 @@ parameters_inventory = {
     "XGBRegressor": xgboost_reg,
     "RidgeRegressor": ridge_reg,
     "ARDRegressor": ard_reg,
+    "ElasticNetRegressor": elastic_reg,
 }

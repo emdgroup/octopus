@@ -35,16 +35,25 @@ for line in [319, 330, 338]:
 # - check that openblas settings are correct and suggest solutions
 
 # TOBEDONE OCTOFULL
-# - (1) return selected features, based on shap and dev dataset
-# - (2) is there a good way to determin which shap values are relevant, stats test?
-# - (3) make bag compatible with sklearn
+# - (1) return selected features, based on shap! and dev dataset
+#       take internal if available, otherwise take shapley
+#       test if internal is faster than shapley
+# - (2) modify feat_importance functions to return fi for dev
+# - (3) add feat num constraint
+# - (4) add T2E model
+# - (5) create predict/predict_proba function for bag
+#       Does it work with shap and permutation feature importance?
+# - (6) TestFI: Apply shape and permutation feature importance to bag to test
+#       compare to fis from individual trainings
+
+# - (7) is there a good way to determin which shap values are relevant, stats test?
+# - (8) make bag compatible with sklearn
 #   +very difficult as sklearn differentiates between regression, classification
 #   RegressionBag, ClassBag
 #   +we also want to include T2E
 #   + check if a single predict function is sufficient for shap/permutation importance
-# - (4) basic analytics class
-# - (5) implement survival model
-# - (6) Make use of default model parameters, see autosk, optuna
+# - (9) basic analytics class
+# - (10) Make use of default model parameters, see autosk, optuna
 # - Performance evaluation generalize: ensemble_hard, ensemble_soft
 # - automatically remove features with a single value! and provide user feedback
 # - deepchecks - https://docs.deepchecks.com/0.18/tabular/auto_checks/data_integrity/index.html

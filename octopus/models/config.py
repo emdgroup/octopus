@@ -12,7 +12,7 @@ from sklearn.ensemble import (
     RandomForestClassifier,
     RandomForestRegressor,
 )
-from sklearn.linear_model import ARDRegression, Ridge
+from sklearn.linear_model import ARDRegression, ElasticNet, Ridge
 from xgboost import XGBClassifier, XGBRegressor
 
 model_inventory = {
@@ -24,4 +24,5 @@ model_inventory = {
     "XGBClassifier": XGBClassifier,
     "RidgeRegressor": Ridge,
     "ARDRegressor": ARDRegression,
+    "ElasticNetRegressor": ElasticNet,
 }

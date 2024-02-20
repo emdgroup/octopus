@@ -14,8 +14,8 @@ from optuna.samplers._tpe.sampler import ExperimentalWarning
 from octopus.experiment import OctoExperiment
 from octopus.models.parameters import parameters_inventory
 from octopus.models.utils import create_trialparams_from_config
-from octopus.modules.octo.bags import TrainingsBag
-from octopus.modules.octo.trainings import Training
+from octopus.modules.octo.bag import TrainingsBag
+from octopus.modules.octo.training import Training
 from octopus.modules.utils import optuna_direction
 from octopus.utils import DataSplit
 
@@ -35,25 +35,21 @@ for line in [319, 330, 338]:
 # - check that openblas settings are correct and suggest solutions
 
 # TOBEDONE OCTOFULL
-# - (1) return selected features, based on shap! and dev dataset
-#       take internal if available, otherwise take shapley
-#       test if internal is faster than shapley
-# - (2) modify feat_importance functions to return fi for dev
-# - (3) add feat num constraint
-# - (4) add T2E model
-# - (5) create predict/predict_proba function for bag
+# - (1) add feat num constraint
+# - (2) add T2E model
+# - (3) create predict/predict_proba function for bag
 #       Does it work with shap and permutation feature importance?
-# - (6) TestFI: Apply shape and permutation feature importance to bag to test
+# - (4) TestFI: Apply shape and permutation feature importance to bag to test
 #       compare to fis from individual trainings
 
-# - (7) is there a good way to determin which shap values are relevant, stats test?
-# - (8) make bag compatible with sklearn
+# - (5) is there a good way to determin which shap values are relevant, stats test?
+# - (6) make bag compatible with sklearn
 #   +very difficult as sklearn differentiates between regression, classification
 #   RegressionBag, ClassBag
 #   +we also want to include T2E
 #   + check if a single predict function is sufficient for shap/permutation importance
-# - (9) basic analytics class
-# - (10) Make use of default model parameters, see autosk, optuna
+# - (7) basic analytics class
+# - (8) Make use of default model parameters, see autosk, optuna
 # - Performance evaluation generalize: ensemble_hard, ensemble_soft
 # - automatically remove features with a single value! and provide user feedback
 # - deepchecks - https://docs.deepchecks.com/0.18/tabular/auto_checks/data_integrity/index.html
@@ -232,7 +228,7 @@ class OctoFull:
         self.experiment.scores = best_bag_scores
 
         # save selected features to experiment
-        self.experiment.selected_features = best_bag.get_selected_features()
+        self.experiment.selected_features = best_bag.used_features
         print("Number of original features:", len(self.experiment.feature_columns))
         print("Number of selected features:", len(self.experiment.selected_features))
 
@@ -240,7 +236,7 @@ class OctoFull:
         self.experiment.feature_importances = best_bag.get_feature_importances()
 
         # save test predictions to experiment
-        self.experiment.test_predictions = best_bag.get_test_predictions()
+        self.experiment.predictions = best_bag.get_predictions()
 
     def run_globalhp_optimization(self):
         """Optimization run with a global HP set over all inner folds."""

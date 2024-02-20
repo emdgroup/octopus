@@ -37,6 +37,9 @@ class TrainingsBag:
     feature_importances: dict = field(
         default=dict(), validator=[validators.instance_of(dict)]
     )
+    used_features: list = field(
+        default=list(), validator=[validators.instance_of(list)]
+    )
     train_status: bool = field(default=False)
 
     def fit(self):
@@ -72,22 +75,33 @@ class TrainingsBag:
 
         self.train_status = True
 
-    def get_test_predictions(self):
+        # get used features in bag
+        feat_lst = list()
+        for training in self.trainings:
+            feat_lst.extend(training.used_features)
+        self.used_features = list(set(feat_lst))
+
+    def get_predictions(self):
         """Extract bag test predictions."""
         if not self.train_status:
             print("Running trainings first to be able to get scores")
             self.fit()
 
+        predictions = dict()
         pool = []
         for training in self.trainings:
+            # collect all predictions (train/dev/test) from training
+            predictions[training.training_id] = training.predictions
+            # pool predictions for ensembling
             pool.append(training.predictions["test"])
         pool = pd.concat(pool, axis=0)
         ensemble = pool.groupby(by=self.row_column).mean()
 
         if self.target_metric in ["AUCROC", "LOGLOSS"]:
             ensemble["probability"] = ensemble[1]  # binary only!!
+        predictions["test"] = ensemble
 
-        return ensemble
+        return predictions
 
     def get_scores(self):
         """Get scores."""
@@ -162,47 +176,30 @@ class TrainingsBag:
 
         return scores
 
-    def calculate_fi_internal(self):
-        """Feature importances, model internal."""
-        fi = dict()
+    def calculate_fi(self, fi_type="internal", partition="dev"):
+        """Calculate feature importance."""
         for training in self.trainings:
-            training.calculate_fi_internal()
-            fi[training.training_id] = training.feature_importances["internal"]
-
-        self.feature_importances["internal"] = fi
-
-    def calculate_fi_permutation(self):
-        """Feature importances, permutation."""
-        fi = dict()
-        for training in self.trainings:
-            training.calculate_fi_permutation()
-            fi[training.training_id] = training.feature_importances["permutation"]
-        self.feature_importances["permutation"] = fi
-
-    def calculate_fi_shap(self):
-        """Feature importances, shap."""
-        fi = dict()
-        for training in self.trainings:
-            training.calculate_fi_shap()
-            fi[training.training_id] = training.feature_importances["shap"]
-        self.feature_importances["shap"] = fi
-
-    def get_selected_features(self):
-        """Extract selected bag features, based on shap."""
-        self.calculate_fi_shap()
-        df_lst = list()
-        for _, value in self.feature_importances["shap"].items():
-            df_lst.append(value)
-        fi_df = pd.concat(df_lst, axis=0)
-        fi_df = fi_df[fi_df["importance"] != 0]
-        return fi_df["feature"].unique().tolist()
+            if fi_type == "internal":
+                training.calculate_fi_internal()
+            elif fi_type == "shap":
+                training.calculate_fi_shap(partition=partition)
+            elif fi_type == "permutation":
+                training.calculate_fi_permutation(partition=partition)
+            else:
+                raise ValueError("FI type not supported")
 
     def get_feature_importances(self):
-        """Extract bag feature importances."""
-        # - add shap feature importance
-        self.calculate_fi_internal()
-        # self.calculate_fi_permutation()
-        self.calculate_fi_shap()
+        """Extract feature importances of all models in bag."""
+        # calculate feature importances first
+        self.calculate_fi(fi_type="internal")
+        self.calculate_fi(fi_type="shap", partition="dev")
+        self.calculate_fi(fi_type="shap", partition="test")
+        # self.calculate_fi(fi_type='permutation',partition='dev')
+        # self.calculate_fi(fi_type='permutation',partition='test')
+        for training in self.trainings:
+            self.feature_importances[training.training_id] = (
+                training.feature_importances
+            )
         return self.feature_importances
 
     def to_pickle(self, path):

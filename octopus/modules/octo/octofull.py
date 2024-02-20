@@ -42,7 +42,7 @@ for line in [319, 330, 338]:
 # - (4) TestFI: Apply shape and permutation feature importance to bag to test
 #       compare to fis from individual trainings
 
-# - (5) is there a good way to determin which shap values are relevant, stats test?
+# - (5) is there a good way to determine which shap values are relevant, stats test?
 # - (6) make bag compatible with sklearn
 #   +very difficult as sklearn differentiates between regression, classification
 #   RegressionBag, ClassBag

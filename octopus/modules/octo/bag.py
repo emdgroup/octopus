@@ -18,7 +18,7 @@ from sklearn.metrics import (
 
 
 @define
-class TrainingsBag:
+class Bag:
     """Container for Trainings.
 
     Supports:
@@ -176,7 +176,7 @@ class TrainingsBag:
 
         return scores
 
-    def calculate_fi(self, fi_type="internal", partition="dev"):
+    def _calculate_fi(self, fi_type="internal", partition="dev"):
         """Calculate feature importance."""
         for training in self.trainings:
             if fi_type == "internal":
@@ -191,15 +191,15 @@ class TrainingsBag:
     def get_feature_importances(self):
         """Extract feature importances of all models in bag."""
         # calculate feature importances first
-        self.calculate_fi(fi_type="internal")
-        self.calculate_fi(fi_type="shap", partition="dev")
-        self.calculate_fi(fi_type="shap", partition="test")
+        self._calculate_fi(fi_type="internal")
+        self._calculate_fi(fi_type="shap", partition="dev")
+        self._calculate_fi(fi_type="shap", partition="test")
         # self.calculate_fi(fi_type='permutation',partition='dev')
         # self.calculate_fi(fi_type='permutation',partition='test')
         for training in self.trainings:
-            self.feature_importances[
-                training.training_id
-            ] = training.feature_importances
+            self.feature_importances[training.training_id] = (
+                training.feature_importances
+            )
         return self.feature_importances
 
     def to_pickle(self, path):

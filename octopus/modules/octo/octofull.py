@@ -13,7 +13,7 @@ from optuna.samplers._tpe.sampler import ExperimentalWarning
 
 from octopus.experiment import OctoExperiment
 from octopus.modules.octo.bag import Bag
-from octopus.modules.octo.optimize import ObjectiveOptuna
+from octopus.modules.octo.objective_optuna import ObjectiveOptuna
 from octopus.modules.octo.training import Training
 from octopus.modules.utils import optuna_direction
 from octopus.utils import DataSplit

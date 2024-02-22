@@ -15,7 +15,6 @@ from octopus.experiment import OctoExperiment
 from octopus.modules.octo.bag import Bag
 from octopus.modules.octo.objective_optuna import ObjectiveOptuna
 from octopus.modules.octo.training import Training
-from octopus.modules.utils import optuna_direction
 from octopus.utils import DataSplit
 
 # ignore three Optuna experimental warnings
@@ -34,7 +33,12 @@ for line in [319, 330, 338]:
 # - check that openblas settings are correct and suggest solutions
 
 # TOBEDONE OCTOFULL
-# - (1) add feat num constraint
+# - (1) include data preprocessing
+# - (2) Ensemble selection
+# - (3) feature counts in bag
+# - (1) num feat constraint (automatic parameters)
+#       + scaling factor from first random optuna runs
+#       + max_feature from dataset size
 # - (2) add T2E model
 # - (3) create predict/predict_proba function for bag
 #       Does it work with shap and permutation feature importance?
@@ -227,7 +231,7 @@ class OctoFull:
         self.experiment.scores = best_bag_scores
 
         # save selected features to experiment
-        self.experiment.selected_features = best_bag.used_features
+        self.experiment.selected_features = best_bag.features_used
         print("Number of original features:", len(self.experiment.feature_columns))
         print("Number of selected features:", len(self.experiment.selected_features))
 
@@ -319,7 +323,7 @@ class OctoFull:
         storage = optuna.storages.RDBStorage(url=f"sqlite:///{db_path}")
         study = optuna.create_study(
             study_name=study_name,
-            direction=optuna_direction(self.experiment.config["target_metric"]),
+            direction="minimize",  # metric adjustment in optuna objective
             sampler=sampler,
             storage=storage,
             load_if_exists=True,

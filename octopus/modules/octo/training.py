@@ -5,7 +5,7 @@ import pandas as pd
 import shap
 from attrs import define, field, validators
 from sklearn.inspection import permutation_importance
-from sklearn.preprocessing import MinMaxScaler
+from sklearn.preprocessing import MaxAbsScaler
 
 from octopus.models.config import model_inventory
 
@@ -88,7 +88,7 @@ class Training:
         return self.data_test[self.target_assignments.values()]
 
     def __attrs_post_init__(self):
-        self.scaler = MinMaxScaler()
+        self.scaler = MaxAbsScaler()
 
     # perform:
     # (1) dim_reduction
@@ -155,7 +155,7 @@ class Training:
             self.predictions["train"][columns] = self.model.predict_proba(self.x_train)
             # self.predictions["dev"][columns] = self.model.predict_proba(x_dev_scaled)
             self.predictions["dev"][columns] = self.model.predict_proba(self.x_dev)
-            # self.predictions["test"][columns] =self.model.predict_proba(x_test_scaled)
+            # self.predictions["test"][columns]=self.model.predict_proba(x_test_scaled)
             self.predictions["test"][columns] = self.model.predict_proba(self.x_test)
 
         # populate used_features
@@ -207,9 +207,9 @@ class Training:
 
         # Calculate SHAP values for the dev dataset
         if partition == "dev":
-            shap_values = explainer.shap_values(self.x_dev)
+            shap_values = explainer.shap_values(self.x_dev)  # pylint: disable=E1101
         elif partition == "test":
-            shap_values = explainer.shap_values(self.x_test)
+            shap_values = explainer.shap_values(self.x_test)  # pylint: disable=E1101
         else:
             raise ValueError("dataset type not supported")
 

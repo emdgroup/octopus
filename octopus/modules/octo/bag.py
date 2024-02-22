@@ -37,7 +37,7 @@ class Bag:
     feature_importances: dict = field(
         default=dict(), validator=[validators.instance_of(dict)]
     )
-    used_features: list = field(
+    features_used: list = field(
         default=list(), validator=[validators.instance_of(list)]
     )
     train_status: bool = field(default=False)
@@ -79,7 +79,7 @@ class Bag:
         feat_lst = list()
         for training in self.trainings:
             feat_lst.extend(training.used_features)
-        self.used_features = list(set(feat_lst))
+        self.features_used = list(set(feat_lst))
 
     def get_predictions(self):
         """Extract bag test predictions."""
@@ -197,9 +197,9 @@ class Bag:
         # self.calculate_fi(fi_type='permutation',partition='dev')
         # self.calculate_fi(fi_type='permutation',partition='test')
         for training in self.trainings:
-            self.feature_importances[
-                training.training_id
-            ] = training.feature_importances
+            self.feature_importances[training.training_id] = (
+                training.feature_importances
+            )
         return self.feature_importances
 
     def to_pickle(self, path):

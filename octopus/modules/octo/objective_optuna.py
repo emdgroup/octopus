@@ -4,6 +4,7 @@ from octopus.models.parameters import parameters_inventory
 from octopus.models.utils import create_trialparams_from_config
 from octopus.modules.octo.bag import Bag
 from octopus.modules.octo.training import Training
+from octopus.modules.utils import optuna_direction
 
 
 class ObjectiveOptuna:
@@ -27,6 +28,8 @@ class ObjectiveOptuna:
         self.ml_model_types = self.experiment.ml_config["models"]
         self.dim_red_methods = self.experiment.ml_config["dim_red_methods"]
         self.max_outl = self.experiment.ml_config["max_outl"]
+        self.max_features = self.experiment.ml_config["max_features"]
+        self.penalty_factor = self.experiment.ml_config["penalty_factor"]
         # fixed parameters
         self.ml_seed = self.experiment.ml_config["model_seed"]
         self.ml_jobs = self.experiment.ml_config["n_jobs"]
@@ -138,6 +141,9 @@ class ObjectiveOptuna:
         # evaluate trainings using target metric
         scores = bag_trainings.get_scores()
 
+        # get number of features used in bag
+        n_features_used = len(bag_trainings.features_used)
+
         # add scores info to the optuna trial
         for key, value in scores.items():
             trial.set_user_attr(key, value)
@@ -153,4 +159,25 @@ class ObjectiveOptuna:
             else:
                 print(f"{key}:{value:.3f}")
 
-        return scores["dev_avg"]  # dev target metric
+        # define optuna target
+        optuna_target = scores["dev_avg"]
+
+        # adjust direction, optuna in octofull always minimizes
+        if optuna_direction(self.experiment.config["target_metric"]) == "maximize":
+            optuna_target = -optuna_target
+
+        # add penaltiy for n_features > max_features if configured
+        if self.max_features > 0:
+            diff_nfeatures = n_features_used - self.max_features
+            # only consider if n_features_used > max_features
+            if diff_nfeatures < 0:
+                diff_nfeatures = 0
+            n_features = len(self.experiment.feature_columns)
+            optuna_target = (
+                optuna_target + self.penalty_factor * diff_nfeatures / n_features
+            )
+
+        print("Otarget:", optuna_target)
+        print("n_features_used", n_features_used)
+
+        return optuna_target

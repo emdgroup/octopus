@@ -67,8 +67,13 @@ class OctopusFullConfig:
     hyperparameter: dict = field(validator=[validators.instance_of(dict)], default={})
     """Bring own hyperparameter space."""
 
-    max_features: int = field(validator=[validators.instance_of(int)], default=-1)
+    max_features: int = field(validator=[validators.instance_of(int)], default=0)
     """Maximum features."""
+
+    penalty_factor: float = field(
+        validator=[validators.instance_of(float)], default=1.0
+    )
+    """Factor to penalyse optuna target related to feature constraint."""
 
     save_trials: bool = field(validator=[validators.instance_of(bool)], default=False)
     """Save trials (bags)."""

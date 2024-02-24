@@ -2,6 +2,7 @@
 
 import sys
 
+from octopus.analytics.run import OctoAnalitics  # noqa: F401
 from octopus.config import OctoConfig  # noqa: F401
 from octopus.data import OctoData  # noqa: F401
 

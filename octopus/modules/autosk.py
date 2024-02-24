@@ -62,7 +62,7 @@ metrics_inventory = {
 
 
 @define
-class Autosklearn:
+class gAutosklearn:
     """Autosklearn."""
 
     experiment: OctoExperiment = field(

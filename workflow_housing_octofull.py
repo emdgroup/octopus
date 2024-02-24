@@ -36,7 +36,7 @@ data_df = (
 
 # define input for Octodata
 data_input = {
-    "data": data_df.iloc[:600, :],
+    "data": data_df,
     "sample_id": "index",
     "row_id": "index",
     "target_columns": {"median_house_value": int},
@@ -60,9 +60,9 @@ data = OctoData(**data_input)
 
 # configure study
 config_study = {
-    "study_name": "housing_octofull_test",
+    "study_name": "housing_octofull_test_5",
     "output_path": "./studies/",
-    "production_mode": False,
+    "production_mode": True,
     "ml_type": "regression",
     "n_folds_outer": 5,
     "target_metric": "R2",
@@ -72,10 +72,7 @@ config_study = {
 
 # configure manager
 config_manager = {
-    # outer loop
     "outer_parallelization": True,
-    # only process first outer loop experiment, for quick testing
-    "ml_only_first": True,
 }
 
 # define processing sequence
@@ -85,19 +82,20 @@ sequence_item_1 = OctopusFullConfig(
     n_folds_inner=5,
     datasplit_seed_inner=0,
     # model training
-    models=["ExtraTreesRegressor", "RandomForestRegressor"],
+    optuna_seed=5,
+    models=["RidgeRegressor"],
     model_seed=0,
     n_jobs=1,
     dim_red_methods=[""],
-    max_outl=5,
+    # max_outl=5,
     # parallelization
     inner_parallelization=True,
     n_workers=5,
     # HPO
     global_hyperparameter=True,
-    n_trials=5,
-    max_features=70,
-    remove_trials=False,
+    n_trials=50,
+    # max_features=70,
+    # remove_trials=False,
 )
 
 config_sequence = [attrs.asdict(sequence_item_1)]

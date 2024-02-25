@@ -2,9 +2,10 @@
 
 import dash
 import dash_mantine_components as dmc
-import pandas as pd
 import plotly.graph_objects as go
 from dash import Input, Output, callback, dcc, html
+
+from octopus.analytics.lib import sqlite
 
 dash.register_page(
     __name__,
@@ -70,9 +71,9 @@ layout = html.Div(
     Input("segment_scores_aggregation", "value"),
     Input("segment_scores_metric", "value"),
 )
-def plot_scores(aggregation, metric, data):
+def plot_scores(aggregation, metric):
     """Get splits ids for selected experiment."""
-    df_scores = pd.DataFrame(data["scores"])
+    df_scores = sqlite.query("SELECT * FROM scores")
     fig = go.Figure()
     if aggregation == "All":
         for i in ["train", "dev", "test"]:
@@ -80,7 +81,7 @@ def plot_scores(aggregation, metric, data):
                 go.Scatter(
                     x=df_scores.index.astype(str),
                     y=df_scores.query(f'testset == "{i}" and metric == "{metric}"')[
-                        "value"
+                        "score"
                     ],
                     mode="markers+lines",
                     name=i,
@@ -93,7 +94,7 @@ def plot_scores(aggregation, metric, data):
             fig.add_trace(
                 go.Scatter(
                     x=df_scores.experiment_id.astype(str).unique(),
-                    y=df_temp.groupby("experiment_id")["value"].mean(),
+                    y=df_temp.groupby("experiment_id")["score"].mean(),
                     mode="markers+lines",
                     name=i,
                 )

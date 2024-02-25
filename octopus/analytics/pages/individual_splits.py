@@ -23,7 +23,7 @@ layout = html.Div(
             size="lg",
             mt=30,
             children=[
-                dmc.Title("Individual Splits"),
+                dmc.Title("Individual Splits", pb=20),
                 dmc.Grid(
                     [
                         dmc.Select(
@@ -121,13 +121,14 @@ def get_sequence_ids(
 
 
 @callback(
+    Output("select_split", "value"),
     Output("select_split", "data"),
     Input("select_exp", "value"),
     Input("select_sequence", "value"),
 )
 def get_split_ids(experiment_id, sequence_id):
     """Get split ids."""
-    sequence_ids = sqlite.query(
+    split_ids = sqlite.query(
         f"""
             SELECT DISTINCT split_id
             FROM predictions
@@ -135,7 +136,10 @@ def get_split_ids(experiment_id, sequence_id):
             AND sequence_id = {sequence_id}
         """
     )["split_id"].values.tolist()
-    return [{"value": str(i), "label": str(i)} for i in sorted(sequence_ids)]
+    return (
+        sorted(split_ids)[0],
+        [{"value": str(i), "label": str(i)} for i in sorted(split_ids)],
+    )
 
 
 @callback(

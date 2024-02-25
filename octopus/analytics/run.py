@@ -29,7 +29,7 @@ class OctoAnalitics:
     def __attrs_post_init__(self):
         def _get_predictions(self):
             df_predictions = pd.DataFrame()
-
+            dict_scores = []
             for file in list(self.study_path.glob("**/exp*.pkl")):
                 with open(file, "rb") as f:
                     exp = pickle.load(f)
@@ -37,16 +37,41 @@ class OctoAnalitics:
                     for split in exp.predictions:
                         if split != "test":
                             for dataset in exp.predictions[split]:
+                                # get predictions
                                 df_temp = exp.predictions[split][dataset]
                                 df_temp["experiment_id"] = exp.experiment_id
                                 df_temp["sequence_id"] = exp.sequence_item_id
                                 df_temp["split_id"] = split
                                 df_temp["dataset"] = dataset
-
                                 df_predictions = pd.concat([df_predictions, df_temp])
 
+                                # calculate scores
+                                for mectric in ["MAE", "MSE", "R2"]:
+                                    dict_socre_temp = {
+                                        "experiment_id": exp.experiment_id,
+                                        "sequence_id": exp.sequence_item_id,
+                                        "split": split,
+                                        "testset": dataset,
+                                        "metric": mectric,
+                                        "score": utils.get_score(
+                                            mectric,
+                                            exp.predictions[split][dataset]["target"],
+                                            exp.predictions[split][dataset][
+                                                "prediction"
+                                            ],
+                                        ),
+                                    }
+                                    dict_scores.append(dict_socre_temp)
+
             df_predictions = df_predictions.reset_index(drop=True)
+            df_scores = (
+                pd.DataFrame(dict_scores)
+                .sort_values(by=["experiment_id", "sequence_id", "split"])
+                .reset_index(drop=True)
+            )
+            # add tables to database
             sqlite.insert_dataframe("predictions", df_predictions, df_predictions.index)
+            sqlite.insert_dataframe("scores", df_scores, df_scores.index)
 
         def _get_feature_importances(self):
             df_feature_importances = pd.DataFrame()
@@ -93,39 +118,47 @@ class OctoAnalitics:
             df_dataset = df_dataset.drop("index", axis=1).reset_index(drop=True)
             sqlite.insert_dataframe("dataset", df_dataset, df_dataset.index)
 
-        def _get_scores(self):
-            """Calculate scores from predictions."""
-            dict_scores = []
-            for exp in self.experiments:
-                for idx, split in enumerate(exp.predictions):
-                    for dataset in exp.predictions[split]:
-                        if split != "test":
-                            for mectric in ["MAE", "MSE", "R2"]:
-                                dict_temp = {
-                                    "experiment_id": exp.experiment_id,
-                                    "sequence_id": exp.sequence_item_id,
-                                    "split": idx,
-                                    "testset": dataset,
-                                    "metric": mectric,
-                                    "value": utils.get_score(
-                                        mectric,
-                                        exp.predictions[split][dataset]["target"],
-                                        exp.predictions[split][dataset]["prediction"],
-                                    ),
-                                }
-                                dict_scores.append(dict_temp)
-            df_scores = (
-                pd.DataFrame(dict_scores)
-                .sort_values(by=["experiment_id", "sequence_id", "split"])
-                .reset_index(drop=True)
-            )
-            print(df_scores)
+        def _get_configs(self):
+            """Get dataset."""
+            for file in list(self.study_path.glob("**/exp*.pkl")):
+                with open(file, "rb") as f:
+                    exp = pickle.load(f)
 
-        # _get_experiments(self)
+                    # manager config
+                    df_config_manager = pd.DataFrame.from_dict(
+                        {
+                            key: str(value)
+                            for key, value in exp.config["cfg_manager"].items()
+                        },
+                        orient="index",
+                    )
+
+                    # study config
+                    del exp.config["cfg_manager"]
+                    del exp.config["cfg_sequence"]
+                    df_config_study = pd.DataFrame.from_dict(
+                        {
+                            key: (
+                                str(value)
+                                if not isinstance(value, (int, float, str))
+                                else value
+                            )
+                            for key, value in exp.config.items()
+                        },
+                        orient="index",
+                    )
+                break
+            sqlite.insert_dataframe(
+                "config_study", df_config_study, df_config_study.index
+            )
+            sqlite.insert_dataframe(
+                "config_manager", df_config_manager, df_config_manager.index
+            )
+
         _get_dataset(self)
-        # _get_scores(self)
         _get_predictions(self)
         _get_feature_importances(self)
+        _get_configs(self)
 
     def run_analytics(self):
         """Run app."""

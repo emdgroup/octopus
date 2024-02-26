@@ -116,6 +116,7 @@ class ObjectiveOptuna:
                     target_metric=self.experiment.config["target_metric"],
                 )
             )
+
         # create bag with all provided trainings
         bag_trainings = Bag(
             trainings=trainings,

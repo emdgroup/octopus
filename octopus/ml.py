@@ -1,5 +1,6 @@
 """OctoML module."""
 
+import shutil
 import sys
 from pathlib import Path
 
@@ -18,15 +19,22 @@ class OctoML:
 
     odata: OctoData = field(validator=[validators.instance_of(OctoData)])
     oconfig: OctoConfig = field(validator=[validators.instance_of(OctoConfig)])
-    experiments: list = field(init=False, default=[])
+    experiments: list = field(init=False)
     manager: OctoManager = field(init=False, default=None)
+
+    def __attrs_post_init__(self):
+        # initialization here due to "Python immutable default"
+        self.experiments = list()
 
     def create_outer_experiments(self):
         """Create outer experiments."""
         # create study folder and check if it exists in prod mode
         path_study = Path(self.oconfig.output_path, self.oconfig.study_name)
-        if self.oconfig.production_mode:
-            if path_study.exists():
+
+        # delete if study exists
+        if path_study.exists():
+            # offer exit option in prod mode
+            if self.oconfig.production_mode:
                 confirmation = input(
                     "Study exists, do you want to continue (resume)? (yes/no): "
                 )
@@ -35,7 +43,9 @@ class OctoML:
                 else:
                     print("Exiting...")
                     sys.exit()
-        path_study.mkdir(parents=True, exist_ok=True)
+            shutil.rmtree(path_study)
+
+        path_study.mkdir(parents=True, exist_ok=False)
         print("Path to study:", path_study)
 
         # create subfolders

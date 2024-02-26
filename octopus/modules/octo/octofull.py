@@ -33,26 +33,31 @@ for line in [319, 330, 338]:
 # - check that openblas settings are correct and suggest solutions
 
 # TOBEDONE OCTOFULL
-# - (1) include data preprocessing
-# - (2) Ensemble selection
-# - (3) feature counts in bag
-# - (1) num feat constraint (automatic parameters)
+# - (1) add bag_id (experiment_id+sequence+trial/best))
+# - (2) rename ensemble test
+# - (3) folder not deleted, prod mode?
+# - (4) include data preprocessing
+# - (5) Ensemble selection
+# - (6) feature counts in bag
+# - (7) num feat constraint (automatic parameters)
 #       + scaling factor from first random optuna runs
 #       + max_feature from dataset size
-# - (2) add T2E model
-# - (3) create predict/predict_proba function for bag
+# - (8) add T2E model
+# - (9) create predict/predict_proba function for bag
 #       Does it work with shap and permutation feature importance?
-# - (4) TestFI: Apply shape and permutation feature importance to bag to test
+# - (10) TestFI: Apply shape and permutation feature importance to bag to test
 #       compare to fis from individual trainings
 
-# - (5) is there a good way to determine which shap values are relevant, stats test?
-# - (6) make bag compatible with sklearn
+# - (11) is there a good way to determine which shap values are relevant, stats test?
+# - (12) make bag compatible with sklearn
 #   +very difficult as sklearn differentiates between regression, classification
 #   RegressionBag, ClassBag
 #   +we also want to include T2E
 #   + check if a single predict function is sufficient for shap/permutation importance
-# - (7) basic analytics class
-# - (8) Make use of default model parameters, see autosk, optuna
+# - (13) basic analytics class
+# - (14) Make use of default model parameters, see autosk, optuna
+# - predictions, replace "ensemble_test" with
+#   experiment_id+ sequence_id + ensemble + [test]
 # - Performance evaluation generalize: ensemble_hard, ensemble_soft
 # - automatically remove features with a single value! and provide user feedback
 # - deepchecks - https://docs.deepchecks.com/0.18/tabular/auto_checks/data_integrity/index.html
@@ -91,8 +96,8 @@ class OctoFull:
     experiment: OctoExperiment = field(
         validator=[validators.instance_of(OctoExperiment)]
     )
-    # model = field(init=False)
-    data_splits = field(default=dict(), validator=[validators.instance_of(dict)])
+    # model = field(default=None)
+    data_splits: dict = field(init=False, validator=[validators.instance_of(dict)])
 
     @property
     def path_module(self) -> Path:

@@ -37,28 +37,21 @@ class OctoExperiment:
     ml_config: dict = field(
         init=False, default=dict(), validator=[validators.instance_of(dict)]
     )
-    # experiment outputs:
+    # experiment outputs, initialized in post_init
     selected_features: list = field(
-        init=False, default=list(), validator=[validators.instance_of(list)]
+        init=False, validator=[validators.instance_of(list)]
     )
-    results: dict = field(
-        init=False, default=dict(), validator=[validators.instance_of(dict)]
-    )
-    models: dict = field(
-        init=False, default=dict(), validator=[validators.instance_of(dict)]
-    )
+    results: dict = field(init=False, validator=[validators.instance_of(dict)])
+    models: dict = field(init=False, validator=[validators.instance_of(dict)])
 
     feature_importances: dict = field(
-        init=False, default=dict(), validator=[validators.instance_of(dict)]
+        init=False, validator=[validators.instance_of(dict)]
     )
 
-    scores: dict = field(
-        init=False, default=dict(), validator=[validators.instance_of(dict)]
-    )
+    scores: dict = field(init=False, validator=[validators.instance_of(dict)])
 
     predictions: dict = field(
         init=False,
-        default=dict(),
         validator=[validators.instance_of(dict)],
     )
 
@@ -71,6 +64,15 @@ class OctoExperiment:
     def ml_type(self) -> str:
         """Shortcut to ml_type."""
         return self.config["ml_type"]
+
+    def __attrs_post_init__(self):
+        # initialization here due to "Python immutable default"
+        self.selected_features = list()
+        self.feature_importances = dict()
+        self.scores = dict()
+        self.predictions = dict()
+        self.models = dict()
+        self.results = dict()
 
     def to_pickle(self, filename):
         """Serialize experiment using pickle."""

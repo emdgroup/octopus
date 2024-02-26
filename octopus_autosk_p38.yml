@@ -1,5 +1,6 @@
 name: octosk
 channels:
+  - sebp
   - conda-forge
 dependencies:
   - _libgcc_mutex=0.1=conda_forge
@@ -78,6 +79,7 @@ dependencies:
   - distlib=0.3.8=pyhd8ed1ab_0
   - distributed=2023.5.0=pyhd8ed1ab_0
   - distro=1.8.0=pyhd8ed1ab_0
+  - ecos=2.0.13=py38h7f0c24c_0
   - emcee=3.1.4=pyhd8ed1ab_0
   - entrypoints=0.4=pyhd8ed1ab_0
   - exceptiongroup=1.2.0=pyhd8ed1ab_0
@@ -169,9 +171,11 @@ dependencies:
   - libnsl=2.0.1=hd590300_0
   - libnuma=2.0.16=h0b41bf4_1
   - libopenblas=0.3.25=pthreads_h413a1c8_0
+  - libosqp=0.6.3=h59595ed_0
   - libparquet=14.0.2=h352af49_0_cpu
   - libpng=1.6.39=h753d276_0
   - libprotobuf=4.24.4=hf27288f_0
+  - libqdldl=0.1.5=h27087fc_1
   - libre2-11=2023.06.02=h7a70373_0
   - libsodium=1.0.18=h36c2ea0_1
   - libsqlite=3.44.2=h2797004_0
@@ -208,14 +212,17 @@ dependencies:
   - nest-asyncio=1.5.8=pyhd8ed1ab_0
   - networkx=3.1=pyhd8ed1ab_0
   - nodeenv=1.8.0=pyhd8ed1ab_0
+  - nomkl=1.0=h5ca1d4c_0
   - notebook=7.0.6=pyhd8ed1ab_0
   - notebook-shim=0.2.3=pyhd8ed1ab_0
   - numba=0.58.1=py38h4144172_0
+  - numexpr=2.8.4=py38hb2af0cf_101
   - numpy=1.23.5=py38h7042d01_0
   - openjpeg=2.5.0=h488ebb8_3
   - openssl=3.2.1=hd590300_0
   - optuna=3.5.0=pyhd8ed1ab_0
   - orc=1.9.2=h4b38347_0
+  - osqp=0.6.3=py38h53bb729_2
   - overrides=7.4.0=pyhd8ed1ab_0
   - packaging=23.2=pyhd8ed1ab_0
   - pandas=2.0.3=py38h01efb38_1
@@ -265,6 +272,7 @@ dependencies:
   - pywavelets=1.4.1=py38h7f0c24c_1
   - pyyaml=6.0.1=py38h01eb140_1
   - pyzmq=25.1.2=py38h34c975a_0
+  - qdldl-python=0.1.5.post2=py38h53bb729_1
   - rdma-core=49.0=hd3aeb46_2
   - re2=2023.06.02=h2873b5e_0
   - readline=8.2=h8228510_1
@@ -278,6 +286,7 @@ dependencies:
   - ruff=0.1.11=py38h18b4745_0
   - s2n=1.4.0=h06160fa_0
   - scikit-learn=0.24.2=py38hacb3eff_1
+  - scikit-survival=0.16.0=py38hb93dfd8_0
   - scipy=1.10.1=py38h59b608b_3
   - seaborn=0.12.2=hd8ed1ab_0
   - seaborn-base=0.12.2=pyhd8ed1ab_0

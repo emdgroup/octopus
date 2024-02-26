@@ -148,6 +148,22 @@ elastic_reg = {
     },
 }
 
+# ExtraTree Classifier parameter settings
+extratrees_surv = {
+    "default": [
+        ("int", {"name": "max_depth", "low": 2, "high": 32}),
+        ("int", {"name": "min_samples_split", "low": 2, "high": 100}),
+        ("int", {"name": "min_samples_leaf", "low": 1, "high": 50}),
+        ("float", {"name": "max_features", "low": 0.1, "high": 1}),
+        ("int", {"name": "n_estimators", "low": 100, "high": 500, "log": False}),
+    ],
+    "translate": {
+        "n_jobs": "n_jobs",
+        "model_seed": "random_state",
+    },
+}
+
+
 parameters_inventory = {
     "ExtraTreesClassifier": extratree_class,
     "ExtraTreesRegressor": extratree_reg,
@@ -158,4 +174,5 @@ parameters_inventory = {
     "RidgeRegressor": ridge_reg,
     "ARDRegressor": ard_reg,
     "ElasticNetRegressor": elastic_reg,
+    "ExtraTreesSurv": extratrees_surv,
 }

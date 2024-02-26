@@ -30,12 +30,14 @@ class OctoConfig:
     target_metric: str = field(
         default="AUCROC",
         validator=[
-            validators.in_(["AUCROC", "ACCBAL", "ACC", "LOGLOSS", "MAE", "MSE", "R2"]),
+            validators.in_(
+                ["AUCROC", "ACCBAL", "ACC", "LOGLOSS", "MAE", "MSE", "R2", "CI"]
+            ),
         ],
     )
 
     metrics: list = field(
-        default=["AUCROC", "ACCBAL", "ACC", "LOGLOSS", "MAE", "MSE", "R2"],
+        default=["AUCROC", "ACCBAL", "ACC", "LOGLOSS", "MAE", "MSE", "R2", "CI"],
         validator=[validators.instance_of(list)],
     )
 

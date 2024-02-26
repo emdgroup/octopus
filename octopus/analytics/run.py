@@ -2,15 +2,12 @@
 
 import pickle
 
-import dash_mantine_components as dmc
 import pandas as pd
 from attrs import define, field
 from dash import Dash
 
-from octopus.analytics.lib import appshell, sqlite
+from octopus.analytics.library import appshell, sqlite
 from octopus.modules import utils
-
-print(dmc.theme.DEFAULT_COLORS)
 
 
 @define
@@ -133,6 +130,26 @@ class OctoAnalitics:
                         orient="index",
                     )
 
+                    # sequence config
+                    df_config_sequence = pd.DataFrame()
+                    for idx, sequence in enumerate(exp.config["cfg_sequence"]):
+                        df_config_sequence_temp = pd.DataFrame.from_dict(
+                            {
+                                key: (
+                                    str(value)
+                                    if not isinstance(value, (int, float, str))
+                                    else value
+                                )
+                                for key, value in sequence.items()
+                            },
+                            orient="index",
+                        )
+                        df_config_sequence_temp["sequence_id"] = idx
+
+                        df_config_sequence = pd.concat(
+                            [df_config_sequence, df_config_sequence_temp]
+                        )
+
                     # study config
                     del exp.config["cfg_manager"]
                     del exp.config["cfg_sequence"]
@@ -153,6 +170,9 @@ class OctoAnalitics:
             )
             sqlite.insert_dataframe(
                 "config_manager", df_config_manager, df_config_manager.index
+            )
+            sqlite.insert_dataframe(
+                "config_sequence", df_config_sequence, df_config_sequence.index
             )
 
         _get_dataset(self)

@@ -4,7 +4,7 @@ import dash
 import dash_mantine_components as dmc
 from dash import Input, Output, callback, dcc, html
 
-from octopus.analytics.lib import sqlite, utils
+from octopus.analytics.library import sqlite, utils
 
 dash.register_page(
     __name__,
@@ -43,6 +43,13 @@ layout = html.Div(
                         sqlite.query("SELECT * FROM config_manager")
                     )
                 ),
+                dmc.Title("Sequence configuration", pb=20, pt=40),
+                dmc.AccordionMultiple(id="accordion_sequence_config"),
+                # dmc.Table(
+                #     utils.create_table_without_header(
+                #         sqlite.query("SELECT * FROM config_sequence")
+                #     )
+                # ),
             ],
         )
     ]
@@ -77,3 +84,28 @@ def custom_copy(_):
             my_dict_cleaned[key] = value
 
     return str(my_dict_cleaned)
+
+
+@callback(
+    Output("accordion_sequence_config", "children"),
+    Input("url", "pathname"),
+)
+def create_accordion_items(_):
+    """Create accordion items."""
+    accordion_items = []
+    for value, df_ in sqlite.query("SELECT * FROM config_sequence").groupby(
+        "sequence_id"
+    ):
+        accordion_items.append(
+            dmc.AccordionItem(
+                [
+                    dmc.AccordionControl(f"Sequence_{value}"),
+                    dmc.AccordionPanel(
+                        utils.create_table_without_header(df_[["index", "0"]])
+                    ),
+                ],
+                value=f"Sequence {value}",
+            )
+        )
+
+    return accordion_items

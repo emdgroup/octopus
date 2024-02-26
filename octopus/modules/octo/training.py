@@ -25,15 +25,13 @@ class Training:
     target_metric: str = field(validator=[validators.instance_of(str)])
     # configuration for training
     config_training: dict = field(validator=[validators.instance_of(dict)])
-    # training output
+    # training outputs, initialized in post_init
     model = field(default=None)
-    predictions: dict = field(default=dict(), validator=[validators.instance_of(dict)])
+    predictions: dict = field(init=False, validator=[validators.instance_of(dict)])
     feature_importances: dict = field(
-        default=dict(), validator=[validators.instance_of(dict)]
+        init=False, validator=[validators.instance_of(dict)]
     )
-    used_features: list = field(
-        default=list(), validator=[validators.instance_of(list)]
-    )
+    features_used: list = field(init=False, validator=[validators.instance_of(list)])
     # scaler
     scaler = field(init=False)
 
@@ -88,6 +86,11 @@ class Training:
         return self.data_test[self.target_assignments.values()]
 
     def __attrs_post_init__(self):
+        # initialization here due to "Python immutable default"
+        self.predictions = dict()
+        self.feature_importances = dict()
+        self.features_used = list()
+        # scaler
         self.scaler = MaxAbsScaler()
 
     # perform:
@@ -166,7 +169,7 @@ class Training:
         else:  # alternatively use shap
             self.calculate_fi_shap(partition="dev")
             fi_df = self.feature_importances["shap_dev"]
-        self.used_features = fi_df[fi_df["importance"] != 0]["feature"].tolist()
+        self.features_used = fi_df[fi_df["importance"] != 0]["feature"].tolist()
 
         return self
 

@@ -160,4 +160,5 @@ datasets_local/
 *.pkl
 *.ruff*
 *.dill
+*.db
 

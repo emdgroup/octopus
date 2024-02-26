@@ -5,7 +5,7 @@ import dash_mantine_components as dmc
 import plotly.graph_objects as go
 from dash import Input, Output, callback, dcc, html
 
-from octopus.analytics.lib import sqlite
+from octopus.analytics.library import sqlite
 
 dash.register_page(
     __name__,

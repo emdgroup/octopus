@@ -2,9 +2,10 @@
 
 import dash_mantine_components as dmc
 from dash import Input, Output, State, clientside_callback, dcc, html, page_container
-from dash_iconify import DashIconify
 
 from octopus.analytics.library import sqlite
+
+# from dash_iconify import DashIconify
 
 
 def create_main_nav_link(icon, label, href):
@@ -12,9 +13,9 @@ def create_main_nav_link(icon, label, href):
     return dmc.Anchor(
         dmc.Group(
             [
-                DashIconify(
-                    icon=icon, width=23, color=dmc.theme.DEFAULT_COLORS["orange"][8]
-                ),
+                # DashIconify(
+                #     icon=icon, width=23, color=dmc.theme.DEFAULT_COLORS["orange"][8]
+                # ),
                 dmc.Text(label, size="sm"),
             ]
         ),
@@ -114,9 +115,9 @@ def create_header():
                                 spacing="xl",
                                 children=[
                                     dmc.ActionIcon(
-                                        DashIconify(
-                                            icon="radix-icons:blending-mode", width=22
-                                        ),
+                                        # DashIconify(
+                                        #     icon="radix-icons:blending-mode", width=22
+                                        # ),
                                         variant="outline",
                                         radius=30,
                                         size=36,

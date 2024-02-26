@@ -33,14 +33,17 @@ class Bag:
     num_workers: int = field(validator=[validators.instance_of(int)])
     target_metric: str = field(validator=[validators.instance_of(str)])
     row_column: str = field(validator=[validators.instance_of(str)])
-    # path: Path = field(default=Path(), validator=[validators.instance_of(Path)])
-    feature_importances: dict = field(
-        default=dict(), validator=[validators.instance_of(dict)]
-    )
-    features_used: list = field(
-        default=list(), validator=[validators.instance_of(list)]
-    )
     train_status: bool = field(default=False)
+    # bag training outputs, initialized in post_init
+    feature_importances: dict = field(
+        init=False, validator=[validators.instance_of(dict)]
+    )
+    features_used: list = field(init=False, validator=[validators.instance_of(list)])
+
+    def __attrs_post_init__(self):
+        # initialization here due to "Python immutable default"
+        self.feature_importances = dict()
+        self.features_used = list()
 
     def fit(self):
         """Run all available trainings."""
@@ -73,12 +76,12 @@ class Bag:
                 training.fit()
                 print("Inner sequential training completed")
 
-        self.train_status = True
+        self.train_status = (True,)
 
         # get used features in bag
         feat_lst = list()
         for training in self.trainings:
-            feat_lst.extend(training.used_features)
+            feat_lst.extend(training.features_used)
         self.features_used = list(set(feat_lst))
 
     def get_predictions(self):
@@ -99,7 +102,7 @@ class Bag:
 
         if self.target_metric in ["AUCROC", "LOGLOSS"]:
             ensemble["probability"] = ensemble[1]  # binary only!!
-        predictions["test"] = ensemble
+        predictions["ensemble"] = {"test": ensemble}
 
         return predictions
 
@@ -197,9 +200,9 @@ class Bag:
         # self.calculate_fi(fi_type='permutation',partition='dev')
         # self.calculate_fi(fi_type='permutation',partition='test')
         for training in self.trainings:
-            self.feature_importances[
-                training.training_id
-            ] = training.feature_importances
+            self.feature_importances[training.training_id] = (
+                training.feature_importances
+            )
         return self.feature_importances
 
     def to_pickle(self, path):

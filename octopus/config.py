@@ -1,4 +1,5 @@
 """Opto Config module."""
+
 import json
 import pickle
 

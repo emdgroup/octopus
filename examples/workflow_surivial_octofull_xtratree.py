@@ -9,7 +9,7 @@ import attrs
 # os.environ["OPENBLAS_NUM_THREADS"] = "1"
 import pandas as pd
 
-from octopus import OctoConfig, OctoData, OctoML
+from octopus import OctoConfig, OctoData  # ,OctoML
 from octopus.modules.octo.config import OctopusFullConfig
 
 print("Notebook kernel is running on server:", socket.gethostname())
@@ -23,7 +23,7 @@ print("Working directory: ", os.getcwd())
 data = pd.read_csv("./datasets/gbs2.csv", index_col=0)
 # data pre-processing
 # check for NaNs
-assert pd.isna(data).any().any() == False
+assert pd.isna(data).any().any() is False
 
 # one-hot encoding of categorical columns
 columns = ["horTh", "menostat", "tgrade"]

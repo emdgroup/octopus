@@ -13,6 +13,7 @@ from sklearn.ensemble import (
     RandomForestRegressor,
 )
 from sklearn.linear_model import ARDRegression, ElasticNet, Ridge
+from sksurv.ensemble import ExtraSurvivalTrees
 from xgboost import XGBClassifier, XGBRegressor
 
 model_inventory = {
@@ -25,4 +26,5 @@ model_inventory = {
     "RidgeRegressor": Ridge,
     "ARDRegressor": ARDRegression,
     "ElasticNetRegressor": ElasticNet,
+    "ExtraTreesSurv": ExtraSurvivalTrees,
 }

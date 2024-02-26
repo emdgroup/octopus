@@ -1,4 +1,5 @@
 """Octopus data classes."""
+
 import pickle
 from typing import List
 
@@ -51,6 +52,9 @@ class OctoData:
         # set default target assignment if single feature + empty assignment
         if (len(self.target_columns) == 1) & (not self.target_asignments):
             self.target_asignments["default"] = self.targets[0]
+        elif len(self.target_columns) > 1:
+            if len(self.target_columns) != len(self.target_asignments):
+                raise ValueError("Please provide correct target assignments")
         else:
             raise ValueError("Target assignments need to be provided")
 

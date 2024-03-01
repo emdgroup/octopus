@@ -32,33 +32,30 @@ class OctoAnalitics:
                     exp = pickle.load(f)
 
                     for split in exp.predictions:
-                        if split != "test":
-                            for dataset in exp.predictions[split]:
-                                # get predictions
-                                df_temp = exp.predictions[split][dataset]
-                                df_temp["experiment_id"] = exp.experiment_id
-                                df_temp["sequence_id"] = exp.sequence_item_id
-                                df_temp["split_id"] = split
-                                df_temp["dataset"] = dataset
-                                df_predictions = pd.concat([df_predictions, df_temp])
+                        for dataset in exp.predictions[split]:
+                            # get predictions
+                            df_temp = exp.predictions[split][dataset]
+                            df_temp["experiment_id"] = exp.experiment_id
+                            df_temp["sequence_id"] = exp.sequence_item_id
+                            df_temp["split_id"] = split
+                            df_temp["dataset"] = dataset
+                            df_predictions = pd.concat([df_predictions, df_temp])
 
-                                # calculate scores
-                                for mectric in ["MAE", "MSE", "R2"]:
-                                    dict_socre_temp = {
-                                        "experiment_id": exp.experiment_id,
-                                        "sequence_id": exp.sequence_item_id,
-                                        "split": split,
-                                        "testset": dataset,
-                                        "metric": mectric,
-                                        "score": utils.get_score(
-                                            mectric,
-                                            exp.predictions[split][dataset]["target"],
-                                            exp.predictions[split][dataset][
-                                                "prediction"
-                                            ],
-                                        ),
-                                    }
-                                    dict_scores.append(dict_socre_temp)
+                            # calculate scores
+                            for mectric in ["MAE", "MSE", "R2"]:
+                                dict_socre_temp = {
+                                    "experiment_id": exp.experiment_id,
+                                    "sequence_id": exp.sequence_item_id,
+                                    "split": split,
+                                    "testset": dataset,
+                                    "metric": mectric,
+                                    "score": utils.get_score(
+                                        mectric,
+                                        exp.predictions[split][dataset]["target"],
+                                        exp.predictions[split][dataset]["prediction"],
+                                    ),
+                                }
+                                dict_scores.append(dict_socre_temp)
 
             df_predictions = df_predictions.reset_index(drop=True)
             df_scores = (
@@ -97,13 +94,6 @@ class OctoAnalitics:
                 df_feature_importances.index,
             )
 
-        def _get_experiments(self):
-            """Get experiments data."""
-            for file in list(self.study_path.glob("**/exp*.pkl")):
-                with open(file, "rb") as f:
-                    exp = pickle.load(f)
-                self.experiments.append(exp)
-
         def _get_dataset(self):
             """Get dataset."""
             for file in list(self.study_path.glob("**/exp*.pkl")):
@@ -112,7 +102,10 @@ class OctoAnalitics:
                     df_dataset = pd.concat([exp.data_traindev, exp.data_test])
                 break
 
-            df_dataset = df_dataset.drop("index", axis=1).reset_index(drop=True)
+            # restrict dataframe if too many columns
+            # to do: add input to select important columns
+            if df_dataset.shape[1] > 100:
+                df_dataset = df_dataset[[exp.row_column, exp.datasplit_column]]
             sqlite.insert_dataframe("dataset", df_dataset, df_dataset.index)
 
         def _get_configs(self):

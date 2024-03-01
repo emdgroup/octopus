@@ -57,6 +57,8 @@ class OctoData:
                 raise ValueError("Please provide correct target assignments")
         else:
             raise ValueError("Target assignments need to be provided")
+        # remove features with only a single value
+        self.remove_singlevalue_features()
 
         # checks
         report = self.quality_check()
@@ -65,6 +67,21 @@ class OctoData:
             for item in report:
                 print(item)
             raise ValueError("Octo data quality check failed")
+
+    def remove_singlevalue_features(self):
+        """Remove feature that only contain a single value."""
+        print("Original number of features:", len(self.feature_columns))
+        data_features = self.data[self.feature_columns.keys()]
+        singlevalue_features = data_features.columns[data_features.nunique() == 1]
+        self.feature_columns = {
+            key: value
+            for key, value in self.feature_columns.items()
+            if key not in singlevalue_features
+        }
+        print(
+            "Number of features after removal of single-valued features:",
+            len(self.feature_columns),
+        )
 
     def modify_dataframe(self):
         """Initialize the preparation of the dataframe.

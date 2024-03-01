@@ -51,6 +51,11 @@ def create_side_navbar():
                 children=[
                     create_main_nav_link(
                         icon="material-symbols:readiness-score",
+                        label="Summary",
+                        href="/",
+                    ),
+                    create_main_nav_link(
+                        icon="material-symbols:readiness-score",
                         label="Scores",
                         href="/scores",
                     ),
@@ -63,6 +68,11 @@ def create_side_navbar():
                         icon="material-symbols:format-color-fill",
                         label="Sequence",
                         href="/sequence",
+                    ),
+                    create_main_nav_link(
+                        icon="material-symbols:format-color-fill",
+                        label="Configs",
+                        href="/configs",
                     ),
                 ],
             )

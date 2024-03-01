@@ -77,12 +77,20 @@ def plot_scores(aggregation, metric):
     fig = go.Figure()
     if aggregation == "All":
         for i in ["train", "dev", "test"]:
+            print(
+                df_scores.query(
+                    f'testset == "{i}" and metric == "{metric}" and split != "ensemble"'
+                )
+            )
+
             fig.add_trace(
                 go.Scatter(
                     x=df_scores.index.astype(str),
-                    y=df_scores.query(f'testset == "{i}" and metric == "{metric}"')[
-                        "score"
-                    ],
+                    y=df_scores.query(
+                        f"""testset == "{i}"
+                        and metric == "{metric}"
+                        and split != "ensemble" """
+                    )["score"],
                     mode="markers+lines",
                     name=i,
                 )

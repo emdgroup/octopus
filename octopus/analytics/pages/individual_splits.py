@@ -179,7 +179,7 @@ def plot_ground_truth(experiment_id, sequence_id, split_id):
                 y=df_["prediction"],
                 mode="markers",
                 name=dataset,
-                text=df_["index"],
+                text=df_["row_id"],
             )
         )
 
@@ -216,12 +216,12 @@ def show_selected_datapoint(selected_data):
             FROM dataset
         """
     )
-    columns = [{"field": i} for i in df_dataset.columns]
+    columns = [{"field": i} for i in df_dataset.columns[1:]]
 
     if selected_data is None:
         data = pd.DataFrame()
     else:
         selected_points = [entry["text"] for entry in selected_data["points"]]
-        data = df_dataset[df_dataset["index"].isin(selected_points)]
+        data = df_dataset[df_dataset["row_id"].isin(selected_points)]
 
     return data.to_dict("records"), columns

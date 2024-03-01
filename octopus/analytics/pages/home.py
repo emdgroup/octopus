@@ -1,8 +1,10 @@
-"""Home."""
+"""Home page."""
 
 import dash
 import dash_mantine_components as dmc
-from dash import Input, Output, callback, dcc, html
+import pandas as pd
+import plotly.graph_objects as go
+from dash import Input, Output, callback, dcc
 
 from octopus.analytics.library import sqlite, utils
 
@@ -10,102 +12,88 @@ dash.register_page(
     __name__,
     "/",
     title="Octopus",
-    description="Octopus main page",
+    description="Octopus",
 )
 
 
-layout = html.Div(
-    [
-        dmc.Container(
-            size="lg",
-            mt=30,
-            children=[
-                dmc.Grid(
-                    [
-                        dmc.Col(dmc.Title("Study configuration"), span="content"),
-                        dmc.Col(
-                            dcc.Clipboard(
-                                id="clipboard_study_config",
-                            ),
-                            span="auto",
-                        ),
-                    ],
-                    pb=20,
-                ),
-                dmc.Table(
-                    utils.create_table_without_header(
-                        sqlite.query("SELECT * FROM config_study")
-                    ),
-                ),
-                dmc.Title("Manager configuration", pb=20, pt=40),
-                dmc.Table(
-                    utils.create_table_without_header(
-                        sqlite.query("SELECT * FROM config_manager")
-                    )
-                ),
-                dmc.Title("Sequence configuration", pb=20, pt=40),
-                dmc.AccordionMultiple(id="accordion_sequence_config"),
-                # dmc.Table(
-                #     utils.create_table_without_header(
-                #         sqlite.query("SELECT * FROM config_sequence")
-                #     )
-                # ),
-            ],
+layout = dmc.Paper(id="paper_summary")
+
+
+@callback(Output("paper_summary", "children"), Input("url", "pathname"))
+def show_tests_scores(
+    _,
+):
+    """Shoe tets scores."""
+    metric = "MAE"
+
+    df_scores_emseble = sqlite.query(
+        f"""SELECT *
+        FROM scores
+        WHERE metric='{metric}'
+        AND testset='test' AND split='ensemble'
+        """
+    )
+    df_scores_mean = (
+        sqlite.query(
+            f"""SELECT *
+            FROM scores
+            WHERE metric='{metric}'
+            AND testset='test'
+            AND split!='ensemble'
+            """
         )
-    ]
-)
-
-
-@callback(
-    Output("clipboard_study_config", "content"),
-    Input("clipboard_study_config", "n_clicks"),
-)
-def custom_copy(_):
-    """Copy config study.
-
-    There must be a better way to do it.
-    """
-    dict_study_config = (
-        sqlite.query("SELECT * FROM config_study").set_index("index").to_dict()["0"]
+        .groupby(["experiment_id", "sequence_id"])[["score"]]
+        .mean()
+        .reset_index()
     )
 
-    my_dict_cleaned = {}
-    for key, value in dict_study_config.items():
-        if isinstance(value, str):
-            if value.isnumeric():
-                my_dict_cleaned[key] = int(value)
-            elif value.replace(".", "", 1).isdigit():
-                my_dict_cleaned[key] = float(value)
-            elif value.startswith("[") and value.endswith("]"):
-                my_dict_cleaned[key] = eval(value)
-            else:
-                my_dict_cleaned[key] = value
-        else:
-            my_dict_cleaned[key] = value
+    children = []
+    for sequence in df_scores_emseble["sequence_id"].unique():
+        df_scores_emseble_temp = df_scores_emseble[
+            df_scores_emseble["sequence_id"] == sequence
+        ]
+        df_scores_mean_temp = df_scores_mean[df_scores_mean["sequence_id"] == sequence]
 
-    return str(my_dict_cleaned)
+        fig = go.Figure(
+            data=[
+                go.Bar(
+                    name="Ensemble",
+                    x=df_scores_emseble_temp["experiment_id"],
+                    y=df_scores_emseble_temp["score"],
+                ),
+                go.Bar(
+                    name="Average",
+                    x=df_scores_mean_temp["experiment_id"],
+                    y=df_scores_mean_temp["score"],
+                ),
+            ]
+        )
 
+        fig.update_layout(
+            title="Test Scores",
+            xaxis_title="Experiment",
+            yaxis_title=metric,
+        )
 
-@callback(
-    Output("accordion_sequence_config", "children"),
-    Input("url", "pathname"),
-)
-def create_accordion_items(_):
-    """Create accordion items."""
-    accordion_items = []
-    for value, df_ in sqlite.query("SELECT * FROM config_sequence").groupby(
-        "sequence_id"
-    ):
-        accordion_items.append(
-            dmc.AccordionItem(
-                [
-                    dmc.AccordionControl(f"Sequence_{value}"),
-                    dmc.AccordionPanel(
-                        utils.create_table_without_header(df_[["index", "0"]])
-                    ),
+        df_ = pd.DataFrame(
+            {
+                "key": ["Metric", "Ensemble average", "Total average"],
+                "value": [
+                    metric,
+                    df_scores_emseble_temp["score"].mean(),
+                    df_scores_mean_temp["score"].mean(),
                 ],
-                value=f"Sequence {value}",
+            }
+        )
+
+        children.append(
+            dmc.Paper(
+                [
+                    dmc.Title(f"Sequence {sequence}"),
+                    utils.table_without_header(df_.astype(str)),
+                    dcc.Graph(figure=fig),
+                ]
             )
         )
 
-    return accordion_items
+    return children

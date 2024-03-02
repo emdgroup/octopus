@@ -4,6 +4,15 @@ try:
     import autosklearn.classification
     import autosklearn.metrics
     import autosklearn.regression
+    from autosklearn.metrics import (
+        accuracy,
+        balanced_accuracy,
+        log_loss,
+        mean_absolute_error,
+        r2,
+        roc_auc,
+        root_mean_squared_error,
+    )
 except ImportError:
     print("Auto-Sklearn not installed in this conda environment")
 
@@ -12,17 +21,11 @@ import shutil
 from pathlib import Path
 
 import pandas as pd
+import sklearn.metrics
 from attrs import define, field, validators
-from sklearn.metrics import mean_absolute_error
 
 from octopus.experiment import OctoExperiment
 
-# TOBEDONE:
-# - (1) calculate scores and save to experiment (see octofull)
-# - (2) save test predictions to experiment
-# - (3) function to calculate feature importances (standard, permutation, shapley)
-#       https://automl.github.io/auto-sklearn/master/examples/
-#       40_advanced/example_inspect_predictions.html
 # - (4) save feature importances to experiment
 # - (5) save selected features (needs features importances)
 # - (6) check config regarding available CPUs
@@ -48,17 +51,20 @@ from octopus.experiment import OctoExperiment
 
 # Notes:
 # - autosklearn in version 0.15 requires numpy==1.23.5, otherwise some jobs will fail
-
 # mapping of metrics
-metrics_inventory = {
-    "AUCROC": autosklearn.metrics.roc_auc,
-    "ACC": autosklearn.metrics.accuracy,
-    "ACCBAL": autosklearn.metrics.balanced_accuracy,
-    "LOGLOSS": autosklearn.metrics.log_loss,
-    "MAE": autosklearn.metrics.mean_absolute_error,
-    "MSE": autosklearn.metrics.root_mean_squared_error,
-    "R2": autosklearn.metrics.r2,
-}
+try:
+    metrics_inventory = {
+        "AUCROC": roc_auc,
+        "ACC": accuracy,
+        "ACCBAL": balanced_accuracy,
+        "LOGLOSS": log_loss,
+        "MAE": mean_absolute_error,
+        "MSE": root_mean_squared_error,
+        "R2": r2,
+    }
+except Exception as e:  # pylint: disable=W0718
+    print(e)
+    metrics_inventory = {}
 
 
 @define
@@ -211,11 +217,11 @@ class Autosklearn:
         # show and save test results, MAE
         print(
             f"Experiment: {self.experiment.id} "
-            f"Test MAE: {mean_absolute_error(self.y_test, preds)}"
+            f"Test MAE: {sklearn.metrics.mean_absolute_error(self.y_test, preds)}"
         )
         results_test = {
             "experiment_id": self.experiment.id,
-            "test MAE": mean_absolute_error(self.y_test, preds),
+            "test MAE": sklearn.metrics.mean_absolute_error(self.y_test, preds),
             # "test predictions": preds, #json error
         }
         with open(

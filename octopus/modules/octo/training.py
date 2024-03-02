@@ -73,17 +73,41 @@ class Training:
     @property
     def y_train(self):
         """y_train."""
-        return self.data_train[self.target_assignments.values()]
+        if self.ml_type == "timetoevent":
+            duration = self.data_train[self.target_assignments["duration"]]
+            event = self.data_train[self.target_assignments["event"]]
+            return np.array(
+                list(zip(event, duration)),
+                dtype={"names": ("c1", "c2"), "formats": ("bool", "f8")},
+            )
+        else:
+            return self.data_train[self.target_assignments.values()]
 
     @property
     def y_dev(self):
         """y_dev."""
-        return self.data_dev[self.target_assignments.values()]
+        if self.ml_type == "timetoevent":
+            duration = self.data_dev[self.target_assignments["duration"]]
+            event = self.data_dev[self.target_assignments["event"]]
+            return np.array(
+                list(zip(event, duration)),
+                dtype={"names": ("c1", "c2"), "formats": ("bool", "f8")},
+            )
+        else:
+            return self.data_dev[self.target_assignments.values()]
 
     @property
     def y_test(self):
         """y_dev."""
-        return self.data_test[self.target_assignments.values()]
+        if self.ml_type == "timetoevent":
+            duration = self.data_test[self.target_assignments["duration"]]
+            event = self.data_test[self.target_assignments["event"]]
+            return np.array(
+                list(zip(event, duration)),
+                dtype={"names": ("c1", "c2"), "formats": ("bool", "f8")},
+            )
+        else:
+            return self.data_test[self.target_assignments.values()]
 
     def __attrs_post_init__(self):
         # initialization here due to "Python immutable default"
@@ -134,22 +158,30 @@ class Training:
 
         self.predictions["train"] = pd.DataFrame()
         self.predictions["train"][self.row_column] = self.data_train[self.row_column]
-        self.predictions["train"]["target"] = self.y_train.squeeze(axis=1)
         # self.predictions["train"]["prediction"] = self.model.predict(x_train_scaled)
         self.predictions["train"]["prediction"] = self.model.predict(self.x_train)
 
         self.predictions["dev"] = pd.DataFrame()
         self.predictions["dev"][self.row_column] = self.data_dev[self.row_column]
-        self.predictions["dev"]["target"] = self.y_dev.squeeze(axis=1)
         # self.predictions["dev"]["prediction"] = self.model.predict(x_dev_scaled)
         self.predictions["dev"]["prediction"] = self.model.predict(self.x_dev)
 
         self.predictions["test"] = pd.DataFrame()
         self.predictions["test"][self.row_column] = self.data_test[self.row_column]
-        self.predictions["test"]["target"] = self.y_test.squeeze(axis=1)
         # self.predictions["test"]["prediction"] = self.model.predict(x_test_scaled)
         self.predictions["test"]["prediction"] = self.model.predict(self.x_test)
 
+        # special treatment of targets due to sklearn
+        if len(self.target_assignments) == 1:
+            self.predictions["train"]["target"] = self.y_train.squeeze(axis=1)
+            self.predictions["dev"]["target"] = self.y_dev.squeeze(axis=1)
+            self.predictions["test"]["target"] = self.y_test.squeeze(axis=1)
+        else:
+            self.predictions["train"]["target"] = self.y_train
+            self.predictions["dev"]["target"] = self.y_dev
+            self.predictions["test"]["target"] = self.y_test
+
+        # add addtional predictions for classifications
         if self.ml_type == "classification":
             columns = [int(x) for x in self.model.classes_]  # column names --> int
             # self.predictions["train"][columns] = self.model.predict_proba(
@@ -161,14 +193,20 @@ class Training:
             # self.predictions["test"][columns]=self.model.predict_proba(x_test_scaled)
             self.predictions["test"][columns] = self.model.predict_proba(self.x_test)
 
+        # add addtional predictions for time to event predictions
+        if self.ml_type == "timetoevent":
+            pass
+
         # populate used_features
         # use internal fi first
         if hasattr(self.model, "features_importances_"):
             self.calculate_fi_internal()
             fi_df = self.feature_importances["internal"]
         else:  # alternatively use shap
-            self.calculate_fi_shap(partition="dev")
-            fi_df = self.feature_importances["shap_dev"]
+            # self.calculate_fi_shap(partition="dev")
+            # fi_df = self.feature_importances["shap_dev"]
+            self.calculate_fi_permutation(partition="dev")
+            fi_df = self.feature_importances["permutation_dev"]
         self.features_used = fi_df[fi_df["importance"] != 0]["feature"].tolist()
 
         return self
@@ -206,13 +244,15 @@ class Training:
         print("Calculating shape feature importances. This may take a while...")
         # Initialize shape explainer using training data
         # improve speed by self.x_train.sample(n=100, replace=True, random_state=0)
-        explainer = shap.Explainer(self.model, self.x_train)
+        explainer = shap.Explainer(self.model.predict, self.x_train)
 
         # Calculate SHAP values for the dev dataset
         if partition == "dev":
-            shap_values = explainer.shap_values(self.x_dev)  # pylint: disable=E1101
+            shap_values = explainer(self.x_dev)  # pylint: disable=E1101
+            # shap_values = explainer.shap_values(self.x_dev)  # pylint: disable=E1101
         elif partition == "test":
-            shap_values = explainer.shap_values(self.x_test)  # pylint: disable=E1101
+            shap_values = explainer(self.x_test)
+            # shap_values = explainer.shap_values(self.x_test)  # pylint: disable=E1101
         else:
             raise ValueError("dataset type not supported")
 

@@ -15,6 +15,7 @@ from sklearn.metrics import (
     r2_score,
     roc_auc_score,
 )
+from sksurv.metrics import concordance_index_censored
 
 
 @define
@@ -121,6 +122,7 @@ class Bag:
             "MAE": mean_absolute_error,
             "MSE": mean_squared_error,
             "R2": r2_score,
+            "CI": concordance_index_censored,
         }
 
         storage = {key: [] for key in ["train", "dev", "test"]}
@@ -200,9 +202,9 @@ class Bag:
         # self.calculate_fi(fi_type='permutation',partition='dev')
         # self.calculate_fi(fi_type='permutation',partition='test')
         for training in self.trainings:
-            self.feature_importances[
-                training.training_id
-            ] = training.feature_importances
+            self.feature_importances[training.training_id] = (
+                training.feature_importances
+            )
         return self.feature_importances
 
     def to_pickle(self, path):

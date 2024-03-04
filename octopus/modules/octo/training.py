@@ -142,7 +142,9 @@ class Training:
         # x_train_scaled = self.scaler.fit_transform(self.x_train)
         # x_dev_scaled = self.scaler.transform(self.x_dev)
         # x_test_scaled = self.scaler.transform(self.x_test)
-        self.model = model_inventory[self.ml_model_type](**self.ml_model_params)
+        self.model = model_inventory[self.ml_model_type]["model"](
+            **self.ml_model_params
+        )
 
         if len(self.target_assignments) == 1:
             # standard sklearn single target models
@@ -181,7 +183,7 @@ class Training:
             self.predictions["dev"]["target"] = self.y_dev
             self.predictions["test"]["target"] = self.y_test
 
-        # add addtional predictions for classifications
+        # add additional predictions for classifications
         if self.ml_type == "classification":
             columns = [int(x) for x in self.model.classes_]  # column names --> int
             # self.predictions["train"][columns] = self.model.predict_proba(
@@ -193,23 +195,34 @@ class Training:
             # self.predictions["test"][columns]=self.model.predict_proba(x_test_scaled)
             self.predictions["test"][columns] = self.model.predict_proba(self.x_test)
 
-        # add addtional predictions for time to event predictions
+        # add additional predictions for time to event predictions
         if self.ml_type == "timetoevent":
             pass
 
         # populate used_features
-        # use internal fi first
-        if hasattr(self.model, "features_importances_"):
-            self.calculate_fi_internal()
-            fi_df = self.feature_importances["internal"]
-        else:  # alternatively use shap
-            # self.calculate_fi_shap(partition="dev")
-            # fi_df = self.feature_importances["shap_dev"]
-            self.calculate_fi_permutation(partition="dev")
-            fi_df = self.feature_importances["permutation_dev"]
-        self.features_used = fi_df[fi_df["importance"] != 0]["feature"].tolist()
+        self.features_used = self._calculate_features_used()
 
         return self
+
+    def _calculate_features_used(self):
+        """Calculate used features, method based on model type."""
+        feature_method = model_inventory[self.ml_model_type]["feature_method"]
+
+        if feature_method == "internal":
+            self.calculate_fi_internal()
+            fi_df = self.feature_importances["internal"]
+        elif feature_method == "shap":
+            self.calculate_fi_shap(partition="dev")
+            fi_df = self.feature_importances["shap_dev"]
+        elif feature_method == "permutation":
+            self.calculate_fi_permutation(
+                partition="dev", n_repeats=2
+            )  # only 2 repeats!
+            fi_df = self.feature_importances["permutation_dev"]
+        else:
+            raise ValueError("feature method provided in model config not supported")
+
+        return fi_df[fi_df["importance"] != 0]["feature"].tolist()
 
     def calculate_fi_internal(self):
         """Sklearn provided internal feature importance (based on train dataset)."""
@@ -222,16 +235,24 @@ class Training:
             fi_df = pd.DataFrame(columns=["feature", "importance"])
         self.feature_importances["internal"] = fi_df
 
-    def calculate_fi_permutation(self, partition="dev"):
+    def calculate_fi_permutation(self, partition="dev", n_repeats=10):
         """Permutation feature importance."""
         print("Calculating permutation feature importances. This may take a while...")
         if partition == "dev":
             perm_importance = permutation_importance(
-                self.model, X=self.x_dev, y=self.y_dev, n_repeats=10, random_state=0
+                self.model,
+                X=self.x_dev,
+                y=self.y_dev,
+                n_repeats=n_repeats,
+                random_state=0,
             )
         elif partition == "test":
             perm_importance = permutation_importance(
-                self.model, X=self.x_test, y=self.y_test, n_repeats=10, random_state=0
+                self.model,
+                X=self.x_test,
+                y=self.y_test,
+                n_repeats=n_repeats,
+                random_state=0,
             )
         fi_df = pd.DataFrame()
         fi_df["feature"] = self.feature_columns
@@ -244,15 +265,15 @@ class Training:
         print("Calculating shape feature importances. This may take a while...")
         # Initialize shape explainer using training data
         # improve speed by self.x_train.sample(n=100, replace=True, random_state=0)
-        explainer = shap.Explainer(self.model.predict, self.x_train)
+        explainer = shap.Explainer(self.model, self.x_train)
 
         # Calculate SHAP values for the dev dataset
         if partition == "dev":
-            shap_values = explainer(self.x_dev)  # pylint: disable=E1101
-            # shap_values = explainer.shap_values(self.x_dev)  # pylint: disable=E1101
+            # shap_values = explainer(self.x_dev)  # pylint: disable=E1101
+            shap_values = explainer.shap_values(self.x_dev)  # pylint: disable=E1101
         elif partition == "test":
-            shap_values = explainer(self.x_test)
-            # shap_values = explainer.shap_values(self.x_test)  # pylint: disable=E1101
+            # shap_values = explainer(self.x_test)
+            shap_values = explainer.shap_values(self.x_test)  # pylint: disable=E1101
         else:
             raise ValueError("dataset type not supported")
 

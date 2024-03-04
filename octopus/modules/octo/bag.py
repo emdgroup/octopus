@@ -137,6 +137,15 @@ class Bag:
                     storage[part].append(
                         metrics_inventory[self.target_metric](target, probabilities)
                     )
+            elif self.target_metric in ["CI"]:
+                for part in storage.keys():
+                    estimate = training.predictions[part]["prediction"]
+                    target = training.predictions[part]["target"]
+                    event_indicator, event_time = zip(*target)
+                    ci, _, _, _, _ = metrics_inventory[self.target_metric](
+                        event_indicator, event_time, estimate
+                    )
+                    storage[part].append(ci)
             else:
                 for part in storage.keys():
                     predictions = training.predictions[part]["prediction"]
@@ -171,6 +180,14 @@ class Bag:
                 scores[part + "_pool_hard"] = metrics_inventory[self.target_metric](
                     target, predictions
                 )
+        elif self.target_metric in ["CI"]:
+            for part in pool.keys():
+                estimate = pool[part]["prediction"]
+                target = pool[part]["target"]  # this will not work due to groupby
+                event_indicator, event_time = zip(*target)
+                scores[part + "_pool_hard"] = metrics_inventory[self.target_metric](
+                    event_indicator, event_time, estimate
+                )
         else:
             for part in pool.keys():
                 predictions = pool[part]["prediction"]
@@ -202,9 +219,9 @@ class Bag:
         # self.calculate_fi(fi_type='permutation',partition='dev')
         # self.calculate_fi(fi_type='permutation',partition='test')
         for training in self.trainings:
-            self.feature_importances[training.training_id] = (
-                training.feature_importances
-            )
+            self.feature_importances[
+                training.training_id
+            ] = training.feature_importances
         return self.feature_importances
 
     def to_pickle(self, path):

@@ -33,9 +33,14 @@ for line in [319, 330, 338]:
 # - check that openblas settings are correct and suggest solutions
 
 # TOBEDONE OCTOFULL
+# - (0) !Calculate performance of survival models: CI, CI_uno,  IBS, dynAUC,
+# - (0) clean up calculation of feature importances
+#       + sksurv models need special setup for shapley and maybe permutation fi
+#       + bag fi: we don't want to calculated all fi types for every model
+# - (1) only calculate features_used when max_features>0
+# - (2) maybe separate between features_used (bag level) and final_features (bag level)
 # - (1) add bag_id (experiment_id+sequence+trial/best))
 # - (2) rename ensemble test
-# - (3) folder not deleted, prod mode?
 # - (4) include data preprocessing
 # - (5) Ensemble selection
 # - (6) feature counts in bag

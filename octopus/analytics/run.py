@@ -185,4 +185,4 @@ class OctoAnalitics:
         app.layout = appshell.create_appshell()
 
         # Run the Dash app
-        app.run_server(debug=True)
+        app.run_server(debug=True, host="0.0.0.0", port=8171)

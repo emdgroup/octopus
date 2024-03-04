@@ -159,7 +159,32 @@ sequence_item_1 = OctopusFullConfig(
     penalty_factor=10.0,
 )
 
-config_sequence = [attrs.asdict(sequence_item_1)]
+sequence_item_2 = OctopusFullConfig(
+    description="step2_octofull",
+    # datasplit
+    n_folds_inner=6,
+    datasplit_seed_inner=0,
+    # model training
+    models=["RidgeRegressor"],
+    model_seed=0,
+    n_jobs=1,
+    dim_red_methods=[""],
+    max_outl=0,
+    # parallelization
+    inner_parallelization=False,
+    n_workers=6,
+    # HPO
+    optuna_seed=0,
+    n_optuna_startup_trials=10,
+    resume_optimization=False,
+    global_hyperparameter=True,
+    n_trials=10,
+    save_trials=False,
+    max_features=3000,
+    penalty_factor=10.0,
+)
+
+config_sequence = [attrs.asdict(sequence_item_1), attrs.asdict(sequence_item_2)]
 # create study config
 octo_config = OctoConfig(config_manager, config_sequence, **config_study)
 

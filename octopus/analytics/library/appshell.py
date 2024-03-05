@@ -71,6 +71,11 @@ def create_side_navbar():
                     ),
                     create_main_nav_link(
                         icon="material-symbols:format-color-fill",
+                        label="Optuna",
+                        href="/optuna",
+                    ),
+                    create_main_nav_link(
+                        icon="material-symbols:format-color-fill",
                         label="Configs",
                         href="/configs",
                     ),

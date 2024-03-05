@@ -23,8 +23,8 @@ layout = dmc.Paper(id="paper_summary")
 def show_tests_scores(
     _,
 ):
-    """Shoe tets scores."""
-    metric = "MAE"
+    """Show test scores."""
+    metric = utils.get_target_metric()
 
     df_scores_emseble = sqlite.query(
         f"""SELECT *

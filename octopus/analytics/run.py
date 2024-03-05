@@ -1,7 +1,9 @@
 """Octopus Analitics."""
 
 import pickle
+import re
 
+import optuna
 import pandas as pd
 from attrs import define, field
 from dash import Dash
@@ -168,10 +170,61 @@ class OctoAnalitics:
                 "config_sequence", df_config_sequence, df_config_sequence.index
             )
 
+        # def _get_optuna_stats(self):
+        #     df_trial_values = pd.concat(
+        #         [
+        #             pd.read_sql_table(
+        #                 "trial_values", create_engine(f"sqlite:///{file}")
+        #             ).assign(
+        #                 Experiment_ID=int(
+        #                     re.search(r"/experiment(\d+)/", str(file)).group(1)
+        #                 )
+        #             )
+        #             for file in list(self.study_path.glob("**/optuna*.db"))
+        #         ],
+        #         ignore_index=True,
+        #     )
+
+        #     sqlite.insert_dataframe(
+        #         "optuna_trail_values", df_trial_values, df_trial_values.index
+        #     )
+
+        def _get_optuna_trials(self):
+            dict_optuna = []
+
+            for file in list(self.study_path.glob("**/optuna*.db")):
+                match_experiment = re.search(r"experiment(\d+)", str(file))
+                match_sequence = re.search(r"sequence(\d+)", str(file))
+
+                study = optuna.study.load_study(
+                    study_name=file.stem, storage=f"sqlite:///{file}"
+                )
+
+                for trial in study.get_trials():
+                    for name, value in trial.distributions.items():
+                        if name == "ml_model_type":
+                            continue
+                        dict_optuna.append(
+                            {
+                                "experiment_id": int(match_experiment.group(1)),
+                                "sequence_id": int(match_sequence.group(1)),
+                                "trial": trial.number,
+                                "value": trial.value,
+                                "model_type": trial.params["ml_model_type"],
+                                "hyper_param": name,
+                                "param_value": trial.params[name],
+                            }
+                        )
+
+            df = pd.DataFrame(dict_optuna)
+            sqlite.insert_dataframe("optuna_trials", df, df.index)
+
         _get_dataset(self)
         _get_predictions(self)
         _get_feature_importances(self)
         _get_configs(self)
+        # _get_optuna_stats(self)
+        _get_optuna_trials(self)
 
     def run_analytics(self):
         """Run app."""

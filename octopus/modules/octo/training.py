@@ -23,6 +23,7 @@ class Training:
     data_dev: pd.DataFrame = field(validator=[validators.instance_of(pd.DataFrame)])
     data_test: pd.DataFrame = field(validator=[validators.instance_of(pd.DataFrame)])
     target_metric: str = field(validator=[validators.instance_of(str)])
+    max_features: int = field(validator=[validators.instance_of(int)])
     # configuration for training
     config_training: dict = field(validator=[validators.instance_of(dict)])
     # training outputs, initialized in post_init
@@ -73,17 +74,41 @@ class Training:
     @property
     def y_train(self):
         """y_train."""
-        return self.data_train[self.target_assignments.values()]
+        if self.ml_type == "timetoevent":
+            duration = self.data_train[self.target_assignments["duration"]]
+            event = self.data_train[self.target_assignments["event"]]
+            return np.array(
+                list(zip(event, duration)),
+                dtype={"names": ("c1", "c2"), "formats": ("bool", "f8")},
+            )
+        else:
+            return self.data_train[self.target_assignments.values()]
 
     @property
     def y_dev(self):
         """y_dev."""
-        return self.data_dev[self.target_assignments.values()]
+        if self.ml_type == "timetoevent":
+            duration = self.data_dev[self.target_assignments["duration"]]
+            event = self.data_dev[self.target_assignments["event"]]
+            return np.array(
+                list(zip(event, duration)),
+                dtype={"names": ("c1", "c2"), "formats": ("bool", "f8")},
+            )
+        else:
+            return self.data_dev[self.target_assignments.values()]
 
     @property
     def y_test(self):
         """y_dev."""
-        return self.data_test[self.target_assignments.values()]
+        if self.ml_type == "timetoevent":
+            duration = self.data_test[self.target_assignments["duration"]]
+            event = self.data_test[self.target_assignments["event"]]
+            return np.array(
+                list(zip(event, duration)),
+                dtype={"names": ("c1", "c2"), "formats": ("bool", "f8")},
+            )
+        else:
+            return self.data_test[self.target_assignments.values()]
 
     def __attrs_post_init__(self):
         # initialization here due to "Python immutable default"
@@ -118,7 +143,9 @@ class Training:
         # x_train_scaled = self.scaler.fit_transform(self.x_train)
         # x_dev_scaled = self.scaler.transform(self.x_dev)
         # x_test_scaled = self.scaler.transform(self.x_test)
-        self.model = model_inventory[self.ml_model_type](**self.ml_model_params)
+        self.model = model_inventory[self.ml_model_type]["model"](
+            **self.ml_model_params
+        )
 
         if len(self.target_assignments) == 1:
             # standard sklearn single target models
@@ -134,22 +161,32 @@ class Training:
 
         self.predictions["train"] = pd.DataFrame()
         self.predictions["train"][self.row_column] = self.data_train[self.row_column]
-        self.predictions["train"]["target"] = self.y_train.squeeze(axis=1)
         # self.predictions["train"]["prediction"] = self.model.predict(x_train_scaled)
         self.predictions["train"]["prediction"] = self.model.predict(self.x_train)
 
         self.predictions["dev"] = pd.DataFrame()
         self.predictions["dev"][self.row_column] = self.data_dev[self.row_column]
-        self.predictions["dev"]["target"] = self.y_dev.squeeze(axis=1)
         # self.predictions["dev"]["prediction"] = self.model.predict(x_dev_scaled)
         self.predictions["dev"]["prediction"] = self.model.predict(self.x_dev)
 
         self.predictions["test"] = pd.DataFrame()
         self.predictions["test"][self.row_column] = self.data_test[self.row_column]
-        self.predictions["test"]["target"] = self.y_test.squeeze(axis=1)
         # self.predictions["test"]["prediction"] = self.model.predict(x_test_scaled)
         self.predictions["test"]["prediction"] = self.model.predict(self.x_test)
 
+        # special treatment of targets due to sklearn
+        if len(self.target_assignments) == 1:
+            target_col = list(self.target_assignments.values())[0]
+            self.predictions["train"][target_col] = self.y_train.squeeze(axis=1)
+            self.predictions["dev"][target_col] = self.y_dev.squeeze(axis=1)
+            self.predictions["test"][target_col] = self.y_test.squeeze(axis=1)
+        else:
+            for target_col in self.target_assignments.values():
+                self.predictions["train"][target_col] = self.data_train[target_col]
+                self.predictions["dev"][target_col] = self.data_dev[target_col]
+                self.predictions["test"][target_col] = self.data_test[target_col]
+
+        # add additional predictions for classifications
         if self.ml_type == "classification":
             columns = [int(x) for x in self.model.classes_]  # column names --> int
             # self.predictions["train"][columns] = self.model.predict_proba(
@@ -161,17 +198,38 @@ class Training:
             # self.predictions["test"][columns]=self.model.predict_proba(x_test_scaled)
             self.predictions["test"][columns] = self.model.predict_proba(self.x_test)
 
-        # populate used_features
-        # use internal fi first
-        if hasattr(self.model, "features_importances_"):
-            self.calculate_fi_internal()
-            fi_df = self.feature_importances["internal"]
-        else:  # alternatively use shap
-            self.calculate_fi_shap(partition="dev")
-            fi_df = self.feature_importances["shap_dev"]
-        self.features_used = fi_df[fi_df["importance"] != 0]["feature"].tolist()
+        # add additional predictions for time to event predictions
+        if self.ml_type == "timetoevent":
+            pass
+
+        # calculate used features, but only if required for optuna max_features>0
+        # (to save time, shap or permutation importances may take a lot of time)
+        if self.max_features > 0:
+            self.features_used = self._calculate_features_used()
+        else:
+            self.features_used = 0
 
         return self
+
+    def _calculate_features_used(self):
+        """Calculate used features, method based on model type."""
+        feature_method = model_inventory[self.ml_model_type]["feature_method"]
+
+        if feature_method == "internal":
+            self.calculate_fi_internal()
+            fi_df = self.feature_importances["internal"]
+        elif feature_method == "shap":
+            self.calculate_fi_shap(partition="dev")
+            fi_df = self.feature_importances["shap_dev"]
+        elif feature_method == "permutation":
+            self.calculate_fi_permutation(
+                partition="dev", n_repeats=2
+            )  # only 2 repeats!
+            fi_df = self.feature_importances["permutation_dev"]
+        else:
+            raise ValueError("feature method provided in model config not supported")
+
+        return fi_df[fi_df["importance"] != 0]["feature"].tolist()
 
     def calculate_fi_internal(self):
         """Sklearn provided internal feature importance (based on train dataset)."""
@@ -184,16 +242,24 @@ class Training:
             fi_df = pd.DataFrame(columns=["feature", "importance"])
         self.feature_importances["internal"] = fi_df
 
-    def calculate_fi_permutation(self, partition="dev"):
+    def calculate_fi_permutation(self, partition="dev", n_repeats=10):
         """Permutation feature importance."""
         print("Calculating permutation feature importances. This may take a while...")
         if partition == "dev":
             perm_importance = permutation_importance(
-                self.model, X=self.x_dev, y=self.y_dev, n_repeats=10, random_state=0
+                self.model,
+                X=self.x_dev,
+                y=self.y_dev,
+                n_repeats=n_repeats,
+                random_state=0,
             )
         elif partition == "test":
             perm_importance = permutation_importance(
-                self.model, X=self.x_test, y=self.y_test, n_repeats=10, random_state=0
+                self.model,
+                X=self.x_test,
+                y=self.y_test,
+                n_repeats=n_repeats,
+                random_state=0,
             )
         fi_df = pd.DataFrame()
         fi_df["feature"] = self.feature_columns
@@ -210,8 +276,10 @@ class Training:
 
         # Calculate SHAP values for the dev dataset
         if partition == "dev":
+            # shap_values = explainer(self.x_dev)  # pylint: disable=E1101
             shap_values = explainer.shap_values(self.x_dev)  # pylint: disable=E1101
         elif partition == "test":
+            # shap_values = explainer(self.x_test)
             shap_values = explainer.shap_values(self.x_test)  # pylint: disable=E1101
         else:
             raise ValueError("dataset type not supported")

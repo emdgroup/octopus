@@ -15,6 +15,7 @@ from sklearn.metrics import (
     r2_score,
     roc_auc_score,
 )
+from sksurv.metrics import concordance_index_censored
 
 
 @define
@@ -32,6 +33,7 @@ class Bag:
     parallel_execution: bool = field(validator=[validators.instance_of(bool)])
     num_workers: int = field(validator=[validators.instance_of(int)])
     target_metric: str = field(validator=[validators.instance_of(str)])
+    target_assignments: dict = field(validator=[validators.instance_of(dict)])
     row_column: str = field(validator=[validators.instance_of(str)])
     train_status: bool = field(default=False)
     # bag training outputs, initialized in post_init
@@ -121,6 +123,7 @@ class Bag:
             "MAE": mean_absolute_error,
             "MSE": mean_squared_error,
             "R2": r2_score,
+            "CI": concordance_index_censored,
         }
 
         storage = {key: [] for key in ["train", "dev", "test"]}
@@ -130,15 +133,30 @@ class Bag:
             # averaging
             if self.target_metric in ["AUCROC", "LOGLOSS"]:
                 for part in storage.keys():
+                    target_col = list(self.target_assignments.values())[0]
                     probabilities = training.predictions[part][1]  # binary only!!
-                    target = training.predictions[part]["target"]
+                    target = training.predictions[part][target_col]
                     storage[part].append(
                         metrics_inventory[self.target_metric](target, probabilities)
                     )
+            elif self.target_metric in ["CI"]:
+                for part in storage.keys():
+                    estimate = training.predictions[part]["prediction"]
+                    event_time = training.predictions[part][
+                        self.target_assignments["duration"]
+                    ].astype(float)
+                    event_indicator = training.predictions[part][
+                        self.target_assignments["event"]
+                    ].astype(bool)
+                    ci, _, _, _, _ = metrics_inventory[self.target_metric](
+                        event_indicator, event_time, estimate
+                    )
+                    storage[part].append(float(ci))
             else:
                 for part in storage.keys():
+                    target_col = list(self.target_assignments.values())[0]
                     predictions = training.predictions[part]["prediction"]
-                    target = training.predictions[part]["target"]
+                    target = training.predictions[part][target_col]
                     storage[part].append(
                         metrics_inventory[self.target_metric](target, predictions)
                     )
@@ -160,19 +178,34 @@ class Bag:
         # calculate pooling scores (soft and hard)
         if self.target_metric in ["AUCROC", "LOGLOSS"]:
             for part in pool.keys():
+                target_col = list(self.target_assignments.values())[0]
                 probabilities = pool[part][1]  # binary only!!
                 predictions = pool[part]["prediction"]
-                target = pool[part]["target"]
+                target = pool[part][target_col]
                 scores[part + "_pool_soft"] = metrics_inventory[self.target_metric](
                     target, probabilities
                 )
                 scores[part + "_pool_hard"] = metrics_inventory[self.target_metric](
                     target, predictions
                 )
+        elif self.target_metric in ["CI"]:
+            for part in pool.keys():
+                estimate = pool[part]["prediction"]
+                event_time = pool[part][self.target_assignments["duration"]].astype(
+                    float
+                )
+                event_indicator = pool[part][self.target_assignments["event"]].astype(
+                    bool
+                )
+                ci, _, _, _, _ = metrics_inventory[self.target_metric](
+                    event_indicator, event_time, estimate
+                )
+                scores[part + "_pool_hard"] = float(ci)
         else:
             for part in pool.keys():
+                target_col = list(self.target_assignments.values())[0]
                 predictions = pool[part]["prediction"]
-                target = pool[part]["target"]
+                target = pool[part][target_col]
                 scores[part + "_pool_hard"] = metrics_inventory[self.target_metric](
                     target, predictions
                 )
@@ -195,10 +228,10 @@ class Bag:
         """Extract feature importances of all models in bag."""
         # calculate feature importances first
         self._calculate_fi(fi_type="internal")
-        self._calculate_fi(fi_type="shap", partition="dev")
-        self._calculate_fi(fi_type="shap", partition="test")
-        # self.calculate_fi(fi_type='permutation',partition='dev')
-        # self.calculate_fi(fi_type='permutation',partition='test')
+        # self._calculate_fi(fi_type="shap", partition="dev")
+        # self._calculate_fi(fi_type="shap", partition="test")
+        # self._calculate_fi(fi_type="permutation", partition="dev")
+        # self._calculate_fi(fi_type="permutation", partition="test")
         for training in self.trainings:
             self.feature_importances[
                 training.training_id

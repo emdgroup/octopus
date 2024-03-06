@@ -123,7 +123,7 @@ class OctoManager:
 
             # update features with selected features from previous run
             if cnt > 0:
-                experiment.features = selected_features
+                experiment.feature_columns = selected_features
 
             # get desired module and intitialze with experiment
             if experiment.ml_module in modules_inventory:

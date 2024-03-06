@@ -9,7 +9,7 @@ import attrs
 # os.environ["OPENBLAS_NUM_THREADS"] = "1"
 import pandas as pd
 
-from octopus import OctoConfig, OctoData  # ,OctoML
+from octopus import OctoConfig, OctoData, OctoML
 from octopus.modules.octo.config import OctopusFullConfig
 
 print("Notebook kernel is running on server:", socket.gethostname())
@@ -23,7 +23,7 @@ print("Working directory: ", os.getcwd())
 data = pd.read_csv("./datasets/gbs2.csv", index_col=0)
 # data pre-processing
 # check for NaNs
-assert pd.isna(data).any().any() is False
+assert not pd.isna(data).any().any()
 
 # one-hot encoding of categorical columns
 columns = ["horTh", "menostat", "tgrade"]
@@ -98,7 +98,7 @@ sequence_item_1 = OctopusFullConfig(
     n_folds_inner=5,
     datasplit_seed_inner=0,
     # model training
-    models=["XtraTreesSurv"],
+    models=["ExtraTreesSurv"],
     model_seed=0,
     n_jobs=1,
     dim_red_methods=[""],
@@ -113,7 +113,7 @@ sequence_item_1 = OctopusFullConfig(
     global_hyperparameter=True,
     n_trials=10,
     save_trials=False,
-    max_features=3000,
+    max_features=0,
     penalty_factor=10.0,
 )
 
@@ -122,10 +122,10 @@ config_sequence = [attrs.asdict(sequence_item_1)]
 octo_config = OctoConfig(config_manager, config_sequence, **config_study)
 
 # create ML object
-# oml = OctoML(data, octo_config)
+oml = OctoML(data, octo_config)
 
-# oml.create_outer_experiments()
+oml.create_outer_experiments()
 
-# oml.run_outer_experiments()
+oml.run_outer_experiments()
 
 print("Workflow completed")

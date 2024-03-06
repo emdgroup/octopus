@@ -88,11 +88,11 @@ def find_constant_columns(df):
     return constant_columns
 
 
-ls_features_const = find_constant_columns(data_final)
+# ls_features_const = find_constant_columns(data_final)
 # Remove constant columns from other_cols list
-print("Number of original features:", len(ls_final))
-ls_final = [col for col in ls_final if col not in ls_features_const]
-print("Number of features after removal of const. features:", len(ls_final))
+# print("Number of original features:", len(ls_final))
+# ls_final = [col for col in ls_final if col not in ls_features_const]
+# print("Number of features after removal of const. features:", len(ls_final))
 
 
 # define data_input, use data_reduced
@@ -136,6 +136,31 @@ config_manager = {
 # define processing sequence
 sequence_item_1 = OctopusFullConfig(
     description="step1_octofull",
+    # datasplit
+    n_folds_inner=6,
+    datasplit_seed_inner=0,
+    # model training
+    models=["RidgeRegressor"],
+    model_seed=0,
+    n_jobs=1,
+    dim_red_methods=[""],
+    max_outl=0,
+    # parallelization
+    inner_parallelization=False,
+    n_workers=6,
+    # HPO
+    optuna_seed=0,
+    n_optuna_startup_trials=10,
+    resume_optimization=False,
+    global_hyperparameter=True,
+    n_trials=10,
+    save_trials=False,
+    max_features=3000,
+    penalty_factor=10.0,
+)
+
+sequence_item_2 = OctopusFullConfig(
+    description="step2_octofull",
     # datasplit
     n_folds_inner=6,
     datasplit_seed_inner=0,

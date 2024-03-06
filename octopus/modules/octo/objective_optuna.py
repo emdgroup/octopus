@@ -114,12 +114,14 @@ class ObjectiveOptuna:
                     data_test=self.experiment.data_test,
                     config_training=config_training,
                     target_metric=self.experiment.config["target_metric"],
+                    max_features=self.experiment.ml_config["max_features"],
                 )
             )
 
         # create bag with all provided trainings
         bag_trainings = Bag(
             trainings=trainings,
+            target_assignments=self.experiment.target_assignments,
             parallel_execution=self.parallel_execution,
             num_workers=self.num_workers,
             target_metric=self.experiment.config["target_metric"],

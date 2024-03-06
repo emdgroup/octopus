@@ -23,6 +23,7 @@ class Training:
     data_dev: pd.DataFrame = field(validator=[validators.instance_of(pd.DataFrame)])
     data_test: pd.DataFrame = field(validator=[validators.instance_of(pd.DataFrame)])
     target_metric: str = field(validator=[validators.instance_of(str)])
+    max_features: int = field(validator=[validators.instance_of(int)])
     # configuration for training
     config_training: dict = field(validator=[validators.instance_of(dict)])
     # training outputs, initialized in post_init
@@ -175,13 +176,15 @@ class Training:
 
         # special treatment of targets due to sklearn
         if len(self.target_assignments) == 1:
-            self.predictions["train"]["target"] = self.y_train.squeeze(axis=1)
-            self.predictions["dev"]["target"] = self.y_dev.squeeze(axis=1)
-            self.predictions["test"]["target"] = self.y_test.squeeze(axis=1)
+            target_col = list(self.target_assignments.values())[0]
+            self.predictions["train"][target_col] = self.y_train.squeeze(axis=1)
+            self.predictions["dev"][target_col] = self.y_dev.squeeze(axis=1)
+            self.predictions["test"][target_col] = self.y_test.squeeze(axis=1)
         else:
-            self.predictions["train"]["target"] = self.y_train
-            self.predictions["dev"]["target"] = self.y_dev
-            self.predictions["test"]["target"] = self.y_test
+            for target_col in self.target_assignments.values():
+                self.predictions["train"][target_col] = self.data_train[target_col]
+                self.predictions["dev"][target_col] = self.data_dev[target_col]
+                self.predictions["test"][target_col] = self.data_test[target_col]
 
         # add additional predictions for classifications
         if self.ml_type == "classification":
@@ -199,8 +202,12 @@ class Training:
         if self.ml_type == "timetoevent":
             pass
 
-        # populate used_features
-        self.features_used = self._calculate_features_used()
+        # calculate used features, but only if required for optuna max_features>0
+        # (to save time, shap or permutation importances may take a lot of time)
+        if self.max_features > 0:
+            self.features_used = self._calculate_features_used()
+        else:
+            self.features_used = 0
 
         return self
 

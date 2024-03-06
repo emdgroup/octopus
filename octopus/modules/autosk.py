@@ -62,8 +62,7 @@ try:
         "MSE": root_mean_squared_error,
         "R2": r2,
     }
-except Exception as e:  # pylint: disable=W0718
-    print(e)
+except Exception as e:  # pylint: disable=W0718 # noqa: F841
     metrics_inventory = {}
 
 

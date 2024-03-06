@@ -39,7 +39,13 @@ class OctopusFullConfig:
     """Methods for dimension reduction."""
 
     max_outl: int = field(validator=[validators.instance_of(int)], default=5)
-    """?"""
+    """Maximum number of outliers, optimized by Optuna"""
+
+    fi_methods_bestbag: list = field(
+        validator=[validators.instance_of(list)], default=[]
+    )
+    """Feature importance methods to be appleid to best bag"""
+
     # parallelization
     inner_parallelization: bool = field(
         validator=[validators.instance_of(bool)], default=False

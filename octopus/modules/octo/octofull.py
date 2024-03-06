@@ -36,11 +36,6 @@ for line in [319, 330, 338]:
 
 # - (0) functionality to load sequence items and skip execution (quick feat reduction)
 # - (0) !Calculate performance of survival models: CI, CI_uno,  IBS, dynAUC,
-# - (0) clean up calculation of feature importances
-#       + sksurv models need special setup for shapley and maybe permutation fi
-#       + bag fi: we don't want to calculated all fi types for every model
-# - (2) maybe separate between features_used (bag level) and final_features (bag level)
-# - (1) add bag_id (experiment_id+sequence+trial/best))
 # - (2) rename ensemble test
 # - (4) include data preprocessing
 # - (5) Ensemble selection
@@ -210,6 +205,7 @@ class OctoFull:
                     trainings.extend(bag.trainings)
             # create best bag
             best_bag = Bag(
+                bag_id=self.experiment.id + "_best",
                 trainings=trainings,
                 target_assignments=self.experiment.target_assignments,
                 parallel_execution=self.experiment.ml_config["inner_parallelization"],
@@ -242,13 +238,21 @@ class OctoFull:
         # save best bag scores to the experiment
         self.experiment.scores = best_bag_scores
 
-        # save selected features to experiment
-        self.experiment.selected_features = best_bag.features_used
-        print("Number of original features:", len(self.experiment.feature_columns))
-        print("Number of selected features:", len(self.experiment.selected_features))
+        # calculate and save specified feature importances of best bag
+        fi_methods = self.experiment.ml_config["fi_methods_bestbag"]
+        self.experiment.feature_importances = best_bag.get_feature_importances(
+            fi_methods
+        )
 
-        # save feature importances to experiment
-        self.experiment.feature_importances = best_bag.get_feature_importances()
+        # save selected features to experiment
+        print("Number of original features:", len(self.experiment.feature_columns))
+        self.experiment.selected_features = best_bag.get_selected_features(fi_methods)
+        print("Number of selected features:", len(self.experiment.selected_features))
+        if len(self.experiment.selected_features) == 0:
+            print(
+                "Warning: No feature importance method specified, "
+                "or specified method is not applicable to model."
+            )
 
         # save test predictions to experiment
         self.experiment.predictions = best_bag.get_predictions()
@@ -390,6 +394,7 @@ class OctoFull:
             )
         # create bag with all provided trainings
         best_bag = Bag(
+            bag_id=self.experiment.id + "_best",
             trainings=best_trainings,
             target_assignments=self.experiment.target_assignments,
             parallel_execution=self.experiment.ml_config["inner_parallelization"],

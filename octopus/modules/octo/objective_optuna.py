@@ -120,6 +120,7 @@ class ObjectiveOptuna:
 
         # create bag with all provided trainings
         bag_trainings = Bag(
+            bag_id=self.experiment.id + "_" + str(trial),
             trainings=trainings,
             target_assignments=self.experiment.target_assignments,
             parallel_execution=self.parallel_execution,

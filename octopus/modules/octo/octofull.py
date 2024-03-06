@@ -34,7 +34,7 @@ for line in [319, 330, 338]:
 
 # TOBEDONE OCTOFULL
 
-# - (0) funtionality to load sequence items and skip execution (quick feature reduction)
+# - (0) functionality to load sequence items and skip execution (quick feat reduction)
 # - (0) !Calculate performance of survival models: CI, CI_uno,  IBS, dynAUC,
 # - (0) clean up calculation of feature importances
 #       + sksurv models need special setup for shapley and maybe permutation fi

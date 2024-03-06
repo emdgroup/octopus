@@ -65,6 +65,7 @@ def optuna_direction(metric: str) -> str:
         "ACCBAL": "maximize",
         "LOGLOSS": "minimize",
         "AUCROC": "maximize",
+        "CI": "maximize",
     }
 
     return direction[metric]

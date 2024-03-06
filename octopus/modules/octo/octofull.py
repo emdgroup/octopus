@@ -33,11 +33,12 @@ for line in [319, 330, 338]:
 # - check that openblas settings are correct and suggest solutions
 
 # TOBEDONE OCTOFULL
+
+# - (0) funtionality to load sequence items and skip execution (quick feature reduction)
 # - (0) !Calculate performance of survival models: CI, CI_uno,  IBS, dynAUC,
 # - (0) clean up calculation of feature importances
 #       + sksurv models need special setup for shapley and maybe permutation fi
 #       + bag fi: we don't want to calculated all fi types for every model
-# - (1) only calculate features_used when max_features>0
 # - (2) maybe separate between features_used (bag level) and final_features (bag level)
 # - (1) add bag_id (experiment_id+sequence+trial/best))
 # - (2) rename ensemble test
@@ -210,6 +211,7 @@ class OctoFull:
             # create best bag
             best_bag = Bag(
                 trainings=trainings,
+                target_assignments=self.experiment.target_assignments,
                 parallel_execution=self.experiment.ml_config["inner_parallelization"],
                 num_workers=self.experiment.ml_config["n_workers"],
                 target_metric=self.experiment.config["target_metric"],
@@ -383,11 +385,13 @@ class OctoFull:
                     data_test=self.experiment.data_test,
                     config_training=user_attrs["config_training"],
                     target_metric=self.experiment.config["target_metric"],
+                    max_features=self.experiment.ml_config["max_features"],
                 )
             )
         # create bag with all provided trainings
         best_bag = Bag(
             trainings=best_trainings,
+            target_assignments=self.experiment.target_assignments,
             parallel_execution=self.experiment.ml_config["inner_parallelization"],
             num_workers=self.experiment.ml_config["n_workers"],
             target_metric=self.experiment.config["target_metric"],

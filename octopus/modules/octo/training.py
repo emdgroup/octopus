@@ -207,7 +207,7 @@ class Training:
         if self.max_features > 0:
             self.features_used = self._calculate_features_used()
         else:
-            self.features_used = 0
+            self.features_used = []
 
         return self
 

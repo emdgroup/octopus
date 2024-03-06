@@ -233,9 +233,9 @@ class Bag:
         # self._calculate_fi(fi_type="permutation", partition="dev")
         # self._calculate_fi(fi_type="permutation", partition="test")
         for training in self.trainings:
-            self.feature_importances[training.training_id] = (
-                training.feature_importances
-            )
+            self.feature_importances[
+                training.training_id
+            ] = training.feature_importances
         return self.feature_importances
 
     def to_pickle(self, path):

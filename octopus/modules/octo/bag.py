@@ -27,6 +27,7 @@ class Bag:
     - saving/loading
     """
 
+    bag_id: str = field(validator=[validators.instance_of(str)])
     trainings: list = field(validator=[validators.instance_of(list)])
     # same config parameters (execution type, num_workers) also used for
     # parallelization of optuna optimizations of individual inner loop trainings
@@ -36,6 +37,7 @@ class Bag:
     target_assignments: dict = field(validator=[validators.instance_of(dict)])
     row_column: str = field(validator=[validators.instance_of(str)])
     train_status: bool = field(default=False)
+
     # bag training outputs, initialized in post_init
     feature_importances: dict = field(
         init=False, validator=[validators.instance_of(dict)]
@@ -224,14 +226,50 @@ class Bag:
             else:
                 raise ValueError("FI type not supported")
 
-    def get_feature_importances(self):
+    def get_selected_features(self, fi_methods=[]):
+        """Get features selected by model, depending on fi method.
+
+        The list of selected features will be derived only from one feature
+        importance method out of the ones specified in fi_methods,
+        with the following ranking: (1) permutation (2) shap (3) internal.
+        """
+        feat_lst = list()
+        if "permutation" in fi_methods:
+            for training in self.trainings:
+                fi_df = training.feature_importances["permutation_dev"]
+                feat_lst.extend(fi_df[fi_df["importance"] != 0]["feature"].tolist())
+            return list(set(feat_lst))
+        elif "shap" in fi_methods:
+            for training in self.trainings:
+                fi_df = training.feature_importances["shap_dev"]
+                feat_lst.extend(fi_df[fi_df["importance"] != 0]["feature"].tolist())
+            return list(set(feat_lst))
+        elif "internal" in fi_methods:
+            for training in self.trainings:
+                fi_df = training.feature_importances["internal"]
+                feat_lst.extend(fi_df[fi_df["importance"] != 0]["feature"].tolist())
+            return list(set(feat_lst))
+        else:
+            print("No features importances calculated")
+            return []
+
+    def get_feature_importances(self, fi_methods=[]):
         """Extract feature importances of all models in bag."""
-        # calculate feature importances first
+        # we always extract internal feature importances, if available
         self._calculate_fi(fi_type="internal")
-        # self._calculate_fi(fi_type="shap", partition="dev")
-        # self._calculate_fi(fi_type="shap", partition="test")
-        # self._calculate_fi(fi_type="permutation", partition="dev")
-        # self._calculate_fi(fi_type="permutation", partition="test")
+
+        for method in fi_methods:
+            if method == "internal":
+                pass  # already done
+            elif method == "shap":
+                self._calculate_fi(fi_type="shap", partition="dev")
+                self._calculate_fi(fi_type="shap", partition="test")
+            elif method == "permutation":
+                self._calculate_fi(fi_type="permutation", partition="dev")
+                self._calculate_fi(fi_type="permutation", partition="test")
+            else:
+                raise ValueError(f"Feature importance method {method} not supported.")
+
         for training in self.trainings:
             self.feature_importances[
                 training.training_id

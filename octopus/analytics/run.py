@@ -32,6 +32,7 @@ class OctoAnalitics:
             for file in list(self.study_path.glob("**/exp*.pkl")):
                 with open(file, "rb") as f:
                     exp = pickle.load(f)
+                    default_target_column = exp.target_assignments["default"]
 
                     for split in exp.predictions:
                         for dataset in exp.predictions[split]:
@@ -53,7 +54,9 @@ class OctoAnalitics:
                                     "metric": mectric,
                                     "score": utils.get_score(
                                         mectric,
-                                        exp.predictions[split][dataset]["target"],
+                                        exp.predictions[split][dataset][
+                                            default_target_column
+                                        ],
                                         exp.predictions[split][dataset]["prediction"],
                                     ),
                                 }
@@ -204,13 +207,20 @@ class OctoAnalitics:
                     for name, value in trial.distributions.items():
                         if name == "ml_model_type":
                             continue
+                        if "ml_model_type" in trial.params:
+                            model_type = trial.params["ml_model_type"]
+                        else:
+                            model_type = trial.user_attrs["config_training"][
+                                "ml_model_type"
+                            ]
+
                         dict_optuna.append(
                             {
                                 "experiment_id": int(match_experiment.group(1)),
                                 "sequence_id": int(match_sequence.group(1)),
                                 "trial": trial.number,
                                 "value": trial.value,
-                                "model_type": trial.params["ml_model_type"],
+                                "model_type": model_type,
                                 "hyper_param": name,
                                 "param_value": trial.params[name],
                             }

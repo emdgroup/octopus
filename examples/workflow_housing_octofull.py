@@ -31,7 +31,7 @@ data_df = (
             "median_house_value": int,
         }
     )
-    # .loc[0:100, :]
+    .loc[0:100, :]
 )
 
 # define input for Octodata

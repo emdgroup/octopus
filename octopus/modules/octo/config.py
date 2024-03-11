@@ -19,6 +19,12 @@ class OctopusFullConfig:
 
     description: str = field(validator=[validators.instance_of(str)], default=None)
     """Description."""
+
+    load_sequence_item: bool = field(
+        validator=[validators.instance_of(bool)], default=False
+    )
+    """Load existing sequence item."""
+
     # datasplit
     n_folds_inner: int = field(validator=[validators.instance_of(int)], default=5)
     """Number of inner folds."""

@@ -84,58 +84,85 @@ class OctoManager:
     def create_execute_mlmodules(self, base_experiment: OctoExperiment):
         """Create and execute ml modules."""
         selected_features = []
+        prior_feature_importances = {}
         for cnt, element in enumerate(self.oconfig.cfg_sequence):
-            print("step:", cnt)
-            print("module:", element["module"])
-            print("description:", element["description"])
+            print("------------------------------------------")
+            print("Step:", cnt)
+            print("Module:", element["module"])
+            print("Description:", element["description"])
+            print("Load existing sequence item:", element["load_sequence_item"])
 
-            # add config to experiment
-            experiment = copy.deepcopy(base_experiment)
-            experiment.ml_module = element["module"]
-            experiment.ml_config = element
-            experiment.id = experiment.id + "_" + str(cnt)
-            experiment.sequence_item_id = cnt
-            experiment.path_sequence_item = Path(
-                f"experiment{experiment.experiment_id}", f"sequence{cnt}"
-            )
-
-            # calculating number of CPUs available to every experiment
-            if self.oconfig.cfg_manager["outer_parallelization"]:
-                experiment.num_assigned_cpus = math.floor(
-                    cpu_count() / self.oconfig.n_folds_outer
+            # sequence item is created and not load
+            if not element["load_sequence_item"]:
+                # add config to experiment
+                experiment = copy.deepcopy(base_experiment)
+                experiment.ml_module = element["module"]
+                experiment.ml_config = element
+                experiment.id = experiment.id + "_" + str(cnt)
+                experiment.sequence_item_id = cnt
+                experiment.path_sequence_item = Path(
+                    f"experiment{experiment.experiment_id}", f"sequence{cnt}"
                 )
+
+                # calculating number of CPUs available to every experiment
+                if self.oconfig.cfg_manager["outer_parallelization"]:
+                    experiment.num_assigned_cpus = math.floor(
+                        cpu_count() / self.oconfig.n_folds_outer
+                    )
+                else:
+                    experiment.num_assigned_cpus = cpu_count()
+                if self.oconfig.cfg_manager["run_single_experiment_num"] != -1:
+                    experiment.num_assigned_cpus = cpu_count()
+
+                # create directory for sequence item
+                path_study_sequence = experiment.path_study.joinpath(
+                    experiment.path_sequence_item
+                )
+                path_study_sequence.mkdir(parents=True, exist_ok=True)
+                print("Running experiment: ", experiment.id)
+                # save experiment before running experiment
+                path_save = path_study_sequence.joinpath(
+                    f"exp{experiment.experiment_id}_{experiment.sequence_item_id}.pkl"
+                )
+                experiment.to_pickle(path_save)
+
+                # update features with selected features from previous run
+                if cnt > 0:
+                    experiment.feature_columns = selected_features
+                    experiment.prior_feature_importances = prior_feature_importances
+
+                # get desired module and intitialze with experiment
+                if experiment.ml_module in modules_inventory:
+                    module = modules_inventory[experiment.ml_module](experiment)
+                else:
+                    raise ValueError(f"ml_module {experiment.ml_module} not supported")
+
+                # run module and overwrite experiment
+                experiment = module.run_experiment()
+
+                # extract selected features and feature importances after running module
+                selected_features = experiment.selected_features
+                prior_feature_importances = experiment.feature_importances
+
+                # save experiment after experiment has been completed
+                experiment.to_pickle(path_save)
+
+            # existing sequence item (experiment) is loaded
             else:
-                experiment.num_assigned_cpus = cpu_count()
-            if self.oconfig.cfg_manager["run_single_experiment_num"] != -1:
-                experiment.num_assigned_cpus = cpu_count()
+                path_study_sequence = base_experiment.path_study.joinpath(
+                    f"experiment{base_experiment.experiment_id}", f"sequence{cnt}"
+                )
 
-            # create directory for sequence item
-            path_study_sequence = experiment.path_study.joinpath(
-                experiment.path_sequence_item
-            )
-            path_study_sequence.mkdir(parents=True, exist_ok=True)
-            print("Running experiment: ", experiment.id)
-            # save experiment before running experiment
-            path_save = path_study_sequence.joinpath(
-                f"exp{experiment.experiment_id}_{experiment.sequence_item_id}.pkl"
-            )
-            experiment.to_pickle(path_save)
+                path_load = path_study_sequence.joinpath(
+                    f"exp{base_experiment.experiment_id}_{cnt}.pkl"
+                )
 
-            # update features with selected features from previous run
-            if cnt > 0:
-                experiment.feature_columns = selected_features
+                if not path_load.exists():
+                    raise FileNotFoundError("Sequence item to be loaded does not exist")
 
-            # get desired module and intitialze with experiment
-            if experiment.ml_module in modules_inventory:
-                module = modules_inventory[experiment.ml_module](experiment)
-            else:
-                raise ValueError(f"ml_module {experiment.ml_module} not supported")
+                experiment = OctoExperiment.from_pickle(path_load)
+                print("Step loaded from: ", path_load)
 
-            # run module and overwrite experiment
-            experiment = module.run_experiment()
-
-            # extract selected features after running module
-            selected_features = experiment.selected_features
-
-            # save experiment
-            experiment.to_pickle(path_save)
+                # extract selected features and feature importances from loaded module
+                selected_features = experiment.selected_features
+                prior_feature_importances = experiment.feature_importances

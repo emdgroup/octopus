@@ -33,34 +33,28 @@ for line in [319, 330, 338]:
 # - check that openblas settings are correct and suggest solutions
 
 # TOBEDONE OCTOFULL
-
-# - (0) functionality to load sequence items and skip execution (quick feat reduction)
-# - (0) !Calculate performance of survival models: CI, CI_uno,  IBS, dynAUC,
-# - (2) rename ensemble test
+# - (2) !Calculate performance of survival models: CI, CI_uno,  IBS, dynAUC,
+# - (3) rename ensemble test
 # - (4) include data preprocessing
 # - (5) Ensemble selection
 # - (6) feature counts in bag
 # - (7) num feat constraint (automatic parameters)
 #       + scaling factor from first random optuna runs
 #       + max_feature from dataset size
-# - (8) add T2E model
-# - (9) create predict/predict_proba function for bag
+# - (8) create predict/predict_proba function for bag
 #       Does it work with shap and permutation feature importance?
-# - (10) TestFI: Apply shape and permutation feature importance to bag to test
+# - (9) TestFI: Apply shape and permutation feature importance to bag to test
 #       compare to fis from individual trainings
-
-# - (11) is there a good way to determine which shap values are relevant, stats test?
-# - (12) make bag compatible with sklearn
+# - (10) is there a good way to determine which shap values are relevant, stats test?
+# - (11) make bag compatible with sklearn
 #   +very difficult as sklearn differentiates between regression, classification
 #   RegressionBag, ClassBag
 #   +we also want to include T2E
 #   + check if a single predict function is sufficient for shap/permutation importance
-# - (13) basic analytics class
-# - (14) Make use of default model parameters, see autosk, optuna
+# - (12) Make use of default model parameters, see autosk, optuna
 # - predictions, replace "ensemble_test" with
 #   experiment_id+ sequence_id + ensemble + [test]
 # - Performance evaluation generalize: ensemble_hard, ensemble_soft
-# - automatically remove features with a single value! and provide user feedback
 # - deepchecks - https://docs.deepchecks.com/0.18/tabular/auto_checks/data_integrity/index.html
 # - outer parallelizaion can lead to very differing execution times per experiment!
 # - check that for classification only classification modules are used

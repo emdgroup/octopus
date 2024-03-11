@@ -118,6 +118,7 @@ config_study = {
     "study_name": "20240223A_Martin_wf2_octofull_7x6_poly_global_ridge",
     "output_path": "./studies/",
     "production_mode": False,
+    "start_with_empty_study": True,
     "ml_type": "regression",
     "n_folds_outer": 7,
     "target_metric": "MAE",
@@ -130,23 +131,26 @@ config_manager = {
     # outer loop
     "outer_parallelization": True,
     # only run specific single experiment, for quick testing
-    "run_single_experiment_num": 0,
+    "run_single_experiment_num": 1,
 }
 
 # define processing sequence
 sequence_item_1 = OctopusFullConfig(
     description="step1_octofull",
+    # loading of existing results
+    load_sequence_item=False,
     # datasplit
     n_folds_inner=6,
     datasplit_seed_inner=0,
     # model training
-    models=["RidgeRegressor"],
+    models=["ElasticNetRegressor"],
     model_seed=0,
     n_jobs=1,
     dim_red_methods=[""],
     max_outl=0,
+    fi_methods_bestbag=["shap"],
     # parallelization
-    inner_parallelization=False,
+    inner_parallelization=True,
     n_workers=6,
     # HPO
     optuna_seed=0,
@@ -155,23 +159,26 @@ sequence_item_1 = OctopusFullConfig(
     global_hyperparameter=True,
     n_trials=10,
     save_trials=False,
-    max_features=3000,
+    max_features=1500,
     penalty_factor=10.0,
 )
 
 sequence_item_2 = OctopusFullConfig(
     description="step2_octofull",
+    # loading of existing results
+    load_sequence_item=False,
     # datasplit
     n_folds_inner=6,
     datasplit_seed_inner=0,
     # model training
-    models=["RidgeRegressor"],
+    models=["ElasticNetRegressor"],
     model_seed=0,
     n_jobs=1,
     dim_red_methods=[""],
     max_outl=0,
+    fi_methods_bestbag=["shap"],
     # parallelization
-    inner_parallelization=False,
+    inner_parallelization=True,
     n_workers=6,
     # HPO
     optuna_seed=0,
@@ -180,11 +187,12 @@ sequence_item_2 = OctopusFullConfig(
     global_hyperparameter=True,
     n_trials=10,
     save_trials=False,
-    max_features=3000,
+    max_features=500,
     penalty_factor=10.0,
 )
 
-config_sequence = [attrs.asdict(sequence_item_1)]
+config_sequence = [attrs.asdict(sequence_item_1), attrs.asdict(sequence_item_2)]
+# config_sequence = [attrs.asdict(sequence_item_1)]
 # create study config
 octo_config = OctoConfig(config_manager, config_sequence, **config_study)
 

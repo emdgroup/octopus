@@ -89,6 +89,7 @@ dependencies:
   - importlib-metadata=6.10.0=pyha770c72_0
   - importlib_metadata=6.10.0=hd8ed1ab_0
   - importlib_resources=6.1.1=pyhd8ed1ab_0
+  - intel-cmplr-lib-rt=2024.0.0=hfc55251_49819
   - ipykernel=6.28.0=pyhd33586a_0
   - ipython=8.20.0=pyh707e725_0
   - ipywidgets=8.1.1=pyhd8ed1ab_0
@@ -200,6 +201,8 @@ dependencies:
   - numba=0.58.1=py310h7dc5dd1_0
   - numexpr=2.9.0=py310hc2d3c2e_100
   - numpy=1.25.2=py310ha4c1d20_0
+  - ocl-icd=2.3.2=hd590300_0
+  - ocl-icd-system=1.0.0=1
   - openjpeg=2.5.0=h488ebb8_3
   - openssl=3.2.1=hd590300_0
   - optuna=3.5.0=pyhd8ed1ab_0

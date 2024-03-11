@@ -43,9 +43,10 @@ class OctoML:
                 else:
                     print("Exiting...")
                     sys.exit()
-            shutil.rmtree(path_study)
+            if self.oconfig.start_with_empty_study:
+                shutil.rmtree(path_study)
 
-        path_study.mkdir(parents=True, exist_ok=False)
+        path_study.mkdir(parents=True, exist_ok=True)
         print("Path to study:", path_study)
 
         # create subfolders

@@ -48,6 +48,10 @@ class OctoExperiment:
         init=False, validator=[validators.instance_of(dict)]
     )
 
+    prior_feature_importances: dict = field(
+        init=False, validator=[validators.instance_of(dict)]
+    )
+
     scores: dict = field(init=False, validator=[validators.instance_of(dict)])
 
     predictions: dict = field(
@@ -69,6 +73,7 @@ class OctoExperiment:
         # initialization here due to "Python immutable default"
         self.selected_features = list()
         self.feature_importances = dict()
+        self.prior_feature_importances = dict()
         self.scores = dict()
         self.predictions = dict()
         self.models = dict()

@@ -240,12 +240,15 @@ class Training:
 
         else:
             fi_df = pd.DataFrame(columns=["feature", "importance"])
-            print('Warning: Internal features importances not available.')
+            print("Warning: Internal features importances not available.")
         self.feature_importances["internal"] = fi_df
 
     def calculate_fi_permutation(self, partition="dev", n_repeats=10):
         """Permutation feature importance."""
-        print(f"Calculating permutation feature importances ({partition}). This may take a while...")
+        print(
+            f"Calculating permutation feature importances ({partition})"
+            ". This may take a while..."
+        )
         if partition == "dev":
             perm_importance = permutation_importance(
                 self.model,

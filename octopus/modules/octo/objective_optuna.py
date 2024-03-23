@@ -146,7 +146,7 @@ class ObjectiveOptuna:
         scores = bag_trainings.get_scores()
 
         # get number of features used in bag
-        n_features_used = len(bag_trainings.features_used)
+        n_features_mean = bag_trainings.n_features_used_mean
 
         # add scores info to the optuna trial
         for key, value in scores.items():
@@ -172,8 +172,8 @@ class ObjectiveOptuna:
 
         # add penaltiy for n_features > max_features if configured
         if self.max_features > 0:
-            diff_nfeatures = n_features_used - self.max_features
-            # only consider if n_features_used > max_features
+            diff_nfeatures = n_features_mean - self.max_features
+            # only consider if n_features_mean > max_features
             if diff_nfeatures < 0:
                 diff_nfeatures = 0
             n_features = len(self.experiment.feature_columns)
@@ -182,6 +182,6 @@ class ObjectiveOptuna:
             )
 
         print("Otarget:", optuna_target)
-        print("n_features_used", n_features_used)
+        print("Number of features used:", int(n_features_mean))
 
         return optuna_target

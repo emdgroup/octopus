@@ -73,7 +73,8 @@ class OctoML:
             set(
                 feature_cols
                 + target_cols
-                + [sample_col, row_col, "group_features", "group_sample_and_features"]
+                + [sample_col, row_col, stratification_col]
+                + ["group_features", "group_sample_and_features"]
             )
         )
         data_clean_df = self.odata.data[relevant_cols]

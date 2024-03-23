@@ -233,18 +233,19 @@ class Training:
 
     def calculate_fi_internal(self):
         """Sklearn provided internal feature importance (based on train dataset)."""
-        if hasattr(self.model, "features_importances_"):
+        if hasattr(self.model, "feature_importances_"):
             fi_df = pd.DataFrame()
             fi_df["feature"] = self.feature_columns
-            fi_df["importance"] = self.model.features_importances_
+            fi_df["importance"] = self.model.feature_importances_
 
         else:
             fi_df = pd.DataFrame(columns=["feature", "importance"])
+            print('Warning: Internal features importances not available.')
         self.feature_importances["internal"] = fi_df
 
     def calculate_fi_permutation(self, partition="dev", n_repeats=10):
         """Permutation feature importance."""
-        print("Calculating permutation feature importances. This may take a while...")
+        print(f"Calculating permutation feature importances ({partition}). This may take a while...")
         if partition == "dev":
             perm_importance = permutation_importance(
                 self.model,

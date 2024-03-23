@@ -14,6 +14,7 @@ extratree_class = {
         ("float", {"name": "max_features", "low": 0.1, "high": 1}),
         ("int", {"name": "n_estimators", "low": 100, "high": 500, "log": False}),
         ("categorical", {"name": "class_weight", "choices": [None, "balanced"]}),
+        ("fixed", {"name": "criterion", "value": "entropy"}),
     ],
     "translate": {
         "n_jobs": "n_jobs",

@@ -42,12 +42,14 @@ class Bag:
     feature_importances: dict = field(
         init=False, validator=[validators.instance_of(dict)]
     )
-    features_used: list = field(init=False, validator=[validators.instance_of(list)])
+    n_features_used_mean: float = field(
+        init=False, validator=[validators.instance_of(float)]
+    )
 
     def __attrs_post_init__(self):
         # initialization here due to "Python immutable default"
         self.feature_importances = dict()
-        self.features_used = list()
+        self.n_features_used_mean = 0.0
 
     def fit(self):
         """Run all available trainings."""
@@ -83,10 +85,10 @@ class Bag:
         self.train_status = (True,)
 
         # get used features in bag
-        feat_lst = list()
+        n_feat_lst = list()
         for training in self.trainings:
-            feat_lst.extend(training.features_used)
-        self.features_used = list(set(feat_lst))
+            n_feat_lst.append(float(len(training.features_used)))
+        self.n_features_used_mean = mean(n_feat_lst)
 
     def get_predictions(self):
         """Extract bag test predictions."""

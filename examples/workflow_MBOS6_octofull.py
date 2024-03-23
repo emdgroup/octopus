@@ -8,7 +8,6 @@ import attrs
 # OPENBLASE config needs to be before pandas, autosk
 # os.environ["OPENBLAS_NUM_THREADS"] = "1"
 import pandas as pd
-from sklearn.preprocessing import PolynomialFeatures
 
 from octopus import OctoConfig, OctoData, OctoML
 from octopus.modules.octo.config import OctopusFullConfig
@@ -21,16 +20,21 @@ print("Working directory: ", os.getcwd())
 
 # load test dataset from Martin from csv and perform pre-processing
 # stored in ./datasets_local/ to avoid accidental uploading to github
-data = pd.read_csv("./datasets_local/baseline_dataframe_OS6_20230724A_mb_clini_haema_3random(2-4)_treatmentarm(1)_strat.csv", index_col=0)
+data = pd.read_csv(
+    "./datasets_local/baseline_dataframe_OS6_20230724A_mb_clini_haema_3random(2-4)_treatmentarm(1)_strat.csv",  # type: ignore
+    index_col=0,
+)
 data.columns = data.columns.astype(str)
 
 
-features = pd.read_csv("./datasets_local/20221109_compl90_remcorr_trmtarm_3noise.csv", index_col=0)
-features = features['features'].astype(str).tolist()
+features = pd.read_csv(
+    "./datasets_local/20221109_compl90_remcorr_trmtarm_3noise.csv", index_col=0
+)
+features = features["features"].astype(str).tolist()
 
 target_column = "OS_DURATION_6MONTHS"
-sample_colum = "SUBJECT_ID"
-stratification_column = "STRAT_OS6_TRT_NUM"
+sample_column = "SUBJECT_ID"
+stratification_column = "STRAT_OS6_TRT_NUM"  # type: ignore
 
 
 # pre-process data
@@ -39,7 +43,7 @@ print("Number of samples with target values:", len(data[target_column]))
 # define data_input
 data_input = {
     "data": data,
-    "sample_id": sample_colum,
+    "sample_id": sample_column,
     "target_columns": {target_column: data[target_column].dtype},
     "datasplit_type": "sample",
     "feature_columns": dict(),
@@ -117,4 +121,3 @@ oml.create_outer_experiments()
 oml.run_outer_experiments()
 
 print("Workflow completed")
-

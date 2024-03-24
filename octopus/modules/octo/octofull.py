@@ -33,6 +33,8 @@ for line in [319, 330, 338]:
 # - check that openblas settings are correct and suggest solutions
 
 # TOBEDONE OCTOFULL
+# - (0) see item (1) - fix needed, currently scorer is set to roc_auc
+# - (1) Permutation importance - define scorer ('roc_auc') in permutation_importance
 # - (2) !Calculate performance of survival models: CI, CI_uno,  IBS, dynAUC,
 # - (3) rename ensemble test
 # - (4) include data preprocessing

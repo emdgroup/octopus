@@ -256,6 +256,7 @@ class Training:
                 y=self.y_dev,
                 n_repeats=n_repeats,
                 random_state=0,
+                scoring="roc_auc",
             )
         elif partition == "test":
             perm_importance = permutation_importance(
@@ -264,6 +265,7 @@ class Training:
                 y=self.y_test,
                 n_repeats=n_repeats,
                 random_state=0,
+                scoring="roc_auc",
             )
         fi_df = pd.DataFrame()
         fi_df["feature"] = self.feature_columns
@@ -276,7 +278,12 @@ class Training:
         print("Calculating shape feature importances. This may take a while...")
         # Initialize shape explainer using training data
         # improve speed by self.x_train.sample(n=100, replace=True, random_state=0)
-        explainer = shap.Explainer(self.model, self.x_train)
+        # TreeExplainer(model, data, model_output="probability",
+        # feature_perturbation="interventional",)
+        explainer = shap.Explainer(
+            self.model,
+            self.x_train,
+        )
 
         # Calculate SHAP values for the dev dataset
         if partition == "dev":
@@ -289,7 +296,19 @@ class Training:
             raise ValueError("dataset type not supported")
 
         # Calculate the feature importances as the absolute mean of SHAP values
-        feature_importances = np.abs(shap_values).mean(axis=0)
+        if isinstance(shap_values, list):  # shap < 0.45, multi-output, e.g. 2 classes
+            feature_importances = np.abs(shap_values[0]).mean(axis=0)
+        elif isinstance(shap_values, np.ndarray):  # shap >= 0.45 or single output
+            if shap_values.ndim == 2:  # single output
+                feature_importances = np.abs(shap_values).mean(axis=0)
+            elif (
+                shap_values.ndim == 3
+            ):  # multi-output (e.g. 2 classes) for shap >= 0.45
+                feature_importances = np.abs(shap_values[:, :, 0]).mean(axis=0)
+            else:
+                raise TypeError("Type error shape_value")
+        else:
+            raise TypeError("Type error shape_value")
 
         fi_df = pd.DataFrame()
         fi_df["feature"] = self.feature_columns

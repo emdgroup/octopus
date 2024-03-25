@@ -73,10 +73,14 @@ class OctoML:
             set(
                 feature_cols
                 + target_cols
-                + [sample_col, row_col, stratification_col]
-                + ["group_features", "group_sample_and_features"]
+                + [sample_col, row_col, "group_features", "group_sample_and_features"]
             )
         )
+        if stratification_col != "":
+            relevant_cols.append(stratification_col)
+
+        print("relevant columns: ", relevant_cols)
+
         data_clean_df = self.odata.data[relevant_cols]
 
         # select datasplit column

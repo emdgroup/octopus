@@ -19,7 +19,6 @@ for k_outer in [1]:
 
     fi_lst = list()
     for k_inner in range(5):
-
         fi_dev = experiment.feature_importances[f"{k_outer}_0_{k_inner}"][
             "permutation_test"
         ]

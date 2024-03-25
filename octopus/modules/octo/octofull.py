@@ -64,6 +64,7 @@ for line in [319, 330, 338]:
 # - improve create_best_bags - use a direct way, from returned best trial or optuna.db
 # - xgoost class weights need to be set in training! How to solve that?
 # - check disk space and inform about disk space requirements
+# - Shap FI is too complicated for sksurv models.
 
 
 # TOBEDONE OPTUNA

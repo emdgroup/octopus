@@ -9,6 +9,16 @@ from sklearn.preprocessing import MaxAbsScaler
 
 from octopus.models.config import model_inventory
 
+scorer_string_inventory = {
+    "AUCROC": "roc_auc",
+    "ACC": "accuracy_score",
+    "ACCBAL": "balanced_accuracy",
+    "LOGLOSS": "neg_log_loss",
+    "MAE": "neg_mean_absolute_error",
+    "MSE": "neg_mean_squared_error",
+    "R2": "r2",
+}
+
 
 @define
 class Training:
@@ -233,11 +243,16 @@ class Training:
 
     def calculate_fi_internal(self):
         """Sklearn provided internal feature importance (based on train dataset)."""
-        if hasattr(self.model, "feature_importances_"):
+        # skurv model thow NotImplementeError when accessing "feature_importances"
+        if self.ml_type == "timetoevent":
+            fi_df = pd.DataFrame(columns=["feature", "importance"])
+            print("Warning: Internal features importances not available.")
+            self.feature_importances["internal"] = fi_df
+            return
+        elif hasattr(self.model, "feature_importances_"):
             fi_df = pd.DataFrame()
             fi_df["feature"] = self.feature_columns
             fi_df["importance"] = self.model.feature_importances_
-
         else:
             fi_df = pd.DataFrame(columns=["feature", "importance"])
             print("Warning: Internal features importances not available.")
@@ -249,6 +264,14 @@ class Training:
             f"Calculating permutation feature importances ({partition})"
             ". This may take a while..."
         )
+
+        if self.ml_type == "timetoevent":
+            # sksurv models only provide inbuilt scorer (CI)
+            # more work needed to support other metrics
+            scoring_type = None
+        else:
+            scoring_type = scorer_string_inventory[self.target_metric]
+
         if partition == "dev":
             perm_importance = permutation_importance(
                 self.model,
@@ -256,7 +279,7 @@ class Training:
                 y=self.y_dev,
                 n_repeats=n_repeats,
                 random_state=0,
-                scoring="roc_auc",
+                scoring=scoring_type,
             )
         elif partition == "test":
             perm_importance = permutation_importance(
@@ -265,7 +288,7 @@ class Training:
                 y=self.y_test,
                 n_repeats=n_repeats,
                 random_state=0,
-                scoring="roc_auc",
+                scoring=scoring_type,
             )
         fi_df = pd.DataFrame()
         fi_df["feature"] = self.feature_columns
@@ -280,20 +303,25 @@ class Training:
         # improve speed by self.x_train.sample(n=100, replace=True, random_state=0)
         # TreeExplainer(model, data, model_output="probability",
         # feature_perturbation="interventional",)
-        explainer = shap.Explainer(
-            self.model,
-            self.x_train,
-        )
 
-        # Calculate SHAP values for the dev dataset
-        if partition == "dev":
-            # shap_values = explainer(self.x_dev)  # pylint: disable=E1101
-            shap_values = explainer.shap_values(self.x_dev)  # pylint: disable=E1101
-        elif partition == "test":
-            # shap_values = explainer(self.x_test)
-            shap_values = explainer.shap_values(self.x_test)  # pylint: disable=E1101
+        if self.ml_type == "timetoevent":
+            raise ValueError("Shap feature importance not supported for timetoevent")
         else:
-            raise ValueError("dataset type not supported")
+            # this works for line linear and tree models
+            explainer = shap.Explainer(
+                self.model,
+                self.x_train,
+            )
+
+            # Calculate SHAP values for the dev dataset
+            if partition == "dev":
+                shap_values = explainer.shap_values(self.x_dev)  # pylint: disable=E1101
+            elif partition == "test":
+                shap_values = explainer.shap_values(  # pylint: disable=E1101
+                    self.x_test
+                )
+            else:
+                raise ValueError("dataset type not supported")
 
         # Calculate the feature importances as the absolute mean of SHAP values
         if isinstance(shap_values, list):  # shap < 0.45, multi-output, e.g. 2 classes

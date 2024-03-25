@@ -34,7 +34,7 @@ features = features["features"].astype(str).tolist()
 
 target_column = "OS_DURATION_6MONTHS"
 sample_column = "SUBJECT_ID"
-stratification_column = "STRAT_OS6_TRT_NUM"  # type: ignore
+stratification_column = "STRAT_OS6_TRT_NUM"
 
 
 # pre-process data
@@ -76,7 +76,7 @@ config_manager = {
     # outer loop
     "outer_parallelization": True,
     # only run specific single experiment, for quick testing
-    "run_single_experiment_num": 0,
+    # "run_single_experiment_num": 1,
 }
 
 # define processing sequence
@@ -102,7 +102,7 @@ sequence_item_1 = OctopusFullConfig(
     n_optuna_startup_trials=10,
     resume_optimization=False,
     global_hyperparameter=True,
-    n_trials=10,
+    n_trials=700,
     save_trials=False,
     max_features=70,
     penalty_factor=1.0,

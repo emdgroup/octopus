@@ -91,7 +91,7 @@ xgboost_reg = {
         ("float", {"name": "learning_rate", "low": 1e-4, "high": 0.3, "log": True}),
         ("int", {"name": "min_child_weight", "low": 2, "high": 15}),
         ("float", {"name": "subsample", "low": 0.15, "high": 1.0}),
-        ("int", {"name": "n_estimators", "low": 30, "high": 200}),
+        ("int", {"name": "n_estimators", "low": 30, "high": 500}),
         ("int", {"name": "max_depth", "low": 3, "high": 9, "step": 2}),
         # ("float", {"name": "lambda", "low": 1e-8, "high": 1, "log": True}),
     ],
@@ -164,6 +164,33 @@ extratrees_surv = {
     },
 }
 
+gb_reg = {
+    "default": [
+        ("float", {"name": "learning_rate", "low": 0.01, "high": 1, "log": True}),
+        ("int", {"name": "min_samples_leaf", "low": 1, "high": 200, "log": True}),
+        ("int", {"name": "max_leaf_nodes", "low": 3, "high": 2047, "log": True}),
+        ("int", {"name": "max_depth", "low": 3, "high": 9, "step": 2}),
+        ("int", {"name": "n_estimators", "low": 30, "high": 500}),
+        ("float", {"name": "max_features", "low": 0.1, "high": 1}),
+        ("fixed", {"name": "loss", "value": "squared_error"}),
+    ],
+    "translate": {
+        "n_jobs": "NA",
+        "model_seed": "random_state",
+    },
+}
+
+svr_reg = {
+    "default": [
+        ("float", {"name": "C", "low": 0.03125, "high": 32768, "log": True}),
+        ("float", {"name": "epsilon", "low": 0.001, "high": 1, "log": True}),
+        ("float", {"name": "tol", "low": 1e-5, "high": 1e-1, "log": True}),
+    ],
+    "translate": {
+        "n_jobs": "NA",
+        "model_seed": "NA",
+    },
+}
 
 parameters_inventory = {
     "ExtraTreesClassifier": extratree_class,
@@ -176,4 +203,6 @@ parameters_inventory = {
     "ARDRegressor": ard_reg,
     "ElasticNetRegressor": elastic_reg,
     "ExtraTreesSurv": extratrees_surv,
+    "GradientBoostingRegressor": gb_reg,
+    "SvrRegressor": svr_reg,
 }

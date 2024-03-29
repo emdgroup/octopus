@@ -11,7 +11,9 @@ from sklearn.ensemble import (
     ExtraTreesRegressor,
     RandomForestClassifier,
     RandomForestRegressor,
+    GradientBoostingRegressor,
 )
+from sklearn.svm import SVR
 from sklearn.linear_model import ARDRegression, ElasticNet, Ridge
 from sksurv.ensemble import ExtraSurvivalTrees
 from xgboost import XGBClassifier, XGBRegressor
@@ -46,6 +48,15 @@ model_inventory = {
     },
     "ExtraTreesSurv": {
         "model": ExtraSurvivalTrees,
+        "feature_method": "permutation",
+        "n_repeats": 2,
+    },
+    "GradientBoostingRegressor": {
+        "model": GradientBoostingRegressor,
+        "feature_method": "internal",
+    },
+    "SvrRegressor": {
+        "model": SVR,
         "feature_method": "permutation",
         "n_repeats": 2,
     },

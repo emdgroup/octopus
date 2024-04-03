@@ -151,17 +151,15 @@ def get_split_ids(experiment_id, sequence_id):
 )
 def plot_ground_truth(experiment_id, sequence_id, split_id):
     """Create plots."""
-
     # get target column
     target = sqlite.query(
-    f"""
+        """
         SELECT Column
         FROM dataset_info
         WHERE Type = "Target"
-
     """
-)["Column"].values[0]
-    
+    )["Column"].values[0]
+
     df_predictions = sqlite.query(
         f"""
             SELECT *

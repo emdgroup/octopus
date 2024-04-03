@@ -4,7 +4,7 @@ from pathlib import Path
 
 from octopus.analytics.run import OctoAnalitics
 
-folder_path = Path("studies").joinpath("housing_octofull_test_5")
+folder_path = Path("studies").joinpath("vhr_octofull_all_modules_150_features")
 
 octo_ana = OctoAnalitics(folder_path)
 

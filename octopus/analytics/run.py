@@ -105,6 +105,23 @@ class OctoAnalitics:
                 with open(file, "rb") as f:
                     exp = pickle.load(f)
                     df_dataset = pd.concat([exp.data_traindev, exp.data_test])
+
+                    df_features = pd.DataFrame.from_dict([
+                            {
+                                "Type": "Feature",
+                                "Column": feature,
+                                #"dtype": type(feature)
+                            } for feature in exp.feature_columns],
+                        )
+
+                    df_target = pd.DataFrame.from_dict([
+                            {
+                                "Type": "Target",
+                                "Column": exp.target_assignments["default"],
+                                #"dtype": type(exp.target_assignments["default"])
+                            }]
+                        )
+                    df_data_info = pd.concat([df_target, df_features])
                 break
 
             # restrict dataframe if too many columns
@@ -112,6 +129,7 @@ class OctoAnalitics:
             if df_dataset.shape[1] > 100:
                 df_dataset = df_dataset[[exp.row_column, exp.datasplit_column]]
             sqlite.insert_dataframe("dataset", df_dataset, df_dataset.index)
+            sqlite.insert_dataframe("dataset_info", df_data_info, df_data_info.index)
 
         def _get_configs(self):
             """Get dataset."""

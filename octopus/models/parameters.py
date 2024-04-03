@@ -164,11 +164,13 @@ extratrees_surv = {
     },
 }
 
+
+## GradientBoostingRegressor
 gb_reg = {
     "default": [
         ("float", {"name": "learning_rate", "low": 0.01, "high": 1, "log": True}),
-        ("int", {"name": "min_samples_leaf", "low": 1, "high": 200, "log": True}),
-        ("int", {"name": "max_leaf_nodes", "low": 3, "high": 2047, "log": True}),
+        ("int", {"name": "min_samples_leaf", "low": 1, "high": 200}),
+        ("int", {"name": "max_leaf_nodes", "low": 3, "high": 2047}),
         ("int", {"name": "max_depth", "low": 3, "high": 9, "step": 2}),
         ("int", {"name": "n_estimators", "low": 30, "high": 500}),
         ("float", {"name": "max_features", "low": 0.1, "high": 1}),

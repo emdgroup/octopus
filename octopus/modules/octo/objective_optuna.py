@@ -77,10 +77,14 @@ class ObjectiveOptuna:
 
         if optuna_model_settings is None:
             # use default model parameter settings
-            model_params = create_trialparams_from_config(trial, settings_default)
+            model_params = create_trialparams_from_config(
+                trial, settings_default, ml_model_type
+            )
         else:
             # use model parameter settings as provided by config
-            model_params = create_trialparams_from_config(trial, optuna_model_settings)
+            model_params = create_trialparams_from_config(
+                trial, optuna_model_settings, ml_model_type
+            )
 
         # overwrite model parameters specified by global settings
         fixed_global_parameters = {

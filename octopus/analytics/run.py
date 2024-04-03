@@ -106,21 +106,26 @@ class OctoAnalitics:
                     exp = pickle.load(f)
                     df_dataset = pd.concat([exp.data_traindev, exp.data_test])
 
-                    df_features = pd.DataFrame.from_dict([
+                    df_features = pd.DataFrame.from_dict(
+                        [
                             {
                                 "Type": "Feature",
                                 "Column": feature,
-                                #"dtype": type(feature)
-                            } for feature in exp.feature_columns],
-                        )
+                                # "dtype": type(feature)
+                            }
+                            for feature in exp.feature_columns
+                        ],
+                    )
 
-                    df_target = pd.DataFrame.from_dict([
+                    df_target = pd.DataFrame.from_dict(
+                        [
                             {
                                 "Type": "Target",
                                 "Column": exp.target_assignments["default"],
-                                #"dtype": type(exp.target_assignments["default"])
-                            }]
-                        )
+                                # "dtype": type(exp.target_assignments["default"])
+                            }
+                        ]
+                    )
                     df_data_info = pd.concat([df_target, df_features])
                 break
 

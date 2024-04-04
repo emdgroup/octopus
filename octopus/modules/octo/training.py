@@ -243,7 +243,7 @@ class Training:
 
     def calculate_fi_internal(self):
         """Sklearn provided internal feature importance (based on train dataset)."""
-        # skurv model thow NotImplementeError when accessing "feature_importances"
+        # skurv model throw NotImplementedError when accessing "feature_importances"
         if self.ml_type == "timetoevent":
             fi_df = pd.DataFrame(columns=["feature", "importance"])
             print("Warning: Internal features importances not available.")

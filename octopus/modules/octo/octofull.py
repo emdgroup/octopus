@@ -6,9 +6,10 @@ import shutil
 import warnings
 from pathlib import Path
 
-import optuna
 import pandas as pd
 from attrs import define, field, validators
+
+import optuna
 from optuna.samplers._tpe.sampler import ExperimentalWarning
 
 from octopus.experiment import OctoExperiment
@@ -26,6 +27,11 @@ for line in [319, 330, 338]:
         module="optuna.samplers._tpe.sampler",
         lineno=line,
     )
+
+# TOBEDONE ENSEMBLING
+# - save topk trials -- consider direction of metric
+# - ess ensesel.py
+
 
 # TOBEDONE BASE
 # - check module type
@@ -95,6 +101,10 @@ class OctoFull:
     # model = field(default=None)
     data_splits: dict = field(init=False, validator=[validators.instance_of(dict)])
 
+    paths_optuna_db: dict = field(init=False, validator=[validators.instance_of(dict)])
+
+    top_trials: list = field(init=False, validator=[validators.instance_of(list)])
+
     @property
     def path_module(self) -> Path:
         """Module path."""
@@ -116,6 +126,10 @@ class OctoFull:
         return self.path_module.joinpath("results")
 
     def __attrs_post_init__(self):
+        # initialization here due to "Python immutable default"
+        self.paths_optuna_db = dict()
+        self.top_trials = []
+
         # create datasplit during init
         self.data_splits = DataSplit(
             dataset=self.experiment.data_traindev,
@@ -162,6 +176,7 @@ class OctoFull:
 
     def run_experiment(self):
         """Run experiment."""
+        # (1) model training and optimization
         if self.experiment.ml_config["global_hyperparameter"]:
             self._run_globalhp_optimization()
         else:
@@ -172,7 +187,17 @@ class OctoFull:
         # - attach best bag scores to experiment
         self._create_best_bag()
 
+        # (2) ensemble selection, only globalhp scenario is supported
+        if (
+            self.experiment.ml_config["global_hyperparameter"]
+            & self.experiment.ml_config["ensemble_selection"]
+        ):
+            self._run_ensemble_selection()
+
         return self.experiment
+
+    def _run_ensemble_selection(self):
+        """Run ensemble selection."""
 
     def _create_best_bag(self):
         """Create best bag from bags found in results.
@@ -317,7 +342,7 @@ class OctoFull:
             experiment=self.experiment,
             data_splits=splits,
             study_name=study_name,
-            save_trials=self.experiment.ml_config["save_trials"],
+            top_trials=self.top_trials,
         )
 
         # multivariate sampler with group option
@@ -339,6 +364,8 @@ class OctoFull:
             storage=storage,
             load_if_exists=True,
         )
+        # store optuna db path
+        self.paths_optuna_db[study_name] = db_path
 
         study.optimize(
             objective,

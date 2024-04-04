@@ -6,16 +6,8 @@ from statistics import mean
 
 import pandas as pd
 from attrs import define, field, validators
-from sklearn.metrics import (
-    accuracy_score,
-    balanced_accuracy_score,
-    log_loss,
-    mean_absolute_error,
-    mean_squared_error,
-    r2_score,
-    roc_auc_score,
-)
-from sksurv.metrics import concordance_index_censored
+
+from octopus.modules.utils import metrics_inventory
 
 
 @define
@@ -104,7 +96,7 @@ class Bag:
             # pool predictions for ensembling
             pool.append(training.predictions["test"])
         pool = pd.concat(pool, axis=0)
-        ensemble = pool.groupby(by=self.row_column).mean()
+        ensemble = pool.groupby(by=self.row_column).mean().reset_index()
 
         if self.target_metric in ["AUCROC", "LOGLOSS"]:
             ensemble["probability"] = ensemble[1]  # binary only!!
@@ -119,17 +111,6 @@ class Bag:
             self.fit()
 
         scores = dict()
-        metrics_inventory = {
-            "AUCROC": roc_auc_score,
-            "ACC": accuracy_score,
-            "ACCBAL": balanced_accuracy_score,
-            "LOGLOSS": log_loss,
-            "MAE": mean_absolute_error,
-            "MSE": mean_squared_error,
-            "R2": r2_score,
-            "CI": concordance_index_censored,
-        }
-
         storage = {key: [] for key in ["train", "dev", "test"]}
         pool = {key: [] for key in ["train", "dev", "test"]}
 

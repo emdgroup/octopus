@@ -1,5 +1,6 @@
 """"Objective function for optuna optimization."""
 
+import heapq
 from octopus.models.parameters import parameters_inventory
 from octopus.models.utils import create_trialparams_from_config
 from octopus.modules.octo.bag import Bag
@@ -18,12 +19,15 @@ class ObjectiveOptuna:
         experiment,
         data_splits,
         study_name,
-        save_trials,
+        top_trials,
     ):
         self.experiment = experiment
         self.data_splits = data_splits
         self.study_name = study_name
-        self.save_trials = save_trials
+        self.top_trials = top_trials
+        # saving trials
+        self.ensel = self.experiment.ml_config["ensemble_selection"]
+        self.n_save_trials = self.experiment.ml_config["ensel_n_save_trials"]
         # parameters potentially used for optimizations
         self.ml_model_types = self.experiment.ml_config["models"]
         self.dim_red_methods = self.experiment.ml_config["dim_red_methods"]
@@ -124,7 +128,7 @@ class ObjectiveOptuna:
 
         # create bag with all provided trainings
         bag_trainings = Bag(
-            bag_id=self.experiment.id + "_" + str(trial),
+            bag_id=self.experiment.id + "_" + str(trial.number),
             trainings=trainings,
             target_assignments=self.experiment.target_assignments,
             parallel_execution=self.parallel_execution,
@@ -136,15 +140,6 @@ class ObjectiveOptuna:
 
         # train all models in bag
         bag_trainings.fit()
-
-        # save bag if desired
-        if self.save_trials:
-            path_save = self.experiment.path_study.joinpath(
-                self.experiment.path_sequence_item,
-                "trials",
-                f"study{self.study_name}trial{trial.number}_bag.pkl",
-            )
-            bag_trainings.to_pickle(path_save)
 
         # evaluate trainings using target metric
         scores = bag_trainings.get_scores()
@@ -185,7 +180,31 @@ class ObjectiveOptuna:
                 optuna_target + self.penalty_factor * diff_nfeatures / n_features
             )
 
+        # save bag if we plan to run ensemble selection
+        if self.ensel:
+            self._save_topn_trials(bag_trainings, optuna_target, trial.number)
+
         print("Otarget:", optuna_target)
         print("Number of features used:", int(n_features_mean))
 
         return optuna_target
+
+    def _save_topn_trials(self, bag, target_value, n_trial):
+        max_n_trials = self.experiment.ml_config["ensel_n_save_trials"]
+        path_save = self.experiment.path_study.joinpath(
+            self.experiment.path_sequence_item,
+            "trials",
+            f"study{self.study_name}trial{n_trial}_bag.pkl",
+        )
+
+        # saving top n_trials to disk
+        # TODO - direction of metrics is important
+        heapq.heappush(self.top_trials, (-1 * target_value, path_save))
+        bag.to_pickle(path_save)
+        if len(self.top_trials) > max_n_trials:
+            # delete trial with lowest perfomrmance in n_trials
+            _, path_delete = heapq.heappop(self.top_trials)
+            if path_delete.is_file():
+                path_delete.unlink()
+            else:
+                raise FileNotFoundError("Problem deleting trial-pkl file")

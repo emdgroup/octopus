@@ -147,6 +147,7 @@ sequence_item_1 = OctopusFullConfig(
         "GradientBoostingRegressor",
         "XGBRegressor",
         "ExtraTreesRegressor",
+        "ElasticNetRegressor",
     ],
     model_seed=0,
     n_jobs=1,
@@ -161,10 +162,11 @@ sequence_item_1 = OctopusFullConfig(
     n_optuna_startup_trials=10,
     resume_optimization=False,
     global_hyperparameter=True,
-    n_trials=50,
-    save_trials=False,
+    n_trials=60,
     max_features=1500,
-    penalty_factor=10.0,
+    penalty_factor=12.0,
+    ensemble_selection=True,
+    ensel_n_save_trials=30,
 )
 
 

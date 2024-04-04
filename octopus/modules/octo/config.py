@@ -73,6 +73,16 @@ class OctopusFullConfig:
     )
     """Selection of hyperparameter set."""
 
+    ensemble_selection: bool = field(
+        validator=[validators.in_([True, False])], default=False
+    )
+    """Whether to perform ensemble selection."""
+
+    ensel_n_save_trials: int = field(
+        validator=[validators.instance_of(int)], default=50
+    )
+    """Number of top trials to be saved for ensemble selection (bags)."""
+
     n_trials: int = field(validator=[validators.instance_of(int)], default=100)
     """Number of Optuna trials."""
 
@@ -86,9 +96,6 @@ class OctopusFullConfig:
         validator=[validators.instance_of(float)], default=1.0
     )
     """Factor to penalyse optuna target related to feature constraint."""
-
-    save_trials: bool = field(validator=[validators.instance_of(bool)], default=False)
-    """Save trials (bags)."""
 
     resume_optimization: bool = field(
         validator=[validators.instance_of(bool)], default=False

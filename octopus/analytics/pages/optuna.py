@@ -16,6 +16,23 @@ dash.register_page(
     description="",
 )
 
+plotly_symbols = [
+    "circle",
+    "square",
+    "diamond",
+    "cross",
+    "x",
+    "triangle-up",
+    "pentagon",
+    "hexagon",
+    "star",
+    "hexagram",
+    "triangle-down",
+    "circle-dot",
+    "square-dot",
+    "diamond-dot",
+]
+
 
 layout = dmc.Container(
     [
@@ -39,6 +56,7 @@ layout = dmc.Container(
             style={"margin-bottom": "20px"},
         ),
         dcc.Graph(id="graph_optuna_number_modules"),
+        dcc.Graph(id="graph_optuna_best_value"),
         dmc.Switch(
             size="lg",
             label="log x",
@@ -103,39 +121,80 @@ def get_models(experiment_id, sequence_id):
 
 @callback(
     Output("graph_optuna_number_modules", "figure"),
+    Output("graph_optuna_best_value", "figure"),
     Input("select_optuna_exp", "value"),
     Input("select_optuna_sequence", "value"),
 )
 def plot_number_model_type(experiment_id, sequence_id):
     """Plot number of trials per module."""
-    df_optuna_trials = (
-        sqlite.query(
-            f"""
+    df_optuna_trials = sqlite.query(
+        f"""
             SELECT *
             FROM optuna_trials
             WHERE experiment_id = {experiment_id}
             AND sequence_id = {sequence_id}
         """
-        )
-        .groupby("model_type")["trial"]
-        .nunique()
     )
-    fig = go.Figure(
+
+    df_optuna_number_models = df_optuna_trials.groupby("model_type")["trial"].nunique()
+
+    fig_number_models = go.Figure(
         data=[
             go.Bar(
-                x=df_optuna_trials.index,
-                y=df_optuna_trials.values,
-                text=df_optuna_trials.values,
+                x=df_optuna_number_models.index,
+                y=df_optuna_number_models.values,
+                text=df_optuna_number_models.values,
             )
         ]
     )
-    fig.update_layout(
+    fig_number_models.update_layout(
         title="Count of Unique Trials by Model Type",
         xaxis_title="Model Type",
         yaxis_title="Count of Unique Trials",
     )
 
-    return fig
+    # add symbols for different models
+    model_type_to_symbol = {
+        model_type: symbol
+        for model_type, symbol in zip(
+            df_optuna_trials["model_type"].unique(), plotly_symbols
+        )
+    }
+    df_optuna_trials["symbol"] = df_optuna_trials["model_type"].map(
+        model_type_to_symbol
+    )
+
+    # get best optuna trials
+    df_optuna_trials_best = df_optuna_trials[
+        df_optuna_trials["value"] == df_optuna_trials["value"].cummin()
+    ]
+
+    fig_best_value = go.Figure()
+    fig_best_value.add_trace(
+        go.Scatter(
+            x=df_optuna_trials["trial"],
+            y=df_optuna_trials["value"],
+            name="Object value",
+            mode="markers",
+            marker=dict(
+                size=8,
+                symbol=df_optuna_trials["symbol"],
+            ),
+            text=df_optuna_trials["model_type"],
+        )
+    )
+
+    fig_best_value.add_trace(
+        go.Scatter(
+            x=df_optuna_trials_best["trial"],
+            y=df_optuna_trials_best["value"],
+            name="Best value",
+            mode="lines+markers",
+        )
+    )
+    fig_best_value.update_yaxes(type="log")
+
+    return fig_number_models, fig_best_value
 
 
 @callback(

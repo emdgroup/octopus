@@ -9,12 +9,12 @@ https://github.com/scikit-learn-contrib/project-template/blob/master/skltemplate
 from sklearn.ensemble import (
     ExtraTreesClassifier,
     ExtraTreesRegressor,
+    GradientBoostingRegressor,
     RandomForestClassifier,
     RandomForestRegressor,
-    GradientBoostingRegressor,
 )
-from sklearn.svm import SVR
 from sklearn.linear_model import ARDRegression, ElasticNet, Ridge
+from sklearn.svm import SVR
 from sksurv.ensemble import ExtraSurvivalTrees
 from xgboost import XGBClassifier, XGBRegressor
 

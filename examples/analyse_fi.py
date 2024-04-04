@@ -1,13 +1,11 @@
 # analyse experiment
 
-import pandas as pd
+from pathlib import Path
+
 import numpy as np
 import shap
 
 from octopus.experiment import OctoExperiment
-
-
-from pathlib import Path
 
 for k_outer in [1]:
     print("Outer experiment:", k_outer)
@@ -41,7 +39,7 @@ for k_outer in [1]:
 print("Investigate experiment 1")
 
 path_exp = Path(
-    f"./studies/20240322A_MBOS6_octofull_5x5_ETREE/experiment1/sequence0/exp1_0.pkl"
+    "./studies/20240322A_MBOS6_octofull_5x5_ETREE/experiment1/sequence0/exp1_0.pkl"
 )
 experiment = OctoExperiment.from_pickle(path_exp)
 

@@ -9,7 +9,7 @@ from attrs import define, field
 from dash import Dash
 
 from octopus.analytics.library import appshell, sqlite
-from octopus.modules import utils
+from octopus.analytics.utils import get_score
 
 
 @define
@@ -52,7 +52,7 @@ class OctoAnalitics:
                                     "split": split,
                                     "testset": dataset,
                                     "metric": mectric,
-                                    "score": utils.get_score(
+                                    "score": get_score(
                                         mectric,
                                         exp.predictions[split][dataset][
                                             default_target_column

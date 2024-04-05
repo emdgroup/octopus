@@ -1,11 +1,12 @@
 """"Objective function for optuna optimization."""
 
 import heapq
+
 from octopus.models.parameters import parameters_inventory
 from octopus.models.utils import create_trialparams_from_config
+from octopus.modules.metrics import optuna_direction
 from octopus.modules.octo.bag import Bag
 from octopus.modules.octo.training import Training
-from octopus.modules.utils import optuna_direction
 
 
 class ObjectiveOptuna:
@@ -198,7 +199,8 @@ class ObjectiveOptuna:
         )
 
         # saving top n_trials to disk
-        # TODO - direction of metrics is important
+        # the optuna target_value will always be minimized. Heappop removes the lowest
+        # value, therefore target_value needs to be negated.
         heapq.heappush(self.top_trials, (-1 * target_value, path_save))
         bag.to_pickle(path_save)
         if len(self.top_trials) > max_n_trials:

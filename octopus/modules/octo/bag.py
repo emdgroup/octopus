@@ -7,7 +7,8 @@ from statistics import mean
 import pandas as pd
 from attrs import define, field, validators
 
-from octopus.modules.utils import metrics_inventory
+from octopus.modules.metrics import metrics_inventory
+from octopus.modules.octo.scores import add_pooling_scores
 
 
 @define
@@ -161,39 +162,7 @@ class Bag:
             pool[part] = pd.concat(pool[part], axis=0)
             pool[part] = pool[part].groupby(by=self.row_column).mean()
         # calculate pooling scores (soft and hard)
-        if self.target_metric in ["AUCROC", "LOGLOSS"]:
-            for part in pool.keys():
-                target_col = list(self.target_assignments.values())[0]
-                probabilities = pool[part][1]  # binary only!!
-                predictions = pool[part]["prediction"]
-                target = pool[part][target_col]
-                scores[part + "_pool_soft"] = metrics_inventory[self.target_metric](
-                    target, probabilities
-                )
-                scores[part + "_pool_hard"] = metrics_inventory[self.target_metric](
-                    target, predictions
-                )
-        elif self.target_metric in ["CI"]:
-            for part in pool.keys():
-                estimate = pool[part]["prediction"]
-                event_time = pool[part][self.target_assignments["duration"]].astype(
-                    float
-                )
-                event_indicator = pool[part][self.target_assignments["event"]].astype(
-                    bool
-                )
-                ci, _, _, _, _ = metrics_inventory[self.target_metric](
-                    event_indicator, event_time, estimate
-                )
-                scores[part + "_pool_hard"] = float(ci)
-        else:
-            for part in pool.keys():
-                target_col = list(self.target_assignments.values())[0]
-                predictions = pool[part]["prediction"]
-                target = pool[part][target_col]
-                scores[part + "_pool_hard"] = metrics_inventory[self.target_metric](
-                    target, predictions
-                )
+        add_pooling_scores(pool, scores, self.target_metric, self.target_assignments)
 
         return scores
 

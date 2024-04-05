@@ -6,10 +6,9 @@ import shutil
 import warnings
 from pathlib import Path
 
+import optuna
 import pandas as pd
 from attrs import define, field, validators
-
-import optuna
 from optuna.samplers._tpe.sampler import ExperimentalWarning
 
 from octopus.experiment import OctoExperiment
@@ -29,8 +28,8 @@ for line in [319, 330, 338]:
     )
 
 # TOBEDONE ENSEMBLING
-# - save topk trials -- consider direction of metric
-# - ess ensesel.py
+# - simplify and centralise score calculations (bag, enssel)
+# - add hard pooling to ensemble prediction
 
 
 # TOBEDONE BASE
@@ -39,6 +38,7 @@ for line in [319, 330, 338]:
 # - check that openblas settings are correct and suggest solutions
 
 # TOBEDONE OCTOFULL
+# - (1) FI counts
 # - (2) !Calculate performance of survival models: CI, CI_uno,  IBS, dynAUC,
 # - (3) rename ensemble test
 # - (4) include data preprocessing

@@ -54,13 +54,13 @@ class OctoML:
             path_sub = path_study.joinpath(subdir)
             path_sub.mkdir(parents=False, exist_ok=True)
 
-        # save files
-        if subdir == "data":
-            self.odata.to_pickle(path_sub.joinpath("data.pkl"))
-            self.odata.save(path_sub)
-        elif subdir == "config":
-            self.oconfig.to_json(path_sub.joinpath("config.json"))  # human readable
-            self.oconfig.to_pickle(path_sub.joinpath("config.dill"))
+            # save files
+            if subdir == "data":
+                self.odata.to_pickle(path_sub.joinpath("data.pkl"))
+                self.odata.save(path_sub)
+            elif subdir == "config":
+                self.oconfig.to_json(path_sub.joinpath("config.json"))  # human readable
+                self.oconfig.to_pickle(path_sub.joinpath("config.pkl"))
 
         # restrict dataset to relevant columns ("need to know basis")
         target_cols = list(self.odata.target_columns.keys())

@@ -143,12 +143,17 @@ sequence_item_1 = OctopusFullConfig(
     n_folds_inner=6,
     datasplit_seed_inner=0,
     # model training
-    models=["SvrRegressor"],
+    models=[
+        # "GradientBoostingRegressor",
+        # "XGBRegressor",
+        # "ExtraTreesRegressor",
+        "ElasticNetRegressor",
+    ],
     model_seed=0,
     n_jobs=1,
     dim_red_methods=[""],
     max_outl=0,
-    fi_methods_bestbag=["permutation"],
+    # fi_methods_bestbag=["permutation"],
     # parallelization
     inner_parallelization=True,
     n_workers=6,
@@ -157,10 +162,11 @@ sequence_item_1 = OctopusFullConfig(
     n_optuna_startup_trials=10,
     resume_optimization=False,
     global_hyperparameter=True,
-    n_trials=50,
-    save_trials=False,
-    # max_features=1500,
-    # penalty_factor=10.0,
+    n_trials=60,
+    max_features=1500,
+    penalty_factor=12.0,
+    ensemble_selection=True,
+    ensel_n_save_trials=30,
 )
 
 

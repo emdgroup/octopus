@@ -4,8 +4,10 @@ import concurrent.futures
 import pickle
 from statistics import mean
 
+import numpy as np
 import pandas as pd
 from attrs import define, field, validators
+from sklearn.utils.validation import check_array
 
 from octopus.modules.metrics import metrics_inventory
 from octopus.modules.octo.scores import add_pooling_scores
@@ -178,13 +180,16 @@ class Bag:
             else:
                 raise ValueError("FI type not supported")
 
-    def get_selected_features(self, fi_methods=[]):
+    def get_selected_features(self, fi_methods=None):
         """Get features selected by model, depending on fi method.
 
         The list of selected features will be derived only from one feature
         importance method out of the ones specified in fi_methods,
         with the following ranking: (1) permutation (2) shap (3) internal.
         """
+        if fi_methods is None:
+            fi_methods = []
+
         feat_lst = list()
         if "permutation" in fi_methods:
             for training in self.trainings:
@@ -205,9 +210,12 @@ class Bag:
             print("No features importances calculated")
             return []
 
-    def get_feature_importances(self, fi_methods=[]):
+    def get_feature_importances(self, fi_methods=None):
         """Extract feature importances of all models in bag."""
         # we always extract internal feature importances, if available
+        if fi_methods is None:
+            fi_methods = []
+
         self._calculate_fi(fi_type="internal")
 
         for method in fi_methods:
@@ -227,6 +235,22 @@ class Bag:
                 training.training_id
             ] = training.feature_importances
         return self.feature_importances
+
+    def predict(self, x):
+        """Predict."""
+        x = check_array(x)
+        predictions = list()
+        for training in self.trainings:
+            predictions.append(training.predict(x))
+        return np.mean(np.array(predictions), axis=0)
+
+    def predict_proba(self, x):
+        """Predict_proba."""
+        x = check_array(x)
+        predictions = list()
+        for training in self.trainings:
+            predictions.append(training.predict_proba(x))
+        return np.mean(np.array(predictions), axis=0)
 
     def to_pickle(self, path):
         """Save Bag using pickle."""

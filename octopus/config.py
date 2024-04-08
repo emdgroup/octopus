@@ -69,7 +69,7 @@ class OctoConfig:
             json.dump(asdict(self), file)
 
     def to_pickle(self, filename):
-        """Save object to dill file."""
+        """Save object to pkl file."""
         with open(filename, "wb") as file:
             pickle.dump(self, file)
 

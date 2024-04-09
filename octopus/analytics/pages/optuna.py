@@ -4,7 +4,7 @@ import dash
 import dash_mantine_components as dmc
 import plotly.colors
 import plotly.graph_objects as go
-from dash import Input, Output, callback, dcc
+from dash import Input, Output, callback, dcc, html
 from plotly.subplots import make_subplots
 
 from octopus.analytics.library import sqlite, utils
@@ -57,6 +57,8 @@ layout = dmc.Container(
         ),
         dcc.Graph(id="graph_optuna_number_modules"),
         dcc.Graph(id="graph_optuna_best_value"),
+        dmc.Text("Best Hyperparamters"),
+        html.Div(id="div_best_hyper_params"),
         dmc.Switch(
             size="lg",
             label="log x",
@@ -122,6 +124,7 @@ def get_models(experiment_id, sequence_id):
 @callback(
     Output("graph_optuna_number_modules", "figure"),
     Output("graph_optuna_best_value", "figure"),
+    Output("div_best_hyper_params", "children"),
     Input("select_optuna_exp", "value"),
     Input("select_optuna_sequence", "value"),
 )
@@ -194,7 +197,20 @@ def plot_number_model_type(experiment_id, sequence_id):
     )
     fig_best_value.update_yaxes(type="log")
 
-    return fig_number_models, fig_best_value
+    children_best_params = utils.table_without_header(
+        df_optuna_trials.query(f"`value` == {df_optuna_trials['value'].min()}")
+        .assign(
+            **{
+                "Hyper Parameter": lambda df_: df_["hyper_param"]
+                .str.split(f"_{df_['model_type'].values[0]}")
+                .str[0]
+            }
+        )
+        .loc[:, ["Hyper Parameter", "param_value"]]
+        .astype({"param_value": float})
+    )
+
+    return fig_number_models, fig_best_value, children_best_params
 
 
 @callback(

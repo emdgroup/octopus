@@ -231,26 +231,36 @@ class Bag:
                 raise ValueError(f"Feature importance method {method} not supported.")
 
         for training in self.trainings:
-            self.feature_importances[
-                training.training_id
-            ] = training.feature_importances
+            self.feature_importances[training.training_id] = (
+                training.feature_importances
+            )
         return self.feature_importances
 
     def predict(self, x):
         """Predict."""
         x = check_array(x)
-        predictions = list()
+        preds_lst = list()
+        weights_lst = list()
         for training in self.trainings:
-            predictions.append(training.predict(x))
-        return np.mean(np.array(predictions), axis=0)
+            train_w = training.training_weight
+            weights_lst.append(train_w)
+            preds_lst.append(train_w * training.predict(x))
+
+        # return mean of weighted predictions
+        return np.sum(np.array(preds_lst), axis=0) / sum(weights_lst)
 
     def predict_proba(self, x):
         """Predict_proba."""
         x = check_array(x)
-        predictions = list()
+        preds_lst = list()
+        weights_lst = list()
         for training in self.trainings:
-            predictions.append(training.predict_proba(x))
-        return np.mean(np.array(predictions), axis=0)
+            train_w = training.training_weight
+            weights_lst.append(train_w)
+            preds_lst.append(train_w * training.predict_proba(x))
+
+        # return mean of weighted predictions
+        return np.sum(np.array(preds_lst), axis=0) / sum(weights_lst)
 
     def to_pickle(self, path):
         """Save Bag using pickle."""

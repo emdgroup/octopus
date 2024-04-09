@@ -37,6 +37,8 @@ class Training:
     max_features: int = field(validator=[validators.instance_of(int)])
     # configuration for training
     config_training: dict = field(validator=[validators.instance_of(dict)])
+    # default init
+    training_weight: int = field(default=1, validator=[validators.instance_of(int)])
     # training outputs, initialized in post_init
     model = field(default=None)
     predictions: dict = field(init=False, validator=[validators.instance_of(dict)])
@@ -347,20 +349,12 @@ class Training:
     def predict(self, x):
         """Predict."""
         x = check_array(x)
-        prediction = self.model.predict(x)
-        if len(prediction.shape) == 1:
-            return prediction.reshape(-1, 1)
-        else:
-            return prediction
+        return self.model.predict(x)
 
     def predict_proba(self, x):
         """Predict_proba."""
         x = check_array(x)
-        probabilities = self.model.predict_proba(x)
-        if len(probabilities.shape) == 1:
-            return probabilities.reshape(-1, 1)
-        else:
-            return probabilities
+        return self.model.predict_proba(x)
 
     def to_pickle(self, path):
         """Save training."""

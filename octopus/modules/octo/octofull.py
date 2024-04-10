@@ -85,7 +85,6 @@ for line in [319, 330, 338]:
 # - variance selection threshold could be a HP, scaling before
 # - all multi target models are done separately, shap and permutation
 #   importance may not work anyways
-# - add outlier removal
 # - add scaling, as a HP?
 # - include dimensionality reduction
 # - include outlier elimination

@@ -32,9 +32,9 @@ features = pd.read_csv(
 )
 features = features["features"].astype(str).tolist()
 
-target_column = "OS_DURATION_6MONTHS"
+target_column = ["OS_DURATION_6MONTHS"]
 sample_column = "SUBJECT_ID"
-stratification_column = "STRAT_OS6_TRT_NUM"
+stratification_column = ["STRAT_OS6_TRT_NUM"]
 
 
 # pre-process data
@@ -44,16 +44,11 @@ print("Number of samples with target values:", len(data[target_column]))
 data_input = {
     "data": data,
     "sample_id": sample_column,
-    "target_columns": {target_column: data[target_column].dtype},
+    "target_columns": target_column,
     "datasplit_type": "sample",
-    "feature_columns": dict(),
-    "stratification_column": {stratification_column: data[stratification_column].dtype},
+    "feature_columns": features,
+    "stratification_column": stratification_column,
 }
-
-# get dtype of features
-for feature in features:
-    data_input["feature_columns"][feature] = data[feature].dtype
-
 
 # create OctoData object
 data = OctoData(**data_input)
@@ -103,7 +98,6 @@ sequence_item_1 = OctopusFullConfig(
     resume_optimization=False,
     global_hyperparameter=True,
     n_trials=700,
-    save_trials=False,
     max_features=70,
     penalty_factor=1.0,
 )

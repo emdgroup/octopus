@@ -48,23 +48,23 @@ data_processed.rename(columns={"index": "patient"}, inplace=True)
 data_input = {
     "data": data_processed,
     "sample_id": "patient",
-    "target_columns": {
-        "Event": int,
-        "Duration": float,
-    },
+    "target_columns": [
+        "Event",
+        "Duration",
+    ],
     "target_asignments": {"event": "Event", "duration": "Duration"},
     "datasplit_type": "sample",
-    "feature_columns": {
-        "age": float,
-        "estrec": float,
-        "pnodes": float,
-        "progrec": float,
-        "tsize": float,
-        "horTh_yes": int,
-        "menostat_Pre": int,
-        "tgrade_II": int,
-        "tgrade_III": int,
-    },
+    "feature_columns": [
+        "age",
+        "estrec",
+        "pnodes",
+        "progrec",
+        "tsize",
+        "horTh_yes",
+        "menostat_Pre",
+        "tgrade_II",
+        "tgrade_III",
+    ],
 }
 
 
@@ -113,7 +113,6 @@ sequence_item_1 = OctopusFullConfig(
     resume_optimization=False,
     global_hyperparameter=True,
     n_trials=10,
-    save_trials=False,
     max_features=0,
     penalty_factor=10.0,
 )

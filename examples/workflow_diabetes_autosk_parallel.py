@@ -1,4 +1,5 @@
 """Workflow script for the diabetes regression example."""
+
 import os
 import socket
 
@@ -31,19 +32,19 @@ data_input = {
     # ['sample','group_sample', 'group_sample_and_features']
     "datasplit_type": "group_sample_and_features",
     "disable_checknan": True,
-    "target_columns": {"progression": float},
-    "feature_columns": {
-        "age": float,
-        "sex": float,
-        "bmi": float,
-        "bp": float,
-        "s1": float,
-        "s2": float,
-        "s3": float,
-        "s4": float,
-        "s5": float,
-        "s6": float,
-    },
+    "target_columns": ["progression"],
+    "feature_columns": [
+        "age",
+        "sex",
+        "bmi",
+        "bp",
+        "s1",
+        "s2",
+        "s3",
+        "s4",
+        "s5",
+        "s6",
+    ],
 }
 
 # create OctoData object

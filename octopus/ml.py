@@ -63,11 +63,11 @@ class OctoML:
                 self.oconfig.to_pickle(path_sub.joinpath("config.pkl"))
 
         # restrict dataset to relevant columns ("need to know basis")
-        target_cols = list(self.odata.target_columns.keys())
-        stratification_col = "".join(list(self.odata.stratification_column.keys()))
+        target_cols = self.odata.target_columns
+        stratification_col = "".join(self.odata.stratification_column)
         sample_col = self.odata.sample_id
         row_col = self.odata.row_id
-        feature_cols = self.odata.features
+        feature_cols = self.odata.feature_columns
         target_assignments = self.odata.target_asignments
         relevant_cols = list(
             set(
@@ -78,8 +78,10 @@ class OctoML:
         )
         if stratification_col != "":
             relevant_cols.append(stratification_col)
+            # keep columns unique, if target columns eqals stratification column
+            relevant_cols = list(set(relevant_cols))
 
-        print("relevant columns: ", relevant_cols)
+        # print("relevant columns: ", relevant_cols)
 
         data_clean_df = self.odata.data[relevant_cols]
 

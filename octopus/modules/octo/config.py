@@ -60,7 +60,7 @@ class OctopusFullConfig:
     n_workers: int = field(validator=[validators.instance_of(int)], default=None)
     """Number of workers."""
     # hyperparamter optimization
-    optuna_seed: int = field(validator=[validators.instance_of(int)], default=None)
+    optuna_seed: int = field(validator=[validators.instance_of(int)], default=0)
     """Seed for Optuna TPESampler, default=no seed"""
 
     n_optuna_startup_trials: int = field(

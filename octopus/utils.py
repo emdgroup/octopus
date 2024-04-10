@@ -53,6 +53,7 @@ class DataSplit:
                 shuffle=True,
                 random_state=self.seed,
             )
+
             if dataset_unique[self.stratification_col].dtype.kind not in "iub":
                 raise ValueError(
                     "Stratification column is of wrong type (reg.: bool,int)"

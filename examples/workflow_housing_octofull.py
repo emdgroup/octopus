@@ -39,19 +39,19 @@ data_input = {
     "data": data_df,
     "sample_id": "index",
     "row_id": "index",
-    "target_columns": {"median_house_value": int},
+    "target_columns": ["median_house_value"],
     "datasplit_type": "sample",
-    "feature_columns": {
-        "longitude": float,
-        "latitude": float,
-        "housing_median_age": int,
-        "total_rooms": int,
-        # "total_bedrooms": int,
-        "population": int,
-        "households": int,
-        "median_income": int,
+    "feature_columns": [
+        "longitude",
+        "latitude",
+        "housing_median_age",
+        "total_rooms",
+        # "total_bedrooms",
+        "population",
+        "households",
+        "median_income",
         # "ocean_proximity": str,
-    },
+    ],
 }
 
 

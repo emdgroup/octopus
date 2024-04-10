@@ -1,4 +1,5 @@
 """Workflow script for the titanic example."""
+
 import os
 import socket
 
@@ -43,19 +44,19 @@ data_df = (
 data_input = {
     "data": data_df,
     "sample_id": "name",  # sample_id may contain duplicates
-    "target_columns": {"survived": bool},
-    "stratification_column": {"survived": bool},
+    "target_columns": ["survived"],
+    "stratification_column": ["survived"],
     "datasplit_type": "group_sample_and_features",
-    "feature_columns": {
-        "pclass": int,
-        "age": int,
-        "sibsp": int,
-        "parch": int,
-        "fare": float,
-        "embarked_Q": int,
-        "embarked_S": int,
-        "sex_male": int,
-    },
+    "feature_columns": [
+        "pclass",
+        "age",
+        "sibsp",
+        "parch",
+        "fare",
+        "embarked_Q",
+        "embarked_S",
+        "sex_male",
+    ],
 }
 
 # create OctoData object

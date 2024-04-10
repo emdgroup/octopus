@@ -95,19 +95,13 @@ ls_final = [col for col in ls_final if col not in ls_features_const]
 print("Number of features after removal of const. features:", len(ls_final))
 
 
-# define data_input, use data_reduced
 data_input = {
     "data": data_final,
     "sample_id": id_data[0],
-    "target_columns": {ls_targets[0]: data_final[ls_targets[0]].dtype},
+    "target_columns": ls_targets,
     "datasplit_type": "sample",
-    "feature_columns": dict(),
+    "feature_columns": ls_final,
 }
-
-# for feature in ls_features:
-#    data_input["feature_columns"][feature] = data_reduced[feature].dtype
-for feature in ls_final:
-    data_input["feature_columns"][feature] = data_final[feature].dtype
 
 # create OctoData object
 data = OctoData(**data_input)
@@ -154,7 +148,6 @@ sequence_item_1 = OctopusFullConfig(
     global_hyperparameter=True,
     n_trials=15,
     max_features=70,
-    save_trials=False,
 )
 
 config_sequence = [attrs.asdict(sequence_item_1)]

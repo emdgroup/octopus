@@ -99,16 +99,10 @@ def find_constant_columns(df):
 data_input = {
     "data": data_final,
     "sample_id": id_data[0],
-    "target_columns": {ls_targets[0]: data_final[ls_targets[0]].dtype},
+    "target_columns": ls_targets,
     "datasplit_type": "sample",
-    "feature_columns": dict(),
+    "feature_columns": ls_final,
 }
-
-# for feature in ls_features:
-#    data_input["feature_columns"][feature] = data_reduced[feature].dtype
-for feature in ls_final:
-    data_input["feature_columns"][feature] = data_final[feature].dtype
-
 
 # create OctoData object
 data = OctoData(**data_input)
@@ -158,7 +152,6 @@ sequence_item_1 = OctopusFullConfig(
     resume_optimization=False,
     global_hyperparameter=True,
     n_trials=10,
-    save_trials=False,
     max_features=1500,
     penalty_factor=10.0,
 )
@@ -186,7 +179,6 @@ sequence_item_2 = OctopusFullConfig(
     resume_optimization=False,
     global_hyperparameter=True,
     n_trials=10,
-    save_trials=False,
     max_features=500,
     penalty_factor=10.0,
 )

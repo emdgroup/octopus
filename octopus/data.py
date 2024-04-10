@@ -18,10 +18,10 @@ class OctoData:
     """Octopus data class."""
 
     data: pd.DataFrame = field(validator=[validators.instance_of(pd.DataFrame)])
-    feature_columns = field(validator=[validators.instance_of(dict)])
-    target_columns = field(validator=[validators.instance_of(dict)])
-    sample_id = field(validator=[validators.instance_of(str)])
-    datasplit_type = field(
+    feature_columns: list = field(validator=[validators.instance_of(list)])
+    target_columns: list = field(validator=[validators.instance_of(list)])
+    sample_id: str = field(validator=[validators.instance_of(str)])
+    datasplit_type: str = field(
         validator=[
             validators.in_(["sample", "group_features", "group_sample_and_features"])
         ]
@@ -30,18 +30,22 @@ class OctoData:
     disable_checknan: bool = field(
         default=False, validator=[validators.instance_of(bool)]
     )
-    target_asignments = field(default={}, validator=[validators.instance_of(dict)])  #
-    stratification_column = field(default={}, validator=[validators.instance_of(dict)])
+    target_asignments: dict = field(
+        default={}, validator=[validators.instance_of(dict)]
+    )
+    stratification_column: list = field(
+        default=[], validator=[validators.instance_of(list)]
+    )
 
     @property
     def targets(self) -> List:
         """Targets columns."""
-        return list(self.target_columns.keys())
+        return self.target_columns
 
     @property
     def features(self) -> List:
-        """Targets columns."""
-        return list(self.feature_columns.keys())
+        """List of features."""
+        return self.feature_columns
 
     def __attrs_post_init__(self):
         self.modify_dataframe()  # index reset done here
@@ -71,13 +75,13 @@ class OctoData:
     def remove_singlevalue_features(self):
         """Remove feature that only contain a single value."""
         print("Original number of features:", len(self.feature_columns))
-        data_features = self.data[self.feature_columns.keys()]
+        data_features = self.data[self.feature_columns]
         singlevalue_features = data_features.columns[data_features.nunique() == 1]
-        self.feature_columns = {
-            key: value
-            for key, value in self.feature_columns.items()
-            if key not in singlevalue_features
-        }
+        self.feature_columns = [
+            feature
+            for feature in self.feature_columns
+            if feature not in singlevalue_features
+        ]
         print(
             "Number of features after removal of single-valued features:",
             len(self.feature_columns),
@@ -120,6 +124,10 @@ class OctoData:
 
         if self.check_rowid_unique():
             report.append("Row_ID  raise ValueError()")
+        if self.check_list_unique(self.feature_columns):
+            report.append("Feature names are not unique")
+        if self.check_list_unique(self.target_columns):
+            report.append("Target names are not unique")
         if self.check_columns_exist():
             report.append("Defined columns missing in dataframe")
         if self.check_shared_columns():
@@ -139,8 +147,6 @@ class OctoData:
                 report.append("NaNs in dataframe")
         if self.check_infs():
             report.append("Infs in dataframe")
-        mismatch = self.check_dtypes()
-        report.extend(mismatch)
         if self.check_nonnumeric():
             report.append("Non-numeric relevant columns in dataframe")
 
@@ -151,43 +157,45 @@ class OctoData:
         row_column = self.data[self.row_id]
         return len(row_column) != len(set(row_column))
 
+    def check_list_unique(self, columns) -> bool:
+        """Check that list contains unique values."""
+        return len(columns) != len(set(columns))
+
     def check_nans(self) -> bool:
         """Check if all relevant columns are free of NaNs."""
         relevant_columns = list(
-            set(self.feature_columns.keys())
-            .union(set(self.target_columns.keys()))
+            set(self.feature_columns)
+            .union(set(self.target_columns))
             .union(set([self.sample_id]))
             .union(set([self.row_id]))
-            .union(set(self.stratification_column.keys()))
+            .union(set(self.stratification_column))
         )
         return pd.isna(self.data[relevant_columns]).any().any()
 
     def check_infs(self) -> bool:
         """Check if all relevant columns are free of Infs."""
         relevant_columns = list(
-            set(self.feature_columns.keys())
-            .union(set(self.target_columns.keys()))
+            set(self.feature_columns)
+            .union(set(self.target_columns))
             .union(set([self.sample_id]))
             .union(set([self.row_id]))
-            .union(set(self.stratification_column.keys()))
+            .union(set(self.stratification_column))
         )
         return pd.isna(self.data[relevant_columns]).isin([np.inf, -np.inf]).any().any()
 
     def check_nonnumeric(self) -> bool:
         """Check if all relevant columns are numeric."""
-        feature_columns = self.feature_columns.keys()
-        target_columns = self.target_columns.keys()
-        stratification_column = "".join(list(self.stratification_column.keys()))
+        stratification_column = "".join(self.stratification_column)
 
         result = list()
         # stratification column
         if stratification_column:
             result.append(self.data[stratification_column].dtype.kind not in "iub")
 
-        for column in feature_columns:
+        for column in self.feature_columns:
             result.append(self.data[column].dtype.kind not in "iuf")  # int/unit/float
 
-        for column in target_columns:
+        for column in self.target_columns:
             result.append(
                 self.data[column].dtype.kind not in "iufb"
             )  # int/unit/float/bool
@@ -197,13 +205,13 @@ class OctoData:
         """Check for shared columns in properties."""
         # features/targets
         report = []
-        intersection_features_targets = set(self.feature_columns.keys()).intersection(
-            set(self.target_columns.keys())
+        intersection_features_targets = set(self.feature_columns).intersection(
+            set(self.target_columns)
         )
-        intersection_features_sample = set(self.feature_columns.keys()).intersection(
+        intersection_features_sample = set(self.feature_columns).intersection(
             set(self.sample_id)
         )
-        intersection_targets_sample = set(self.target_columns.keys()).intersection(
+        intersection_targets_sample = set(self.target_columns).intersection(
             set(self.sample_id)
         )
 
@@ -234,10 +242,10 @@ class OctoData:
     def check_columns_exist(self) -> bool:
         """Check that defined columns exist in dataframe."""
         defined_columns = (
-            set(self.feature_columns.keys())
-            .union(set(self.target_columns.keys()))
+            set(self.feature_columns)
+            .union(set(self.target_columns))
             .union(set(self.sample_id))
-            .union(set(self.stratification_column.keys()))
+            .union(set(self.stratification_column))
         )
 
         dataframe_columns = set(self.data.columns.tolist())
@@ -249,33 +257,15 @@ class OctoData:
 
     def check_duplicates_features(self) -> bool:
         """Warning only: check for duplicates (rows) in all features."""
-        duplicate_rows = self.data[self.feature_columns.keys()].duplicated()
+        duplicate_rows = self.data[self.feature_columns].duplicated()
         return duplicate_rows.any()
 
     def check_duplicates_features_samples(self) -> bool:
         """Warning only: check for duplicates (rows) in all features+samples_id."""
         duplicate_rows = self.data[
-            list(self.feature_columns.keys()) + [self.sample_id]
+            list(self.feature_columns) + [self.sample_id]
         ].duplicated()
         return duplicate_rows.any()
-
-    def check_dtypes(self) -> list:
-        """Compare dtype definitions in OctoData with dataframe."""
-        mismatch = []
-
-        def compare_dtypes(columns_dict):
-            for column, dtype in columns_dict.items():
-                data_dtype = self.data[column].dtype
-                if data_dtype != dtype:
-                    mismatch.append(
-                        f"Dtype mismatch in column: {column}, expected dtype: {dtype},"
-                        f"dtype in data frame: {data_dtype}"
-                    )
-
-        compare_dtypes(self.feature_columns)
-        compare_dtypes(self.target_columns)
-        compare_dtypes(self.stratification_column)
-        return mismatch
 
     def save(self, path):
         """Save data to a human readable form, for long term storage."""

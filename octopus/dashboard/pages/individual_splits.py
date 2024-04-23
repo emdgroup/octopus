@@ -5,14 +5,17 @@ import dash_ag_grid as dag
 import dash_mantine_components as dmc
 import pandas as pd
 import plotly.graph_objects as go
-from dash import Input, Output, State, callback, dcc, html
+from dash import Input, Output, State, callback, clientside_callback, dcc, html
 
-from octopus.analytics.library import sqlite
+from octopus.dashboard.lib import utils
+from octopus.dashboard.lib.api import sqlite
+from octopus.dashboard.lib.constants import PAGE_TITLE_PREFIX
+from octopus.dashboard.lib.directives.toc import TOC
 
 dash.register_page(
     __name__,
     "/individual-splits",
-    title="Individual Splits",
+    title=PAGE_TITLE_PREFIX + "Individual Splits",
     description="",
 )
 
@@ -24,98 +27,93 @@ layout = html.Div(
             mt=30,
             children=[
                 dmc.Title("Individual Splits", pb=20),
-                dmc.Grid(
-                    [
-                        dmc.Select(
-                            label="Experiment",
-                            id="select_exp",
-                            value="0",
-                        ),
-                        dmc.Select(
-                            label="Sequence",
-                            id="select_sequence",
-                            value="0",
-                        ),
-                        dmc.Select(label="Split", id="select_split", value="0_0_0"),
-                    ],
-                    style={"margin-bottom": "20px"},
+            ],
+        ),
+        dmc.Container(
+            size="lg",
+            mt=30,
+            children=[
+                dmc.Select(
+                    label="Experiment",
+                    id="select_exp",
+                    value="0",
                 ),
-                dmc.Tabs(
-                    [
-                        dmc.TabsList(
-                            [
-                                dmc.Tab(
-                                    "Ground Truth",
-                                    value="ground_truth",
-                                ),
-                                dmc.Tab(
-                                    "Feature Importances",
-                                    value="feature_importances",
-                                ),
-                            ]
-                        ),
-                        dmc.TabsPanel(
-                            [
-                                dcc.Graph(id="graph_ground_truth"),
-                                dmc.Text(
-                                    "Use plotly selection tool to select datapoints."
-                                ),
-                                dag.AgGrid(
-                                    id="aggrid_ground_truth",
-                                    # columnDefs=
-                                    defaultColDef={
-                                        "resizable": True,
-                                        "autoHeaderHeight": True,
-                                        "wrapHeaderText": True,
-                                        "suppressMovable": True,
-                                    },
-                                    columnSize="autoSize",
-                                    className="ag-theme-alpine",
-                                ),
-                            ],
-                            value="ground_truth",
-                        ),
-                        dmc.TabsPanel(
-                            [
-                                "Feature Importances",
-                                dcc.Graph(id="graph_feature_importances"),
-                            ],
-                            value="feature_importances",
-                        ),
-                    ],
-                    value="ground_truth",
+                dmc.Select(
+                    label="Sequence",
+                    id="select_sequence",
+                    value="0",
+                ),
+                dmc.Select(label="Split", id="select_split", value="0_0_0"),
+            ],
+        ),
+        dmc.Container(
+            size="lg",
+            mt=30,
+            children=[
+                utils.create_title(
+                    "Ground truth", comp_id="results_splits_groundtruth"
+                ),
+                dcc.Graph(id="graph_ground_truth"),
+                dmc.Text("Use plotly selection tool to select datapoints."),
+                dag.AgGrid(
+                    id="aggrid_ground_truth",
+                    defaultColDef={
+                        "resizable": True,
+                        "autoHeaderHeight": True,
+                        "wrapHeaderText": True,
+                        "suppressMovable": True,
+                    },
+                    columnSize="autoSize",
+                    className="ag-theme-alpine",
                 ),
             ],
-        )
+        ),
+        dmc.Container(
+            size="lg",
+            mt=30,
+            children=[
+                utils.create_title(
+                    "Feature Importance", comp_id="results_splits_featureimportants"
+                ),
+                dcc.Graph(id="graph_feature_importances"),
+            ],
+        ),
+        TOC.render(
+            None,
+            None,
+            "Table of Contents",
+            None,
+            **{
+                "table_of_contents": [
+                    (3, "Ground truth", "results_splits_groundtruth"),
+                    (3, "Feature Importance", "results_splits_featureimportants"),
+                ]
+            },
+        ),
     ]
 )
 
 
 @callback(Output("select_exp", "data"), Input("url", "pathname"))
-def get_experiment_ids(
-    _,
-):
+def get_experiment_ids(_):
     """Get experiment ids."""
     experiment_ids = sqlite.query(
         """
-            SELECT DISTINCT experiment_id
-            FROM predictions
-        """
+        SELECT DISTINCT experiment_id
+        FROM optuna_trials
+    """
     )["experiment_id"].values.tolist()
     return [{"value": str(i), "label": str(i)} for i in sorted(experiment_ids)]
 
 
-@callback(Output("select_sequence", "data"), Input("select_exp", "value"))
-def get_sequence_ids(
-    experiment_id,
-):
+@callback(Output("select_sequence", "data"), Input("url", "pathname"))
+def get_sequence_ids(_):
     """Get sequence ids."""
     sequence_ids = sqlite.query(
-        f"""
-            SELECT DISTINCT sequence_id
-            FROM predictions
-            WHERE experiment_id = {experiment_id}
         """
+        SELECT DISTINCT sequence_id
+        FROM optuna_trials
+    """
     )["sequence_id"].values.tolist()
     return [{"value": str(i), "label": str(i)} for i in sorted(sequence_ids)]
 
@@ -148,8 +146,9 @@ def get_split_ids(experiment_id, sequence_id):
     State("select_exp", "value"),
     State("select_sequence", "value"),
     Input("select_split", "value"),
+    Input("theme-store", "data"),
 )
-def plot_ground_truth(experiment_id, sequence_id, split_id):
+def plot_ground_truth(experiment_id, sequence_id, split_id, theme):
     """Create plots."""
     # get target column
     target = sqlite.query(
@@ -189,6 +188,7 @@ def plot_ground_truth(experiment_id, sequence_id, split_id):
                 mode="markers",
                 name=dataset,
                 text=df_["row_id"],
+                marker={"color": utils.get_plot_color(dataset)},
             )
         )
 
@@ -204,11 +204,16 @@ def plot_ground_truth(experiment_id, sequence_id, split_id):
     fig_1.update_layout(
         xaxis_title="Ground truth",
         yaxis_title="Prediction",
+        template=utils.get_template(theme),
     )
 
     fig_2 = go.Figure()
     for name, df_ in feature_importances.groupby("dataset"):
         fig_2.add_trace(go.Bar(name=name, x=df_["feature"], y=df_["importance"]))
+
+    fig_2.update_layout(
+        template=utils.get_template(theme),
+    )
     return fig_1, fig_2
 
 
@@ -234,3 +239,20 @@ def show_selected_datapoint(selected_data):
         data = df_dataset[df_dataset["row_id"].isin(selected_points)]
 
     return data.to_dict("records"), columns
+
+
+clientside_callback(
+    """
+    function(data) {
+        // Return the class name based on the colorScheme value
+        if (data === "light") {
+            return 'ag-theme-alpine';
+        } else {
+            // Handle other colorScheme values
+            return 'ag-theme-alpine-dark';
+        }
+    }
+    """,
+    Output("aggrid_ground_truth", "className"),
+    Input("theme-store", "data"),
+)

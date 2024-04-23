@@ -1,29 +1,45 @@
-"""Home page."""
+"""EDA target page."""
 
 import dash
 import dash_mantine_components as dmc
 import pandas as pd
 import plotly.graph_objects as go
-from dash import Input, Output, callback, dcc
+from dash import Input, Output, callback, dcc, html
 
-from octopus.analytics.library import sqlite, utils
+from octopus.dashboard.lib import utils
+from octopus.dashboard.lib.api import sqlite
+from octopus.dashboard.lib.constants import PAGE_TITLE_PREFIX
 
 dash.register_page(
     __name__,
-    "/",
-    title="Octopus",
-    description="Octopus",
+    "/summary",
+    title=PAGE_TITLE_PREFIX + "Summary",
+    description="Summary of the machine learning.",
+)
+
+layout = html.Div(
+    [
+        dmc.Container(
+            dmc.Title("Summary"),
+            size="lg",
+            mt=50,
+        ),
+        dmc.Container(
+            html.Div(id="div_results_summary"),
+            size="lg",
+            mt=50,
+        ),
+    ]
 )
 
 
-layout = dmc.Paper(id="paper_summary")
-
-
-@callback(Output("paper_summary", "children"), Input("url", "pathname"))
-def show_tests_scores(
-    _,
-):
-    """Show test scores."""
+@callback(
+    Output("div_results_summary", "children"),
+    Input("url", "pathname"),
+    Input("theme-store", "data"),
+)
+def show_summary_plot(_, theme):
+    """Show summary plot."""
     metric = utils.get_target_metric()
 
     df_scores_emseble = sqlite.query(
@@ -73,6 +89,7 @@ def show_tests_scores(
             title="Test Scores",
             xaxis_title="Experiment",
             yaxis_title=metric,
+            template=utils.get_template(theme),
         )
 
         df_ = pd.DataFrame(
@@ -89,7 +106,9 @@ def show_tests_scores(
         children.append(
             dmc.Paper(
                 [
-                    dmc.Title(f"Sequence {sequence}"),
+                    utils.create_title(
+                        f"Sequence {sequence}", comp_id=f"results_sequence_{sequence}"
+                    ),
                     utils.table_without_header(df_.astype(str)),
                     dcc.Graph(figure=fig),
                 ]

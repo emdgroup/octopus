@@ -71,8 +71,12 @@ layout = html.Div(
 def create_tables(_):
     """Copy config study."""
     return (
-        utils.table_without_header(sqlite.query("SELECT * FROM config_study")),
-        utils.table_without_header(sqlite.query("SELECT * FROM config_manager")),
+        utils.table_without_header(
+            sqlite.query("SELECT Parameter, Value FROM config_study")
+        ),
+        utils.table_without_header(
+            sqlite.query("SELECT Parameter, Value FROM config_manager")
+        ),
     )
 
 
@@ -83,7 +87,9 @@ def create_tables(_):
 )
 def copy_study_to_clipboard(_):
     """Copy config study."""
-    return utils.create_config_output(sqlite.query("SELECT * FROM config_study"))
+    return utils.create_config_output(
+        sqlite.query("SELECT Parameter, Value FROM config_study")
+    )
 
 
 @callback(
@@ -93,7 +99,9 @@ def copy_study_to_clipboard(_):
 )
 def copy_manager_to_clipboard(_):
     """Copy config study."""
-    return utils.create_config_output(sqlite.query("SELECT * FROM config_manager"))
+    return utils.create_config_output(
+        sqlite.query("SELECT Parameter, Value FROM config_manager")
+    )
 
 
 @callback(
@@ -106,7 +114,9 @@ def copy_sequence_to_clipboard(_, selected_id):
     """Copy config study."""
     index = selected_id["index"]
     return utils.create_config_output(
-        sqlite.query(f"SELECT * FROM config_sequence WHERE sequence_id={index}")
+        sqlite.query(
+            f"SELECT Parameter, Value FROM config_sequence WHERE sequence_id={index}"
+        )
     )
 
 
@@ -117,9 +127,9 @@ def copy_sequence_to_clipboard(_, selected_id):
 def create_accordion_items(_):
     """Create accordion items."""
     children = []
-    for value, df_ in sqlite.query("SELECT * FROM config_sequence").groupby(
-        "sequence_id"
-    ):
+    for value, df_ in sqlite.query(
+        "SELECT Parameter, Value, sequence_id FROM config_sequence"
+    ).groupby("sequence_id"):
         children.append(
             dmc.Group(
                 [
@@ -127,7 +137,7 @@ def create_accordion_items(_):
                     dcc.Clipboard(
                         id={"type": "clipboard_sequence", "index": value},
                     ),
-                    utils.table_without_header(df_[["index", "0"]]),
+                    utils.table_without_header(df_[["Parameter", "Value"]]),
                     dmc.Space(h=30),
                 ]
             )

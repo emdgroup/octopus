@@ -75,7 +75,7 @@ layout = html.Div(
                 utils.create_title(
                     "Feature Importance", comp_id="results_splits_featureimportants"
                 ),
-                dcc.Graph(id="graph_feature_importances"),
+                html.Div(id="div_feature_importances"),
             ],
         ),
         TOC.render(
@@ -142,7 +142,6 @@ def get_split_ids(experiment_id, sequence_id):
 
 @callback(
     Output("graph_ground_truth", "figure"),
-    Output("graph_feature_importances", "figure"),
     State("select_exp", "value"),
     State("select_sequence", "value"),
     Input("select_split", "value"),
@@ -150,15 +149,11 @@ def get_split_ids(experiment_id, sequence_id):
 )
 def plot_ground_truth(experiment_id, sequence_id, split_id, theme):
     """Create plots."""
-    # get target column
-    target = sqlite.query(
-        """
-        SELECT Column
-        FROM dataset_info
-        WHERE Type = "Target"
-    """
-    )["Column"].values[0]
+    # get column names
+    target = utils.get_col_from_type("Target")
+    row_id = utils.get_col_from_type("Row_ID")
 
+    # get predictions
     df_predictions = sqlite.query(
         f"""
             SELECT *
@@ -169,30 +164,21 @@ def plot_ground_truth(experiment_id, sequence_id, split_id, theme):
         """
     )
 
-    feature_importances = sqlite.query(
-        f"""
-            SELECT *
-            FROM feature_importances
-            WHERE experiment_id = {experiment_id}
-            AND sequence_id = {sequence_id}
-            AND split_id = "{split_id}"
-        """
-    )
-
-    fig_1 = go.Figure()
+    # create figure
+    fig = go.Figure()
     for dataset, df_ in df_predictions.groupby("dataset"):
-        fig_1.add_trace(
+        fig.add_trace(
             go.Scatter(
                 x=df_[target],
                 y=df_["prediction"],
                 mode="markers",
                 name=dataset,
-                text=df_["row_id"],
+                text=df_[row_id],
                 marker={"color": utils.get_plot_color(dataset)},
             )
         )
 
-    fig_1.add_shape(
+    fig.add_shape(
         type="line",
         line=dict(dash="dash"),
         x0=df_predictions[target].min(),
@@ -201,20 +187,49 @@ def plot_ground_truth(experiment_id, sequence_id, split_id, theme):
         y1=df_predictions[target].max(),
     )
 
-    fig_1.update_layout(
+    fig.update_layout(
         xaxis_title="Ground truth",
         yaxis_title="Prediction",
         template=utils.get_template(theme),
     )
 
-    fig_2 = go.Figure()
-    for name, df_ in feature_importances.groupby("dataset"):
-        fig_2.add_trace(go.Bar(name=name, x=df_["feature"], y=df_["importance"]))
+    return fig
 
-    fig_2.update_layout(
+
+@callback(
+    Output("div_feature_importances", "children"),
+    State("select_exp", "value"),
+    State("select_sequence", "value"),
+    Input("select_split", "value"),
+    Input("theme-store", "data"),
+)
+def plot_feature_importance(experiment_id, sequence_id, split_id, theme):
+    """Create plots."""
+    feature_importances = sqlite.query("SELECT * FROM feature_importances")
+
+    # check if freature importances are calculted
+    if feature_importances.empty:
+        return [dmc.Text("Feature importances were not calculated.")]
+
+    feature_importances = sqlite.query(
+        f"""
+            SELECT *
+            FROM feature_importances
+            WHERE experiment_id = {experiment_id}
+            AND sequence_id = {sequence_id}
+            AND split_id = "{split_id}"
+            ORDER BY importance DESC;
+        """
+    )
+    print(feature_importances)
+    fig = go.Figure()
+    for name, df_ in feature_importances.groupby("dataset"):
+        fig.add_trace(go.Bar(name=name, x=df_["feature"], y=df_["importance"]))
+
+    fig.update_layout(
         template=utils.get_template(theme),
     )
-    return fig_1, fig_2
+    return [dcc.Graph(figure=fig)]
 
 
 @callback(
@@ -224,6 +239,9 @@ def plot_ground_truth(experiment_id, sequence_id, split_id, theme):
 )
 def show_selected_datapoint(selected_data):
     """Get splits ids for selected experiment."""
+    # get column names
+    row_id = utils.get_col_from_type("Row_ID")
+
     df_dataset = sqlite.query(
         """
             SELECT *
@@ -236,7 +254,7 @@ def show_selected_datapoint(selected_data):
         data = pd.DataFrame()
     else:
         selected_points = [entry["text"] for entry in selected_data["points"]]
-        data = df_dataset[df_dataset["row_id"].isin(selected_points)]
+        data = df_dataset[df_dataset[row_id].isin(selected_points)]
 
     return data.to_dict("records"), columns
 

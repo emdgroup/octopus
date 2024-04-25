@@ -10,6 +10,7 @@ from octopus.dashboard.lib import utils
 from octopus.dashboard.lib.api import sqlite
 from octopus.dashboard.lib.constants import PAGE_TITLE_PREFIX
 from octopus.dashboard.lib.directives.toc import TOC
+from octopus.modules.metrics import optuna_direction
 
 dash.register_page(
     __name__,
@@ -47,7 +48,6 @@ layout = html.Div(
             size="lg",
             mt=30,
             children=[
-                utils.create_title("Trials", comp_id="results_optuna_trials"),
                 dmc.Select(
                     label="Experiment",
                     id="select_optuna_exp",
@@ -60,7 +60,29 @@ layout = html.Div(
                     value="0",
                     clearable=False,
                 ),
+                dmc.Select(
+                    label="Split",
+                    id="select_optuna_split",
+                    value="0",
+                    clearable=False,
+                ),
+            ],
+        ),
+        dmc.Container(
+            size="lg",
+            mt=30,
+            children=[
+                utils.create_title(
+                    "Count modules", comp_id="results_optuna_number_modules"
+                ),
                 dcc.Graph(id="graph_optuna_number_modules"),
+            ],
+        ),
+        dmc.Container(
+            size="lg",
+            mt=30,
+            children=[
+                utils.create_title("Best values", comp_id="results_optuna_best_values"),
                 dcc.Graph(id="graph_optuna_best_value"),
             ],
         ),
@@ -91,7 +113,8 @@ layout = html.Div(
             None,
             **{
                 "table_of_contents": [
-                    (3, "Trails", "results_optuna_trials"),
+                    (3, "Count models", "results_optuna_number_modules"),
+                    (3, "Best values", "results_optuna_best_values"),
                     (3, "Hyperparameters", "results_hyperparams"),
                 ]
             },
@@ -125,6 +148,25 @@ def get_sequence_ids(_):
 
 
 @callback(
+    Output("select_optuna_split", "data"),
+    Output("select_optuna_split", "value"),
+    Input("url", "pathname"),
+)
+def get_split_ids(_):
+    """Get sequence ids."""
+    split_ids = sqlite.query(
+        """
+        SELECT DISTINCT split_id
+        FROM optuna_trials
+    """
+    )["split_id"].values.tolist()
+    return (
+        [{"value": str(i), "label": str(i)} for i in sorted(split_ids)],
+        sorted(split_ids)[0],
+    )
+
+
+@callback(
     Output("select_optuna_model", "data"),
     Output("select_optuna_model", "value"),
     Input("url", "pathname"),
@@ -148,9 +190,10 @@ def get_models(_):
     Output("graph_optuna_best_value", "figure"),
     Input("select_optuna_exp", "value"),
     Input("select_optuna_sequence", "value"),
+    Input("select_optuna_split", "value"),
     Input("theme-store", "data"),
 )
-def plot_number_model_type(experiment_id, sequence_id, theme):
+def plot_number_model_type(experiment_id, sequence_id, split_id, theme):
     """Plot number of trials per module."""
     df_optuna_trials = sqlite.query(
         f"""
@@ -158,9 +201,9 @@ def plot_number_model_type(experiment_id, sequence_id, theme):
             FROM optuna_trials
             WHERE experiment_id = {experiment_id}
             AND sequence_id = {sequence_id}
+            AND split_id = {split_id}
         """
     )
-
     df_optuna_number_models = df_optuna_trials.groupby("model_type")["trial"].nunique()
 
     fig_number_models = go.Figure(
@@ -174,7 +217,6 @@ def plot_number_model_type(experiment_id, sequence_id, theme):
         ]
     )
     fig_number_models.update_layout(
-        title="Count of Unique Trials by Model Type",
         xaxis_title="Model Type",
         yaxis_title="Count of Unique Trials",
         template=utils.get_template(theme),
@@ -191,10 +233,19 @@ def plot_number_model_type(experiment_id, sequence_id, theme):
         model_type_to_symbol
     )
 
+    # get metric and optuna direction
+    metric = utils.get_target_metric()
+    direction = optuna_direction(metric)
+
     # get best optuna trials
-    df_optuna_trials_best = df_optuna_trials[
-        df_optuna_trials["value"] == df_optuna_trials["value"].cummin()
-    ]
+    if direction == "maximize":
+        df_optuna_trials_best = df_optuna_trials[
+            df_optuna_trials["value"] == df_optuna_trials["value"].cummax()
+        ]
+    else:
+        df_optuna_trials_best = df_optuna_trials[
+            df_optuna_trials["value"] == df_optuna_trials["value"].cummin()
+        ]
 
     fig_best_value = go.Figure()
     fig_best_value.add_trace(
@@ -271,7 +322,7 @@ def plot_hyperparameters(experiment_id, sequence_id, model_type, logx, logy, the
                     "colorscale": [
                         [0, "rgb(255,255,255)"],
                         [1, "#2DBECD"],
-                    ],  # plotly.colors.sequential.Blues,
+                    ],
                     "colorbar": {
                         "title": "Trial",
                         "x": 1.0,

@@ -9,15 +9,8 @@ from octopus.dashboard.lib import utils
 from octopus.dashboard.lib.api import sqlite
 from octopus.dashboard.lib.constants import PAGE_TITLE_PREFIX
 
-df_data = sqlite.query("SELECT * FROM data")
-target_col = sqlite.query(
-    """
-    SELECT Column
-    FROM column_description
-    WHERE Type = 'Target'
-    """
-)["Column"].values[0]
-
+df_data = sqlite.query("SELECT * FROM dataset")
+target = utils.get_col_from_type("Target")
 
 dash.register_page(
     __name__,
@@ -63,5 +56,5 @@ layout = html.Div(
 def update_feature_histogram(nbins, theme):
     """Select feature for histogram."""
     return px.histogram(
-        df_data, x=target_col, nbins=nbins, template=utils.get_template(theme)
+        df_data, x=target, nbins=nbins, template=utils.get_template(theme)
     )

@@ -62,7 +62,7 @@ data = OctoData(**data_input)
 # eda.run()
 
 
-folder_path = Path("studies").joinpath("TMM_EQE_octofull_xgboost")
+folder_path = Path("studies").joinpath("housing_octofull_test_indiv_hp")
 
 octo_dashboard = OctoDash(folder_path)
 octo_dashboard.run()

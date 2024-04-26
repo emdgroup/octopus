@@ -241,7 +241,7 @@ def show_selected_datapoint(selected_data):
     """Get splits ids for selected experiment."""
     # get column names
     row_id = utils.get_col_from_type("Row_ID")
-
+    print(row_id)
     df_dataset = sqlite.query(
         """
             SELECT *

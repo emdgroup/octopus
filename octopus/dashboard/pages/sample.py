@@ -16,12 +16,12 @@ dash.register_page(
     description="Basics Information about the sample.",
 )
 
-df_data = sqlite.query("SELECT * FROM data")
+df_data = sqlite.query("SELECT * FROM dataset")
 
 sample_id = sqlite.query(
     """
     SELECT Column
-    FROM column_description
+    FROM dataset_info
     WHERE Type = 'Sample_ID'
     """
 )["Column"].values[0]

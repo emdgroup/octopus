@@ -60,7 +60,7 @@ data = OctoData(**data_input)
 
 # configure study
 config_study = {
-    "study_name": "housing_octofull_test_5",
+    "study_name": "housing_octofull_multi_sequence",
     "output_path": "./studies/",
     "production_mode": True,
     "ml_type": "regression",
@@ -83,22 +83,44 @@ sequence_item_1 = OctopusFullConfig(
     datasplit_seed_inner=0,
     # model training
     optuna_seed=5,
-    models=["RidgeRegressor"],
+    models=["RandomForestRegressor"],
     model_seed=0,
     n_jobs=1,
     dim_red_methods=[""],
     # max_outl=5,
     # parallelization
-    inner_parallelization=True,
+    inner_parallelization=False,
     n_workers=5,
     # HPO
     global_hyperparameter=True,
-    n_trials=50,
-    # max_features=70,
+    n_trials=3,
+    max_features=70,
     # remove_trials=False,
 )
 
-config_sequence = [attrs.asdict(sequence_item_1)]
+sequence_item_2 = OctopusFullConfig(
+    description="step2_octofull",
+    # datasplit
+    n_folds_inner=5,
+    datasplit_seed_inner=0,
+    # model training
+    optuna_seed=5,
+    models=["RandomForestRegressor"],
+    model_seed=0,
+    n_jobs=1,
+    dim_red_methods=[""],
+    # max_outl=5,
+    # parallelization
+    inner_parallelization=False,
+    n_workers=5,
+    # HPO
+    global_hyperparameter=True,
+    n_trials=5,
+    max_features=70,
+    # remove_trials=False,
+)
+
+config_sequence = [attrs.asdict(sequence_item_1), attrs.asdict(sequence_item_2)]
 
 print(config_sequence)
 

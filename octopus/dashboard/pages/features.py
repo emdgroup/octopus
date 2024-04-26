@@ -10,23 +10,9 @@ from octopus.dashboard.lib.api import sqlite
 from octopus.dashboard.lib.constants import PAGE_TITLE_PREFIX
 from octopus.dashboard.lib.directives.toc import TOC
 
-df_data = sqlite.query("SELECT * FROM data")
-
-target = sqlite.query(
-    """
-    SELECT Column
-    FROM column_description
-    WHERE Type = 'Target'
-    """
-)["Column"].values[0]
-
-features = sqlite.query(
-    """
-    SELECT Column
-    FROM column_description
-    WHERE Type = 'Feature'
-    """
-)["Column"].values.tolist()
+df_data = sqlite.query("SELECT * FROM dataset")
+target = utils.get_col_from_type("Target")
+features = utils.get_col_from_type("Feature")
 features = [col for col in features if col in df_data.columns]
 
 dash.register_page(

@@ -19,4 +19,4 @@ repos:
   hooks:
     - id: typos
       args: [--config=typos.toml]
-      exclude: ^datasets/ # do not check the example data
+      exclude: ^datasets/|octopus_p312.yml|octopus_autosk_p38.yml|octopus_p310.yml

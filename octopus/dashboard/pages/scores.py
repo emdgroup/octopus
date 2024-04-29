@@ -5,27 +5,31 @@ import dash_mantine_components as dmc
 import plotly.graph_objects as go
 from dash import Input, Output, callback, dcc, html
 
-from octopus.analytics.library import sqlite
+from octopus.dashboard.lib import utils
+from octopus.dashboard.lib.api import sqlite
+from octopus.dashboard.lib.constants import PAGE_TITLE_PREFIX
 
 dash.register_page(
     __name__,
     "/scores",
-    title="Scores",
+    title=PAGE_TITLE_PREFIX + "Scores",
     description="",
 )
-
 
 layout = html.Div(
     [
         dmc.Container(
+            dmc.Title("Scores"),
             size="lg",
-            mt=30,
+            mt=50,
+        ),
+        dmc.Container(
+            size="lg",
+            mt=50,
             children=[
-                dmc.Title("Scores"),
-                dmc.Space(h="lg"),
                 dmc.Grid(
                     [
-                        dmc.Col(
+                        dmc.GridCol(
                             [
                                 dmc.Text("Metric"),
                                 dmc.SegmentedControl(
@@ -54,14 +58,14 @@ layout = html.Div(
                             ],
                             span=2,
                         ),
-                        dmc.Col(
+                        dmc.GridCol(
                             dcc.Graph(id="graph_scores"),
                             span=10,
                         ),
                     ]
                 ),
             ],
-        )
+        ),
     ]
 )
 
@@ -70,29 +74,24 @@ layout = html.Div(
     Output("graph_scores", "figure"),
     Input("segment_scores_aggregation", "value"),
     Input("segment_scores_metric", "value"),
+    Input("theme-store", "data"),
 )
-def plot_scores(aggregation, metric):
+def plot_scores(aggregation, metric, theme):
     """Get splits ids for selected experiment."""
     df_scores = sqlite.query("SELECT * FROM scores")
+
     fig = go.Figure()
     if aggregation == "All":
-        for i in ["train", "dev", "test"]:
-            print(
-                df_scores.query(
-                    f'testset == "{i}" and metric == "{metric}" and split != "ensemble"'
-                )
+        for testset in ["train", "dev", "test"]:
+            df_ = df_scores.query(
+                "testset == @testset and metric == @metric and split != 'ensemble'"
             )
-
             fig.add_trace(
                 go.Scatter(
-                    x=df_scores.index.astype(str),
-                    y=df_scores.query(
-                        f"""testset == "{i}"
-                        and metric == "{metric}"
-                        and split != "ensemble" """
-                    )["score"],
+                    x=df_["split"],
+                    y=df_["score"],
                     mode="markers+lines",
-                    name=i,
+                    name=testset,
                 )
             )
 
@@ -109,8 +108,6 @@ def plot_scores(aggregation, metric):
             )
 
     fig.update_layout(
-        title="Plot Title",
-        xaxis_title="Number",
-        yaxis_title=metric,
+        xaxis_title="Number", yaxis_title=metric, template=utils.get_template(theme)
     )
     return fig

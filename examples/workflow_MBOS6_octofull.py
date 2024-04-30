@@ -71,7 +71,7 @@ config_manager = {
     # outer loop
     "outer_parallelization": True,
     # only run specific single experiment, for quick testing
-    # "run_single_experiment_num": 1,
+    "run_single_experiment_num": 1,
 }
 
 # define processing sequence

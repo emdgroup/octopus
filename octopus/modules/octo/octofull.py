@@ -430,7 +430,7 @@ class OctoFull:
         # save best bag
         best_bag.to_pickle(
             self.path_results.joinpath(
-                f"study{study_name}trial{study.best_trial.number}_bag.pkl"
+                f"{study_name}_trial{study.best_trial.number}_bag.pkl"
             )
         )
 

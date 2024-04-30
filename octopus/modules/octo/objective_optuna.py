@@ -35,6 +35,7 @@ class ObjectiveOptuna:
         self.max_outl = self.experiment.ml_config["max_outl"]
         self.max_features = self.experiment.ml_config["max_features"]
         self.penalty_factor = self.experiment.ml_config["penalty_factor"]
+        self.hyper_parameters = self.experiment.ml_config["hyper_parameters"]
         # fixed parameters
         self.ml_seed = self.experiment.ml_config["model_seed"]
         self.ml_jobs = self.experiment.ml_config["n_jobs"]
@@ -76,22 +77,21 @@ class ObjectiveOptuna:
         else:
             num_outl = 0
 
-        # get model parameters
-        optuna_model_settings = None  # use default
-        settings_default = parameters_inventory[ml_model_type]["default"]
+        # get hyper parameter space for selected model
 
-        if optuna_model_settings is None:
-            # use default model parameter settings
-            model_params = create_trialparams_from_config(
-                trial, settings_default, ml_model_type
-            )
+        # take user parameters
+        if ml_model_type in self.hyper_parameters.keys():
+            hyper_parameter_space = self.hyper_parameters[ml_model_type]
+
+        # take default parameters
         else:
-            # use model parameter settings as provided by config
-            model_params = create_trialparams_from_config(
-                trial, optuna_model_settings, ml_model_type
-            )
+            hyper_parameter_space = parameters_inventory[ml_model_type]["default"]
 
-        # overwrite model parameters specified by global settings
+        model_params = create_trialparams_from_config(
+            trial, hyper_parameter_space, ml_model_type
+        )
+
+        # overwrite model parameters specified by global setstings
         fixed_global_parameters = {
             "n_jobs": self.ml_jobs,
             "model_seed": self.ml_seed,

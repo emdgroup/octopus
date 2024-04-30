@@ -91,7 +91,7 @@ class ObjectiveOptuna:
             trial, hyper_parameter_space, ml_model_type
         )
 
-        # overwrite model parameters specified by global setstings
+        # overwrite model parameters specified by global settings
         fixed_global_parameters = {
             "n_jobs": self.ml_jobs,
             "model_seed": self.ml_seed,

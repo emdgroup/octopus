@@ -1,4 +1,4 @@
-"""Helper functions."""
+"""Metrics."""
 
 from sklearn.metrics import (
     accuracy_score,
@@ -21,18 +21,3 @@ metrics_inventory = {
     "R2": r2_score,
     "CI": concordance_index_censored,
 }
-
-
-def optuna_direction(metric: str) -> str:
-    """Calculate selected metric."""
-    direction = {
-        "MAE": "minimize",
-        "MSE": "minimize",
-        "R2": "maximize",
-        "ACC": "maximize",
-        "ACCBAL": "maximize",
-        "LOGLOSS": "minimize",
-        "AUCROC": "maximize",
-        "CI": "maximize",
-    }
-    return direction[metric]

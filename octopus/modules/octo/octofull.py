@@ -92,7 +92,35 @@ for line in [319, 330, 338]:
 
 @define
 class OctoFull:
-    """OctoFull."""
+    """Manages and executes machine learning experiments.
+
+    This class integrates all components necessary for conducting
+    experiments using OctoExperiment configurations.
+    It supports operations such as data splitting, path management,
+    model optimization with Optuna, and results handling.
+    The class is designed to work seamlessly with the defined experiment
+    configurations and ensures robust handling of experiment resources,
+    directories, and optimization processes.
+
+    Attributes:
+        experiment (OctoExperiment): Configuration and data container
+            for the experiment.
+        data_splits (dict): Stores training and validation data splits.
+        paths_optuna_db (dict): Stores file paths to Optuna databases
+            for each experiment.
+        top_trials (list): Keeps track of the best performing trials.
+
+    Raises:
+        ValueError: Thrown when encountering invalid operations or unsupported
+            configurations during the experiment's execution.
+
+    Usage:
+        An instance of this class is initialized with an OctoExperiment
+        object and utilizes its methods to run comprehensive machine
+        learning experiments. This includes preparing data, optimizing
+        model parameters, and evaluating results. Proper error handling
+        is incorporated to manage any discrepancies during the experiment phases.
+    """
 
     experiment: OctoExperiment = field(
         validator=[validators.instance_of(OctoExperiment)]

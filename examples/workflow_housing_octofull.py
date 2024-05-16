@@ -120,7 +120,7 @@ sequence_item_2 = OctopusFullConfig(
     # remove_trials=False,
 )
 
-config_sequence = [attrs.asdict(sequence_item_1), attrs.asdict(sequence_item_2)]
+config_sequence = [attrs.asdict(sequence_item_1)]  # , attrs.asdict(sequence_item_2)]
 
 print(config_sequence)
 

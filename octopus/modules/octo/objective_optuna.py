@@ -4,9 +4,9 @@ import heapq
 
 from octopus.models.parameters import parameters_inventory
 from octopus.models.utils import create_trialparams_from_config
-from octopus.modules.metrics import optuna_direction
 from octopus.modules.octo.bag import Bag
 from octopus.modules.octo.training import Training
+from octopus.modules.utils import optuna_direction
 
 
 class ObjectiveOptuna:

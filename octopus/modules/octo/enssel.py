@@ -14,9 +14,9 @@ from pathlib import Path
 import pandas as pd
 from attrs import define, field, validators
 
-from octopus.modules.metrics import optuna_direction
 from octopus.modules.octo.bag import Bag
 from octopus.modules.octo.scores import add_pooling_scores
+from octopus.modules.utils import optuna_direction
 
 
 @define

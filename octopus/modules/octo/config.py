@@ -51,6 +51,7 @@ class OctopusFullConfig:
         validator=[validators.instance_of(list)], default=[]
     )
     """Feature importance methods to be appleid to best bag"""
+    hyper_parameters: dict = field(validator=[validators.instance_of(dict)], default={})
 
     # parallelization
     inner_parallelization: bool = field(

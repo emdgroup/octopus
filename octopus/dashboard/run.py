@@ -13,7 +13,7 @@ from attrs import define, field
 from dash import Dash
 
 from octopus.dashboard.components.appshell import create_appshell
-from octopus.dashboard.lib.api import sqlite
+from octopus.dashboard.library.api import sqlite
 from octopus.data import OctoData
 from octopus.utils import get_score
 
@@ -249,9 +249,6 @@ def get_feature_importances(experiment_files: List) -> pd.DataFrame:
             exp = pickle.load(f)
             for split in exp.feature_importances:
                 if split != "test":
-                    # if exp.feature_importances[split].empty:
-                    #     print("empty")
-
                     for dataset in exp.feature_importances[split]:
                         df_temp = exp.feature_importances[split][dataset]
                         df_temp["experiment_id"] = exp.experiment_id

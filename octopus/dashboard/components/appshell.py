@@ -5,7 +5,7 @@ from dash import Input, Output, State, clientside_callback, dcc, page_container
 
 from octopus.dashboard.components.header import create_header
 from octopus.dashboard.components.navbar import create_navbar, create_navbar_drawer
-from octopus.dashboard.lib.constants import COLORS, PRIMARY_COLOR
+from octopus.dashboard.library.constants import COLORS, PRIMARY_COLOR
 
 
 def create_appshell(data, show_results):

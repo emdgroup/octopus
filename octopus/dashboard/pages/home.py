@@ -4,8 +4,8 @@ import dash
 import dash_mantine_components as dmc
 from dash import Input, Output, callback, html
 
-from octopus.dashboard.lib import utils
-from octopus.dashboard.lib.constants import PAGE_TITLE_PREFIX
+from octopus.dashboard.library import utils
+from octopus.dashboard.library.constants import PAGE_TITLE_PREFIX
 
 dash.register_page(
     __name__,

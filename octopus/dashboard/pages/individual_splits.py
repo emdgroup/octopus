@@ -7,10 +7,10 @@ import pandas as pd
 import plotly.graph_objects as go
 from dash import Input, Output, State, callback, clientside_callback, dcc, html
 
-from octopus.dashboard.lib import utils
-from octopus.dashboard.lib.api import sqlite
-from octopus.dashboard.lib.constants import PAGE_TITLE_PREFIX
-from octopus.dashboard.lib.directives.toc import TOC
+from octopus.dashboard.library import utils
+from octopus.dashboard.library.api import sqlite
+from octopus.dashboard.library.constants import PAGE_TITLE_PREFIX
+from octopus.dashboard.library.directives.toc import TOC
 
 dash.register_page(
     __name__,
@@ -221,7 +221,6 @@ def plot_feature_importance(experiment_id, sequence_id, split_id, theme):
             ORDER BY importance DESC;
         """
     )
-    print(feature_importances)
     fig = go.Figure()
     for name, df_ in feature_importances.groupby("dataset"):
         fig.add_trace(go.Bar(name=name, x=df_["feature"], y=df_["importance"]))
@@ -241,7 +240,6 @@ def show_selected_datapoint(selected_data):
     """Get splits ids for selected experiment."""
     # get column names
     row_id = utils.get_col_from_type("Row_ID")
-    print(row_id)
     df_dataset = sqlite.query(
         """
             SELECT *

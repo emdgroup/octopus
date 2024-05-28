@@ -5,10 +5,10 @@ import dash_ag_grid as dag
 import dash_mantine_components as dmc
 from dash import Input, Output, clientside_callback, html
 
-from octopus.dashboard.lib import utils
-from octopus.dashboard.lib.api import sqlite
-from octopus.dashboard.lib.constants import PAGE_TITLE_PREFIX
-from octopus.dashboard.lib.directives.toc import TOC
+from octopus.dashboard.library import utils
+from octopus.dashboard.library.api import sqlite
+from octopus.dashboard.library.constants import PAGE_TITLE_PREFIX
+from octopus.dashboard.library.directives.toc import TOC
 
 dash.register_page(
     __name__,

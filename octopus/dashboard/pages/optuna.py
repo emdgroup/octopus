@@ -6,10 +6,10 @@ import plotly.graph_objects as go
 from dash import Input, Output, callback, dcc, html
 from plotly.subplots import make_subplots
 
-from octopus.dashboard.lib import utils
-from octopus.dashboard.lib.api import sqlite
-from octopus.dashboard.lib.constants import PAGE_TITLE_PREFIX
-from octopus.dashboard.lib.directives.toc import TOC
+from octopus.dashboard.library import utils
+from octopus.dashboard.library.api import sqlite
+from octopus.dashboard.library.constants import PAGE_TITLE_PREFIX
+from octopus.dashboard.library.directives.toc import TOC
 from octopus.modules.utils import optuna_direction
 
 dash.register_page(

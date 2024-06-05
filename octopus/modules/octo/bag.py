@@ -7,7 +7,6 @@ from statistics import mean
 import numpy as np
 import pandas as pd
 from attrs import define, field, validators
-from sklearn.utils.validation import check_array
 
 from octopus.modules.metrics import metrics_inventory
 from octopus.modules.octo.scores import add_pooling_scores
@@ -101,8 +100,12 @@ class Bag:
         pool = pd.concat(pool, axis=0)
         ensemble = pool.groupby(by=self.row_column).mean().reset_index()
 
-        if self.target_metric in ["AUCROC", "LOGLOSS"]:
-            ensemble["probability"] = ensemble[1]  # binary only!!
+        # set correct dtype for target columns
+        for column in list(self.target_assignments.values()):
+            ensemble[column] = ensemble[column].astype(
+                self.trainings[0].data_train[column].dtype
+            )
+
         predictions["ensemble"] = {"test": ensemble}
 
         return predictions
@@ -125,7 +128,9 @@ class Bag:
                     probabilities = training.predictions[part][1]  # binary only!!
                     target = training.predictions[part][target_col]
                     storage[part].append(
-                        metrics_inventory[self.target_metric](target, probabilities)
+                        metrics_inventory[self.target_metric]["method"](
+                            target, probabilities
+                        )
                     )
             elif self.target_metric in ["CI"]:
                 for part in storage.keys():
@@ -136,7 +141,7 @@ class Bag:
                     event_indicator = training.predictions[part][
                         self.target_assignments["event"]
                     ].astype(bool)
-                    ci, _, _, _, _ = metrics_inventory[self.target_metric](
+                    ci, _, _, _, _ = metrics_inventory[self.target_metric]["method"](
                         event_indicator, event_time, estimate
                     )
                     storage[part].append(float(ci))
@@ -146,7 +151,9 @@ class Bag:
                     predictions = training.predictions[part]["prediction"]
                     target = training.predictions[part][target_col]
                     storage[part].append(
-                        metrics_inventory[self.target_metric](target, predictions)
+                        metrics_inventory[self.target_metric]["method"](
+                            target, predictions
+                        )
                     )
             # pooling
             for part in pool.keys():
@@ -231,14 +238,13 @@ class Bag:
                 raise ValueError(f"Feature importance method {method} not supported.")
 
         for training in self.trainings:
-            self.feature_importances[
-                training.training_id
-            ] = training.feature_importances
+            self.feature_importances[training.training_id] = (
+                training.feature_importances
+            )
         return self.feature_importances
 
     def predict(self, x):
         """Predict."""
-        x = check_array(x)
         preds_lst = list()
         weights_lst = list()
         for training in self.trainings:
@@ -251,7 +257,6 @@ class Bag:
 
     def predict_proba(self, x):
         """Predict_proba."""
-        x = check_array(x)
         preds_lst = list()
         weights_lst = list()
         for training in self.trainings:

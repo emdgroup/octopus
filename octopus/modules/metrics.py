@@ -12,12 +12,12 @@ from sklearn.metrics import (
 from sksurv.metrics import concordance_index_censored
 
 metrics_inventory = {
-    "AUCROC": roc_auc_score,
-    "ACC": accuracy_score,
-    "ACCBAL": balanced_accuracy_score,
-    "LOGLOSS": log_loss,
-    "MAE": mean_absolute_error,
-    "MSE": mean_squared_error,
-    "R2": r2_score,
-    "CI": concordance_index_censored,
+    "AUCROC": {"method": roc_auc_score, "ml_type": "classification"},
+    "ACC": {"method": accuracy_score, "ml_type": "classification"},
+    "ACCBAL": {"method": balanced_accuracy_score, "ml_type": "classification"},
+    "LOGLOSS": {"method": log_loss, "ml_type": "classification"},
+    "MAE": {"method": mean_absolute_error, "ml_type": "regression"},
+    "MSE": {"method": mean_squared_error, "ml_type": "regression"},
+    "R2": {"method": r2_score, "ml_type": "regression"},
+    "CI": {"method": concordance_index_censored, "ml_type": "timetoevent"},
 }

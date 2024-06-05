@@ -6,7 +6,6 @@ import shap
 from attrs import define, field, validators
 from sklearn.inspection import permutation_importance
 from sklearn.preprocessing import MaxAbsScaler
-from sklearn.utils.validation import check_array
 
 from octopus.models.config import model_inventory
 
@@ -348,12 +347,10 @@ class Training:
 
     def predict(self, x):
         """Predict."""
-        x = check_array(x)
         return self.model.predict(x)
 
     def predict_proba(self, x):
         """Predict_proba."""
-        x = check_array(x)
         return self.model.predict_proba(x)
 
     def to_pickle(self, path):

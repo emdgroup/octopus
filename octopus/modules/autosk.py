@@ -53,7 +53,7 @@ from octopus.experiment import OctoExperiment
 # - autosklearn in version 0.15 requires numpy==1.23.5, otherwise some jobs will fail
 # mapping of metrics
 try:
-    metrics_inventory = {
+    metrics_inventory_autosk = {
         "AUCROC": roc_auc,
         "ACC": accuracy,
         "ACCBAL": balanced_accuracy,
@@ -63,7 +63,7 @@ try:
         "R2": r2,
     }
 except Exception as e:  # pylint: disable=W0718 # noqa: F841
-    metrics_inventory = {}
+    metrics_inventory_autosk = {}
 
 
 @define
@@ -117,7 +117,9 @@ class Autosklearn:
         """Auto-sklearn parameters."""
         params = self.experiment.ml_config["config"]
         # add metric based on target metric
-        params["metric"] = metrics_inventory[self.experiment.config["target_metric"]]
+        params["metric"] = metrics_inventory_autosk[
+            self.experiment.config["target_metric"]
+        ]
         # overwrite tmp folder, makes temp space usage visible
         params["tmp_folder"] = (str(self.path_tmp),)
         return params

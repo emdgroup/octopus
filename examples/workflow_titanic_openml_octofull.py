@@ -84,7 +84,7 @@ config_manager = {
     # outer loop parallelization
     "outer_parallelization": True,
     # only process first outer loop experiment, for quick testing
-    "ml_only_first": True,
+    "run_single_experiment_num": 1,
 }
 
 # define processing sequence
@@ -92,20 +92,14 @@ sequence_item_1 = OctopusFullConfig(
     description="step1_octofull",
     # datasplit
     n_folds_inner=5,
-    datasplit_seed_inner=0,
     # model training
     models=["ExtraTreesClassifier", "RandomForestClassifier"],
-    model_seed=0,
-    n_jobs=1,
-    dim_red_methods=[""],
-    max_outl=5,
     # parallelization
     inner_parallelization=True,
     n_workers=5,
     # HPO
     global_hyperparameter=True,
-    n_trials=5,
-    max_features=70,
+    n_trials=20,
 )
 
 config_sequence = [attrs.asdict(sequence_item_1)]

@@ -41,7 +41,7 @@ dependencies:
   - brotli-python=1.1.0=py310hc6cd4ac_1
   - bzip2=1.0.8=hd590300_5
   - c-ares=1.25.0=hd590300_0
-  - ca-certificates=2024.2.2=hbcca054_0
+  - ca-certificates=2024.6.2=hbcca054_0
   - cached-property=1.5.2=hd8ed1ab_1
   - cached_property=1.5.2=pyha770c72_1
   - cachetools=5.3.2=pyhd8ed1ab_0
@@ -61,6 +61,7 @@ dependencies:
   - dash-ag-grid=2.4.0=pyhd8ed1ab_0
   - dash-core-components=2.0.0=pyhd8ed1ab_1
   - dash-html-components=2.0.0=pyhd8ed1ab_1
+  - dash-iconify=0.1.2=pyhd8ed1ab_0
   - dash-mantine-components=0.12.1=pyhd8ed1ab_0
   - dash-table=5.0.0=pyhd8ed1ab_1
   - debugpy=1.8.0=py310hc6cd4ac_1
@@ -204,7 +205,7 @@ dependencies:
   - ocl-icd=2.3.2=hd590300_0
   - ocl-icd-system=1.0.0=1
   - openjpeg=2.5.0=h488ebb8_3
-  - openssl=3.2.1=hd590300_0
+  - openssl=3.3.1=h4ab18f5_0
   - optuna=3.5.0=pyhd8ed1ab_0
   - orc=1.9.2=h4b38347_0
   - osqp=0.6.3=py310hcc13569_2

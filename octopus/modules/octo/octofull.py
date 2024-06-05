@@ -267,12 +267,18 @@ class OctoFull:
 
         # save performance values of best bag
         best_bag_scores = best_bag.get_scores()
-        # show and save test results, MAE
+        # show and save test results
         print(
             f"Experiment: {self.experiment.id} "
-            f"Test (ensembled predictions) {self.experiment.config['target_metric']}:"
+            f"Test(ensembled, hard vote) {self.experiment.config['target_metric']}:"
             f"{best_bag_scores['test_pool_hard']}"
         )
+        if self.experiment.ml_type == "classification":
+            print(
+                f"Experiment: {self.experiment.id} "
+                f"Test(ensembled, soft vote) {self.experiment.config['target_metric']}:"
+                f"{best_bag_scores['test_pool_soft']}"
+            )
 
         with open(
             self.path_results.joinpath("best_bag_scores.json"), "w", encoding="utf-8"

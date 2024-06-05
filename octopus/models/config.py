@@ -27,37 +27,64 @@ model_inventory = {
     "ExtraTreesClassifier": {
         "model": ExtraTreesClassifier,
         "feature_method": "internal",
+        "ml_type": "classification",
     },
-    "ExtraTreesRegressor": {"model": ExtraTreesRegressor, "feature_method": "internal"},
+    "ExtraTreesRegressor": {
+        "model": ExtraTreesRegressor,
+        "feature_method": "internal",
+        "ml_type": "classification",
+    },
     "RandomForestClassifier": {
         "model": RandomForestClassifier,
         "feature_method": "internal",
+        "ml_type": "classification",
     },
     "RandomForestRegressor": {
         "model": RandomForestRegressor,
         "feature_method": "internal",
+        "ml_type": "classification",
     },
-    "XGBRegressor": {"model": XGBRegressor, "feature_method": "internal"},
-    "XGBClassifier": {"model": XGBClassifier, "feature_method": "internal"},
-    "RidgeRegressor": {"model": Ridge, "feature_method": "shap"},
-    "ElasticNetRegressor": {"model": ElasticNet, "feature_method": "shap"},
+    "XGBRegressor": {
+        "model": XGBRegressor,
+        "feature_method": "internal",
+        "ml_type": "classification",
+    },
+    "XGBClassifier": {
+        "model": XGBClassifier,
+        "feature_method": "internal",
+        "ml_type": "classification",
+    },
+    "RidgeRegressor": {
+        "model": Ridge,
+        "feature_method": "shap",
+        "ml_type": "regression",
+    },
+    "ElasticNetRegressor": {
+        "model": ElasticNet,
+        "feature_method": "shap",
+        "ml_type": "regression",
+    },
     "ARDRegressor": {
         "model": ARDRegression,
         "feature_method": "permutation",
         "n_repeats": 2,
-    },
-    "ExtraTreesSurv": {
-        "model": ExtraSurvivalTrees,
-        "feature_method": "permutation",
-        "n_repeats": 2,
+        "ml_type": "regression",
     },
     "GradientBoostingRegressor": {
         "model": GradientBoostingRegressor,
         "feature_method": "internal",
+        "ml_type": "regression",
     },
     "SvrRegressor": {
         "model": SVR,
         "feature_method": "permutation",
         "n_repeats": 2,
+        "ml_type": "regression",
+    },
+    "ExtraTreesSurv": {
+        "model": ExtraSurvivalTrees,
+        "feature_method": "permutation",
+        "n_repeats": 2,
+        "ml_type": "timetoevent",
     },
 }

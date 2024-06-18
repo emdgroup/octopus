@@ -1,12 +1,13 @@
 """OctoManager."""
 
-import concurrent.futures
+# import concurrent.futures
 import copy
 import math
 from os import cpu_count
 from pathlib import Path
 
 from attrs import define, field, validators
+from joblib import Parallel, delayed
 
 from octopus.config import OctoConfig
 from octopus.experiment import OctoExperiment
@@ -61,25 +62,39 @@ class OctoManager:
                 self.create_execute_mlmodules(base_experiment)
                 print()
         # tobedone: suppress output
-        # tobedone: show which outer fold has been completed
         elif self.oconfig.cfg_manager["outer_parallelization"] is True:  # parallel
+            # (A) code using joblib
+            def execute_task(base_experiment, index):
+                try:
+                    self.create_execute_mlmodules(base_experiment)
+                    print(f"Outer fold {index} completed")
+                except Exception as e:  # pylint: disable=broad-except
+                    print(f"Exception occurred while executing task{index}: {e}")
+
+            with Parallel(n_jobs=num_workers) as parallel:
+                parallel(
+                    delayed(execute_task)(base_experiment, index)
+                    for index, base_experiment in enumerate(self.base_experiments)
+                )
+
+            # (B) code using ProcessPoolExecutor
             # max_tasks_per_child=1 requires Python3.11
-            with concurrent.futures.ProcessPoolExecutor(
-                max_workers=num_workers,
-            ) as executor:
-                futures = []
-                for i in self.base_experiments:
-                    try:
-                        future = executor.submit(self.create_execute_mlmodules, i)
-                        futures.append(future)
-                    except Exception as e:  # pylint: disable=broad-except
-                        print(f"Exception occurred while submitting task: {e}")
-                for future in concurrent.futures.as_completed(futures):
-                    try:
-                        _ = future.result()
-                        print("Outer fold completed")
-                    except Exception as e:  # pylint: disable=broad-except
-                        print(f"Exception occurred while executing task: {e}")
+            # with concurrent.futures.ProcessPoolExecutor(
+            #    max_workers=num_workers,
+            # ) as executor:
+            #    futures = []
+            #    for i in self.base_experiments:
+            #        try:
+            #            future = executor.submit(self.create_execute_mlmodules, i)
+            #            futures.append(future)
+            #        except Exception as e:  # pylint: disable=broad-except
+            #            print(f"Exception occurred while submitting task: {e}")
+            #    for future in concurrent.futures.as_completed(futures):
+            #        try:
+            #            _ = future.result()
+            #            print("Outer fold completed")
+            #        except Exception as e:  # pylint: disable=broad-except
+            #            print(f"Exception occurred while executing task: {e}")
 
     def create_execute_mlmodules(self, base_experiment: OctoExperiment):
         """Create and execute ml modules."""

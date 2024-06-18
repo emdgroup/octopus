@@ -9,6 +9,12 @@ import pandas as pd
 from octopus import OctoConfig, OctoData, OctoML
 from octopus.modules.octo.config import OctopusFullConfig
 
+# OPENBLASE config needs to be before pandas, autosk
+# os.environ["OPENBLAS_NUM_THREADS"] = "1"
+# os.environ["OMP_NUM_THREADS"] = "1"
+# os.environ["MKL_NUM_THREADS"] = "1"
+# os.environ["MKL_DYNAMIC"] = "FALSE"
+
 # Conda and Host information
 print("Notebook kernel is running on server:", socket.gethostname())
 print("Conda environment on server:", os.environ["CONDA_DEFAULT_ENV"])
@@ -93,7 +99,7 @@ sequence_item_1 = OctopusFullConfig(
     # datasplit
     n_folds_inner=5,
     # model training
-    models=["XGBClassifier"],
+    models=["XGBClassifier"],  # "XGBClassifier", "RandomForestClassifier"
     # parallelization
     inner_parallelization=True,
     n_workers=5,

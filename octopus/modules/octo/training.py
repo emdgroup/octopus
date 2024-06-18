@@ -1,5 +1,6 @@
 """OctoFull Trainings."""
 
+# import os
 import numpy as np
 import pandas as pd
 import shap
@@ -158,6 +159,9 @@ class Training:
         self.model = model_inventory[self.ml_model_type]["model"](
             **self.ml_model_params
         )
+
+        # print(self.model.get_xgb_params())
+        # print(os.environ)
 
         if len(self.target_assignments) == 1:
             # standard sklearn single target models

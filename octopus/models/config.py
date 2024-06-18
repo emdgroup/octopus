@@ -9,6 +9,7 @@ https://github.com/scikit-learn-contrib/project-template/blob/master/skltemplate
 from sklearn.ensemble import (
     ExtraTreesClassifier,
     ExtraTreesRegressor,
+    GradientBoostingClassifier,
     GradientBoostingRegressor,
     RandomForestClassifier,
     RandomForestRegressor,
@@ -32,7 +33,7 @@ model_inventory = {
     "ExtraTreesRegressor": {
         "model": ExtraTreesRegressor,
         "feature_method": "internal",
-        "ml_type": "classification",
+        "ml_type": "regression",
     },
     "RandomForestClassifier": {
         "model": RandomForestClassifier,
@@ -42,12 +43,12 @@ model_inventory = {
     "RandomForestRegressor": {
         "model": RandomForestRegressor,
         "feature_method": "internal",
-        "ml_type": "classification",
+        "ml_type": "regression",
     },
     "XGBRegressor": {
         "model": XGBRegressor,
         "feature_method": "internal",
-        "ml_type": "classification",
+        "ml_type": "regression",
     },
     "XGBClassifier": {
         "model": XGBClassifier,
@@ -74,6 +75,11 @@ model_inventory = {
         "model": GradientBoostingRegressor,
         "feature_method": "internal",
         "ml_type": "regression",
+    },
+    "GradientBoostingClassifier": {
+        "model": GradientBoostingClassifier,
+        "feature_method": "internal",
+        "ml_type": "classification",
     },
     "SvrRegressor": {
         "model": SVR,

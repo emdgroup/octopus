@@ -1,8 +1,8 @@
 """Test script for reading saved experiments."""
 
 from pathlib import Path
-from octopus.experiment import OctoExperiment
 
+from octopus.experiment import OctoExperiment
 
 # Setup
 path_experiment = Path("./studies/classification_2/experiment4/sequence0/exp4_0.pkl")

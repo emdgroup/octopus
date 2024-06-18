@@ -1,6 +1,6 @@
 """OctoFull Module."""
 
-import concurrent.futures
+# import concurrent.futures
 import json
 import shutil
 import warnings
@@ -9,6 +9,7 @@ from pathlib import Path
 import optuna
 import pandas as pd
 from attrs import define, field, validators
+from joblib import Parallel, delayed
 from optuna.samplers._tpe.sampler import ExperimentalWarning
 
 from octopus.experiment import OctoExperiment
@@ -337,29 +338,55 @@ class OctoFull:
         # same config parameters also used for parallelization of bag trainings
 
         if self.experiment.ml_config["inner_parallelization"]:
+            # (A) joblib parallelization, compatible with xgboost
+            def optimize_split(split, split_index):
+                try:
+                    self._optimize_splits(split)
+                    print(f"Optimization of split {split_index} completed")
+                except Exception as e:  # pylint: disable=broad-except
+                    print(
+                        f"Exception occurred while optimizing split {split_index}: {e}"
+                    )
+                    print(f"Exception type: {type(e).__name__}")
+
             print("Parallel execution of Optuna optimizations for individual HPs")
-            # max_tasks_per_child=1 requires Python3.11
-            with concurrent.futures.ProcessPoolExecutor(
-                max_workers=self.experiment.ml_config["n_workers"]
-            ) as executor:
-                futures = []
-                for split in splits:
-                    try:
-                        future = executor.submit(self._optimize_splits, split)
-                        futures.append(future)
-                    except Exception as e:  # pylint: disable=broad-except
-                        print(f"Exception occurred while submitting task: {e}")
-                for future in concurrent.futures.as_completed(futures):
-                    try:
-                        _ = future.result()
-                        print("Optimization of single split completed")
-                    except Exception as e:  # pylint: disable=broad-except
-                        print(f"Exception occurred while executing task: {e}")
+            with Parallel(n_jobs=self.experiment.ml_config["n_workers"]) as parallel:
+                parallel(
+                    delayed(optimize_split)(split, idx)
+                    for idx, split in enumerate(splits)
+                )
+
+            # (B) Alternative with xbgoost issue, issue46
+            #    print("Parallel execution of Optuna optimizations for individual HPs")
+            #    # max_tasks_per_child=1 requires Python3.11
+            #    with concurrent.futures.ProcessPoolExecutor(
+            #        max_workers=self.experiment.ml_config["n_workers"]
+            #    ) as executor:
+            #        futures = []
+            #        for split in splits:
+            #            try:
+            #                future = executor.submit(self._optimize_splits, split)
+            #                futures.append(future)
+            #            except Exception as e:  # pylint: disable=broad-except
+            #                print(f"Exception occurred while submitting task: {e}")
+            #        for future in concurrent.futures.as_completed(futures):
+            #            try:
+            #                _ = future.result()
+            #                print("Optimization of single split completed")
+            #            except Exception as e:  # pylint: disable=broad-except
+            #                print(f"Exception occurred while executing task: {e}")
+
         else:
             print("Sequential execution of Optuna optimizations for individual HPs")
             for split in splits:
-                self._optimize_splits(split)
-                print(f"Optimization of split:{split.keys()} completed")
+                try:
+                    self._optimize_splits(split)
+                    print(f"Optimization of split:{split.keys()} completed")
+                except Exception as e:  # pylint: disable=broad-except
+                    print(
+                        f"Error during optimizatio of split:{split.keys()}: {e},"
+                        f" type: {type(e).__name__}"
+                    )
 
     def _optimize_splits(self, splits):
         """Optimize splits.

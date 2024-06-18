@@ -76,6 +76,7 @@ xgboost_class = {
         ("float", {"name": "subsample", "low": 0.15, "high": 1.0}),
         ("int", {"name": "n_estimators", "low": 30, "high": 200}),
         ("int", {"name": "max_depth", "low": 3, "high": 9, "step": 2}),
+        ("fixed", {"name": "validate_parameters", "value": True}),
         # ("float", {"name": "lambda", "low": 1e-8, "high": 1, "log": True}),
         # missing: pos_class_weight
     ],
@@ -93,6 +94,7 @@ xgboost_reg = {
         ("float", {"name": "subsample", "low": 0.15, "high": 1.0}),
         ("int", {"name": "n_estimators", "low": 30, "high": 500}),
         ("int", {"name": "max_depth", "low": 3, "high": 9, "step": 2}),
+        ("fixed", {"name": "validate_parameters", "value": True}),
         # ("float", {"name": "lambda", "low": 1e-8, "high": 1, "log": True}),
     ],
     "translate": {

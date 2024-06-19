@@ -114,6 +114,10 @@ sequence_item_2 = MrmrConfig(
     n_features=30,
     # what correlation type should be used
     correlation_type="pearson",
+    # feature importance type (mean/count)
+    feature_importance_type="mean",
+    # feature importance method (permuation/shap/internal)
+    feature_importance_method="permutation",
 )
 
 

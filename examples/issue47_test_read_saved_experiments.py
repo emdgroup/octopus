@@ -26,3 +26,9 @@ print(experiment.scores)
 
 print("\nResults")
 print(experiment.results)
+
+print("\nFeature_Importances")
+print(experiment.feature_importances)
+
+print("\nFeature_Importances['permutation_dev_mean']")
+print(experiment.feature_importances["permutation_dev_mean"])

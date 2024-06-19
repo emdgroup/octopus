@@ -7,14 +7,14 @@ from attrs import define, field, validators
 
 @define
 class OctopusFullConfig:
-    """OctopusLightConfig."""
+    """OctopusFullConfig."""
 
     models: List = field(
         # validator=[validators.in_(["ExtraTreesRegressor", "RandomForestRegressor"])],
     )
     """Models for ML."""
 
-    module: List = field(default="octofull")
+    module: str = field(default="octofull")
     """Models for ML."""
 
     description: str = field(validator=[validators.instance_of(str)], default=None)

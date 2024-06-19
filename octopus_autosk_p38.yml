@@ -225,7 +225,7 @@ dependencies:
   - notebook-shim=0.2.3=pyhd8ed1ab_0
   - numba=0.58.1=py38h4144172_0
   - numexpr=2.8.4=py38hb2af0cf_101
-  - numpy=1.24.4=py38h59b608b_0
+  - numpy=1.23.5=py38h7042d01_0
   - oauthlib=3.2.2=pyhd8ed1ab_0
   - ocl-icd=2.3.2=hd590300_0
   - ocl-icd-system=1.0.0=1

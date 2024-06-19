@@ -287,10 +287,35 @@ class Bag:
             else:
                 raise ValueError(f"Feature importance method {method} not supported.")
 
+        # save feature importances for every training in bag
         for training in self.trainings:
-            self.feature_importances[
-                training.training_id
-            ] = training.feature_importances
+            self.feature_importances[training.training_id] = (
+                training.feature_importances
+            )
+
+        # summary feature importances for all trainings (mean + count)
+        # internal, permutation_dev, shap_dev only
+        # save in bag
+        for method in fi_methods:
+            if method == "internal":
+                method_str = "internal"
+            else:
+                method_str = method + "_dev"
+            fi_pool = list()
+            for training in self.trainings:
+                fi_pool.append(training.feature_importances[method_str])
+            # calculate mean and count feature importances
+            fi = pd.concat(fi_pool, axis=0)
+            self.feature_importances[method_str + "_mean"] = (
+                fi[["feature", "importance"]].groupby(by="feature").mean().reset_index()
+            )
+            self.feature_importances[method_str + "_count"] = (
+                fi[["feature", "importance"]]
+                .groupby(by="feature")
+                .count()
+                .reset_index()
+            )
+
         return self.feature_importances
 
     def predict(self, x):

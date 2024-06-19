@@ -1,7 +1,5 @@
 """MRMR Module."""
 
-from pathlib import Path
-
 import numpy as np
 import pandas as pd
 from attrs import define, field, validators
@@ -23,11 +21,9 @@ from octopus.experiment import OctoExperiment
 #     In this module the  features are taken from the traindev dataset.
 
 # TOBEDONE:
-# (2) check inputs, especially feature importances
-# (5) how to avoid re-running the preceeding training again
-# (6) measure time for mrmr procedure
-# (7) mean or count -- input
-# (8) internal, shape, permutation -- input
+# (1) saving results? any plots?
+# (2) test reloading
+# (3) fix load sequence item -- it does not exist in mrmr, only in octofull
 
 
 @define
@@ -37,16 +33,6 @@ class Mrmr:
     experiment: OctoExperiment = field(
         validator=[validators.instance_of(OctoExperiment)]
     )
-
-    @property
-    def path_module(self) -> Path:
-        """Module path."""
-        return self.experiment.path_study.joinpath(self.experiment.path_sequence_item)
-
-    @property
-    def path_results(self) -> Path:
-        """Results path."""
-        return self.path_module.joinpath("results")
 
     @property
     def x_traindev(self) -> pd.DataFrame:
@@ -68,11 +54,22 @@ class Mrmr:
         """Feature importances calculated by preceding module."""
         return self.experiment.prior_feature_importances
 
+    @property
+    def feature_importance_key(self) -> str:
+        """Feature importance key."""
+        fi_type = self.experiment.ml_config["feature_importance_type"]
+        fi_method = self.experiment.ml_config["feature_importance_method"]
+        if fi_method == "internal":
+            key = "internal" + "_" + fi_type
+        else:
+            key = fi_method + "_dev" + "_" + fi_type
+        return key
+
     def __attrs_post_init__(self):
         # initialization here due to "Python immutable default"
         # MRMR should not be the first sequence item
         if self.experiment.sequence_item_id == 0:
-            raise ValueError("MRMR module should not be first sequence item.")
+            raise ValueError("MRMR module should not be the first sequence item.")
 
     def run_experiment(self):
         """Run mrmr module on experiment."""
@@ -87,8 +84,22 @@ class Mrmr:
         print(f"Number of features selected by MRMR: {self.n_features}")
         print(f"Correlation type used by MRMR: {self.correlation_type}")
 
+        # check if feature_importance key exists
+        if self.feature_importance_key not in self.experiment.prior_feature_importances:
+            raise ValueError(
+                f"No feature importances available for "
+                f"key {self.feature_importance_key}"
+            )
+        feature_importances = self.experiment.prior_feature_importances[
+            self.feature_importance_key
+        ]
+
         # calcualte MRMR features
-        selected_mrmr_features = self._maxrminr()
+        selected_mrmr_features = self._maxrminr(
+            feature_importances,
+            n_features=self.n_features,
+            correlation_type=self.correlation_type,
+        )
 
         # save features selected by mrmr
         self.experiment.selected_features = selected_mrmr_features
@@ -288,7 +299,18 @@ class MrmrConfig:
     n_features: int = field(validator=[validators.instance_of(int)], default=30)
     """Number of features selected by MRMR."""
 
-    correlation_type: bool = field(
+    correlation_type: str = field(
         validator=[validators.in_(["pearson", "rdc"])], default="pearson"
     )
     """Selection of correlation type."""
+
+    feature_importance_type: str = field(
+        validator=[validators.in_(["mean", "count"])], default="mean"
+    )
+    """Selection of feature importance type."""
+
+    feature_importance_method: str = field(
+        validator=[validators.in_(["permutation", "shap", "internal"])],
+        default="permutation",
+    )
+    """Selection of feature importance method."""

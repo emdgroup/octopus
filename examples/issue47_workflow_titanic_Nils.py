@@ -96,10 +96,11 @@ sequence_item_1 = OctopusFullConfig(
     models=["ExtraTreesClassifier", "RandomForestClassifier"],
     # parallelization
     inner_parallelization=True,
-    n_workers=5,
+    n_workers=20,
     # HPO
     global_hyperparameter=True,
     n_trials=5,
+    fi_methods_bestbag=["permutation"],
 )
 
 config_sequence = [attrs.asdict(sequence_item_1)]

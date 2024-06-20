@@ -12,18 +12,22 @@ from octopus.experiment import OctoExperiment
 #     - development feature importances, averaged or for each model (counts, PFI, Shap)
 #     - correlation_type: 'pearson', 'rdc'
 #     - n_features: number of features to be extracted
-# (2) Outpus:
+# (2) Output:
 #     - selected features, saved in experiment
 # (2) Feature importances from the development dataset are preferable as they show
 #     features that are relevant for model generalization.
 # (3) MRMR must not be done on test feature importances to avoid information leakage as
 #     the MRMR module may be preprocessing step for later model trainings.
 #     In this module the  features are taken from the traindev dataset.
+# (4) We ignore selected_features from the previous sequence item. The features used are
+#     extracted from the feature importance table
+
+# Literature:
+# https://github.com/ThomasBury/arfs?tab=readme-ov-file
+# https://ar5iv.labs.arxiv.org/html/1908.05376
 
 # TOBEDONE:
 # (1) saving results? any plots?
-# (2) test reloading
-# (3) fix load sequence item -- it does not exist in mrmr, only in octofull
 
 
 @define
@@ -35,9 +39,9 @@ class Mrmr:
     )
 
     @property
-    def x_traindev(self) -> pd.DataFrame:
-        """x_train."""
-        return self.experiment.data_traindev[self.experiment.feature_columns]
+    def data_traindev(self) -> pd.DataFrame:
+        """data_traindev."""
+        return self.experiment.data_traindev
 
     @property
     def correlation_type(self) -> str:
@@ -90,13 +94,17 @@ class Mrmr:
                 f"No feature importances available for "
                 f"key {self.feature_importance_key}"
             )
-        feature_importances = self.experiment.prior_feature_importances[
-            self.feature_importance_key
-        ]
 
-        # calcualte MRMR features
+        # (a) get feature importances
+        # (b) only use feaures with positive importances
+        fi_df = self.experiment.prior_feature_importances[self.feature_importance_key]
+        print("Number of features in provided fi table: ", len(fi_df))
+        fi_df = fi_df[fi_df["importance"] > 0].reset_index()
+        print("Number features with positive importance: ", len(fi_df))
+
+        # calculate MRMR features
         selected_mrmr_features = self._maxrminr(
-            feature_importances,
+            fi_df,
             n_features=self.n_features,
             correlation_type=self.correlation_type,
         )
@@ -114,14 +122,17 @@ class Mrmr:
         correlation_type: 'pearson', 'rdc'
         n_features: number of features to be extracted
         """
-        if n_features > len(fi_df):
-            n_features = len(fi_df)
+        FLOOR = 0.001
 
-        features_lst = fi_df.index.astype(str).tolist()
-        print("MRMR: Number of important features: ", len(features_lst))
+        # extract features from feature importance table
+        fi_features = fi_df["feature"].tolist()
 
-        # print('Number of available features:', features_df.shape[1])
-        features_df = self.x_traindev[features_lst].copy()
+        # number of features requested by MRMR compatible with fi table
+        if n_features > len(fi_features):
+            n_features = len(fi_features)
+
+        # feature dataframe
+        features_df = self.data_traindev[fi_features].copy()
 
         # start MRMR
         f_df = fi_df.copy(deep=True)
@@ -139,6 +150,8 @@ class Mrmr:
         # compute FCQ score for all the features that are currently excluded,
         # then find the best one, add it to selected, and remove it from not_selected
         for i in range(n_features):
+            # setup score dataframe
+            score_df = f_df[f_df["feature"].isin(not_selected)].copy()
 
             # compute (absolute) correlations between the last selected feature and
             # all the (currently) excluded features
@@ -150,8 +163,9 @@ class Mrmr:
                     corr.loc[not_selected, last_selected] = (
                         features_df[not_selected]
                         .corrwith(features_df[last_selected])
+                        .fillna(FLOOR)
                         .abs()
-                        .clip(0.00001)
+                        .clip(FLOOR)
                     )
                 elif correlation_type == "rdc":
                     # calculate  RDC correlation
@@ -162,31 +176,38 @@ class Mrmr:
                                 features_df[ns].to_numpy(),
                                 features_df[last_selected].to_numpy(),
                             ),
-                            0.0001,
+                            FLOOR,
                             None,
                         )
                 else:
                     raise ValueError
+                # add "corr" column to score_df
+                score_df["corr"] = (
+                    corr.loc[not_selected, selected]
+                    .mean(axis=1)
+                    .fillna(FLOOR)
+                    .replace(1.0, float("Inf"))
+                ).to_numpy()
+
+            else:
+                # the selection of the first feature is only based on feature importance
+                score_df["corr"] = 1
 
             # compute FCQ score for all the (currently) excluded features
             # (this is Formula 2)
-            score_df = f_df.loc[not_selected].copy()
-            score_df["corr"] = (
-                corr.loc[not_selected, selected].mean(axis=1).fillna(0.00001)
-            )
-            score_df["score"] = score_df["FeatureImportance"] / score_df["corr"]
+            score_df["score"] = score_df["importance"] / score_df["corr"]
 
             # find best feature, add it to selected and remove it from not_selected
-            best = score_df["score"].idxmax()
+            # Find the index of the row with the highest score
+            best = score_df.loc[score_df["score"].idxmax(), "feature"]
+            # print("best", best)
 
             # best_row = score_df.loc[score_df['score'].argmax()]
             selected.append(best)
             not_selected.remove(best)
 
-        selected_features_df = pd.DataFrame(selected, columns=["features"])
-        selected_features_df["features"] = selected_features_df["features"].astype(str)
-
-        return selected_features_df
+        print("selected: ", selected)
+        return selected
 
     def _rdc(self, x, y, f=np.sin, k=20, s=1 / 6.0, n=1):
         """Randomized Dependence Coefficient.
@@ -255,7 +276,6 @@ class Mrmr:
         lb = 1
         ub = k
         while True:
-
             # Compute canonical correlations
             cxx = c[:k, :k]
             cyy = c[k0 : k0 + k, k0 : k0 + k]
@@ -292,6 +312,11 @@ class MrmrConfig:
 
     module: str = field(default="mrmr")
     """Models for ML."""
+
+    load_sequence_item: bool = field(
+        init=False, validator=validators.instance_of(bool), default=False
+    )
+    """Load existing sequence item, fixed, set to False"""
 
     description: str = field(validator=[validators.instance_of(str)], default=None)
     """Description."""

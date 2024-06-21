@@ -6,10 +6,10 @@ import dash_mantine_components as dmc
 from dash import Input, Output, clientside_callback, html
 
 from octopus.dashboard.library import utils
-from octopus.dashboard.library.api import sqlite
+from octopus.dashboard.library.api.sqlite import SqliteAPI
 from octopus.dashboard.library.constants import PAGE_TITLE_PREFIX
-from octopus.dashboard.library.directives.toc import TOC
 
+sqlite = SqliteAPI()
 dash.register_page(
     __name__,
     "/basics",
@@ -26,12 +26,7 @@ layout = html.Div(
         dmc.Container(
             size="lg",
             mt=50,
-            children=[
-                utils.create_title(
-                    "Dataframe description",
-                    comp_id="eda_dataframe_description",
-                ),
-            ],
+            children=[dmc.Title("Dataframe description")],
         ),
         dmc.Container(
             size="lg",
@@ -43,12 +38,7 @@ layout = html.Div(
         dmc.Container(
             size="lg",
             mt=50,
-            children=[
-                utils.create_title(
-                    "Dataframe",
-                    comp_id="eda_dataframe",
-                ),
-            ],
+            children=[dmc.Title("Dataframe")],
         ),
         dmc.Container(
             size="lg",
@@ -66,18 +56,6 @@ layout = html.Div(
                     className="ag-theme-alpine-dark",
                 ),
             ],
-        ),
-        TOC.render(
-            None,
-            None,
-            "Table of Contents",
-            None,
-            **{
-                "table_of_contents": [
-                    (3, "Description", "eda_dataframe_description"),
-                    (3, "Dataframe", "eda_dataframe"),
-                ]
-            },
         ),
     ]
 )

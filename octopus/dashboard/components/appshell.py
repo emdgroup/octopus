@@ -55,11 +55,6 @@ def create_appshell(data, show_results):
                     "breakpoint": "lg",
                     "collapsed": {"mobile": True},
                 },
-                aside={
-                    "width": 300,
-                    "breakpoint": "xl",
-                    "collapsed": {"desktop": False, "mobile": True},
-                },
             ),
         ],
     )
@@ -72,22 +67,6 @@ clientside_callback(
     }
     """,
     Output("m2d-mantine-provider", "forceColorScheme"),
-    Input("theme-store", "data"),
-)
-
-clientside_callback(
-    """
-    function(data) {
-        const element = document.getElementById("ethical-ads-box")
-        if (data === "dark") {
-            element.className += " dark"
-        } else {
-            element.className = element.className.replace(" dark", "")
-        }
-        return dash_clientside.no_update
-    }
-    """,
-    Output("ethical-ads-box", "className"),
     Input("theme-store", "data"),
 )
 

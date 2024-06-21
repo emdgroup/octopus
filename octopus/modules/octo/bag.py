@@ -238,9 +238,9 @@ class Bag:
                 raise ValueError(f"Feature importance method {method} not supported.")
 
         for training in self.trainings:
-            self.feature_importances[training.training_id] = (
-                training.feature_importances
-            )
+            self.feature_importances[
+                training.training_id
+            ] = training.feature_importances
         return self.feature_importances
 
     def predict(self, x):

@@ -1,15 +1,23 @@
 """OctoFull Bags."""
 
-import concurrent.futures
+# import concurrent.futures
+# import logging
 import pickle
 from statistics import mean
 
 import numpy as np
 import pandas as pd
 from attrs import define, field, validators
+from joblib import Parallel, delayed
 
 from octopus.modules.metrics import metrics_inventory
 from octopus.modules.octo.scores import add_pooling_scores
+
+# logging.basicConfig(
+#    filename="logging_bag.log",
+#    level=logging.INFO,
+#    format="%(asctime)s:%(levelname)s:%(message)s",
+# )
 
 
 @define
@@ -48,33 +56,75 @@ class Bag:
     def fit(self):
         """Run all available trainings."""
         if self.parallel_execution is True:
-            # max_tasks_per_child=1 requires Python3.11
-            with concurrent.futures.ProcessPoolExecutor(
-                max_workers=self.num_workers,
-            ) as executor:
-                futures = []
-                train_results = []
-                for i in self.trainings:
-                    try:
-                        future = executor.submit(i.fit)
-                        futures.append(future)
-                    except Exception as e:  # pylint: disable=broad-except
-                        print(f"Exception occurred while submitting task: {e}")
-                for future in concurrent.futures.as_completed(futures):
-                    try:
-                        train_results.append(future.result())
-                        print("Inner parallel training completed")
-                    except Exception as e:  # pylint: disable=broad-except
-                        print(f"Exception occurred while executing task: {e}")
-                        print(f"Exception: {type(e).__name__}")
-                # replace trainings with processed trainings
-                # order in self.trainings may change!
-                self.trainings = train_results
+            # (A) joblib based code that works xgboost, solves issue 46
+            # Function to execute each training
+            def execute_training(training, idx):
+                try:
+                    result = training.fit()
+                    print(f"Training {idx} completed successfully.")
+                    # logging.info(f"Training {idx} completed successfully.")
+                    return result
+                except Exception as e:  # pylint: disable=broad-except
+                    print(f"Exception during training{idx}: {e}")
+                    print(f"Exception type: {type(e).__name__}")
+                    # logging.error(
+                    #    f"Training {idx} failed or returned None. Exception: {e}",
+                    #    exc_info=True,
+                    # )
+                    return None
+
+            # Using joblib's Parallel and delayed functionalities
+            # default backend is 'loky'
+            with Parallel(n_jobs=self.num_workers) as parallel:
+                self.trainings = parallel(
+                    delayed(execute_training)(training, idx)
+                    for idx, training in enumerate(self.trainings)
+                )
+
+            # (B) altern. ProcessPoolExecutor code, incompatible with xgboost, issue46
+            ## max_tasks_per_child=1 requires Python3.11
+            # with concurrent.futures.ProcessPoolExecutor(
+            #    max_workers=self.num_workers
+            # ) as executor:
+            #    # Map each training to a future and keep an index to retain order
+            #    futures = {
+            #        executor.submit(training.fit): i
+            #        for i, training in enumerate(self.trainings)
+            #    }
+            #    train_results = [None] * len(
+            #        self.trainings
+            #    )  # List to hold results in order
+            #
+            #    # Process completed training tasks as they complete
+            #    for future in concurrent.futures.as_completed(futures):
+            #        index = futures[future]
+            #        try:
+            #            result = future.result()
+            #            train_results[index] = result
+            #            print(f"Training {index} completed successfully.")
+            #            logging.info(f"Training {index} completed successfully.")
+            #        except Exception as e:
+            #            print(f"Exception during training {index}: {e}")
+            #            print(f"Exception type: {type(e).__name__}")
+            #            logging.error(
+            #                f"Exception during training {index}: {str(e)}",
+            #                exc_info=True,
+            #            )
+            #            train_results[index] = None
+            # Update trainings with the results
+            # self.trainings=[result for result in train_results if result is not None]
 
         else:
+            # Running training sequentially in the current process
             for training in self.trainings:
-                training.fit()
-                print("Inner sequential training completed")
+                try:
+                    training.fit()
+                    print("Inner sequential training completed")
+                except Exception as e:  # pylint: disable=broad-except
+                    print(
+                        f"Error during training {training}: {e},"
+                        f" type: {type(e).__name__}"
+                    )
 
         self.train_status = (True,)
 
@@ -237,10 +287,35 @@ class Bag:
             else:
                 raise ValueError(f"Feature importance method {method} not supported.")
 
+        # save feature importances for every training in bag
         for training in self.trainings:
             self.feature_importances[
                 training.training_id
             ] = training.feature_importances
+
+        # summary feature importances for all trainings (mean + count)
+        # internal, permutation_dev, shap_dev only
+        # save in bag
+        for method in fi_methods:
+            if method == "internal":
+                method_str = "internal"
+            else:
+                method_str = method + "_dev"
+            fi_pool = list()
+            for training in self.trainings:
+                fi_pool.append(training.feature_importances[method_str])
+            # calculate mean and count feature importances
+            fi = pd.concat(fi_pool, axis=0)
+            self.feature_importances[method_str + "_mean"] = (
+                fi[["feature", "importance"]].groupby(by="feature").mean().reset_index()
+            )
+            self.feature_importances[method_str + "_count"] = (
+                fi[["feature", "importance"]]
+                .groupby(by="feature")
+                .count()
+                .reset_index()
+            )
+
         return self.feature_importances
 
     def predict(self, x):

@@ -11,7 +11,9 @@ import plotly.graph_objects as go
 from dash import html
 from dash_iconify import DashIconify
 
-from octopus.dashboard.library.api import sqlite
+from octopus.dashboard.library.api.sqlite import SqliteAPI
+
+sqlite = SqliteAPI()
 
 with open(
     Path("octopus")
@@ -32,11 +34,6 @@ with open(
     encoding="utf-8",
 ) as file:
     plotly_light = json.load(file)
-
-
-def create_title(title: str, comp_id: str) -> dmc.Text:
-    """Create title."""
-    return dmc.Text(title, fw=300, fz=30, id=comp_id)
 
 
 def create_heading(text: str) -> dmc.Text:

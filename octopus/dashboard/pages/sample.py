@@ -6,7 +6,7 @@ import plotly.express as px
 from dash import Input, Output, callback, dcc, html
 
 from octopus.dashboard.library import utils
-from octopus.dashboard.library.api import sqlite
+from octopus.dashboard.library.api.sqlite import SqliteAPI
 from octopus.dashboard.library.constants import PAGE_TITLE_PREFIX
 
 dash.register_page(
@@ -16,6 +16,7 @@ dash.register_page(
     description="Basics Information about the sample.",
 )
 
+sqlite = SqliteAPI()
 df_data = sqlite.query("SELECT * FROM dataset")
 
 sample_id = sqlite.query(

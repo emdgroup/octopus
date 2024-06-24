@@ -190,10 +190,9 @@ def plot_ground_truth(experiment_id, sequence_id, split_id, theme):
 )
 def plot_feature_importance(experiment_id, sequence_id, split_id, theme):
     """Create plots."""
-    feature_importances = sqlite.query("SELECT * FROM feature_importances")
-
-    # check if freature importances are calculted
-    if feature_importances.empty:
+    try:
+        feature_importances = sqlite.query("SELECT * FROM feature_importances")
+    except:  # noqa: E722
         return [dmc.Text("Feature importances were not calculated.")]
 
     feature_importances = sqlite.query(

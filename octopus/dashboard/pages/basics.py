@@ -18,7 +18,7 @@ dash.register_page(
 )
 
 df_description = sqlite.query("SELECT Description, Value FROM description")
-df_data = sqlite.query("SELECT * FROM data")
+df_data = sqlite.query("SELECT * FROM dataset")
 
 
 layout = html.Div(

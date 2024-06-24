@@ -16,6 +16,8 @@ from octopus.data import OctoData
 
 sqlite = SqliteAPI()
 
+dash._dash_renderer._set_react_version("18.2.0")
+
 
 @define
 class OctoDash:
@@ -65,7 +67,8 @@ class OctoDash:
         sqlite.insert_dataframe("config_study", df_config_study)
         sqlite.insert_dataframe("config_manager", df_config_manager)
         sqlite.insert_dataframe("config_sequence", df_config_sequence)
-        sqlite.insert_dataframe("feature_importances", df_feature_importances)
+        if not df_feature_importances.empty:
+            sqlite.insert_dataframe("feature_importances", df_feature_importances)
 
     def run(self):
         """Start dashboard."""

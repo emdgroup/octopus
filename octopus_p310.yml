@@ -60,12 +60,12 @@ dependencies:
   - cryptography=42.0.8=py310hb1bd9d3_0
   - cycler=0.12.1=pyhd8ed1ab_0
   - dacite=1.8.1=pyhd8ed1ab_0
-  - dash=2.14.2=pyhd8ed1ab_0
+  - dash=2.17=pyhd8ed1ab_0
   - dash-ag-grid=2.4.0=pyhd8ed1ab_0
   - dash-core-components=2.0.0=pyhd8ed1ab_1
   - dash-html-components=2.0.0=pyhd8ed1ab_1
   - dash-iconify=0.1.2=pyhd8ed1ab_0
-  - dash-mantine-components=0.12.1=pyhd8ed1ab_0
+  - dash-mantine-components=0.14.3=pyhd8ed1ab_0
   - dash-table=5.0.0=pyhd8ed1ab_1
   - debugpy=1.8.0=py310hc6cd4ac_1
   - decorator=5.1.1=pyhd8ed1ab_0

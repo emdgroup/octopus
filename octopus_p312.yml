@@ -62,12 +62,12 @@ dependencies:
   - contourpy=1.2.1=py312h8572e83_0
   - cryptography=42.0.8=py312hbcc2302_0
   - cycler=0.12.1=pyhd8ed1ab_0
-  - dash=2.16.1=pyhd8ed1ab_0
+  - dash=2.17=pyhd8ed1ab_0
   - dash-ag-grid=31.0.1=pyhd8ed1ab_0
   - dash-core-components=2.0.0=pyhd8ed1ab_1
   - dash-html-components=2.0.0=pyhd8ed1ab_1
   - dash-iconify=0.1.2=pyhd8ed1ab_0
-  - dash-mantine-components=0.12.1=pyhd8ed1ab_0
+  - dash-mantine-components=0.14.3=pyhd8ed1ab_0
   - dash-table=5.0.0=pyhd8ed1ab_1
   - dbus=1.13.6=h5008d03_3
   - debugpy=1.8.1=py312h30efb56_0

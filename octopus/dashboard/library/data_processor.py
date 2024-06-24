@@ -131,10 +131,11 @@ class ResultsDataProcessor:
                         # calculate scores
                         for metric, value in metrics_inventory.items():
                             if value.get("ml_type") == exp.ml_type:
+                                prediction = exp.predictions[split][dataset][
+                                    "prediction"
+                                ]
                                 if exp.ml_type == "classification":
-                                    prediction = exp.predictions[split][dataset][
-                                        "prediction"
-                                    ].astype(int)
+                                    prediction = prediction.astype(int)
                                 dict_socre_temp = {
                                     "experiment_id": exp.experiment_id,
                                     "sequence_id": exp.sequence_item_id,

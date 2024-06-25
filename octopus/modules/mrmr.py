@@ -25,6 +25,7 @@ from octopus.experiment import OctoExperiment
 # Literature:
 # https://github.com/ThomasBury/arfs?tab=readme-ov-file
 # https://ar5iv.labs.arxiv.org/html/1908.05376
+# https://github.com/smazzanti/mrmr
 
 # TOBEDONE:
 # (1) saving results? any plots?

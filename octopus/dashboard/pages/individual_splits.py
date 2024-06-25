@@ -8,9 +8,10 @@ import plotly.graph_objects as go
 from dash import Input, Output, State, callback, clientside_callback, dcc, html
 
 from octopus.dashboard.library import utils
-from octopus.dashboard.library.api import sqlite
+from octopus.dashboard.library.api.sqlite import SqliteAPI
 from octopus.dashboard.library.constants import PAGE_TITLE_PREFIX
-from octopus.dashboard.library.directives.toc import TOC
+
+sqlite = SqliteAPI()
 
 dash.register_page(
     __name__,
@@ -50,9 +51,7 @@ layout = html.Div(
             size="lg",
             mt=30,
             children=[
-                utils.create_title(
-                    "Ground truth", comp_id="results_splits_groundtruth"
-                ),
+                dmc.Title("Ground truth"),
                 dcc.Graph(id="graph_ground_truth"),
                 dmc.Text("Use plotly selection tool to select datapoints."),
                 dag.AgGrid(
@@ -72,23 +71,9 @@ layout = html.Div(
             size="lg",
             mt=30,
             children=[
-                utils.create_title(
-                    "Feature Importance", comp_id="results_splits_featureimportants"
-                ),
+                dmc.Title("Feature Importance"),
                 html.Div(id="div_feature_importances"),
             ],
-        ),
-        TOC.render(
-            None,
-            None,
-            "Table of Contents",
-            None,
-            **{
-                "table_of_contents": [
-                    (3, "Ground truth", "results_splits_groundtruth"),
-                    (3, "Feature Importance", "results_splits_featureimportants"),
-                ]
-            },
         ),
     ]
 )
@@ -205,10 +190,9 @@ def plot_ground_truth(experiment_id, sequence_id, split_id, theme):
 )
 def plot_feature_importance(experiment_id, sequence_id, split_id, theme):
     """Create plots."""
-    feature_importances = sqlite.query("SELECT * FROM feature_importances")
-
-    # check if freature importances are calculted
-    if feature_importances.empty:
+    try:
+        feature_importances = sqlite.query("SELECT * FROM feature_importances")
+    except:  # noqa: E722
         return [dmc.Text("Feature importances were not calculated.")]
 
     feature_importances = sqlite.query(

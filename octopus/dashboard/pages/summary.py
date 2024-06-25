@@ -7,8 +7,10 @@ import plotly.graph_objects as go
 from dash import Input, Output, callback, dcc, html
 
 from octopus.dashboard.library import utils
-from octopus.dashboard.library.api import sqlite
+from octopus.dashboard.library.api.sqlite import SqliteAPI
 from octopus.dashboard.library.constants import PAGE_TITLE_PREFIX
+
+sqlite = SqliteAPI()
 
 dash.register_page(
     __name__,
@@ -106,9 +108,7 @@ def show_summary_plot(_, theme):
         children.append(
             dmc.Paper(
                 [
-                    utils.create_title(
-                        f"Sequence {sequence}", comp_id=f"results_sequence_{sequence}"
-                    ),
+                    dmc.Title(f"Sequence {sequence}"),
                     utils.table_without_header(df_.astype(str)),
                     dcc.Graph(figure=fig),
                 ]

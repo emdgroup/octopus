@@ -6,8 +6,10 @@ import plotly.express as px
 from dash import Input, Output, callback, dcc, html
 
 from octopus.dashboard.library import utils
-from octopus.dashboard.library.api import sqlite
+from octopus.dashboard.library.api.sqlite import SqliteAPI
 from octopus.dashboard.library.constants import PAGE_TITLE_PREFIX
+
+sqlite = SqliteAPI()
 
 df_data = sqlite.query("SELECT * FROM dataset")
 target = utils.get_col_from_type("Target")
@@ -30,7 +32,7 @@ layout = html.Div(
             size="lg",
             mt=50,
             children=[
-                utils.create_title("Histogramm", comp_id="eda_target_histo"),
+                dmc.Title("Histogramm"),
                 dmc.NumberInput(
                     id="number_input_eda_nbins_target",
                     label="Number of bins",

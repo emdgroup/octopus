@@ -5,8 +5,10 @@ import dash_mantine_components as dmc
 from dash import MATCH, Input, Output, State, callback, dcc, html
 
 from octopus.dashboard.library import utils
-from octopus.dashboard.library.api import sqlite
+from octopus.dashboard.library.api.sqlite import SqliteAPI
 from octopus.dashboard.library.constants import PAGE_TITLE_PREFIX
+
+sqlite = SqliteAPI()
 
 dash.register_page(
     __name__,
@@ -25,7 +27,7 @@ layout = html.Div(
             children=[
                 dmc.Group(
                     [
-                        utils.create_title("Study", comp_id="results_config_study"),
+                        dmc.Title("Study"),
                         dcc.Clipboard(
                             id="clipboard_study_config",
                         ),
@@ -40,7 +42,7 @@ layout = html.Div(
             children=[
                 dmc.Group(
                     [
-                        utils.create_title("Manager", comp_id="results_config_manager"),
+                        dmc.Title("Manager"),
                         dcc.Clipboard(
                             id="clipboard_study_manager",
                         ),
@@ -53,7 +55,7 @@ layout = html.Div(
             size="lg",
             mt=50,
             children=[
-                utils.create_title("Sequence", comp_id="results_config_sequence"),
+                dmc.Title("Sequence"),
                 html.Div(
                     id="div_config_sequence",
                 ),

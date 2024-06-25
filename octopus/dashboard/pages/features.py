@@ -6,10 +6,10 @@ import plotly.express as px
 from dash import Input, Output, callback, dcc, html
 
 from octopus.dashboard.library import utils
-from octopus.dashboard.library.api import sqlite
+from octopus.dashboard.library.api.sqlite import SqliteAPI
 from octopus.dashboard.library.constants import PAGE_TITLE_PREFIX
-from octopus.dashboard.library.directives.toc import TOC
 
+sqlite = SqliteAPI()
 df_data = sqlite.query("SELECT * FROM dataset")
 target = utils.get_col_from_type("Target")
 features = utils.get_col_from_type("Feature")
@@ -41,7 +41,7 @@ layout = html.Div(
             size="lg",
             mt=50,
             children=[
-                utils.create_title("Histogramm", comp_id="eda_feature_histo"),
+                dmc.Title("Histogramm"),
                 dmc.NumberInput(
                     id="number_input_eda_nbins_feature",
                     label="Number of bins",
@@ -65,7 +65,7 @@ layout = html.Div(
             size="lg",
             mt=50,
             children=[
-                utils.create_title("Box plot", comp_id="eda_feature_boxplot"),
+                dmc.Title("Box plot"),
                 dcc.Graph(id="graph_box_feature"),
             ],
         ),
@@ -73,26 +73,11 @@ layout = html.Div(
             size="lg",
             mt=50,
             children=[
-                utils.create_title(
-                    "Correlaction matrix", comp_id="eda_feature_correlationmatrix"
-                ),
+                dmc.Title("Correlaction matrix"),
                 dcc.Graph(
                     id="graph_correlation",
                 ),
             ],
-        ),
-        TOC.render(
-            None,
-            None,
-            "Table of Contents",
-            None,
-            **{
-                "table_of_contents": [
-                    (3, "Histogram", "eda_feature_histo"),
-                    (3, "Box plot", "eda_feature_boxplot"),
-                    (3, "Correlation matrix", "eda_feature_correlationmatrix"),
-                ]
-            },
         ),
     ]
 )

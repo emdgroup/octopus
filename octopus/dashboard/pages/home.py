@@ -20,12 +20,7 @@ layout = html.Div(
         dmc.Container(
             size="lg",
             mt=30,
-            children=[
-                utils.create_title(
-                    "Exploratory Data Analysis",
-                    comp_id="features",
-                ),
-            ],
+            children=[dmc.Title("Exploratory Data Analysis")],
         ),
         dmc.Container(
             size="lg",
@@ -81,10 +76,7 @@ def show_result_page(show_results):
             size="lg",
             mt=30,
             children=[
-                utils.create_title(
-                    "Results",
-                    comp_id="home_results",
-                ),
+                dmc.Title("Results"),
             ],
         ),
         dmc.Container(

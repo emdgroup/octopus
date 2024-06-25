@@ -7,10 +7,11 @@ from dash import Input, Output, callback, dcc, html
 from plotly.subplots import make_subplots
 
 from octopus.dashboard.library import utils
-from octopus.dashboard.library.api import sqlite
+from octopus.dashboard.library.api.sqlite import SqliteAPI
 from octopus.dashboard.library.constants import PAGE_TITLE_PREFIX
-from octopus.dashboard.library.directives.toc import TOC
 from octopus.modules.utils import optuna_direction
+
+sqlite = SqliteAPI()
 
 dash.register_page(
     __name__,
@@ -72,9 +73,7 @@ layout = html.Div(
             size="lg",
             mt=30,
             children=[
-                utils.create_title(
-                    "Count modules", comp_id="results_optuna_number_modules"
-                ),
+                dmc.Title("Count modules"),
                 dcc.Graph(id="graph_optuna_number_modules"),
             ],
         ),
@@ -82,7 +81,7 @@ layout = html.Div(
             size="lg",
             mt=30,
             children=[
-                utils.create_title("Best values", comp_id="results_optuna_best_values"),
+                dmc.Title("Best values"),
                 dcc.Graph(id="graph_optuna_best_value"),
             ],
         ),
@@ -90,7 +89,7 @@ layout = html.Div(
             size="lg",
             mt=30,
             children=[
-                utils.create_title("Hyperparameters", comp_id="results_hyperparams"),
+                dmc.Title("Hyperparameters"),
                 dmc.Select(label="Model", id="select_optuna_model", clearable=False),
                 html.Div(id="div_best_hyper_params"),
                 dmc.Switch(
@@ -105,19 +104,6 @@ layout = html.Div(
                 ),
                 dcc.Graph(id="graph_optuna_hyper_parameter"),
             ],
-        ),
-        TOC.render(
-            None,
-            None,
-            "Table of Contents",
-            None,
-            **{
-                "table_of_contents": [
-                    (3, "Count models", "results_optuna_number_modules"),
-                    (3, "Best values", "results_optuna_best_values"),
-                    (3, "Hyperparameters", "results_hyperparams"),
-                ]
-            },
         ),
     ]
 )

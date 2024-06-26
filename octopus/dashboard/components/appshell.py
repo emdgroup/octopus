@@ -1,5 +1,7 @@
 """Dashboard appshell."""
 
+from typing import List
+
 import dash_mantine_components as dmc
 from dash import Input, Output, State, clientside_callback, dcc, page_container
 
@@ -8,7 +10,9 @@ from octopus.dashboard.components.navbar import create_navbar, create_navbar_dra
 from octopus.dashboard.library.constants import COLORS, PRIMARY_COLOR
 
 
-def create_appshell(data, show_results):
+def create_appshell(
+    data: List, show_results: bool, db_filename: str
+) -> dmc.MantineProvider:
     """Create appshell."""
     return dmc.MantineProvider(
         id="m2d-mantine-provider",
@@ -37,6 +41,7 @@ def create_appshell(data, show_results):
         },
         children=[
             dcc.Store(id="theme-store", storage_type="local", data="light"),
+            dcc.Store(id="store_db_filename", storage_type="local", data=db_filename),
             dcc.Store(id="store_show_results", data=show_results),
             dcc.Location(id="url", refresh="callback-nav"),
             dmc.NotificationProvider(),

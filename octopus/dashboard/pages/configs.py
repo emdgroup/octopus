@@ -8,8 +8,6 @@ from octopus.dashboard.library import utils
 from octopus.dashboard.library.api.sqlite import SqliteAPI
 from octopus.dashboard.library.constants import PAGE_TITLE_PREFIX
 
-sqlite = SqliteAPI()
-
 dash.register_page(
     __name__,
     "/configs",
@@ -69,15 +67,16 @@ layout = html.Div(
     Output("div_results_table_study", "children"),
     Output("div_results_table_manager", "children"),
     Input("url", "pathname"),
+    State("store_db_filename", "data"),
 )
-def create_tables(_):
+def create_tables(_, db_filename):
     """Copy config study."""
     return (
         utils.table_without_header(
-            sqlite.query("SELECT Parameter, Value FROM config_study")
+            SqliteAPI(db_filename).query("SELECT Parameter, Value FROM config_study")
         ),
         utils.table_without_header(
-            sqlite.query("SELECT Parameter, Value FROM config_manager")
+            SqliteAPI(db_filename).query("SELECT Parameter, Value FROM config_manager")
         ),
     )
 
@@ -85,24 +84,26 @@ def create_tables(_):
 @callback(
     Output("clipboard_study_config", "content"),
     Input("clipboard_study_config", "n_clicks"),
+    State("store_db_filename", "data"),
     prevent_initial_call=True,
 )
-def copy_study_to_clipboard(_):
+def copy_study_to_clipboard(_, db_filename):
     """Copy config study."""
     return utils.create_config_output(
-        sqlite.query("SELECT Parameter, Value FROM config_study")
+        SqliteAPI(db_filename).query("SELECT Parameter, Value FROM config_study")
     )
 
 
 @callback(
     Output("clipboard_study_manager", "content"),
     Input("clipboard_study_manager", "n_clicks"),
+    State("store_db_filename", "data"),
     prevent_initial_call=True,
 )
-def copy_manager_to_clipboard(_):
+def copy_manager_to_clipboard(_, db_filename):
     """Copy config study."""
     return utils.create_config_output(
-        sqlite.query("SELECT Parameter, Value FROM config_manager")
+        SqliteAPI(db_filename).query("SELECT Parameter, Value FROM config_manager")
     )
 
 
@@ -110,13 +111,14 @@ def copy_manager_to_clipboard(_):
     Output({"type": "clipboard_sequence", "index": MATCH}, "content"),
     Input({"type": "clipboard_sequence", "index": MATCH}, "n_clicks"),
     State({"type": "clipboard_sequence", "index": MATCH}, "id"),
+    State("store_db_filename", "data"),
     prevent_initial_call=True,
 )
-def copy_sequence_to_clipboard(_, selected_id):
+def copy_sequence_to_clipboard(_, selected_id, db_filename):
     """Copy config study."""
     index = selected_id["index"]
     return utils.create_config_output(
-        sqlite.query(
+        SqliteAPI(db_filename).query(
             f"SELECT Parameter, Value FROM config_sequence WHERE sequence_id={index}"
         )
     )
@@ -125,13 +127,16 @@ def copy_sequence_to_clipboard(_, selected_id):
 @callback(
     Output("div_config_sequence", "children"),
     Input("url", "pathname"),
+    State("store_db_filename", "data"),
 )
-def create_accordion_items(_):
+def create_accordion_items(_, db_filename):
     """Create accordion items."""
     children = []
-    for value, df_ in sqlite.query(
-        "SELECT Parameter, Value, sequence_id FROM config_sequence"
-    ).groupby("sequence_id"):
+    for value, df_ in (
+        SqliteAPI(db_filename)
+        .query("SELECT Parameter, Value, sequence_id FROM config_sequence")
+        .groupby("sequence_id")
+    ):
         children.append(
             dmc.Group(
                 [

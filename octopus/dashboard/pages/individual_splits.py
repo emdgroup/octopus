@@ -11,8 +11,6 @@ from octopus.dashboard.library import utils
 from octopus.dashboard.library.api.sqlite import SqliteAPI
 from octopus.dashboard.library.constants import PAGE_TITLE_PREFIX
 
-sqlite = SqliteAPI()
-
 dash.register_page(
     __name__,
     "/individual-splits",
@@ -79,27 +77,43 @@ layout = html.Div(
 )
 
 
-@callback(Output("select_exp", "data"), Input("url", "pathname"))
-def get_experiment_ids(_):
+@callback(
+    Output("select_exp", "data"),
+    Input("url", "pathname"),
+    State("store_db_filename", "data"),
+)
+def get_experiment_ids(_, db_filename):
     """Get experiment ids."""
-    experiment_ids = sqlite.query(
-        """
+    experiment_ids = (
+        SqliteAPI(db_filename)
+        .query(
+            """
         SELECT DISTINCT experiment_id
         FROM optuna_trials
     """
-    )["experiment_id"].values.tolist()
+        )["experiment_id"]
+        .values.tolist()
+    )
     return [{"value": str(i), "label": str(i)} for i in sorted(experiment_ids)]
 
 
-@callback(Output("select_sequence", "data"), Input("url", "pathname"))
-def get_sequence_ids(_):
+@callback(
+    Output("select_sequence", "data"),
+    Input("url", "pathname"),
+    State("store_db_filename", "data"),
+)
+def get_sequence_ids(_, db_filename):
     """Get sequence ids."""
-    sequence_ids = sqlite.query(
-        """
+    sequence_ids = (
+        SqliteAPI(db_filename)
+        .query(
+            """
         SELECT DISTINCT sequence_id
         FROM optuna_trials
     """
-    )["sequence_id"].values.tolist()
+        )["sequence_id"]
+        .values.tolist()
+    )
     return [{"value": str(i), "label": str(i)} for i in sorted(sequence_ids)]
 
 
@@ -108,17 +122,22 @@ def get_sequence_ids(_):
     Output("select_split", "data"),
     Input("select_exp", "value"),
     Input("select_sequence", "value"),
+    State("store_db_filename", "data"),
 )
-def get_split_ids(experiment_id, sequence_id):
+def get_split_ids(experiment_id, sequence_id, db_filename):
     """Get split ids."""
-    split_ids = sqlite.query(
-        f"""
+    split_ids = (
+        SqliteAPI(db_filename)
+        .query(
+            f"""
             SELECT DISTINCT split_id
             FROM predictions
             WHERE experiment_id = {experiment_id}
             AND sequence_id = {sequence_id}
         """
-    )["split_id"].values.tolist()
+        )["split_id"]
+        .values.tolist()
+    )
     return (
         sorted(split_ids)[0],
         [{"value": str(i), "label": str(i)} for i in sorted(split_ids)],
@@ -131,15 +150,16 @@ def get_split_ids(experiment_id, sequence_id):
     State("select_sequence", "value"),
     Input("select_split", "value"),
     Input("theme-store", "data"),
+    State("store_db_filename", "data"),
 )
-def plot_ground_truth(experiment_id, sequence_id, split_id, theme):
+def plot_ground_truth(experiment_id, sequence_id, split_id, theme, db_filename):
     """Create plots."""
     # get column names
-    target = utils.get_col_from_type("Target")
-    row_id = utils.get_col_from_type("Row_ID")
+    target = utils.get_col_from_type(db_filename, "Target")
+    row_id = utils.get_col_from_type(db_filename, "Row_ID")
 
     # get predictions
-    df_predictions = sqlite.query(
+    df_predictions = SqliteAPI(db_filename).query(
         f"""
             SELECT *
             FROM predictions
@@ -187,15 +207,18 @@ def plot_ground_truth(experiment_id, sequence_id, split_id, theme):
     State("select_sequence", "value"),
     Input("select_split", "value"),
     Input("theme-store", "data"),
+    State("store_db_filename", "data"),
 )
-def plot_feature_importance(experiment_id, sequence_id, split_id, theme):
+def plot_feature_importance(experiment_id, sequence_id, split_id, theme, db_filename):
     """Create plots."""
     try:
-        feature_importances = sqlite.query("SELECT * FROM feature_importances")
+        feature_importances = SqliteAPI(db_filename).query(
+            "SELECT * FROM feature_importances"
+        )
     except:  # noqa: E722
         return [dmc.Text("Feature importances were not calculated.")]
 
-    feature_importances = sqlite.query(
+    feature_importances = SqliteAPI(db_filename).query(
         f"""
             SELECT *
             FROM feature_importances
@@ -219,12 +242,13 @@ def plot_feature_importance(experiment_id, sequence_id, split_id, theme):
     Output("aggrid_ground_truth", "rowData"),
     Output("aggrid_ground_truth", "columnDefs"),
     Input("graph_ground_truth", "selectedData"),
+    State("store_db_filename", "data"),
 )
-def show_selected_datapoint(selected_data):
+def show_selected_datapoint(selected_data, db_filename):
     """Get splits ids for selected experiment."""
     # get column names
-    row_id = utils.get_col_from_type("Row_ID")
-    df_dataset = sqlite.query(
+    row_id = utils.get_col_from_type(db_filename, "Row_ID")
+    df_dataset = SqliteAPI(db_filename).query(
         """
             SELECT *
             FROM dataset

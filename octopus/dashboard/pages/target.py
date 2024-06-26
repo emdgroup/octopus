@@ -3,16 +3,11 @@
 import dash
 import dash_mantine_components as dmc
 import plotly.express as px
-from dash import Input, Output, callback, dcc, html
+from dash import Input, Output, State, callback, dcc, html
 
 from octopus.dashboard.library import utils
 from octopus.dashboard.library.api.sqlite import SqliteAPI
 from octopus.dashboard.library.constants import PAGE_TITLE_PREFIX
-
-sqlite = SqliteAPI()
-
-df_data = sqlite.query("SELECT * FROM dataset")
-target = utils.get_col_from_type("Target")
 
 dash.register_page(
     __name__,
@@ -54,9 +49,12 @@ layout = html.Div(
     Output("graph_eda_target_histo", "figure"),
     Input("number_input_eda_nbins_target", "value"),
     Input("theme-store", "data"),
+    State("store_db_filename", "data"),
 )
-def update_feature_histogram(nbins, theme):
+def update_feature_histogram(nbins, theme, db_filename):
     """Select feature for histogram."""
+    df_data = SqliteAPI(db_filename).query("SELECT * FROM dataset")
+    target = utils.get_col_from_type(db_filename, "Target")
     return px.histogram(
         df_data, x=target, nbins=nbins, template=utils.get_template(theme)
     )

@@ -4,13 +4,11 @@ import dash
 import dash_mantine_components as dmc
 import pandas as pd
 import plotly.graph_objects as go
-from dash import Input, Output, callback, dcc, html
+from dash import Input, Output, State, callback, dcc, html
 
 from octopus.dashboard.library import utils
 from octopus.dashboard.library.api.sqlite import SqliteAPI
 from octopus.dashboard.library.constants import PAGE_TITLE_PREFIX
-
-sqlite = SqliteAPI()
 
 dash.register_page(
     __name__,
@@ -39,12 +37,13 @@ layout = html.Div(
     Output("div_results_summary", "children"),
     Input("url", "pathname"),
     Input("theme-store", "data"),
+    State("store_db_filename", "data"),
 )
-def show_summary_plot(_, theme):
+def show_summary_plot(_, theme, db_filename):
     """Show summary plot."""
-    metric = utils.get_target_metric()
+    metric = utils.get_target_metric(db_filename)
 
-    df_scores_emseble = sqlite.query(
+    df_scores_emseble = SqliteAPI(db_filename).query(
         f"""SELECT *
         FROM scores
         WHERE metric='{metric}'
@@ -52,7 +51,8 @@ def show_summary_plot(_, theme):
         """
     )
     df_scores_mean = (
-        sqlite.query(
+        SqliteAPI(db_filename)
+        .query(
             f"""SELECT *
             FROM scores
             WHERE metric='{metric}'

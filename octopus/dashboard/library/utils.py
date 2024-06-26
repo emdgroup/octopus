@@ -13,8 +13,6 @@ from dash_iconify import DashIconify
 
 from octopus.dashboard.library.api.sqlite import SqliteAPI
 
-sqlite = SqliteAPI()
-
 with open(
     Path("octopus")
     .joinpath("dashboard")
@@ -86,9 +84,9 @@ def table_without_header(df: pd.DataFrame) -> dmc.Table:
     )
 
 
-def get_target_metric():
+def get_target_metric(db_filename: str) -> str:
     """Get target metric."""
-    return sqlite.query(
+    return SqliteAPI(db_filename).query(
         """
             SELECT Value
             FROM config_study
@@ -130,18 +128,22 @@ def get_plot_color(name: str) -> str:
     return colors[name]
 
 
-def get_col_from_type(type: str) -> List | str:
+def get_col_from_type(db_filename: str, type: str) -> List | str:
     """Get column name for specific column type.
 
     Value are Feature, Target, Row_ID or Datasplit.
     """
-    columns = sqlite.query(
-        f"""
+    columns = (
+        SqliteAPI(db_filename)
+        .query(
+            f"""
         SELECT Column
         FROM dataset_info
         WHERE Type = "{type}"
     """
-    )["Column"].values.tolist()
+        )["Column"]
+        .values.tolist()
+    )
 
     if len(columns) == 1:
         return columns[0]

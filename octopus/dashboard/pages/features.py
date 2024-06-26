@@ -3,17 +3,11 @@
 import dash
 import dash_mantine_components as dmc
 import plotly.express as px
-from dash import Input, Output, callback, dcc, html
+from dash import Input, Output, State, callback, dcc, html
 
 from octopus.dashboard.library import utils
 from octopus.dashboard.library.api.sqlite import SqliteAPI
 from octopus.dashboard.library.constants import PAGE_TITLE_PREFIX
-
-sqlite = SqliteAPI()
-df_data = sqlite.query("SELECT * FROM dataset")
-target = utils.get_col_from_type("Target")
-features = utils.get_col_from_type("Feature")
-features = [col for col in features if col in df_data.columns]
 
 dash.register_page(
     __name__,
@@ -32,8 +26,7 @@ layout = html.Div(
                 dmc.Select(
                     id="select_feature",
                     label="Select Feature",
-                    value=features[0],
-                    data=[{"value": i, "label": i} for i in features],
+                    data=[],
                 ),
             ],
         ),
@@ -84,6 +77,18 @@ layout = html.Div(
 
 
 @callback(
+    Output("select_feature", "value"),
+    Output("select_feature", "data"),
+    Input("url", "pathname"),
+    State("store_db_filename", "data"),
+)
+def get_features(_, db_filename):
+    """Select feature for histogram."""
+    features = utils.get_col_from_type(db_filename, "Feature")
+    return features[0], [{"value": i, "label": i} for i in features]
+
+
+@callback(
     Output("graph_feature_hist", "figure"),
     Output("graph_box_feature", "figure"),
     Output("col_feature_description", "children"),
@@ -91,9 +96,17 @@ layout = html.Div(
     Input("select_feature", "value"),
     Input("number_input_eda_nbins_feature", "value"),
     Input("theme-store", "data"),
+    State("store_db_filename", "data"),
 )
-def update_feature_histogram(feature, nbins, theme):
+def update_feature_histogram(feature, nbins, theme, db_filename):
     """Select feature for histogram."""
+    df_data = SqliteAPI(db_filename).query("SELECT * FROM dataset")
+    target = utils.get_col_from_type(db_filename, "Target")
+    features = utils.get_col_from_type(db_filename, "Feature")
+
+    # if too many features only show selection
+    features = [col for col in features if col in df_data.columns]
+
     df_feature_description = df_data[feature].describe().reset_index()
     return (
         px.histogram(

@@ -1,15 +1,15 @@
 """Pages scores."""
 
+import sqlite3
+
 import dash
 import dash_mantine_components as dmc
 import plotly.graph_objects as go
-from dash import Input, Output, callback, dcc, html
+from dash import Input, Output, State, callback, dcc, html, no_update
 
 from octopus.dashboard.library import utils
 from octopus.dashboard.library.api.sqlite import SqliteAPI
 from octopus.dashboard.library.constants import PAGE_TITLE_PREFIX
-
-sqlite = SqliteAPI()
 
 dash.register_page(
     __name__,
@@ -36,13 +36,7 @@ layout = html.Div(
                                 dmc.Text("Metric"),
                                 dmc.SegmentedControl(
                                     id="segment_scores_metric",
-                                    value="MAE",
-                                    data=[
-                                        {"value": i, "label": i}
-                                        for i in sqlite.query(
-                                            "SELECT DISTINCT metric FROM scores"
-                                        )["metric"].values
-                                    ],
+                                    data=[],
                                     orientation="vertical",
                                     mt=10,
                                 ),
@@ -74,14 +68,35 @@ layout = html.Div(
 
 
 @callback(
+    Output("segment_scores_metric", "value"),
+    Output("segment_scores_metric", "data"),
+    Input("url", "pathname"),
+    State("store_db_filename", "data"),
+)
+def add_metrics(_, db_filename):
+    """Add metrics."""
+    try:
+        metrics = (
+            SqliteAPI(db_filename)
+            .query("SELECT DISTINCT metric FROM scores")["metric"]
+            .values
+        )
+        data = [{"value": i, "label": i} for i in metrics]
+        return metrics[0], data
+    except sqlite3.Error:
+        return no_update, no_update
+
+
+@callback(
     Output("graph_scores", "figure"),
     Input("segment_scores_aggregation", "value"),
     Input("segment_scores_metric", "value"),
     Input("theme-store", "data"),
+    State("store_db_filename", "data"),
 )
-def plot_scores(aggregation, metric, theme):
+def plot_scores(aggregation, metric, theme, db_filename):
     """Get splits ids for selected experiment."""
-    df_scores = sqlite.query("SELECT * FROM scores")
+    df_scores = SqliteAPI(db_filename).query("SELECT * FROM scores")
 
     fig = go.Figure()
     if aggregation == "All":

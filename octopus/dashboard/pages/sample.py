@@ -3,7 +3,7 @@
 import dash
 import dash_mantine_components as dmc
 import plotly.express as px
-from dash import Input, Output, callback, dcc, html
+from dash import Input, Output, State, callback, dcc, html
 
 from octopus.dashboard.library import utils
 from octopus.dashboard.library.api.sqlite import SqliteAPI
@@ -15,18 +15,6 @@ dash.register_page(
     title=PAGE_TITLE_PREFIX + "Sample Information",
     description="Basics Information about the sample.",
 )
-
-sqlite = SqliteAPI()
-df_data = sqlite.query("SELECT * FROM dataset")
-
-sample_id = sqlite.query(
-    """
-    SELECT Column
-    FROM dataset_info
-    WHERE Type = 'Sample_ID'
-    """
-)["Column"].values[0]
-
 
 layout = html.Div(
     [
@@ -53,9 +41,22 @@ layout = html.Div(
 @callback(
     Output("graph_eda_sample", "figure"),
     Input("theme-store", "data"),
+    State("store_db_filename", "data"),
 )
-def update_feature_histogram(theme):
+def update_feature_histogram(theme, db_filename):
     """Select feature for histogram."""
+    sample_id = (
+        SqliteAPI(db_filename)
+        .query(
+            """
+        SELECT Column
+        FROM dataset_info
+        WHERE Type = 'Sample_ID'
+        """
+        )["Column"]
+        .values[0]
+    )
+    df_data = SqliteAPI(db_filename).query("SELECT * FROM dataset")
     fig = px.bar(
         x=df_data[sample_id].value_counts().index.astype(str).tolist(),
         y=df_data[sample_id].value_counts().values.tolist(),

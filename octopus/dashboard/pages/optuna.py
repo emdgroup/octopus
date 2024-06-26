@@ -3,15 +3,13 @@
 import dash
 import dash_mantine_components as dmc
 import plotly.graph_objects as go
-from dash import Input, Output, callback, dcc, html
+from dash import Input, Output, State, callback, dcc, html
 from plotly.subplots import make_subplots
 
 from octopus.dashboard.library import utils
 from octopus.dashboard.library.api.sqlite import SqliteAPI
 from octopus.dashboard.library.constants import PAGE_TITLE_PREFIX
 from octopus.modules.utils import optuna_direction
-
-sqlite = SqliteAPI()
 
 dash.register_page(
     __name__,
@@ -109,27 +107,43 @@ layout = html.Div(
 )
 
 
-@callback(Output("select_optuna_exp", "data"), Input("url", "pathname"))
-def get_experiment_ids(_):
+@callback(
+    Output("select_optuna_exp", "data"),
+    Input("url", "pathname"),
+    State("store_db_filename", "data"),
+)
+def get_experiment_ids(_, db_filename):
     """Get experiment ids."""
-    experiment_ids = sqlite.query(
-        """
+    experiment_ids = (
+        SqliteAPI(db_filename)
+        .query(
+            """
         SELECT DISTINCT experiment_id
         FROM optuna_trials
     """
-    )["experiment_id"].values.tolist()
+        )["experiment_id"]
+        .values.tolist()
+    )
     return [{"value": str(i), "label": str(i)} for i in sorted(experiment_ids)]
 
 
-@callback(Output("select_optuna_sequence", "data"), Input("url", "pathname"))
-def get_sequence_ids(_):
+@callback(
+    Output("select_optuna_sequence", "data"),
+    Input("url", "pathname"),
+    State("store_db_filename", "data"),
+)
+def get_sequence_ids(_, db_filename):
     """Get sequence ids."""
-    sequence_ids = sqlite.query(
-        """
+    sequence_ids = (
+        SqliteAPI(db_filename)
+        .query(
+            """
         SELECT DISTINCT sequence_id
         FROM optuna_trials
     """
-    )["sequence_id"].values.tolist()
+        )["sequence_id"]
+        .values.tolist()
+    )
     return [{"value": str(i), "label": str(i)} for i in sorted(sequence_ids)]
 
 
@@ -137,15 +151,20 @@ def get_sequence_ids(_):
     Output("select_optuna_split", "data"),
     Output("select_optuna_split", "value"),
     Input("url", "pathname"),
+    State("store_db_filename", "data"),
 )
-def get_split_ids(_):
+def get_split_ids(_, db_filename):
     """Get sequence ids."""
-    split_ids = sqlite.query(
-        """
+    split_ids = (
+        SqliteAPI(db_filename)
+        .query(
+            """
         SELECT DISTINCT split_id
         FROM optuna_trials
     """
-    )["split_id"].values.tolist()
+        )["split_id"]
+        .values.tolist()
+    )
     return (
         [{"value": str(i), "label": str(i)} for i in sorted(split_ids)],
         sorted(split_ids)[0],
@@ -156,15 +175,20 @@ def get_split_ids(_):
     Output("select_optuna_model", "data"),
     Output("select_optuna_model", "value"),
     Input("url", "pathname"),
+    State("store_db_filename", "data"),
 )
-def get_models(_):
+def get_models(_, db_filename):
     """Get models."""
-    model_types = sqlite.query(
-        """
+    model_types = (
+        SqliteAPI(db_filename)
+        .query(
+            """
         SELECT DISTINCT model_type
         FROM optuna_trials
     """
-    )["model_type"].values.tolist()
+        )["model_type"]
+        .values.tolist()
+    )
     return (
         [{"value": str(i), "label": str(i)} for i in sorted(model_types)],
         model_types[0],
@@ -178,10 +202,11 @@ def get_models(_):
     Input("select_optuna_sequence", "value"),
     Input("select_optuna_split", "value"),
     Input("theme-store", "data"),
+    State("store_db_filename", "data"),
 )
-def plot_number_model_type(experiment_id, sequence_id, split_id, theme):
+def plot_number_model_type(experiment_id, sequence_id, split_id, theme, db_filename):
     """Plot number of trials per module."""
-    df_optuna_trials = sqlite.query(
+    df_optuna_trials = SqliteAPI(db_filename).query(
         f"""
             SELECT *
             FROM optuna_trials
@@ -220,7 +245,7 @@ def plot_number_model_type(experiment_id, sequence_id, split_id, theme):
     )
 
     # get metric and optuna direction
-    metric = utils.get_target_metric()
+    metric = utils.get_target_metric(db_filename)
     direction = optuna_direction(metric)
 
     # get best optuna trials
@@ -265,8 +290,11 @@ def plot_number_model_type(experiment_id, sequence_id, split_id, theme):
     Input("switch_optuna_logx", "checked"),
     Input("switch_optuna_logy", "checked"),
     Input("theme-store", "data"),
+    State("store_db_filename", "data"),
 )
-def plot_hyperparameters(experiment_id, sequence_id, model_type, logx, logy, theme):
+def plot_hyperparameters(
+    experiment_id, sequence_id, model_type, logx, logy, theme, db_filename
+):
     """Plot number of trials per module."""
     if model_type is None:
         return dash.no_update
@@ -274,7 +302,7 @@ def plot_hyperparameters(experiment_id, sequence_id, model_type, logx, logy, the
     x_type = "log" if logx else "linear"
     y_type = "log" if logy else "linear"
 
-    df_optuna_trials = sqlite.query(
+    df_optuna_trials = SqliteAPI(db_filename).query(
         f"""
             SELECT *
             FROM optuna_trials
@@ -322,7 +350,7 @@ def plot_hyperparameters(experiment_id, sequence_id, model_type, logx, logy, the
         )
 
         fig.update_xaxes(type=x_type, title_text=param, row=row, col=col)
-        fig.update_yaxes(type=y_type, title_text=utils.get_target_metric())
+        fig.update_yaxes(type=y_type, title_text=utils.get_target_metric(db_filename))
     fig.update_layout(
         title=model_type,
         height=300 * num_rows,

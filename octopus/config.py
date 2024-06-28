@@ -1,5 +1,6 @@
 """Opto Config module."""
 
+import gzip
 import json
 import pickle
 
@@ -68,13 +69,24 @@ class OctoConfig:
         with open(filename, "w", encoding="utf-8") as file:
             json.dump(asdict(self), file)
 
-    def to_pickle(self, filename):
-        """Save object to pkl file."""
-        with open(filename, "wb") as file:
+    def to_pickle(self, file_path: str) -> None:
+        """Save object to a compressed pickle file.
+
+        Args:
+            file_path: The name of the file to save the pickle data to.
+        """
+        with gzip.GzipFile(file_path, "wb") as file:
             pickle.dump(self, file)
 
     @classmethod
-    def from_pickle(cls, filename):
-        """Load object from dill file."""
-        with open(filename, "rb") as file:
+    def from_pickle(cls, file_path: str) -> "OctoConfig":
+        """Load object to a compressed pickle file.
+
+        Args:
+            file_path: The path to the file to load the pickle data from.
+
+        Returns:
+            OctoConfig: The loaded instance of OctoConfig.
+        """
+        with gzip.GzipFile(file_path, "rb") as file:
             return pickle.load(file)

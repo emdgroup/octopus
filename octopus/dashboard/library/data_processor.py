@@ -21,9 +21,8 @@ class EDADataProcessor:
     def __attrs_post_init__(self):
         # load octo data from file if Path is provided
         if isinstance(self.octo_data, Path):
-            file = list(self.octo_data.glob("**/data.pkl"))[0]
-            with open(file, "rb") as f:
-                self.octo_data = pickle.load(f)
+            file_path = list(self.octo_data.glob("**/data.pkl"))[0]
+            self.octo_data = OctoData.from_pickle(file_path)
 
     def get_dataset(self) -> tuple:
         """Get data table with information on data types and column handling."""
@@ -115,41 +114,38 @@ class ResultsDataProcessor:
         df_predictions = pd.DataFrame()
         dict_scores = []
         for file in list(experiment_files):
-            with open(file, "rb") as f:
-                exp = pickle.load(f)
-                default_target_column = exp.target_assignments["default"]
-                for split in exp.predictions:
-                    for dataset in exp.predictions[split]:
-                        # get predictions
-                        df_temp = exp.predictions[split][dataset]
-                        df_temp["experiment_id"] = exp.experiment_id
-                        df_temp["sequence_id"] = exp.sequence_item_id
-                        df_temp["split_id"] = split
-                        df_temp["dataset"] = dataset
-                        df_predictions = pd.concat([df_predictions, df_temp])
+            exp = OctoData.from_pickle(file)
+            default_target_column = exp.target_assignments["default"]
+            for split in exp.predictions:
+                for dataset in exp.predictions[split]:
+                    # get predictions
+                    df_temp = exp.predictions[split][dataset]
+                    df_temp["experiment_id"] = exp.experiment_id
+                    df_temp["sequence_id"] = exp.sequence_item_id
+                    df_temp["split_id"] = split
+                    df_temp["dataset"] = dataset
+                    df_predictions = pd.concat([df_predictions, df_temp])
 
-                        # calculate scores
-                        for metric, value in metrics_inventory.items():
-                            if value.get("ml_type") == exp.ml_type:
-                                prediction = exp.predictions[split][dataset][
-                                    "prediction"
-                                ]
-                                if exp.ml_type == "classification":
-                                    prediction = prediction.astype(int)
-                                dict_socre_temp = {
-                                    "experiment_id": exp.experiment_id,
-                                    "sequence_id": exp.sequence_item_id,
-                                    "split": split,
-                                    "testset": dataset,
-                                    "metric": metric,
-                                    "score": value["method"](
-                                        exp.predictions[split][dataset][
-                                            default_target_column
-                                        ],
-                                        prediction,
-                                    ),
-                                }
-                                dict_scores.append(dict_socre_temp)
+                    # calculate scores
+                    for metric, value in metrics_inventory.items():
+                        if value.get("ml_type") == exp.ml_type:
+                            prediction = exp.predictions[split][dataset]["prediction"]
+                            if exp.ml_type == "classification":
+                                prediction = prediction.astype(int)
+                            dict_socre_temp = {
+                                "experiment_id": exp.experiment_id,
+                                "sequence_id": exp.sequence_item_id,
+                                "split": split,
+                                "testset": dataset,
+                                "metric": metric,
+                                "score": value["method"](
+                                    exp.predictions[split][dataset][
+                                        default_target_column
+                                    ],
+                                    prediction,
+                                ),
+                            }
+                            dict_scores.append(dict_socre_temp)
 
         df_predictions = df_predictions.reset_index(drop=True)
         df_scores = (

@@ -120,9 +120,17 @@ oml.run_outer_experiments()
 print("Workflow completed")
 
 
-# run predict
-
+# predict on test data (new data)
 path_study = Path(config_study["output_path"]).joinpath(config_study["study_name"])
-predict = OctoPredict(path_study)
+study = OctoPredict(path_study)
 
-print(predict.predict_proba_test())
+print(study.predict_proba_test())
+# print(study.predict_proba(data_df)) # new data
+
+# feature importances for test data
+study.calculate_fi_test(fi_type="shap", shap_type="exact")
+# study.calculate_fi_test(fi_type="permutation")
+
+# feature importances for new data
+# study.calculate_fi(data_df, fi_type="shap", shap_type="exact")
+# study.calculate_fi(data_df, fi_type="permutation")

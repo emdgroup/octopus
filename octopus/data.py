@@ -1,5 +1,6 @@
 """Octopus data classes."""
 
+import gzip
 import pickle
 from typing import List
 
@@ -283,13 +284,24 @@ class OctoData:
         # with open(path.joinpath('column_info.json'), "w", encoding="utf-8") as file:
         #    json.dump(column_info, file)
 
-    def to_pickle(self, path):
-        """Save pickle file."""
-        with open(path, "wb") as file:
+    def to_pickle(self, file_path: str) -> None:
+        """Save object to a compressed pickle file.
+
+        Args:
+            file_path: The name of the file to save the pickle data to.
+        """
+        with gzip.GzipFile(file_path, "wb") as file:
             pickle.dump(self, file)
 
     @classmethod
-    def from_pickle(cls, path):
-        """Load pickle file."""
-        with open(path, "rb") as file:
+    def from_pickle(cls, file_path: str) -> "OctoData":
+        """Load object to a compressed pickle file.
+
+        Args:
+            file_path: The path to the file to load the pickle data from.
+
+        Returns:
+            OctoData: The loaded instance of OctoData.
+        """
+        with gzip.GzipFile(file_path, "rb") as file:
             return pickle.load(file)

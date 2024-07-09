@@ -1,5 +1,6 @@
 """Octo Experiment module."""
 
+import gzip
 import pickle
 from pathlib import Path
 
@@ -79,13 +80,24 @@ class OctoExperiment:
         self.models = dict()
         self.results = dict()
 
-    def to_pickle(self, filename):
-        """Serialize experiment using pickle."""
-        with open(filename, "wb") as file:
+    def to_pickle(self, file_path: str) -> None:
+        """Save object to a compressed pickle file.
+
+        Args:
+            file_path: The name of the file to save the pickle data to.
+        """
+        with gzip.GzipFile(file_path, "wb") as file:
             pickle.dump(self, file)
 
     @classmethod
-    def from_pickle(cls, filename):
-        """Load experiment from pickle file."""
-        with open(filename, "rb") as file:
+    def from_pickle(cls, file_path: str) -> "OctoExperiment":
+        """Load object to a compressed pickle file.
+
+        Args:
+            file_path: The path to the file to load the pickle data from.
+
+        Returns:
+            OctoExperiment: The loaded instance of OctoExperiment.
+        """
+        with gzip.GzipFile(file_path, "rb") as file:
             return pickle.load(file)

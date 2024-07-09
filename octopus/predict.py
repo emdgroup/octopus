@@ -19,7 +19,7 @@ from octopus.modules.utils import optuna_direction
 # TOBEDONE
 # (1) correltly label outputs of probabilities .predict_proba()
 # (2) replace metrics with score, relevant for feature importances
-# (3) Permuation importance on group of features
+# (3) Permutation importance on group of features
 # (4) ? create OctoML.predict(), .calculate_fi()
 
 
@@ -99,7 +99,6 @@ class OctoPredict:
         """Predict on new data."""
         preds_lst = list()
         for _, experiment in self.experiments.items():
-
             feature_columns = experiment["feature_columns"]
 
             if set(feature_columns).issubset(data.columns):
@@ -128,7 +127,6 @@ class OctoPredict:
         """Predict_proba on new data."""
         preds_lst = list()
         for _, experiment in self.experiments.items():
-
             feature_columns = experiment["feature_columns"]
 
             if set(feature_columns).issubset(data.columns):
@@ -159,7 +157,6 @@ class OctoPredict:
         """Predict on available test data."""
         preds_lst = list()
         for _, experiment in self.experiments.items():
-
             data_test = experiment["data_test"]
             feature_columns = experiment["feature_columns"]
             row_column = experiment["row_column"]
@@ -187,7 +184,6 @@ class OctoPredict:
         """Predict_proba on available test data."""
         preds_lst = list()
         for _, experiment in self.experiments.items():
-
             data_test = experiment["data_test"]
             feature_columns = experiment["feature_columns"]
             row_column = experiment["row_column"]
@@ -224,7 +220,6 @@ class OctoPredict:
             raise ValueError("Specified shap_type not supported.")
 
         for exp_id, experiment in self.experiments.items():
-
             if fi_type == "permutation":
                 results_df = self._get_fi_permutation(experiment, n_repeat, data=data)
                 self.results[f"fi_table_permutation_exp{exp_id}"] = results_df
@@ -245,7 +240,6 @@ class OctoPredict:
             raise ValueError("Specified shap_type not supported.")
 
         for exp_id, experiment in self.experiments.items():
-
             if fi_type == "permutation":
                 results_df = self._get_fi_permutation(experiment, n_repeat, data=None)
                 self.results[f"fi_table_permutation_exp{exp_id}"] = results_df
@@ -327,7 +321,7 @@ class OctoPredict:
 
     def _get_fi_permutation(self, experiment, n_repeat, data) -> pd.DataFrame:
         """Calculate permutation feature importances."""
-        print("Calculating permuation feature importances ....")
+        print("Calculating permutation feature importances ....")
         # fixed confidence level
         confidence_level = 0.95
         feature_columns = experiment["feature_columns"]
@@ -367,7 +361,7 @@ class OctoPredict:
             fi_lst = list()
 
             for _ in range(n_repeat):
-                # replace column with random selection from that columm of data_all
+                # replace column with random selection from that column of data_all
                 # we use data_all as the validation dataset may be small
                 data_pfi[feature] = np.random.choice(
                     data_all[feature], len(data_pfi), replace=False

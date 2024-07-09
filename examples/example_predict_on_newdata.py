@@ -1,8 +1,8 @@
 """Workflow example for prediction on new data."""
 
-from octopus.predict import OctoPredict
 from pathlib import Path
-import shap
+
+from octopus.predict import OctoPredict
 
 # setup
 
@@ -22,7 +22,7 @@ print(study.predict_proba_test())
 # print(study.predict_proba(data_df))
 
 
-# (C) calculate permuation feature importances using final models (bag)
+# (C) calculate permutation feature importances using final models (bag)
 #     on test data
 study.calculate_fi_test(fi_type="permutation")
 # - fi tables are saved in the  study.results dictionary
@@ -33,7 +33,7 @@ study.calculate_fi_test(fi_type="permutation")
 study.calculate_fi_test(fi_type="shap", shap_type="exact")
 # - shap_type could be ["exact", "permutation"]
 # - shap_type "exact" does not scale well with number of features
-# - shap_type "permuation" scales better than "exact" but
+# - shap_type "permutation" scales better than "exact" but
 #   takes longer for a small number of features
 # - fi tables are saved in the  study.results dictionary
 # - pdf plots are saved in the results directory
@@ -41,7 +41,7 @@ study.calculate_fi_test(fi_type="shap", shap_type="exact")
 
 # (E) calculate feature importances using final models (bag)
 #     on new data
-# study.calculate_fi(data_df, fi_type="permuation")
+# study.calculate_fi(data_df, fi_type="permutation")
 # study.calculate_fi(data_df, fi_type="shap")
 # - fi tables are saved in the  study.results dictionary
 # - pdf plots are saved in the results directory

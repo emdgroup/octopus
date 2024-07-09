@@ -161,4 +161,5 @@ datasets_local/
 *.ruff*
 *.dill
 *.db
+*.pdf
 

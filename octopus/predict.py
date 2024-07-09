@@ -1,34 +1,26 @@
 """Octopus prediction."""
 
+import math
 from pathlib import Path
 
+import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
+import scipy.stats
+import shap
 from attrs import define, field, validators
+from matplotlib.backends.backend_pdf import PdfPages
 
 from octopus.data import OctoData
 from octopus.experiment import OctoExperiment
-
-# TOBEDONE:
-# (1) Inputs:
-#    - study, sequence
-#    - predict on new dataset or on test
-#    - feature importances on new dataset or on test
-#    - feature importance method (permutation, shap, shap version)
-# (2) Outputs:
-#    - predictions on new dataset or test (ensembled)
-#    - any performance info?
-#    - featur importances per model, averaged -- detailed info on FI.
-# (3) Usage:
-#     - OctoML.predict() -- create this method
-#     - predict-Object
-# (4) Other topcis:
-#     - OctoML to save study path?
-#     - read config from study path
-#     - predict-Object: show sequence
-
+from octopus.modules.metrics import metrics_inventory
+from octopus.modules.utils import optuna_direction
 
 # TOBEDONE
 # (1) correltly label outputs of probabilities .predict_proba()
+# (2) replace metrics with score, relevant for feature importances
+# (3) Permuation importance on group of features
+# (4) ? create OctoML.predict(), .calculate_fi()
 
 
 @define
@@ -46,6 +38,9 @@ class OctoPredict:
     experiments: dict = field(init=False, validator=[validators.instance_of(dict)])
     """Dictionary containing model and corresponding test_dataset."""
 
+    results: dict = field(init=False, validator=[validators.instance_of(dict)])
+    """Results."""
+
     @property
     def config(self) -> dict:
         """Study configuration."""
@@ -61,6 +56,8 @@ class OctoPredict:
         return self.config.ml_type
 
     def __attrs_post_init__(self):
+        # initialization here due to "Python immutable default"
+        self.results = dict()
         # set last sequence item as default
         if self.sequence_item_id < 0:
             self.sequence_item_id = len(self.config.cfg_sequence) - 1
@@ -85,10 +82,15 @@ class OctoPredict:
                 )
                 experiment = OctoExperiment.from_pickle(path_exp)
                 experiments[experiment_id] = {
+                    "id": experiment_id,
                     "model": experiment.models["best"],
+                    "data_traindev": experiment.data_traindev,
                     "data_test": experiment.data_test,
                     "feature_columns": experiment.feature_columns,
                     "row_column": experiment.row_column,
+                    "target_assignments": experiment.target_assignments,
+                    "target_metric": experiment.config["target_metric"],
+                    "ml_type": experiment.config["ml_type"],
                 }
         print(f"{len(experiments)} experiment(s) out of {self.n_experiments} found.")
         return experiments
@@ -210,8 +212,267 @@ class OctoPredict:
 
         return grouped_df
 
-    def calculate_fi(self, data: pd.DataFrame) -> pd.DataFrame:
+    def calculate_fi(
+        self,
+        data: pd.DataFrame,
+        n_repeat: int = 10,
+        fi_type: str = "permutation",
+        shap_type: str = "exact",
+    ) -> pd.DataFrame:
         """Calculate feature importances on new data."""
+        if shap_type not in ["exact", "permutation"]:
+            raise ValueError("Specified shap_type not supported.")
 
-    def calculate_fi_test(self) -> pd.DataFrame:
+        for exp_id, experiment in self.experiments.items():
+
+            if fi_type == "permutation":
+                results_df = self._get_fi_permutation(experiment, n_repeat, data=data)
+                self.results[f"fi_table_permutation_exp{exp_id}"] = results_df
+                self._plot_permutation_fi(exp_id, results_df)
+            elif fi_type == "shap":
+                results_df = self._get_fi_shap(
+                    experiment, data=data, shap_type=shap_type
+                )
+                self.results[f"fi_table_shap_exp{exp_id}"] = results_df
+            else:
+                raise ValueError("Feature Importance type not supported")
+
+    def calculate_fi_test(
+        self, n_repeat: int = 10, fi_type: str = "permutation", shap_type: str = "exact"
+    ) -> pd.DataFrame:
         """Calculate feature importances on available test data."""
+        if shap_type not in ["exact", "permutation"]:
+            raise ValueError("Specified shap_type not supported.")
+
+        for exp_id, experiment in self.experiments.items():
+
+            if fi_type == "permutation":
+                results_df = self._get_fi_permutation(experiment, n_repeat, data=None)
+                self.results[f"fi_table_permutation_exp{exp_id}"] = results_df
+                self._plot_permutation_fi(exp_id, results_df)
+            elif fi_type == "shap":
+                results_df = self._get_fi_shap(
+                    experiment, data=None, shap_type=shap_type
+                )
+                self.results[f"fi_table_shap_exp{exp_id}"] = results_df
+            else:
+                raise ValueError("Feature Importance type not supported")
+
+    def _plot_permutation_fi(self, experiment_id, df):
+        """Create plot for permutation fi and save to file."""
+        # Calculate error bars
+        lower_error = df["importance"] - df["ci_low_95"]
+        upper_error = df["ci_high_95"] - df["importance"]
+        error = [lower_error.values, upper_error.values]
+
+        save_path = self.study_path.joinpath(
+            f"experiment{experiment_id}",
+            f"sequence{self.sequence_item_id}",
+            "results",
+            f"model_permutation_fi_exp{experiment_id}_{self.sequence_item_id}.pdf",
+        )
+        # plot figure and save to pdf
+        with PdfPages(save_path) as pdf:
+            plt.figure(figsize=(8.27, 11.69))  # portrait orientation (A4)
+            _ = plt.barh(
+                df["feature"],
+                df["importance"],
+                xerr=error,
+                capsize=5,
+                color="royalblue",
+                # edgecolor="black",
+            )
+
+            # Adding labels and title
+            plt.ylabel("Feature")
+            plt.xlabel("Importance")
+            plt.title("Feature Importance with Confidence Intervals")
+            plt.grid(True, axis="x")
+
+            # Adjust layout to make room for the plot
+            plt.tight_layout()
+
+            pdf.savefig(plt.gcf(), orientation="portrait")
+            plt.close()
+
+    def _get_performance_score(
+        self, model, data, feature_columns, target_metric, target_assignments
+    ) -> float:
+        """Calculate model performance score on dataset."""
+        if target_metric in ["AUCROC", "LOGLOSS"]:
+            target_col = list(target_assignments.values())[0]
+            target = data[target_col]
+            probabilities = model.predict_proba(data[feature_columns])[
+                :, 1
+            ]  # binary only!!
+            score = metrics_inventory[target_metric]["method"](target, probabilities)
+        elif target_metric in ["CI"]:
+            estimate = model.predict(data)
+            event_time = data[target_assignments["duration"]].astype(float)
+            event_indicator = data[target_assignments["event"]].astype(bool)
+            score, _, _, _, _ = metrics_inventory[target_metric]["method"](
+                event_indicator, event_time, estimate
+            )
+        else:
+            target_col = list(target_assignments.values())[0]
+            target = data[target_col]
+            probabilities = model.predict(data)
+            score = metrics_inventory[target_metric]["method"](target, probabilities)
+
+        # make sure that the sign of the feature importances is correct
+        if optuna_direction(target_metric) == "maximize":
+            return score
+        else:
+            return -score
+
+    def _get_fi_permutation(self, experiment, n_repeat, data) -> pd.DataFrame:
+        """Calculate permutation feature importances."""
+        print("Calculating permuation feature importances ....")
+        # fixed confidence level
+        confidence_level = 0.95
+        feature_columns = experiment["feature_columns"]
+        data_traindev = experiment["data_traindev"]
+        data_test = experiment["data_test"]
+        target_assignments = experiment["target_assignments"]
+        target_metric = experiment["target_metric"]
+        model = experiment["model"]
+
+        # support prediction on new data as well as test data
+        if data is None:  # new data
+            data = data_test
+        if not set(feature_columns).issubset(data.columns):
+            raise ValueError("Features missing in provided dataset.")
+
+        # calculate baseline score
+        baseline_score = self._get_performance_score(
+            model, data, feature_columns, target_metric, target_assignments
+        )
+
+        # get all data select random feature values
+        data_all = pd.concat([data_traindev, data], axis=0)
+
+        results_df = pd.DataFrame(
+            columns=[
+                "feature",
+                "importance",
+                "stddev",
+                "p-value",
+                "n",
+                "ci_low_95",
+                "ci_high_95",
+            ]
+        )
+        for feature in feature_columns:
+            data_pfi = data.copy()
+            fi_lst = list()
+
+            for _ in range(n_repeat):
+                # replace column with random selection from that columm of data_all
+                # we use data_all as the validation dataset may be small
+                data_pfi[feature] = np.random.choice(
+                    data_all[feature], len(data_pfi), replace=False
+                )
+                pfi_score = self._get_performance_score(
+                    model, data_pfi, feature_columns, target_metric, target_assignments
+                )
+                fi_lst.append(baseline_score - pfi_score)
+
+            # calculate statistics
+            pfi_mean = np.mean(fi_lst)
+            n = len(fi_lst)
+            p_value = np.nan
+            stddev = np.std(fi_lst, ddof=1) if n > 1 else np.nan
+            if stddev not in (np.nan, 0):
+                t_stat = pfi_mean / (stddev / math.sqrt(n))
+                p_value = scipy.stats.t.sf(t_stat, n - 1)
+            elif stddev == 0:
+                p_value = 0.5
+
+            # calculate confidence intervals
+            if np.nan in (stddev, n, pfi_mean) or n == 1:
+                ci_high = np.nan
+                ci_low = np.nan
+            else:
+                t_val = scipy.stats.t.ppf(1 - (1 - confidence_level) / 2, n - 1)
+                ci_high = pfi_mean + t_val * stddev / math.sqrt(n)
+                ci_low = pfi_mean - t_val * stddev / math.sqrt(n)
+
+            # save results
+            results_df.loc[len(results_df)] = [
+                feature,
+                pfi_mean,
+                stddev,
+                p_value,
+                n,
+                ci_low,
+                ci_high,
+            ]
+
+        return results_df.sort_values(by="importance", ascending=False)
+
+    def _get_fi_shap(self, experiment, data, shap_type) -> pd.DataFrame:
+        """Calculate shap feature importances."""
+        experiment_id = experiment["id"]
+        feature_columns = experiment["feature_columns"]
+        data_test = experiment["data_test"][feature_columns]
+        model = experiment["model"]
+        ml_type = experiment["ml_type"]
+
+        # support prediction on new data as well as test data
+        if data is None:  # new data
+            data = data_test
+
+        if not set(feature_columns).issubset(data.columns):
+            raise ValueError("Features missing in provided dataset.")
+
+        if ml_type == "classification":
+            if shap_type == "exact":
+                explainer = shap.explainers.Exact(model.predict_proba, data_test)
+            else:
+                explainer = shap.explainers.Permutation(model.predict_proba, data_test)
+            shap_values = explainer(data_test)
+            # only use pos class
+            shap_values = shap_values[:, :, 1]  # pylint: disable=E1126
+        else:
+            if shap_type == "exact":
+                explainer = shap.explainers.Exact(model.predict, data_test)
+            else:
+                explainer = shap.explainers.Permutation(model.predict, data_test)
+            shap_values = explainer(data_test)
+
+        results_path = self.study_path.joinpath(
+            f"experiment{experiment_id}",
+            f"sequence{self.sequence_item_id}",
+            "results",
+        )
+        # (A) Bar plot
+        save_path = results_path.joinpath(
+            f"model_shap_fi_barplot_exp{experiment_id}_{self.sequence_item_id}.pdf",
+        )
+        with PdfPages(save_path) as pdf:
+            plt.figure(figsize=(8.27, 11.69))  # portrait orientation (A4)
+            shap.plots.bar(shap_values, show=False)
+            plt.tight_layout()
+            pdf.savefig(plt.gcf(), orientation="portrait")
+            plt.close()
+
+        # (B) Beeswarm plot
+        save_path = results_path.joinpath(
+            f"model_shap_fi_beeswarm_exp{experiment_id}_{self.sequence_item_id}.pdf",
+        )
+        with PdfPages(save_path) as pdf:
+            plt.figure(figsize=(8.27, 11.69))  # portrait orientation (A4)
+            shap.plots.beeswarm(shap_values, max_display=20, show=False)
+            plt.tight_layout()
+            pdf.savefig(plt.gcf(), orientation="portrait")
+            plt.close()
+
+        # (C) save fi to table
+        shap_fi_df = pd.DataFrame(shap_values.values, columns=data.columns)
+        shap_fi_df = shap_fi_df.abs().mean().to_frame().reset_index()
+        shap_fi_df.columns = ["feature", "importance"]
+        shap_fi_df = shap_fi_df.sort_values(
+            by="importance", ascending=False
+        ).reset_index(drop=True)
+
+        return shap_fi_df

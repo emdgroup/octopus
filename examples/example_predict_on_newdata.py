@@ -19,6 +19,7 @@ print(study.predict_proba_test())
 # this generate the ensembling predictions using
 # the final models from all available experiments
 # data_df = pd.DataFrame()
+# print(study.predict_proba(data_df, return_df=True))
 # print(study.predict_proba(data_df))
 
 

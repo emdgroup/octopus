@@ -125,12 +125,19 @@ path_study = Path(config_study["output_path"]).joinpath(config_study["study_name
 study = OctoPredict(path_study)
 
 print(study.predict_proba_test())
-# print(study.predict_proba(data_df)) # new data
 
 # feature importances for test data
-study.calculate_fi_test(fi_type="shap", shap_type="exact")
+# study.calculate_fi_test(fi_type="shap", shap_type="exact")
 # study.calculate_fi_test(fi_type="permutation")
 
+
+exp1 = study.experiments[1]
+data_df = exp1["data_traindev"].iloc[:20]
+print(data_df.head())
+
+# print(study.predict_proba(data_df, return_df=True)) # new data, returns DataFrame
+# print(study.predict_proba(data_df)) # new data, returns numpy array
+
 # feature importances for new data
-# study.calculate_fi(data_df, fi_type="shap", shap_type="exact")
+study.calculate_fi(data_df, fi_type="shap", shap_type="exact")
 # study.calculate_fi(data_df, fi_type="permutation")

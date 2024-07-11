@@ -16,6 +16,7 @@ dependencies:
   - arrow=1.3.0=pyhd8ed1ab_0
   - asttokens=2.4.1=pyhd8ed1ab_0
   - async-lru=2.0.4=pyhd8ed1ab_0
+  - atk-1.0=2.38.0=h04ea711_2
   - attr=2.5.1=h166bdaf_1
   - attrs=23.2.0=pyh71513ae_0
   - aws-c-auth=0.7.17=he0b1f16_2
@@ -45,12 +46,13 @@ dependencies:
   - brotli-python=1.1.0=py312h30efb56_1
   - bzip2=1.0.8=hd590300_5
   - c-ares=1.28.1=hd590300_0
-  - ca-certificates=2024.6.2=hbcca054_0
+  - ca-certificates=2024.7.4=hbcca054_0
   - cached-property=1.5.2=hd8ed1ab_1
   - cached_property=1.5.2=pyha770c72_1
   - cachetools=5.3.3=pyhd8ed1ab_0
   - cairo=1.18.0=h3faef2a_0
-  - certifi=2024.6.2=pyhd8ed1ab_0
+  - catboost=1.2.5=py312h7900ff3_0
+  - certifi=2024.7.4=pyhd8ed1ab_0
   - cffi=1.16.0=py312hf06ca03_0
   - cfgv=3.3.1=pyhd8ed1ab_0
   - charset-normalizer=3.3.2=pyhd8ed1ab_0
@@ -62,12 +64,12 @@ dependencies:
   - contourpy=1.2.1=py312h8572e83_0
   - cryptography=42.0.8=py312hbcc2302_0
   - cycler=0.12.1=pyhd8ed1ab_0
-  - dash=2.17=pyhd8ed1ab_0
+  - dash=2.16.1=pyhd8ed1ab_0
   - dash-ag-grid=31.0.1=pyhd8ed1ab_0
   - dash-core-components=2.0.0=pyhd8ed1ab_1
   - dash-html-components=2.0.0=pyhd8ed1ab_1
   - dash-iconify=0.1.2=pyhd8ed1ab_0
-  - dash-mantine-components=0.14.3=pyhd8ed1ab_0
+  - dash-mantine-components=0.12.1=pyhd8ed1ab_0
   - dash-table=5.0.0=pyhd8ed1ab_1
   - dbus=1.13.6=h5008d03_3
   - debugpy=1.8.1=py312h30efb56_0
@@ -93,20 +95,26 @@ dependencies:
   - foundry-dev-tools=1.4.2=pyhd8ed1ab_0
   - fqdn=1.5.1=pyhd8ed1ab_0
   - freetype=2.12.1=h267a509_2
+  - fribidi=1.0.10=h36c2ea0_0
   - fs=2.4.16=pyhd8ed1ab_0
   - future=1.0.0=pyhd8ed1ab_0
+  - gdk-pixbuf=2.42.11=hb9ae30d_0
   - gettext=0.22.5=h59595ed_2
   - gettext-tools=0.22.5=h59595ed_2
   - gflags=2.2.2=he1b5a44_1004
+  - giflib=5.2.2=hd590300_0
   - gitdb=4.0.11=pyhd8ed1ab_0
   - gitpython=3.1.43=pyhd8ed1ab_0
   - glib=2.80.0=hf2295e7_4
   - glib-tools=2.80.0=hde27a5a_4
   - glog=0.7.0=hed5481d_0
   - graphite2=1.3.13=h59595ed_1003
+  - graphviz=9.0.0=h78e8752_1
   - greenlet=3.0.3=py312h30efb56_0
   - gst-plugins-base=1.24.1=hfa15dee_1
   - gstreamer=1.24.1=h98fc4e7_1
+  - gtk2=2.24.33=h280cfa0_4
+  - gts=0.7.6=h977cf35_4
   - h11=0.14.0=pyhd8ed1ab_0
   - h2=4.1.0=pyhd8ed1ab_0
   - harfbuzz=8.3.0=h3d44ed6_0
@@ -183,6 +191,7 @@ dependencies:
   - libflac=1.4.3=h59595ed_0
   - libgcc-ng=13.2.0=h807b86a_5
   - libgcrypt=1.10.3=hd590300_0
+  - libgd=2.3.3=h119a65a_9
   - libgettextpo=0.22.5=h59595ed_2
   - libgettextpo-devel=0.22.5=h59595ed_2
   - libgfortran-ng=13.2.0=h69a702a_5
@@ -212,6 +221,7 @@ dependencies:
   - libpq=16.2=h33b98f1_1
   - libprotobuf=4.25.3=h08a7969_0
   - libre2-11=2023.09.01=h5a48ba9_2
+  - librsvg=2.58.0=hadf69e7_1
   - libsndfile=1.2.2=hc60ed4a_1
   - libsodium=1.0.18=h36c2ea0_1
   - libsqlite=3.45.2=h2797004_0
@@ -223,6 +233,7 @@ dependencies:
   - libutf8proc=2.8.0=h166bdaf_0
   - libuuid=2.38.1=h0b41bf4_0
   - libvorbis=1.3.7=h9c3ff4c_0
+  - libwebp=1.3.2=h658648e_1
   - libwebp-base=1.3.2=hd590300_1
   - libxcb=1.15=h0b41bf4_0
   - libxcrypt=4.4.36=hd590300_1
@@ -266,7 +277,7 @@ dependencies:
   - oauthlib=3.2.2=pyhd8ed1ab_0
   - ocl-icd=2.3.2=hd590300_1
   - openjpeg=2.5.2=h488ebb8_0
-  - openssl=3.3.1=h4ab18f5_0
+  - openssl=3.3.1=h4ab18f5_1
   - optuna=3.6.1=pyhd8ed1ab_0
   - orc=2.0.0=h17fec99_1
   - osqp=0.6.3=py312hd553d1a_1
@@ -275,6 +286,7 @@ dependencies:
   - palantir-oauth-client=1.6.1=pyhd8ed1ab_0
   - pandas=2.2.2=py312h1d6d2e6_1
   - pandocfilters=1.5.0=pyhd8ed1ab_0
+  - pango=1.52.2=ha41ecd1_0
   - parso=0.8.4=pyhd8ed1ab_0
   - pathspec=0.12.1=pyhd8ed1ab_0
   - patsy=0.5.6=pyhd8ed1ab_0
@@ -311,6 +323,7 @@ dependencies:
   - python=3.12.2=hab00c5b_0_cpython
   - python-dateutil=2.9.0=pyhd8ed1ab_0
   - python-fastjsonschema=2.19.1=pyhd8ed1ab_0
+  - python-graphviz=0.20.3=pyh717bed2_0
   - python-json-logger=2.0.7=pyhd8ed1ab_0
   - python-tzdata=2024.1=pyhd8ed1ab_0
   - python_abi=3.12=4_cp312

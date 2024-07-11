@@ -6,6 +6,7 @@ Template:
 https://github.com/scikit-learn-contrib/project-template/blob/master/skltemplate/_template.py
 """
 
+from catboost import CatBoostClassifier, CatBoostRegressor
 from sklearn.ensemble import (
     ExtraTreesClassifier,
     ExtraTreesRegressor,
@@ -92,5 +93,15 @@ model_inventory = {
         "feature_method": "permutation",
         "n_repeats": 2,
         "ml_type": "timetoevent",
+    },
+    "CatBoostRegressor": {
+        "model": CatBoostRegressor,
+        "feature_method": "internal",
+        "ml_type": "regression",
+    },
+    "CatBoostClassifier": {
+        "model": CatBoostClassifier,
+        "feature_method": "internal",
+        "ml_type": "classification",
     },
 }

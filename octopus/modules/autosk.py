@@ -113,7 +113,7 @@ class Autosklearn:
         return self.experiment.data_test[self.experiment.target_assignments.values()]
 
     @property
-    def params(self) -> pd.DataFrame:
+    def params(self) -> dict:
         """Auto-sklearn parameters."""
         params = self.experiment.ml_config["config"]
         # add metric based on target metric

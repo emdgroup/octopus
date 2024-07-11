@@ -140,6 +140,7 @@ class ObjectiveOptuna:
         )
 
         # train all models in bag
+        # print("config_training", config_training)
         bag_trainings.fit()
 
         # evaluate trainings using target metric

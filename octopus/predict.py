@@ -32,9 +32,7 @@ class OctoPredict:
     study_path: Path = field(validator=[validators.instance_of(Path)])
     """Path to study."""
 
-    sequence_item_id: int = field(
-        init=False, default=-1, validator=[validators.instance_of(int)]
-    )
+    sequence_item_id: int = field(default=-1, validator=[validators.instance_of(int)])
     """Sequence item id."""
 
     experiments: dict = field(init=False, validator=[validators.instance_of(dict)])

@@ -196,6 +196,48 @@ svr_reg = {
     },
 }
 
+# CatBoost classifier parameter settings
+catboost_class = {
+    "default": [
+        ("float", {"name": "learning_rate", "low": 1e-3, "high": 1e-1, "log": True}),
+        ("int", {"name": "depth", "low": 3, "high": 10}),
+        ("float", {"name": "l2_leaf_reg", "low": 2, "high": 10}),
+        ("float", {"name": "random_strength", "low": 2, "high": 10}),
+        ("float", {"name": "rsm", "low": 0.1, "high": 1}),
+        ("fixed", {"name": "iterations", "value": 500}),
+        # "Ordered" gives higher quality, but is slower
+        # ("fixed", {"name": "boosting_type", "value": "Plain"}),  # "Plain, Ordered"
+        # ("fixed", {"name": "silent", "value": True}),
+        ("fixed", {"name": "allow_writing_files", "value": False}),
+        ("fixed", {"name": "verbose", "value": 250}),
+    ],
+    "translate": {
+        "n_jobs": "thread_count",
+        "model_seed": "random_state",
+    },
+}
+
+# CatBoost regressor parameter settings
+catboost_reg = {
+    "default": [
+        ("float", {"name": "learning_rate", "low": 1e-3, "high": 1e-1, "log": True}),
+        ("int", {"name": "depth", "low": 3, "high": 10}),
+        ("float", {"name": "l2_leaf_reg", "low": 2, "high": 10}),
+        ("float", {"name": "random_strength", "low": 2, "high": 10}),
+        ("float", {"name": "rsm", "low": 0.1, "high": 1}),
+        ("fixed", {"name": "iterations", "value": 500}),
+        # "Ordered" gives higher quality, but is slower
+        # ("fixed", {"name": "boosting_type", "value": "Plain"}),  # "Plain, Ordered"
+        # ("fixed", {"name": "silent", "value": True}),
+        ("fixed", {"name": "allow_writing_files", "value": False}),
+        ("fixed", {"name": "verbose", "value": 250}),
+    ],
+    "translate": {
+        "n_jobs": "thread_count",
+        "model_seed": "random_state",
+    },
+}
+
 parameters_inventory = {
     "ExtraTreesClassifier": extratree_class,
     "ExtraTreesRegressor": extratree_reg,
@@ -209,4 +251,6 @@ parameters_inventory = {
     "ExtraTreesSurv": extratrees_surv,
     "GradientBoostingRegressor": gb_reg,
     "SvrRegressor": svr_reg,
+    "CatBoostClassifier": catboost_class,
+    "CatBoostRegressor": catboost_reg,
 }

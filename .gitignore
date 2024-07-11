@@ -155,6 +155,7 @@ cython_debug/
 # custom
 studies/
 datasets_local/
+catboost_info/
 *.ipynb
 *.pickle
 *.pkl

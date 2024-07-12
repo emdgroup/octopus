@@ -18,6 +18,7 @@ from sklearn.ensemble import (
 from sklearn.linear_model import ARDRegression, ElasticNet, Ridge
 from sklearn.svm import SVR
 from sksurv.ensemble import ExtraSurvivalTrees
+from tabpfn import TabPFNClassifier
 from xgboost import XGBClassifier, XGBRegressor
 
 # model_inventory:
@@ -102,6 +103,12 @@ model_inventory = {
     "CatBoostClassifier": {
         "model": CatBoostClassifier,
         "feature_method": "internal",
+        "ml_type": "classification",
+    },
+    "TabPFNClassifier": {
+        "model": TabPFNClassifier,
+        "feature_method": "permutation",
+        "n_repeats": 2,
         "ml_type": "classification",
     },
 }

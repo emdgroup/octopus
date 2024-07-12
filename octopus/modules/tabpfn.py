@@ -1,9 +1,10 @@
 """TabPFN Module."""
 
-import numpy as np
+import shutil
+from pathlib import Path
+
 import pandas as pd
 from attrs import define, field, validators
-
 
 from octopus.experiment import OctoExperiment
 
@@ -15,7 +16,7 @@ from octopus.experiment import OctoExperiment
 # (2) model initialization
 # (3) model training
 # (4) evaluation of model performance
-# (6) calcuation of feature importances
+# (6) calculation of feature importances
 # (7) extract features used
 # (8) save to experiment:
 #      - predictions
@@ -42,7 +43,7 @@ class Tabpfn:
     def path_results(self) -> Path:
         """Results path."""
         return self.path_module.joinpath("results")
-    
+
     @property
     def x_traindev(self) -> pd.DataFrame:
         """x_train."""
@@ -78,28 +79,26 @@ class Tabpfn:
             if directory.exists():
                 shutil.rmtree(directory)
             directory.mkdir(parents=True, exist_ok=True)
-        
+
     def run_experiment(self):
         """Run mrmr module on experiment."""
         # run experiment and return updated experiment object
 
         # limit to classification tasks
-        if self.experiment.ml_type == "classification":
-            self.model = Model(**self.params)
-        else:
-            raise ValueError(
-                f"ML-type {self.experiment.ml_type} not supported"
-            )
+        # if self.experiment.ml_type == "classification":
+        #    self.model = Model(**self.params)
+        # else:
+        #    raise ValueError(f"ML-type {self.experiment.ml_type} not supported")
 
         # model training
-        self.model.fit(
-            self.x_traindev,
-            self.y_traindev,
-        )
+        # self.model.fit(
+        #    self.x_traindev,
+        #    self.y_traindev,
+        # )
         print("fitting completed")
 
         # save features selected by tabpfn
-        self.experiment.selected_features = 
+        # self.experiment.selected_features =
 
         return self.experiment
 

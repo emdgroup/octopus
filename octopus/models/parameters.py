@@ -238,6 +238,18 @@ catboost_reg = {
     },
 }
 
+# CatBoost regressor parameter settings
+tabpfn_class = {
+    "default": [
+        ("fixed", {"name": "N_ensemble_configurations", "value": 4}),
+        ("fixed", {"name": "subsample_features", "value": True}),
+    ],
+    "translate": {
+        "n_jobs": "NA",
+        "model_seed": "seed",
+    },
+}
+
 parameters_inventory = {
     "ExtraTreesClassifier": extratree_class,
     "ExtraTreesRegressor": extratree_reg,
@@ -253,4 +265,5 @@ parameters_inventory = {
     "SvrRegressor": svr_reg,
     "CatBoostClassifier": catboost_class,
     "CatBoostRegressor": catboost_reg,
+    "TabPFNClassifier": tabpfn_class,
 }

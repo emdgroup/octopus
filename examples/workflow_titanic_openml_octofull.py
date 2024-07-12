@@ -2,11 +2,13 @@
 
 import os
 import socket
+from pathlib import Path
 
 import attrs
 import pandas as pd
 
 from octopus import OctoConfig, OctoData, OctoML
+from octopus.dashboard.run import OctoDash
 from octopus.modules.octo.config import OctopusFullConfig
 
 # Conda and Host information
@@ -93,13 +95,19 @@ sequence_item_1 = OctopusFullConfig(
     # datasplit
     n_folds_inner=5,
     # model training
-    models=["ExtraTreesClassifier", "RandomForestClassifier"],
+    models=[
+        "TabPFNClassifier",
+        # "ExtraTreesClassifier",
+        # "RandomForestClassifier",
+        # "CatBoostClassifier",
+        # "XGBClassifier",
+    ],
     # parallelization
     inner_parallelization=True,
     n_workers=5,
     # HPO
     global_hyperparameter=True,
-    n_trials=20,
+    n_trials=1,
 )
 
 config_sequence = [attrs.asdict(sequence_item_1)]
@@ -116,3 +124,8 @@ oml.create_outer_experiments()
 oml.run_outer_experiments()
 
 print("Workflow completed")
+
+# use dashboard
+# path_study = Path(config_study["output_path"]).joinpath(config_study["study_name"])
+# octo_dashboard = OctoDash(path_study)
+# octo_dashboard.run()

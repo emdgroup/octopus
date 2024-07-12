@@ -6,7 +6,9 @@ import socket
 import attrs
 
 # OPENBLASE config needs to be before pandas, autosk
-# os.environ["OPENBLAS_NUM_THREADS"] = "1"
+os.environ["OPENBLAS_NUM_THREADS"] = "1"
+os.environ["OMP_NUM_THREADS"] = "1"
+
 import pandas as pd
 
 from octopus import OctoConfig, OctoData, OctoML
@@ -75,7 +77,7 @@ config_manager = {
     # outer loop
     "outer_parallelization": True,
     # only run specific single experiment, for quick testing
-    "run_single_experiment_num": 1,
+    # "run_single_experiment_num": 2,
 }
 
 # define processing sequence
@@ -87,7 +89,12 @@ sequence_item_1 = OctopusFullConfig(
     n_folds_inner=5,
     datasplit_seed_inner=0,
     # model training
-    models=["ExtraTreesClassifier"],
+    models=[
+        # "ExtraTreesClassifier",
+        # "RandomForestClassifier",
+        # "CatBoostClassifier",
+        "XGBClassifier",
+    ],
     model_seed=0,
     n_jobs=1,
     dim_red_methods=[""],
@@ -101,7 +108,7 @@ sequence_item_1 = OctopusFullConfig(
     n_optuna_startup_trials=10,
     resume_optimization=False,
     global_hyperparameter=True,
-    n_trials=100,
+    n_trials=500,
     max_features=70,
     penalty_factor=1.0,
 )
@@ -130,7 +137,12 @@ sequence_item_3 = OctopusFullConfig(
     n_folds_inner=5,
     datasplit_seed_inner=0,
     # model training
-    models=["ExtraTreesClassifier"],
+    models=[
+        # "ExtraTreesClassifier",
+        # "RandomForestClassifier",
+        "CatBoostClassifier",
+        # "XGBClassifier",
+    ],
     model_seed=0,
     n_jobs=1,
     dim_red_methods=[""],

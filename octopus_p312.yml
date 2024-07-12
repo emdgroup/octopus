@@ -1,6 +1,7 @@
 name: octo312
 channels:
   - sebp
+  - pytorch
   - conda-forge
 dependencies:
   - _libgcc_mutex=0.1=conda_forge
@@ -62,6 +63,7 @@ dependencies:
   - colorlog=6.8.2=py312h7900ff3_0
   - comm=0.2.2=pyhd8ed1ab_0
   - contourpy=1.2.1=py312h8572e83_0
+  - cpuonly=2.0=0
   - cryptography=42.0.8=py312hbcc2302_0
   - cycler=0.12.1=pyhd8ed1ab_0
   - dash=2.16.1=pyhd8ed1ab_0
@@ -97,6 +99,7 @@ dependencies:
   - freetype=2.12.1=h267a509_2
   - fribidi=1.0.10=h36c2ea0_0
   - fs=2.4.16=pyhd8ed1ab_0
+  - fsspec=2024.6.1=pyhff2d567_0
   - future=1.0.0=pyhd8ed1ab_0
   - gdk-pixbuf=2.42.11=hb9ae30d_0
   - gettext=0.22.5=h59595ed_2
@@ -108,6 +111,8 @@ dependencies:
   - glib=2.80.0=hf2295e7_4
   - glib-tools=2.80.0=hde27a5a_4
   - glog=0.7.0=hed5481d_0
+  - gmp=6.3.0=hac33072_2
+  - gmpy2=2.1.5=py312h1d5cde6_1
   - graphite2=1.3.13=h59595ed_1003
   - graphviz=9.0.0=h78e8752_1
   - greenlet=3.0.3=py312h30efb56_0
@@ -161,7 +166,7 @@ dependencies:
   - lcms2=2.16=hb7c19ff_0
   - ld_impl_linux-64=2.40=h41732ed_0
   - lerc=4.0.0=h27087fc_0
-  - libabseil=20240116.1=cxx17_h59595ed_2
+  - libabseil=20240116.2=cxx17_h59595ed_0
   - libarrow=15.0.2=he70291f_3_cpu
   - libarrow-acero=15.0.2=hac33072_3_cpu
   - libarrow-dataset=15.0.2=hac33072_3_cpu
@@ -230,8 +235,10 @@ dependencies:
   - libsystemd0=255=h3516f8a_1
   - libthrift=0.19.0=hb90f79a_1
   - libtiff=4.6.0=h1dd3fc0_3
+  - libtorch=2.3.1=cpu_mkl_h0bb0d08_100
   - libutf8proc=2.8.0=h166bdaf_0
   - libuuid=2.38.1=h0b41bf4_0
+  - libuv=1.48.0=hd590300_0
   - libvorbis=1.3.7=h9c3ff4c_0
   - libwebp=1.3.2=h658648e_1
   - libwebp-base=1.3.2=hd590300_1
@@ -256,7 +263,10 @@ dependencies:
   - mkl-devel=2023.2.0=ha770c72_50496
   - mkl-include=2023.2.0=h84fe81f_50496
   - mkl-service=2.4.1=py312h4daa2fd_0
+  - mpc=1.3.1=hfe3b2da_0
+  - mpfr=4.2.1=h9458935_1
   - mpg123=1.32.6=h59595ed_0
+  - mpmath=1.3.0=pyhd8ed1ab_0
   - munkres=1.1.4=pyh9f0ad1d_0
   - mypy_extensions=1.0.0=pyha770c72_0
   - mysql-common=8.3.0=hf1915f5_4
@@ -266,6 +276,7 @@ dependencies:
   - nbformat=5.10.4=pyhd8ed1ab_0
   - ncurses=6.4.20240210=h59595ed_0
   - nest-asyncio=1.6.0=pyhd8ed1ab_0
+  - networkx=3.3=pyhd8ed1ab_1
   - nodeenv=1.8.0=pyhd8ed1ab_0
   - notebook=7.1.2=pyhd8ed1ab_0
   - notebook-shim=0.2.4=pyhd8ed1ab_0
@@ -327,6 +338,8 @@ dependencies:
   - python-json-logger=2.0.7=pyhd8ed1ab_0
   - python-tzdata=2024.1=pyhd8ed1ab_0
   - python_abi=3.12=4_cp312
+  - pytorch=2.3.1=cpu_mkl_py312h3b258cc_100
+  - pytorch-mutex=1.0=cpu
   - pytz=2024.1=pyhd8ed1ab_0
   - pyyaml=6.0.1=py312h98912ed_1
   - pyzmq=25.1.2=py312h886d080_0
@@ -357,6 +370,8 @@ dependencies:
   - shap=0.45.1=cpu_py312h28877aa_0
   - sip=6.7.12=py312h30efb56_0
   - six=1.16.0=pyh6c4a22f_0
+  - skorch=1.0.0=pyhecae5ae_0
+  - sleef=3.5.1=h9b69904_2
   - slicer=0.0.8=pyhd8ed1ab_0
   - smmap=5.0.0=pyhd8ed1ab_0
   - snappy=1.2.0=hdb0a2a9_1
@@ -366,6 +381,8 @@ dependencies:
   - stack_data=0.6.2=pyhd8ed1ab_0
   - statsmodels=0.14.1=py312hc7c0aa3_0
   - streamlit=1.33.0=pyhd8ed1ab_1
+  - sympy=1.12.1=pypyh2585a3b_103
+  - tabulate=0.9.0=pyhd8ed1ab_1
   - tbb=2021.11.0=h00ab1b0_1
   - tenacity=8.2.3=pyhd8ed1ab_0
   - terminado=0.18.1=pyh0d859eb_0
@@ -423,4 +440,6 @@ dependencies:
   - zipp=3.17.0=pyhd8ed1ab_0
   - zlib=1.2.13=hd590300_5
   - zstd=1.5.5=hfc55251_0
+  - pip:
+      - tabpfn==0.1.10
 prefix: /home/ec2-user/mambaforge/envs/octo312

@@ -5,15 +5,15 @@ from pathlib import Path
 from octopus.predict import OctoPredict
 
 # setup
-path_study = Path("./studies/20240322A_MBOS6_octofull_5x5_ETREE/")
-sequence_item_id = 2
+path_study = Path("./studies/20240110B/")
+sequence_item_id = 0
 
 # create study-predict object
-study = OctoPredict(path_study, sequence_item_id=2)
+study = OctoPredict(path_study, sequence_item_id)
 
 
 # (A) predict on internally available test data
-print(study.predict_proba_test())
+# print(study.predict_proba_test())
 
 # (B) predict on new data
 # - data needs to be in pd.dataframe
@@ -28,13 +28,13 @@ print(study.predict_proba_test())
 
 # (C) calculate permutation feature importances using final models (bag)
 #     on test data
-# study.calculate_fi_test(fi_type="permutation")
+study.calculate_fi_test(fi_type="permutation")
 # - fi tables are saved in the  study.results dictionary
 # - pdf plots are saved in the results directory
 
 # (D) calculate shap feature importances using final models (bag)
 #     on test data
-study.calculate_fi_test(fi_type="shap", shap_type="permutation")
+# study.calculate_fi_test(fi_type="shap", shap_type="permutation")
 # - shap_type could be ["exact", "permutation"]
 # - shap_type "exact" does not scale well with number of features
 # - shap_type "permutation" scales better than "exact" but

@@ -241,8 +241,8 @@ catboost_reg = {
 # CatBoost regressor parameter settings
 tabpfn_class = {
     "default": [
-        ("fixed", {"name": "N_ensemble_configurations", "value": 4}),
-        ("fixed", {"name": "subsample_features", "value": True}),
+        ("fixed", {"name": "N_ensemble_configurations", "value": 16}),
+        ("fixed", {"name": "subsample_features", "value": False}),
     ],
     "translate": {
         "n_jobs": "NA",

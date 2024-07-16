@@ -8,8 +8,9 @@ from octopus.predict import OctoPredict
 path_study = Path("./studies/20240322A_MBOS6_octofull_5x5_ETREE/")
 sequence_item_id = 2
 
+
 # create study-predict object
-study = OctoPredict(path_study, sequence_item_id)
+study = OctoPredict(path_study, sequence_item_id=sequence_item_id)
 
 
 # (A) predict on internally available test data
@@ -28,7 +29,7 @@ study = OctoPredict(path_study, sequence_item_id)
 
 # (C) calculate permutation feature importances using final models (bag)
 #     on test data
-study.calculate_fi_test(fi_type="permutation")
+study.calculate_fi_test(fi_type="group_permutation", n_repeat=60, experiment_id=4)
 # - fi tables are saved in the  study.results dictionary
 # - pdf plots are saved in the results directory
 

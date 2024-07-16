@@ -472,6 +472,7 @@ class OctoFull:
                     config_training=user_attrs["config_training"],
                     target_metric=self.experiment.config["target_metric"],
                     max_features=self.experiment.ml_config["max_features"],
+                    feature_groups=self.experiment.feature_groups,
                 )
             )
         # create bag with all provided trainings

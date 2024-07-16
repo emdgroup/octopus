@@ -124,6 +124,7 @@ class ObjectiveOptuna:
                     config_training=config_training,
                     target_metric=self.experiment.config["target_metric"],
                     max_features=self.experiment.ml_config["max_features"],
+                    feature_groups=self.experiment.feature_groups,
                 )
             )
 

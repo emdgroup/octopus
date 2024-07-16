@@ -1,9 +1,11 @@
 """Octopus prediction."""
 
+# import itertools
 import math
 from pathlib import Path
 
 import matplotlib.pyplot as plt
+import networkx as nx
 import numpy as np
 import pandas as pd
 import scipy.stats
@@ -14,7 +16,7 @@ from matplotlib.backends.backend_pdf import PdfPages
 from octopus.data import OctoData
 from octopus.experiment import OctoExperiment
 from octopus.modules.metrics import metrics_inventory
-from octopus.modules.utils import optuna_direction
+from octopus.modules.utils import optuna_direction, rdc_correlation_matrix
 
 # TOBEDONE
 # (1) !calculate_fi(data_df)
@@ -41,6 +43,11 @@ class OctoPredict:
     results: dict = field(init=False, validator=[validators.instance_of(dict)])
     """Results."""
 
+    feature_group_dict: dict = field(
+        init=False, validator=[validators.instance_of(dict)]
+    )
+    """Feature groups dictionary."""
+
     @property
     def config(self) -> dict:
         """Study configuration."""
@@ -54,6 +61,7 @@ class OctoPredict:
     def __attrs_post_init__(self):
         # initialization here due to "Python immutable default"
         self.results = dict()
+        self.feature_group_dict = dict()
         # set last sequence item as default
         if self.sequence_item_id < 0:
             self.sequence_item_id = len(self.config.cfg_sequence) - 1
@@ -87,6 +95,7 @@ class OctoPredict:
                     "target_assignments": experiment.target_assignments,
                     "target_metric": experiment.config["target_metric"],
                     "ml_type": experiment.config["ml_type"],
+                    "feature_group_dict": dict(),
                 }
         print(f"{len(experiments)} experiment(s) out of {self.n_experiments} found.")
         return experiments
@@ -263,7 +272,11 @@ class OctoPredict:
             self.results["fi_table_shap_ensemble"] = results_df
 
     def calculate_fi_test(
-        self, n_repeat: int = 10, fi_type: str = "permutation", shap_type: str = "exact"
+        self,
+        n_repeat: int = 10,
+        fi_type: str = "permutation",
+        experiment_id: int = -1,
+        shap_type: str = "exact",
     ) -> pd.DataFrame:
         """Calculate feature importances on available test data."""
         if shap_type not in ["exact", "permutation"]:
@@ -272,17 +285,26 @@ class OctoPredict:
         print("Calculating feature importances for every experiment/model.")
         for _, experiment in self.experiments.items():
             exp_id = experiment["id"]
-            if fi_type == "permutation":
-                results_df = self._get_fi_permutation(experiment, n_repeat, data=None)
-                self.results[f"fi_table_permutation_exp{exp_id}"] = results_df
-                self._plot_permutation_fi(exp_id, results_df)
-            elif fi_type == "shap":
-                results_df = self._get_fi_shap(
-                    experiment, data=None, shap_type=shap_type
-                )
-                self.results[f"fi_table_shap_exp{exp_id}"] = results_df
-            else:
-                raise ValueError("Feature Importance type not supported")
+            if experiment_id in (-1, exp_id):
+                if fi_type == "permutation":
+                    results_df = self._get_fi_permutation(
+                        experiment, n_repeat, data=None
+                    )
+                    self.results[f"fi_table_permutation_exp{exp_id}"] = results_df
+                    self._plot_permutation_fi(exp_id, results_df)
+                if fi_type == "group_permutation":
+                    results_df = self._get_fi_group_permutation(
+                        experiment, n_repeat, data=None
+                    )
+                    self.results[f"fi_table_grouppermutation_exp{exp_id}"] = results_df
+                    self._plot_permutation_fi(exp_id, results_df)
+                elif fi_type == "shap":
+                    results_df = self._get_fi_shap(
+                        experiment, data=None, shap_type=shap_type
+                    )
+                    self.results[f"fi_table_shap_exp{exp_id}"] = results_df
+                else:
+                    raise ValueError("Feature Importance type not supported")
 
     def _plot_permutation_fi(self, experiment_id, df):
         """Create plot for permutation fi and save to file."""
@@ -431,6 +453,139 @@ class OctoPredict:
             # save results
             results_df.loc[len(results_df)] = [
                 feature,
+                pfi_mean,
+                stddev,
+                p_value,
+                n,
+                ci_low,
+                ci_high,
+            ]
+
+        return results_df.sort_values(by="importance", ascending=False)
+
+    def _get_fi_group_permutation(self, experiment, n_repeat, data) -> pd.DataFrame:
+        """Calculate permutation feature importances."""
+        # fixed confidence level
+        confidence_level = 0.95
+        auto_group_threshold = 0.6
+        feature_columns = experiment["feature_columns"]
+        data_traindev = experiment["data_traindev"]
+        data_test = experiment["data_test"]
+        target_assignments = experiment["target_assignments"]
+        target_metric = experiment["target_metric"]
+        model = experiment["model"]
+
+        # initialize feature_groups_dict
+        experiment["feature_group_dict"] = dict()
+
+        # support prediction on new data as well as test data
+        if data is None:  # new data
+            data = data_test
+        if not set(feature_columns).issubset(data.columns):
+            raise ValueError("Features missing in provided dataset.")
+
+        # check that targets are in dataset
+        # MISSING
+
+        # calculate auto-groups
+        # (a1) spearmamr correlation matrix
+        # feature_matrix = data_traindev[feature_columns].values
+        # corr_matrix, _ = scipy.stats.spearmanr(np.nan_to_num(feature_matrix))
+        # corr_matrix = np.abs(corr_matrix)
+        # (a2) rdc correlation matrix
+        pos_corr_matrix = np.abs(rdc_correlation_matrix(data_traindev[feature_columns]))
+
+        g = nx.Graph()
+
+        for i in range(len(feature_columns)):
+            for j in range(i + 1, len(feature_columns)):
+                if pos_corr_matrix[i, j] > auto_group_threshold:
+                    g.add_edge(i, j)
+
+        subgraphs = [g.subgraph(c) for c in nx.connected_components(g)]
+
+        groups = []
+        for sg in subgraphs:
+            groups.append([feature_columns[node] for node in sg.nodes()])
+
+        auto_groups = [sorted(g) for g in groups]
+        print("Number of auto-groups", len(auto_groups))
+        print("auto_groups", auto_groups)
+        # grouped_features = list(itertools.chain(*[list(g) for g in groups]))
+        # remove features already in groups
+        # features_list = [
+        #    [f] for f in list(set(feature_columns) - set(grouped_features))
+        # ] + auto_groups
+
+        # keep all features and add group features
+        features_list = [[f] for f in feature_columns] + auto_groups
+
+        # calculate baseline score
+        baseline_score = self._get_performance_score(
+            model, data, feature_columns, target_metric, target_assignments
+        )
+
+        # get all data select random feature values
+        data_all = pd.concat([data_traindev, data], axis=0)
+
+        results_df = pd.DataFrame(
+            columns=[
+                "feature",
+                "importance",
+                "stddev",
+                "p-value",
+                "n",
+                "ci_low_95",
+                "ci_high_95",
+            ]
+        )
+        for feature in features_list:
+            data_pfi = data.copy()
+            fi_lst = list()
+
+            for _ in range(n_repeat):
+                # replace column with random selection from that column of data_all
+                # we use data_all as the validation dataset may be small
+                for feat in feature:
+                    data_pfi[feat] = np.random.choice(
+                        data_all[feat], len(data_pfi), replace=False
+                    )
+                pfi_score = self._get_performance_score(
+                    model, data_pfi, feature_columns, target_metric, target_assignments
+                )
+                fi_lst.append(baseline_score - pfi_score)
+
+            # calculate statistics
+            pfi_mean = np.mean(fi_lst)
+            n = len(fi_lst)
+            p_value = np.nan
+            stddev = np.std(fi_lst, ddof=1) if n > 1 else np.nan
+            if stddev not in (np.nan, 0):
+                t_stat = pfi_mean / (stddev / math.sqrt(n))
+                p_value = scipy.stats.t.sf(t_stat, n - 1)
+            elif stddev == 0:
+                p_value = 0.5
+
+            # calculate confidence intervals
+            if np.nan in (stddev, n, pfi_mean) or n == 1:
+                ci_high = np.nan
+                ci_low = np.nan
+            else:
+                t_val = scipy.stats.t.ppf(1 - (1 - confidence_level) / 2, n - 1)
+                ci_high = pfi_mean + t_val * stddev / math.sqrt(n)
+                ci_low = pfi_mean - t_val * stddev / math.sqrt(n)
+
+            # give a feature group a group name, for visualization purposes
+            if len(feature) > 1:
+                group_nr = len(experiment["feature_group_dict"])
+                feature_name = f"group{group_nr}"
+                experiment["feature_group_dict"][feature_name] = "_".join(feature)
+            else:
+                feature_name = feature[0]
+
+            # save results
+            results_df.loc[len(results_df)] = [
+                feature_name,
                 pfi_mean,
                 stddev,
                 p_value,

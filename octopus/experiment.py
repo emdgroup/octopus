@@ -4,8 +4,12 @@ import gzip
 import pickle
 from pathlib import Path
 
+import networkx as nx
+import numpy as np
 import pandas as pd
 from attrs import define, field, validators
+
+from octopus.modules.utils import rdc_correlation_matrix
 
 
 @define
@@ -44,6 +48,7 @@ class OctoExperiment:
     )
     results: dict = field(init=False, validator=[validators.instance_of(dict)])
     models: dict = field(init=False, validator=[validators.instance_of(dict)])
+    feature_groups: dict = field(init=False, validator=[validators.instance_of(dict)])
 
     feature_importances: dict = field(
         init=False, validator=[validators.instance_of(dict)]
@@ -79,6 +84,30 @@ class OctoExperiment:
         self.predictions = dict()
         self.models = dict()
         self.results = dict()
+        self._calculate_feature_groups()
+
+    def _calculate_feature_groups(self) -> None:
+        """Calculate Feature Groups."""
+        auto_group_threshold = 0.6
+        print("Calculating feature groups.")
+        pos_corr_matrix = np.abs(
+            rdc_correlation_matrix(self.data_traindev[self.feature_columns])
+        )
+
+        g = nx.Graph()
+
+        for i in range(len(self.feature_columns)):
+            for j in range(i + 1, len(self.feature_columns)):
+                if pos_corr_matrix[i, j] > auto_group_threshold:
+                    g.add_edge(i, j)
+
+        subgraphs = [g.subgraph(c) for c in nx.connected_components(g)]
+
+        groups = []
+        for sg in subgraphs:
+            groups.append([self.feature_columns[node] for node in sg.nodes()])
+
+        self.feature_groups = [sorted(g) for g in groups]
 
     def to_pickle(self, file_path: str) -> None:
         """Save object to a compressed pickle file.

@@ -75,7 +75,7 @@ config_study = {
 # configure manager
 config_manager = {
     # outer loop
-    "outer_parallelization": False,
+    "outer_parallelization": True,
     # only run specific single experiment, for quick testing
     # "run_single_experiment_num": 4,
 }
@@ -90,10 +90,10 @@ sequence_item_1 = OctopusFullConfig(
     datasplit_seed_inner=0,
     # model training
     models=[
-        # "ExtraTreesClassifier",
+        "ExtraTreesClassifier",
         # "RandomForestClassifier",
         # "CatBoostClassifier",
-        "XGBClassifier",
+        # "XGBClassifier",
     ],
     model_seed=0,
     n_jobs=1,
@@ -108,7 +108,7 @@ sequence_item_1 = OctopusFullConfig(
     n_optuna_startup_trials=10,
     resume_optimization=False,
     global_hyperparameter=True,
-    n_trials=500,
+    n_trials=400,
     max_features=70,
     penalty_factor=1.0,
 )
@@ -138,8 +138,8 @@ sequence_item_3 = OctopusFullConfig(
     datasplit_seed_inner=0,
     # model training
     models=[
-        "TabPFNClassifier",
-        # "ExtraTreesClassifier",
+        # "TabPFNClassifier",
+        "ExtraTreesClassifier",
         # "RandomForestClassifier",
         # "CatBoostClassifier",
         # "XGBClassifier",
@@ -157,11 +157,13 @@ sequence_item_3 = OctopusFullConfig(
     n_optuna_startup_trials=10,
     resume_optimization=False,
     global_hyperparameter=True,
-    n_trials=1,
+    n_trials=30,
     # max_features=70,
     # penalty_factor=1.0,
 )
-
+# config_sequence = [
+#    attrs.asdict(sequence_item_1),
+# ]
 
 config_sequence = [
     attrs.asdict(sequence_item_1),

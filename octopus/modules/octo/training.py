@@ -35,6 +35,7 @@ class Training:
     data_test: pd.DataFrame = field(validator=[validators.instance_of(pd.DataFrame)])
     target_metric: str = field(validator=[validators.instance_of(str)])
     max_features: int = field(validator=[validators.instance_of(int)])
+    feature_groups: dict = field(validator=[validators.instance_of(dict)])
     # configuration for training
     config_training: dict = field(validator=[validators.instance_of(dict)])
     # default init

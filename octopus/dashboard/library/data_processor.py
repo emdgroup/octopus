@@ -1,6 +1,5 @@
 """Dashboard data processor."""
 
-import pickle
 import re
 from pathlib import Path
 
@@ -8,6 +7,7 @@ import optuna
 import pandas as pd
 from attrs import asdict, define, field
 
+from octopus.config import OctoConfig
 from octopus.data import OctoData
 from octopus.modules.metrics import metrics_inventory
 
@@ -201,60 +201,58 @@ class ResultsDataProcessor:
         """Get configurations."""
         # get config files
         config_files = list(self.study_path.glob("**/config.pkl"))
+        config_file = OctoConfig.from_pickle(config_files[0])
 
-        with open(config_files[0], "rb") as f:
-            config_file = pickle.load(f)
-
-            # manager config
-            df_config_manager = (
-                pd.DataFrame.from_dict(
-                    {key: str(value) for key, value in config_file.cfg_manager.items()},
-                    orient="index",
-                )
-                .reset_index()
-                .set_axis(["Parameter", "Value"], axis="columns")
+        # manager config
+        df_config_manager = (
+            pd.DataFrame.from_dict(
+                {key: str(value) for key, value in config_file.cfg_manager.items()},
+                orient="index",
             )
+            .reset_index()
+            .set_axis(["Parameter", "Value"], axis="columns")
+        )
 
-            # sequence config
-            df_config_sequence = pd.DataFrame()
-            for idx, sequence in enumerate(config_file.cfg_sequence):
-                df_config_sequence_temp = pd.DataFrame.from_dict(
-                    {
-                        key: (
-                            str(value)
-                            if not isinstance(value, (int, float, str))
-                            else value
-                        )
-                        for key, value in sequence.items()
-                    },
-                    orient="index",
-                )
-                df_config_sequence_temp["sequence_id"] = idx
-
-                df_config_sequence = pd.concat(
-                    [df_config_sequence, df_config_sequence_temp]
-                )
-            df_config_sequence = df_config_sequence.reset_index().set_axis(
-                ["Parameter", "Value", "sequence_id"], axis="columns"
+        # sequence config
+        df_config_sequence = pd.DataFrame()
+        for idx, sequence in enumerate(config_file.cfg_sequence):
+            df_config_sequence_temp = pd.DataFrame.from_dict(
+                {
+                    key: (
+                        str(value)
+                        if not isinstance(value, (int, float, str))
+                        else value
+                    )
+                    for key, value in sequence.items()
+                },
+                orient="index",
             )
+            df_config_sequence_temp["sequence_id"] = idx
 
-            # study config
-            df_config_study = (
-                pd.DataFrame.from_dict(
-                    {
-                        key: (
-                            str(value)
-                            if not isinstance(value, (int, float, str))
-                            else value
-                        )
-                        for key, value in asdict(config_file).items()
-                        if key not in ["cfg_manager", "cfg_sequence"]
-                    },
-                    orient="index",
-                )
-                .reset_index()
-                .set_axis(["Parameter", "Value"], axis="columns")
+            df_config_sequence = pd.concat(
+                [df_config_sequence, df_config_sequence_temp]
             )
+        df_config_sequence = df_config_sequence.reset_index().set_axis(
+            ["Parameter", "Value", "sequence_id"], axis="columns"
+        )
+
+        # study config
+        df_config_study = (
+            pd.DataFrame.from_dict(
+                {
+                    key: (
+                        str(value)
+                        if not isinstance(value, (int, float, str))
+                        else value
+                    )
+                    for key, value in asdict(config_file).items()
+                    if key not in ["cfg_manager", "cfg_sequence"]
+                },
+                orient="index",
+            )
+            .reset_index()
+            .set_axis(["Parameter", "Value"], axis="columns")
+        )
         return df_config_study, df_config_manager, df_config_sequence
 
     def get_feature_importances(self) -> pd.DataFrame:
@@ -264,19 +262,18 @@ class ResultsDataProcessor:
 
         df_feature_importances = pd.DataFrame()
         for file in list(experiment_files):
-            with open(file, "rb") as f:
-                exp = pickle.load(f)
-                for split in exp.feature_importances:
-                    if split != "test":
-                        for dataset in exp.feature_importances[split]:
-                            df_temp = exp.feature_importances[split][dataset]
-                            df_temp["experiment_id"] = exp.experiment_id
-                            df_temp["sequence_id"] = exp.sequence_item_id
-                            df_temp["split_id"] = split
-                            df_temp["dataset"] = dataset
-                            if not df_temp.empty:
-                                df_feature_importances = pd.concat(
-                                    [df_feature_importances, df_temp]
-                                )
+            exp = OctoData.from_pickle(file)
+            for split in exp.feature_importances:
+                if split != "test":
+                    for dataset in exp.feature_importances[split]:
+                        df_temp = exp.feature_importances[split][dataset]
+                        df_temp["experiment_id"] = exp.experiment_id
+                        df_temp["sequence_id"] = exp.sequence_item_id
+                        df_temp["split_id"] = split
+                        df_temp["dataset"] = dataset
+                        if not df_temp.empty:
+                            df_feature_importances = pd.concat(
+                                [df_feature_importances, df_temp]
+                            )
 
         return df_feature_importances.reset_index(drop=True)

@@ -107,7 +107,13 @@ class OctoExperiment:
         for sg in subgraphs:
             groups.append([self.feature_columns[node] for node in sg.nodes()])
 
-        self.feature_groups = [sorted(g) for g in groups]
+        auto_groups = [sorted(g) for g in groups]
+
+        groups_dict = dict()
+        for i, group in enumerate(auto_groups):
+            groups_dict[f"group{i}"] = group
+
+        self.feature_groups = groups_dict
 
     def to_pickle(self, file_path: str) -> None:
         """Save object to a compressed pickle file.

@@ -96,8 +96,8 @@ sequence_item_1 = OctopusFullConfig(
     n_folds_inner=5,
     # model training
     models=[
-        "TabPFNClassifier",
-        # "ExtraTreesClassifier",
+        # "TabPFNClassifier",
+        "ExtraTreesClassifier",
         # "RandomForestClassifier",
         # "CatBoostClassifier",
         # "XGBClassifier",

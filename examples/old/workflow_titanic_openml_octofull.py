@@ -2,13 +2,11 @@
 
 import os
 import socket
-from pathlib import Path
 
 import attrs
 import pandas as pd
 
 from octopus import OctoConfig, OctoData, OctoML
-from octopus.dashboard.run import OctoDash
 from octopus.modules.octo.config import OctopusFullConfig
 
 # Conda and Host information

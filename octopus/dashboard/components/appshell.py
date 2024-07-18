@@ -41,7 +41,7 @@ def create_appshell(
         },
         children=[
             dcc.Store(id="theme-store", storage_type="local", data="light"),
-            dcc.Store(id="store_db_filename", storage_type="local", data=db_filename),
+            dcc.Store(id="store_db_filename", data=db_filename),
             dcc.Store(id="store_show_results", data=show_results),
             dcc.Location(id="url", refresh="callback-nav"),
             dmc.NotificationProvider(),

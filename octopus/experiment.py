@@ -9,6 +9,7 @@ import numpy as np
 import pandas as pd
 from attrs import define, field, validators
 
+from octopus.config import OctoConfig
 from octopus.modules.utils import rdc_correlation_matrix
 
 
@@ -20,7 +21,7 @@ class OctoExperiment:
     experiment_id: int = field(validator=[validators.instance_of(int)])
     sequence_item_id: int = field(validator=[validators.instance_of(int)])
     path_sequence_item: Path = field(validator=[validators.instance_of(Path)])
-    config: dict = field(validator=[validators.instance_of(dict)])
+    configs: OctoConfig = field(validator=[validators.instance_of(OctoConfig)])
     datasplit_column: str = field(validator=[validators.instance_of(str)])
     row_column: str = field(validator=[validators.instance_of(str)])
     feature_columns: list = field(validator=[validators.instance_of(list)])
@@ -39,9 +40,7 @@ class OctoExperiment:
         init=False, default=0, validator=[validators.instance_of(int)]
     )
 
-    ml_config: dict = field(
-        init=False, default=dict(), validator=[validators.instance_of(dict)]
-    )
+    ml_config: dict = field(init=False, default=None)
     # experiment outputs, initialized in post_init
     selected_features: list = field(
         init=False, validator=[validators.instance_of(list)]
@@ -68,12 +67,12 @@ class OctoExperiment:
     @property
     def path_study(self) -> Path:
         """Path study."""
-        return Path(self.config["output_path"], self.config["study_name"])
+        return Path(self.configs.study.path, self.configs.study.name)
 
     @property
     def ml_type(self) -> str:
         """Shortcut to ml_type."""
-        return self.config["ml_type"]
+        return self.configs.study.ml_type
 
     def __attrs_post_init__(self):
         # initialization here due to "Python immutable default"
@@ -107,7 +106,13 @@ class OctoExperiment:
         for sg in subgraphs:
             groups.append([self.feature_columns[node] for node in sg.nodes()])
 
-        self.feature_groups = [sorted(g) for g in groups]
+        auto_groups = [sorted(g) for g in groups]
+
+        groups_dict = dict()
+        for i, group in enumerate(auto_groups):
+            groups_dict[f"group{i}"] = group
+
+        self.feature_groups = groups_dict
 
     def to_pickle(self, file_path: str) -> None:
         """Save object to a compressed pickle file.

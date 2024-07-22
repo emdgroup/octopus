@@ -1,4 +1,4 @@
-"""TabPFN Module."""
+"""RFE Module."""
 
 import shutil
 from pathlib import Path

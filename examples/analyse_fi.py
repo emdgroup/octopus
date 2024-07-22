@@ -10,7 +10,7 @@ from octopus.experiment import OctoExperiment
 for k_outer in [1]:
     print("Outer experiment:", k_outer)
     path_exp = Path(
-        f"./studies/20240322A_MBOS6_octofull_5x5_ETREE/experiment{k_outer}/sequence0/exp{k_outer}_0.pkl"
+        f"./studies/20240110B/experiment{k_outer}/sequence0/exp{k_outer}_0.pkl"
     )
     experiment = OctoExperiment.from_pickle(path_exp)
     # print(experiment.feature_importances.keys())

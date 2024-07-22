@@ -235,6 +235,8 @@ class Bag:
                 training.calculate_fi_shap(partition=partition)
             elif fi_type == "permutation":
                 training.calculate_fi_permutation(partition=partition)
+            elif fi_type == "lofo":
+                training.calculate_fi_lofo()
             else:
                 raise ValueError("FI type not supported")
 
@@ -285,14 +287,16 @@ class Bag:
             elif method == "permutation":
                 self._calculate_fi(fi_type="permutation", partition="dev")
                 self._calculate_fi(fi_type="permutation", partition="test")
+            elif method == "lofo":
+                self._calculate_fi(fi_type="lofo")
             else:
                 raise ValueError(f"Feature importance method {method} not supported.")
 
         # save feature importances for every training in bag
         for training in self.trainings:
-            self.feature_importances[
-                training.training_id
-            ] = training.feature_importances
+            self.feature_importances[training.training_id] = (
+                training.feature_importances
+            )
 
         # summary feature importances for all trainings (mean + count)
         # internal, permutation_dev, shap_dev only
@@ -308,12 +312,17 @@ class Bag:
             # calculate mean and count feature importances
             fi = pd.concat(fi_pool, axis=0)
             self.feature_importances[method_str + "_mean"] = (
-                fi[["feature", "importance"]].groupby(by="feature").mean().reset_index()
+                fi[["feature", "importance"]]
+                .groupby(by="feature")
+                .mean()
+                .sort_values(by="importance", ascending=False)
+                .reset_index()
             )
             self.feature_importances[method_str + "_count"] = (
                 fi[["feature", "importance"]]
                 .groupby(by="feature")
                 .count()
+                .sort_values(by="importance", ascending=False)
                 .reset_index()
             )
 

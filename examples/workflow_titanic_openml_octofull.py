@@ -2,21 +2,21 @@
 
 import os
 import socket
-from pathlib import Path
 
 import attrs
 import pandas as pd
 
 from octopus import OctoConfig, OctoData, OctoML
-from octopus.dashboard.run import OctoDash
 from octopus.modules.octo.config import OctopusFullConfig
 
 # Conda and Host information
+print()
+print("########### General Info ##########")
 print("Notebook kernel is running on server:", socket.gethostname())
 print("Conda environment on server:", os.environ["CONDA_DEFAULT_ENV"])
 # show directory name
 print("Working directory: ", os.getcwd())
-
+print()
 # load data from csv and perform pre-processing
 # all features should be numeric (and not bool)
 data_df = (
@@ -43,14 +43,17 @@ data_df = (
     .pipe(pd.get_dummies, columns=["embarked", "sex"], drop_first=True, dtype=int)
 )
 
+my_list = ["test"] + ["G"] * 1308
+data_df["abc"] = 1
+
 # define input for Octodata
 # all features need to be numeric
 data_input = {
     "data": data_df,
-    "sample_id": "name",  # sample_id may contain duplicates
-    "target_columns": ["survived"],
+    "sample_id": "age",  # sample_id may contain duplicates
+    "target_columns": ["age"],
     "stratification_column": ["survived"],
-    "datasplit_type": "group_sample_and_features",
+    "datasplit_type": "sample",
     "feature_columns": [
         "pclass",
         "age",
@@ -60,8 +63,11 @@ data_input = {
         "embarked_Q",
         "embarked_S",
         "sex_male",
+        "age",
+        "abc",
     ],
 }
+
 
 # create OctoData object
 data = OctoData(**data_input)
@@ -124,8 +130,3 @@ oml.create_outer_experiments()
 oml.run_outer_experiments()
 
 print("Workflow completed")
-
-# use dashboard
-# path_study = Path(config_study["output_path"]).joinpath(config_study["study_name"])
-# octo_dashboard = OctoDash(path_study)
-# octo_dashboard.run()

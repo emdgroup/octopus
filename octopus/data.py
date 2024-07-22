@@ -1,17 +1,20 @@
 """Octopus data classes."""
 
 import gzip
+import logging
 import pickle
 from typing import List
 
 import numpy as np
 import pandas as pd
-from attrs import define, field, validators
+from attrs import Factory, define, field, validators
+
+# Configure logging
+logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
 
 # tobedone:
-# - check that column definitions fit with pandas dataframe
-# - in some scenarios we may want to keep NaNs (Martin, neural networks)
 # - identify categorical columns -- require pandas categorical
+# - dtype check
 
 
 @define
@@ -19,24 +22,49 @@ class OctoData:
     """Octopus data class."""
 
     data: pd.DataFrame = field(validator=[validators.instance_of(pd.DataFrame)])
+    """DataFrame containing the dataset."""
+
     feature_columns: list = field(validator=[validators.instance_of(list)])
+    """List of all feature columns in the dataset."""
+
     target_columns: list = field(validator=[validators.instance_of(list)])
+    """List of target columns in the dataset. For regression and classification,
+    only one target is allowed. For time-to-event, two targets need to be provided.
+    """
+
     sample_id: str = field(validator=[validators.instance_of(str)])
+    """Identifier for sample instances."""
+
     datasplit_type: str = field(
         validator=[
             validators.in_(["sample", "group_features", "group_sample_and_features"])
         ]
     )
-    row_id = field(default=None)
+    """Type of datasplit. Allowed are `sample`, `group_features`
+    and `group_sample_and_features`."""
+
+    row_id = field(default=Factory(lambda: ""), validator=[validators.instance_of(str)])
+    """Unique row identifier."""
+
     disable_checknan: bool = field(
-        default=False, validator=[validators.instance_of(bool)]
+        default=Factory(lambda: False), validator=[validators.instance_of(bool)]
     )
-    target_asignments: dict = field(
-        default={}, validator=[validators.instance_of(dict)]
+    """Flag to disable the check for NaN values. Defaults to False."""
+
+    target_assignments: dict = field(
+        default=Factory(dict), validator=[validators.instance_of(dict)]
     )
+    """Mapping of target assignments."""
+
     stratification_column: list = field(
-        default=[], validator=[validators.instance_of(list)]
+        default=Factory(list), validator=[validators.instance_of(list)]
     )
+    """List of columns used for stratification."""
+
+    data_quality_check: bool = field(
+        default=Factory(lambda: True), validator=[validators.instance_of(bool)]
+    )
+    """Enable data quality check."""
 
     @property
     def targets(self) -> List:
@@ -49,59 +77,48 @@ class OctoData:
         return self.feature_columns
 
     def __attrs_post_init__(self):
-        self.modify_dataframe()  # index reset done here
+        logging.info("Automated data preparation:")
+        # add group features
+        self._add_group_features()
+
         # create new column for row_id
-        if self.row_id is None:
-            self.data["row_id"] = self.data.index
-            self.row_id = "row_id"
-        # set default target assignment if single feature + empty assignment
-        if (len(self.target_columns) == 1) & (not self.target_asignments):
-            self.target_asignments["default"] = self.targets[0]
-        elif len(self.target_columns) > 1:
-            if len(self.target_columns) != len(self.target_asignments):
-                raise ValueError("Please provide correct target assignments")
-        else:
-            raise ValueError("Target assignments need to be provided")
+        self._create_row_id()
+
+        # set target assignment
+        self._set_target_assignments()
+
         # remove features with only a single value
-        self.remove_singlevalue_features()
+        self._remove_singlevalue_features()
 
-        # checks
-        report = self.quality_check()
-        if report:
-            print("Quality Check Report:")
-            for item in report:
-                print(item)
-            raise ValueError("Octo data quality check failed")
+        # quality check
+        if self.data_quality_check:
+            self.quality_check()
+        else:
+            logging.warning("Quality check is skipped.")
 
-    def remove_singlevalue_features(self):
-        """Remove feature that only contain a single value."""
-        print("Original number of features:", len(self.feature_columns))
-        data_features = self.data[self.feature_columns]
-        singlevalue_features = data_features.columns[data_features.nunique() == 1]
-        self.feature_columns = [
-            feature
-            for feature in self.feature_columns
-            if feature not in singlevalue_features
-        ]
-        print(
-            "Number of features after removal of single-valued features:",
-            len(self.feature_columns),
-        )
+    def _add_group_features(self):
+        """Initialize the preparation of the DataFrame by adding group feature columns.
 
-    def modify_dataframe(self):
-        """Initialize the preparation of the dataframe.
+        This method performs the following operations on the data:
 
-        - add group col for entries with same features
-        - add group col for entries with same features
-            and/or same sample_id
-        - reset index.
+        - Adds a column `group_features` to group entries with
+            the same features.
+        - Adds a column `group_sample_and_features` to group entries
+            with the same features
+        and/or the same `sample_id`.
+        - Resets the DataFrame index.
+
+        Example:
+            If you have a DataFrame with features and sample IDs, this
+            method will add columns to help identify and group rows with
+            similar characteristics.
 
         """
         self.data = (
             self.data
-            # create group with same features
+            # Create group with the same features
             .assign(group_features=lambda df_: df_.groupby(self.features).ngroup())
-            # create group with same features and/or same sample_id
+            # Create group with the same features and/or the same sample_id
             .assign(
                 group_sample_and_features=lambda df_: df_.apply(
                     lambda row: pd.concat(
@@ -113,160 +130,73 @@ class OctoData:
                     axis=1,
                 )
             )
-            # reset index
             .reset_index(drop=True)
-            # add fixed index col
-            # .assign(RowID=lambda df_: df_.index)
         )
+        logging.info(" - Added `group_feaures` and `group_sample_features`")
+
+    def _create_row_id(self):
+        """Assign a unique row identifier to each entry in the DataFrame.
+
+        If no `row_id` is provided, this method adds a `row_id` column using
+        the DataFrame index.
+        """
+        if self.row_id == "":
+            self.data["row_id"] = self.data.index
+            self.row_id = "row_id"
+
+            logging.info(" - Added `row_id`")
+
+    def _set_target_assignments(self):
+        """Set default target assignments or validates provided ones.
+
+        If there is one target column and no target assignments, assigns "default"
+        to the first target.
+        If there are multiple target columns, ensures the target assignments
+        match their count.
+        Raises a ValueError if assignments are incorrect or missing.
+        """
+        if (len(self.target_columns) == 1) & (not self.target_assignments):
+            self.target_assignments["default"] = self.targets[0]
+        elif len(self.target_columns) > 1:
+            if len(self.target_columns) != len(self.target_assignments):
+                raise ValueError("Please provide correct target assignments")
+        else:
+            raise ValueError(
+                f"Target assignments need to be provided: {self.target_assignments}"
+            )
+
+    def _remove_singlevalue_features(self):
+        """Remove features that contain only a single unique value."""
+        num_original_features = len(self.feature_columns)
+
+        self.feature_columns = [
+            feature
+            for feature in self.feature_columns
+            if self.data[feature].nunique() > 1
+        ]
+        num_new_features = len(self.feature_columns)
+
+        if num_original_features > num_new_features:
+            logging.info(
+                " - Features removed due to single unique values: %s"
+                % (num_original_features - num_new_features)
+            )
 
     def quality_check(self):
-        """Quality check on octoData."""
-        report = []
+        """Quality check on OctoData."""
+        checker = QualityChecker(self)
+        report, warning = checker.perform_checks()
 
-        if self.check_rowid_unique():
-            report.append("Row_ID  raise ValueError()")
-        if self.check_list_unique(self.feature_columns):
-            report.append("Feature names are not unique")
-        if self.check_list_unique(self.target_columns):
-            report.append("Target names are not unique")
-        if self.check_columns_exist():
-            report.append("Defined columns missing in dataframe")
-        if self.check_shared_columns():
-            report.append("Shared columns in properties")
-        if self.check_duplicates_features():
-            print("Warning: Duplicates (rows) in features")
-            if self.datasplit_type == "sample":
-                report.append("Feature duplicates require different datasplit type")
-        if self.check_duplicates_features_samples():
-            print("Warning: Duplicates (rows) in features+sample-ID")
-            if self.datasplit_type != "group_sample_and_features":
-                report.append(
-                    "Feature+Sample duplicates require different datasplit type"
-                )
-        if self.check_nans():
-            if not self.disable_checknan:
-                report.append("NaNs in dataframe")
-        if self.check_infs():
-            report.append("Infs in dataframe")
-        if self.check_nonnumeric():
-            report.append("Non-numeric relevant columns in dataframe")
+        if warning:
+            logging.warning("Quality Check Warnings:")
+            for item in warning:
+                logging.warning(f" - {item}")
 
-        return report
-
-    def check_rowid_unique(self) -> bool:
-        """Check that rowid is unique."""
-        row_column = self.data[self.row_id]
-        return len(row_column) != len(set(row_column))
-
-    def check_list_unique(self, columns) -> bool:
-        """Check that list contains unique values."""
-        return len(columns) != len(set(columns))
-
-    def check_nans(self) -> bool:
-        """Check if all relevant columns are free of NaNs."""
-        relevant_columns = list(
-            set(self.feature_columns)
-            .union(set(self.target_columns))
-            .union(set([self.sample_id]))
-            .union(set([self.row_id]))
-            .union(set(self.stratification_column))
-        )
-        return pd.isna(self.data[relevant_columns]).any().any()
-
-    def check_infs(self) -> bool:
-        """Check if all relevant columns are free of Infs."""
-        relevant_columns = list(
-            set(self.feature_columns)
-            .union(set(self.target_columns))
-            .union(set([self.sample_id]))
-            .union(set([self.row_id]))
-            .union(set(self.stratification_column))
-        )
-        return pd.isna(self.data[relevant_columns]).isin([np.inf, -np.inf]).any().any()
-
-    def check_nonnumeric(self) -> bool:
-        """Check if all relevant columns are numeric."""
-        stratification_column = "".join(self.stratification_column)
-
-        result = list()
-        # stratification column
-        if stratification_column:
-            result.append(self.data[stratification_column].dtype.kind not in "iub")
-
-        for column in self.feature_columns:
-            result.append(self.data[column].dtype.kind not in "iuf")  # int/unit/float
-
-        for column in self.target_columns:
-            result.append(
-                self.data[column].dtype.kind not in "iufb"
-            )  # int/unit/float/bool
-        return any(result)
-
-    def check_shared_columns(self) -> bool:
-        """Check for shared columns in properties."""
-        # features/targets
-        report = []
-        intersection_features_targets = set(self.feature_columns).intersection(
-            set(self.target_columns)
-        )
-        intersection_features_sample = set(self.feature_columns).intersection(
-            set(self.sample_id)
-        )
-        intersection_targets_sample = set(self.target_columns).intersection(
-            set(self.sample_id)
-        )
-
-        if intersection_features_targets:
-            report.append(
-                f"""Columns shared between features and targets:
-                {intersection_features_targets}"""
-            )
-
-        if intersection_features_sample:
-            report.append(
-                f"""Columns shared between features and sample:
-                {intersection_features_sample}"""
-            )
-
-        if intersection_targets_sample:
-            report.append(
-                f"""Columns shared between targets and sample:
-                {intersection_targets_sample}"""
-            )
-
-        if not report:
-            return False
-        else:
-            print(report)
-            return True
-
-    def check_columns_exist(self) -> bool:
-        """Check that defined columns exist in dataframe."""
-        defined_columns = (
-            set(self.feature_columns)
-            .union(set(self.target_columns))
-            .union(set(self.sample_id))
-            .union(set(self.stratification_column))
-        )
-
-        dataframe_columns = set(self.data.columns.tolist())
-
-        if defined_columns.issubset(dataframe_columns):
-            return True
-        else:
-            return False
-
-    def check_duplicates_features(self) -> bool:
-        """Warning only: check for duplicates (rows) in all features."""
-        duplicate_rows = self.data[self.feature_columns].duplicated()
-        return duplicate_rows.any()
-
-    def check_duplicates_features_samples(self) -> bool:
-        """Warning only: check for duplicates (rows) in all features+samples_id."""
-        duplicate_rows = self.data[
-            list(self.feature_columns) + [self.sample_id]
-        ].duplicated()
-        return duplicate_rows.any()
+        if report:
+            logging.error("Quality Check Failures:")
+            for item in report:
+                logging.error(f" - {item}")
+            raise ValueError("Octo data quality check failed")
 
     def save(self, path):
         """Save data to a human readable form, for long term storage."""
@@ -305,3 +235,201 @@ class OctoData:
         """
         with gzip.GzipFile(file_path, "rb") as file:
             return pickle.load(file)
+
+
+@define
+class QualityChecker:
+    """Quality checker class for OctoData."""
+
+    octo_data: OctoData = field(validator=[validators.instance_of(OctoData)])
+
+    def perform_checks(self):
+        """Perform all quality checks."""
+        report = []
+        warning = []
+
+        # Check unique row id
+        self.unique_rowid(report)
+
+        # Check unique features
+        self.unique_column(report, self.octo_data.feature_columns, "features")
+
+        # Check unique targets
+        self.unique_column(report, self.octo_data.target_columns, "targets")
+
+        # check if features or targets overlap
+        self.overlap_columns(
+            report,
+            self.octo_data.feature_columns,
+            self.octo_data.target_columns,
+            "features",
+            "targets",
+        )
+
+        # check if features or sample_id overlap
+        self.overlap_columns(
+            report,
+            self.octo_data.feature_columns,
+            [self.octo_data.sample_id],
+            "features",
+            "sample_id",
+        )
+
+        # check if targets or sample_id overlap
+        self.overlap_columns(
+            report,
+            self.octo_data.target_columns,
+            [self.octo_data.sample_id],
+            "targets",
+            "sample_id",
+        )
+
+        # missing columns in dataframe
+        self.missing_columns(report)
+
+        # check for duplicates in features and sample
+        self.duplicates_features_samples(report, warning)
+
+        # check values for Infs and NaN
+        self.nan_infs(report)
+
+        # check dtypes
+        self.check_nonnumeric(report, "Feature", self.octo_data.feature_columns, "iuf")
+        self.check_nonnumeric(report, "Target", self.octo_data.target_columns, "iufb")
+        self.check_nonnumeric(
+            report, "Stratification ", self.octo_data.stratification_column, "iub"
+        )
+
+        return report, warning
+
+    def _relevant_columns(self) -> set:
+        """Get relevant columns for checks."""
+        return (
+            set(self.octo_data.feature_columns)
+            .union(set(self.octo_data.target_columns))
+            .union({self.octo_data.sample_id, self.octo_data.row_id})
+            .union(set(self.octo_data.stratification_column))
+        )
+
+    def unique_rowid(self, report: List[str]) -> None:
+        """Add row ID uniqueness check to the report."""
+        if not self.octo_data.data.index.is_unique:
+            report.append("Row_ID is not unique")
+
+    def unique_column(
+        self, report: List[str], columns: List[str], column_type: str
+    ) -> None:
+        """Add non-unique columns check to the report."""
+        non_unique_columns = list({item for item in columns if columns.count(item) > 1})
+        if non_unique_columns:
+            report.append(
+                (
+                    f"The following {column_type} are not unique: "
+                    f"{', '.join(non_unique_columns)}"
+                )
+            )
+
+    def overlap_columns(
+        self,
+        report: List[str],
+        list1: List[str],
+        list2: List[str],
+        name1: str,
+        name2: str,
+    ) -> None:
+        """Add overlap check between feature and target columns to the report."""
+        overlapping_columns = set(list1).intersection(list2)
+        if overlapping_columns:
+            report.append(
+                (
+                    f"Columns shared between {name1} and {name2}: "
+                    f"{', '.join(overlapping_columns)}"
+                )
+            )
+
+    def missing_columns(self, report: List[str]) -> None:
+        """Adding missing columns in dataframe to the report."""
+        missing_columns = list(
+            self._relevant_columns() - set(self.octo_data.data.columns)
+        )
+        if missing_columns:
+            report.append(f"Missing columns in dataset: {', '.join(missing_columns)}")
+
+    def duplicates_features_samples(
+        self, report: List[str], warning: List[str]
+    ) -> None:
+        """Check for duplicates (rows) in all features."""
+        duplicated_features = (
+            self.octo_data.data[self.octo_data.feature_columns].duplicated().any()
+        )
+        duplicated_features_and_sample = (
+            self.octo_data.data[
+                list(self.octo_data.feature_columns) + [self.octo_data.sample_id]
+            ]
+            .duplicated()
+            .any()
+        )
+        if duplicated_features and not duplicated_features_and_sample:
+            warning.append("Duplicates (rows) in features")
+            if self.octo_data.datasplit_type == "sample":
+                report.append(
+                    (
+                        "Duplicates in features require datasplit type "
+                        "`group_features` or `group_sample_and_features`."
+                    )
+                )
+
+        if duplicated_features_and_sample:
+            warning.append("Duplicates (rows) in features and sample")
+            if self.octo_data.datasplit_type != "group_sample_and_features":
+                report.append(
+                    (
+                        "Duplicates in features and sample require datasplit "
+                        "type `group_sample_and_features`."
+                    )
+                )
+
+    def nan_infs(self, report: List[str]) -> None:
+        """Check if all relevant columns are free of Infs."""
+        columns_with_issues = {
+            "Infs": [
+                col
+                for col in list(self._relevant_columns())
+                if self.octo_data.data[col].isin([np.inf, -np.inf]).any()
+            ],
+            "NaNs": [
+                col
+                for col in list(self._relevant_columns())
+                if self.octo_data.data[col].isna().any()
+            ],
+        }
+
+        # Append issues to the report
+        for issue, columns in columns_with_issues.items():
+            if columns:
+                report.append(f"{issue} in columns: {', '.join(columns)}")
+
+    def check_nonnumeric(
+        self, report: List[str], name: str, columns: List[str], allowed_dtypes: str
+    ) -> None:
+        """Check if specified columns contain only allowed data types.
+
+        Args:
+            report: report with all findings
+            name: name of column list for print output
+            columns: list of columns
+            allowed_dtypes: allwoed dtypes
+        """
+        # Initialize list to store non-numeric column names
+        non_numeric_columns = []
+
+        # Check each column against the allowed data types
+        for column in columns:
+            if self.octo_data.data[column].dtype.kind not in allowed_dtypes:
+                non_numeric_columns.append(column)
+
+        if non_numeric_columns:
+            report.append(
+                f"{name} columns are not in types '{allowed_dtypes}': \
+                    {', '.join(non_numeric_columns)}"
+            )

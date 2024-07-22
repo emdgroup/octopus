@@ -9,11 +9,11 @@ import attrs
 os.environ["OPENBLAS_NUM_THREADS"] = "1"
 os.environ["OMP_NUM_THREADS"] = "1"
 
-import pandas as pd
+import pandas as pd  # noqa E402
 
-from octopus import OctoConfig, OctoData, OctoML
-from octopus.modules.mrmr import MrmrConfig
-from octopus.modules.octo.config import OctopusFullConfig
+from octopus import OctoConfig, OctoData, OctoML  # noqa E402
+from octopus.modules.mrmr import MrmrConfig  # noqa E402
+from octopus.modules.octo.config import OctopusFullConfig  # noqa E402
 
 print("Notebook kernel is running on server:", socket.gethostname())
 print("Conda environment on server:", os.environ["CONDA_DEFAULT_ENV"])

@@ -125,6 +125,9 @@ class Mrmr:
         """
         FLOOR = 0.001
 
+        # remove all group features
+        fi_df = fi_df[~fi_df["feature"].str.startswith("group")]
+
         # extract features from feature importance table
         fi_features = fi_df["feature"].tolist()
 
@@ -240,7 +243,7 @@ class MrmrConfig:
     """Selection of feature importance type."""
 
     feature_importance_method: str = field(
-        validator=[validators.in_(["permutation", "shap", "internal"])],
+        validator=[validators.in_(["permutation", "shap", "internal", "lofo"])],
         default="permutation",
     )
     """Selection of feature importance method."""

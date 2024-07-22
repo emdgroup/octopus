@@ -1,6 +1,8 @@
 """OctoFull Trainings."""
 
 # import os
+import copy
+
 import numpy as np
 import pandas as pd
 import shap
@@ -9,6 +11,7 @@ from sklearn.inspection import permutation_importance
 from sklearn.preprocessing import MaxAbsScaler
 
 from octopus.models.config import model_inventory
+from octopus.modules.utils import get_performance_score
 
 scorer_string_inventory = {
     "AUCROC": "roc_auc",
@@ -302,6 +305,70 @@ class Training:
         fi_df["importance"] = perm_importance.importances_mean
         fi_df["importance_std"] = perm_importance.importances_std
         self.feature_importances["permutation" + "_" + partition] = fi_df
+
+    def calculate_fi_lofo(self):
+        """LOFO feature importance."""
+        print("Calculating LOFO feature importance. This may take a while...")
+        # first, dev only
+        feature_columns = self.feature_columns
+        # calculate dev+test baseline scores
+        baseline_dev = get_performance_score(
+            self.model,
+            self.data_dev,
+            feature_columns,
+            self.target_metric,
+            self.target_assignments,
+        )
+        baseline_test = get_performance_score(
+            self.model,
+            self.data_test,
+            feature_columns,
+            self.target_metric,
+            self.target_assignments,
+        )
+
+        # create features dict
+        feature_columns_dict = {x: [x] for x in feature_columns}
+        lofo_features = {**feature_columns_dict, **self.feature_groups}
+
+        # lofo
+        fi_dev_df = pd.DataFrame(columns=["feature", "importance"])
+        fi_test_df = pd.DataFrame(columns=["feature", "importance"])
+        for name, lofo_feature in lofo_features.items():
+            selected_features = copy.deepcopy(feature_columns)
+            model = copy.deepcopy(self.model)
+            selected_features = [x for x in selected_features if x not in lofo_feature]
+            # retrain model
+            if len(self.target_assignments) == 1:
+                # standard sklearn single target models
+                model.fit(
+                    self.data_train[selected_features],
+                    self.y_train.squeeze(axis=1),
+                )
+            else:
+                # multi target models, incl. time2event
+                model.fit(self.data_train[selected_features], self.y_train)
+            # get lofo dev + test scores
+            score_dev = get_performance_score(
+                model,
+                self.data_dev,
+                selected_features,
+                self.target_metric,
+                self.target_assignments,
+            )
+            score_test = get_performance_score(
+                model,
+                self.data_test,
+                selected_features,
+                self.target_metric,
+                self.target_assignments,
+            )
+
+            fi_dev_df.loc[len(fi_dev_df)] = [name, baseline_dev - score_dev]
+            fi_test_df.loc[len(fi_test_df)] = [name, baseline_test - score_test]
+
+        self.feature_importances["lofo" + "_dev"] = fi_dev_df
+        self.feature_importances["lofo" + "_test"] = fi_test_df
 
     def calculate_fi_shap(self, partition="dev"):
         """Shap feature importance."""

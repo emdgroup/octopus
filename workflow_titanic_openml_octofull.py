@@ -102,12 +102,13 @@ sequence_item_1 = OctopusFullConfig(
         # "CatBoostClassifier",
         # "XGBClassifier",
     ],
+    fi_methods_bestbag=["lofo"],
     # parallelization
     inner_parallelization=True,
     n_workers=5,
     # HPO
     global_hyperparameter=True,
-    n_trials=10,
+    n_trials=5,
 )
 
 config_sequence = [attrs.asdict(sequence_item_1)]
@@ -124,8 +125,3 @@ oml.create_outer_experiments()
 oml.run_outer_experiments()
 
 print("Workflow completed")
-
-# use dashboard
-path_study = Path(config_study["output_path"]).joinpath(config_study["study_name"])
-octo_dashboard = OctoDash(path_study)
-octo_dashboard.run()

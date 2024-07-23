@@ -75,7 +75,7 @@ class RfeModule:
     @property
     def config(self) -> dict:
         """Module configuration."""
-        return self.experiment.ml_config["config"]
+        return self.experiment.ml_config
 
     def __attrs_post_init__(self):
         # delete directories /trials /optuna /results to ensure clean state

@@ -1,0 +1,160 @@
+"""ROC Module (removal of correlated features)."""
+
+import shutil
+from pathlib import Path
+
+import networkx as nx
+import numpy as np
+import pandas as pd
+import scipy.stats
+from attrs import define, field, validators
+
+from octopus.experiment import OctoExperiment
+from octopus.modules.utils import rdc_correlation_matrix
+
+# TOBEDONE
+# - add hierarchical clustering
+#   https://scikit-learn.org/stable/auto_examples/inspection/plot_permutation_importance_multicollinear.html
+# - add pearson
+# - maybe, a function that create as table showing the seleted feature and the removed group features
+
+
+@define
+class RocModule:
+    """Roc Module."""
+
+    experiment: OctoExperiment = field(
+        validator=[validators.instance_of(OctoExperiment)]
+    )
+
+    feature_groups: list = field(init=False, validator=[validators.instance_of(list)])
+
+    @property
+    def path_module(self) -> Path:
+        """Module path."""
+        return self.experiment.path_study.joinpath(self.experiment.path_sequence_item)
+
+    @property
+    def path_results(self) -> Path:
+        """Results path."""
+        return self.path_module.joinpath("results")
+
+    @property
+    def x_traindev(self) -> pd.DataFrame:
+        """x_train."""
+        return self.experiment.data_traindev[self.experiment.feature_columns]
+
+    @property
+    def feature_columns(self) -> list:
+        """feature_columns."""
+        return self.experiment.feature_columns
+
+    @property
+    def config(self) -> dict:
+        """Module configuration."""
+        return self.experiment.ml_config
+
+    def __attrs_post_init__(self):
+        self.feature_groups = list()
+        # delete directories /trials /optuna /results to ensure clean state
+        # of module when restarted
+        # create directory if it does not exist
+        for directory in [self.path_results]:
+            if directory.exists():
+                shutil.rmtree(directory)
+            directory.mkdir(parents=True, exist_ok=True)
+
+    def run_experiment(self):
+        """Run ROC module on experiment."""
+        # run experiment and return updated experiment object
+
+        correlation_type = self.config["correlation_type"]
+        threshold = self.config["threshold"]
+
+        print("Correlation type:", correlation_type)
+        print("Threshold:", threshold)
+
+        print("Calculating feature groups.")
+
+        # correlation matrix
+        if correlation_type == "spearmanr":
+            # (A) spearmamr correlation matrix
+            pos_corr_matrix, _ = scipy.stats.spearmanr(
+                np.nan_to_num(self.x_traindev.values)
+            )
+            pos_corr_matrix = np.abs(pos_corr_matrix)
+        elif correlation_type == "rdc":
+            # (B) RDC correlation matrix
+            pos_corr_matrix = np.abs(rdc_correlation_matrix(self.x_traindev))
+        else:
+            raise ValueError(f"Correlation type {correlation_type} not supported")
+
+        # get auto_groups
+        auto_groups = list()
+        g = nx.Graph()
+
+        for i in range(len(self.feature_columns)):
+            for j in range(i + 1, len(self.feature_columns)):
+                if pos_corr_matrix[i, j] > threshold:
+                    g.add_edge(i, j)
+
+        subgraphs = [g.subgraph(c) for c in nx.connected_components(g)]
+
+        groups = []
+        for sg in subgraphs:
+            groups.append([self.feature_columns[node] for node in sg.nodes()])
+
+        self.feature_groups = [sorted(g) for g in groups]
+
+        # select features to keep and to remove
+        keep_list = []
+        remove_list = []
+
+        # Process each group
+        for group in self.feature_groups:
+            if group:
+                # Pick the first feature to keep
+                keep_feature = group[0]
+                keep_list.append(keep_feature)
+                # Add the remaining features to the remove list
+                remove_list.extend(group[1:])
+
+        # get features after filtering
+        remaining_features = list(set(self.feature_columns) - set(remove_list))
+
+        print(
+            "Number of features before correlation removal:", len(self.feature_columns)
+        )
+        print("Number of features after correlation removal:", len(remaining_features))
+
+        # save features selected by ROC
+        self.experiment.selected_features = remaining_features
+
+        print("ROC completed")
+
+        return self.experiment
+
+
+# check input parameters
+@define
+class Roc:
+    """Roc Config."""
+
+    module: str = field(default="roc")
+    """Module name."""
+
+    description: str = field(validator=[validators.instance_of(str)], default="")
+    """Description."""
+
+    load_sequence_item: bool = field(
+        init=False, validator=validators.instance_of(bool), default=False
+    )
+    """Load existing sequence item, fixed, set to False"""
+
+    threshold: float = field(validator=[validators.instance_of(float)], default=0.8)
+    """Threshold for feature removal."""
+
+    correlation_type: str = field(
+        validator=[validators.in_(["spearmanr", "rdc"])], default="spearmanr"
+    )
+    """Selection of correlation type."""

@@ -83,8 +83,8 @@ class OctoExperiment:
         self.predictions = dict()
         self.models = dict()
         self.results = dict()
-        self.feature_groups = dict()
-        # self._calculate_feature_groups()
+        # self.feature_groups = dict()
+        self._calculate_feature_groups()
 
     def _calculate_feature_groups(self) -> None:
         """Calculate Feature Groups."""

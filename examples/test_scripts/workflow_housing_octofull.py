@@ -1,4 +1,4 @@
-"""Workflow script for the diabetes regression example."""
+"""Workflow script for the housing."""
 
 import os
 import socket
@@ -14,16 +14,24 @@ print("Conda environment on server:", os.environ["CONDA_DEFAULT_ENV"])
 # show directory name
 print("Working directory: ", os.getcwd())
 
-# Regression Analysis on Diabetes Dataset
-# http://statweb.lsu.edu/faculty/li/teach/exst7142/diabetes.html
-# https://shap.readthedocs.io/en/latest/example_notebooks/tabular_examples/model_agnostic/Diabetes%20regression.html
-# https://automl.github.io/auto-sklearn/master/examples/20_basic/example_regression.html
 
+# California housing dataset
 # load data from csv and perform pre-processing
-data_df = pd.read_csv(
-    os.path.join(os.getcwd(), "datasets", "diabetes.csv"), index_col=0
+data_df = (
+    pd.read_csv(os.path.join(os.getcwd(), "datasets", "california_housing_prices.csv"))
+    .reset_index()
+    .astype(
+        {
+            "housing_median_age": int,
+            "total_rooms": int,
+            "population": int,
+            "households": int,
+            "median_income": int,
+            "median_house_value": int,
+        }
+    )
+    .loc[0:100, :]
 )
-
 
 ### Create OctoData Object
 
@@ -32,22 +40,20 @@ data_df = pd.read_csv(
 # we also define a stratification column.
 octo_data = OctoData(
     data=data_df,
-    disable_checknan=True,
-    target_columns=["progression"],
+    target_columns=["median_house_value"],
     feature_columns=[
-        "age",
-        "sex",
-        "bmi",
-        "bp",
-        "s1",
-        "s2",
-        "s3",
-        "s4",
-        "s5",
-        "s6",
+        "longitude",
+        "latitude",
+        "housing_median_age",
+        "total_rooms",
+        # "total_bedrooms",
+        "population",
+        "households",
+        "median_income",
+        # "ocean_proximity": str,
     ],
-    sample_id="patient_id",
-    datasplit_type="group_sample_and_features",
+    sample_id="index",
+    datasplit_type="sample",
 )
 
 ### Create Configuration
@@ -63,7 +69,7 @@ octo_data = OctoData(
 # we use one sequence with the `RandomForestClassifier` model.
 
 config_study = ConfigStudy(
-    name="Diabetes",
+    name="Housing",
     ml_type="regression",
     target_metric="R2",
     metrics=["MSE", "MAE", "R2"],
@@ -85,25 +91,50 @@ config_sequence = ConfigSequence(
     [
         # Step1: octo
         Octo(
-            description="step1_octofull",
+            description="step1_octo",
             # datasplit
             n_folds_inner=5,
             datasplit_seed_inner=0,
             # model training
-            models=["ExtraTreesRegressor", "RandomForestRegressor"],
+            optuna_seed=5,
+            models=["RandomForestRegressor"],
             model_seed=0,
             n_jobs=1,
             dim_red_methods=[""],
-            max_outl=5,
+            fi_methods_bestbag=["permutation"],
+            # max_outl=5,
             # parallelization
-            inner_parallelization=True,
+            inner_parallelization=False,
             n_workers=5,
             # HPO
             global_hyperparameter=True,
             n_trials=5,
             max_features=70,
+            # remove_trials=False,
         ),
         # Step2: ....
+        Octo(
+            description="step2_octo",
+            # datasplit
+            n_folds_inner=5,
+            datasplit_seed_inner=0,
+            # model training
+            optuna_seed=5,
+            models=["RandomForestRegressor"],
+            model_seed=0,
+            n_jobs=1,
+            dim_red_methods=[""],
+            fi_methods_bestbag=["permutation"],
+            # max_outl=5,
+            # parallelization
+            inner_parallelization=False,
+            n_workers=5,
+            # HPO
+            global_hyperparameter=True,
+            n_trials=5,
+            max_features=70,
+            # remove_trials=False,
+        ),
     ]
 )
 
@@ -122,7 +153,7 @@ octo_ml.run_outer_experiments()
 
 print("Workflow completed")
 
-# This completes the basic example for using Octopus Regression
-# with the Diabetes dataset. The workflow involves loading and preprocessing
+# This completes the basic example for using Octopus Classification
+# with the Titanic dataset. The workflow involves loading and preprocessing
 # the data, creating necessary configurations, and executing the machine
 # learning pipeline.

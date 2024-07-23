@@ -319,7 +319,7 @@ class Bag:
                 .reset_index()
             )
             self.feature_importances[method_str + "_count"] = (
-                fi[["feature", "importance"]]
+                fi[fi["importance"] != 0][["feature", "importance"]]
                 .groupby(by="feature")
                 .count()
                 .sort_values(by="importance", ascending=False)

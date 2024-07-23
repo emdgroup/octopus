@@ -224,7 +224,7 @@ class MrmrConfig:
     """MRMR Config."""
 
     module: str = field(default="mrmr")
-    """Models for ML."""
+    """Module name."""
 
     load_sequence_item: bool = field(
         init=False, validator=validators.instance_of(bool), default=False

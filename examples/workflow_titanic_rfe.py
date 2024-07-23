@@ -2,14 +2,12 @@
 
 import os
 import socket
-from pathlib import Path
 
 import attrs
 import pandas as pd
 
 from octopus import OctoConfig, OctoData, OctoML
-from octopus.dashboard.run import OctoDash
-from octopus.modules.octo.config import OctopusFullConfig
+from octopus.modules.rfe import Rfe
 
 # Conda and Host information
 print("Notebook kernel is running on server:", socket.gethostname())
@@ -71,7 +69,7 @@ data = OctoData(**data_input)
 # configure study
 config_study = {
     # OctoML
-    "study_name": "20240110B",
+    "study_name": "Titanic-RFE",
     "output_path": "./studies/",
     "production_mode": False,
     "ml_type": "classification",  # ['classification','regression','timetoevent']
@@ -90,25 +88,9 @@ config_manager = {
 }
 
 # define processing sequence
-sequence_item_1 = OctopusFullConfig(
-    description="step1_octofull",
-    # datasplit
-    n_folds_inner=5,
-    # model training
-    models=[
-        # "TabPFNClassifier",
-        "ExtraTreesClassifier",
-        # "RandomForestClassifier",
-        # "CatBoostClassifier",
-        # "XGBClassifier",
-    ],
-    fi_methods_bestbag=["lofo"],
-    # parallelization
-    inner_parallelization=True,
-    n_workers=5,
-    # HPO
-    global_hyperparameter=True,
-    n_trials=5,
+sequence_item_1 = Rfe(
+    description="RFE",
+    cv=5,  # number of CV folds
 )
 
 config_sequence = [attrs.asdict(sequence_item_1)]
@@ -125,3 +107,8 @@ oml.create_outer_experiments()
 oml.run_outer_experiments()
 
 print("Workflow completed")
+
+# use dashboard
+# path_study = Path(config_study["output_path"]).joinpath(config_study["study_name"])
+# octo_dashboard = OctoDash(path_study)
+# octo_dashboard.run()

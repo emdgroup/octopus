@@ -77,14 +77,14 @@ config_manager = {
     # outer loop
     "outer_parallelization": True,
     # only run specific single experiment, for quick testing
-    # "run_single_experiment_num": 4,
+    "run_single_experiment_num": 4,
 }
 
 # define processing sequence
 sequence_item_1 = OctopusFullConfig(
     description="step1_octofull",
     # loading of existing results
-    load_sequence_item=True,
+    load_sequence_item=False,
     # datasplit
     n_folds_inner=5,
     datasplit_seed_inner=0,
@@ -108,7 +108,7 @@ sequence_item_1 = OctopusFullConfig(
     n_optuna_startup_trials=10,
     resume_optimization=False,
     global_hyperparameter=True,
-    n_trials=400,
+    n_trials=50,
     max_features=70,
     penalty_factor=1.0,
 )
@@ -124,7 +124,7 @@ sequence_item_2 = MrmrConfig(
     # feature importance type (mean/count)
     feature_importance_type="mean",
     # feature importance method (permuation/shap/internal)
-    feature_importance_method="permutation",
+    feature_importance_method="lofo",
 )
 
 
@@ -148,7 +148,7 @@ sequence_item_3 = OctopusFullConfig(
     n_jobs=1,
     dim_red_methods=[""],
     max_outl=0,
-    # fi_methods_bestbag=["permutation"],
+    fi_methods_bestbag=["lofo"],
     # parallelization
     inner_parallelization=True,
     n_workers=5,
@@ -157,19 +157,19 @@ sequence_item_3 = OctopusFullConfig(
     n_optuna_startup_trials=10,
     resume_optimization=False,
     global_hyperparameter=True,
-    n_trials=30,
+    n_trials=50,
     # max_features=70,
     # penalty_factor=1.0,
 )
-# config_sequence = [
-#    attrs.asdict(sequence_item_1),
-# ]
-
 config_sequence = [
     attrs.asdict(sequence_item_1),
-    attrs.asdict(sequence_item_2),
-    attrs.asdict(sequence_item_3),
 ]
+
+# config_sequence = [
+#    attrs.asdict(sequence_item_1),
+#    attrs.asdict(sequence_item_2),
+#    attrs.asdict(sequence_item_3),
+# ]
 # create study config
 octo_config = OctoConfig(config_manager, config_sequence, **config_study)
 

@@ -4,6 +4,7 @@ import os
 import socket
 
 import attrs
+import numpy as np
 import pandas as pd
 
 from octopus import OctoConfig, OctoData, OctoML
@@ -65,13 +66,41 @@ data_input = {
         "sex_male",
         "age",
         "abc",
+        "body",
     ],
 }
-
-
-# create OctoData object
 data = OctoData(**data_input)
 
+print()
+
+df_data = pd.DataFrame(
+    {
+        "target_0": [0, 1, 0, 1],
+        "target_1": [5, 1, 5, 1],
+        "target_2": [5, 1, 5, 1],
+        "feature_0": [1, 2, 3, 4],
+        "feature_1": [5, 2, 1, 4],
+        "feature_2": [5, 3, 3, 3],
+        "feature_3": [1, 2, 3, 3],
+        "feature_nan": [5, 6, 7, np.nan],
+        "feature_inf": [5, 5, 5, np.inf],
+        "feature_str": [5, 6, 7, "1"],
+        "feature_bool": [5, 6, 7, True],
+        "sample_id": [0, 1, 2, 2],
+        "sample_id_unique": [0, 1, 2, 3],
+        "id": [10, 11, 12, 13],
+    }
+)
+# create OctoData object
+# data = OctoData(**data_input)
+octo_data = OctoData(
+    data=df_data,
+    target_columns=["target_0"],
+    feature_columns=["feature_str", "feature_bool"],
+    sample_id="sample_id",
+    datasplit_type="sample",
+    data_quality_check=True,
+)
 
 # define inputs for OctoConfig
 # configure study

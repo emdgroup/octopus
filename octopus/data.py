@@ -43,7 +43,9 @@ class OctoData:
     """Type of datasplit. Allowed are `sample`, `group_features`
     and `group_sample_and_features`."""
 
-    row_id = field(default=Factory(lambda: ""), validator=[validators.instance_of(str)])
+    row_id: str = field(
+        default=Factory(lambda: ""), validator=[validators.instance_of(str)]
+    )
     """Unique row identifier."""
 
     disable_checknan: bool = field(
@@ -66,11 +68,13 @@ class OctoData:
     )
     """Enable data quality check."""
 
+    # not needed anymore
     @property
     def targets(self) -> List:
         """Targets columns."""
         return self.target_columns
 
+    # not needed anymore
     @property
     def features(self) -> List:
         """List of features."""
@@ -248,57 +252,81 @@ class QualityChecker:
         report = []
         warning = []
 
-        # Check unique row id
-        self.unique_rowid(report)
+        # # Check unique row id
+        if unique_row_id := self.unique_rowid_values():
+            report.append(unique_row_id)
 
         # Check unique features
-        self.unique_column(report, self.octo_data.feature_columns, "features")
+        if unique_features := self.unique_column(
+            self.octo_data.feature_columns, "features"
+        ):
+            report.append(unique_features)
 
         # Check unique targets
-        self.unique_column(report, self.octo_data.target_columns, "targets")
+        if unique_targets := self.unique_column(
+            self.octo_data.target_columns, "features"
+        ):
+            report.append(unique_targets)
 
         # check if features or targets overlap
-        self.overlap_columns(
-            report,
+        if overlap_feat_targ := self.overlap_columns(
             self.octo_data.feature_columns,
             self.octo_data.target_columns,
             "features",
             "targets",
-        )
+        ):
+            report.append(overlap_feat_targ)
 
         # check if features or sample_id overlap
-        self.overlap_columns(
-            report,
+        if overlap_feat_sample := self.overlap_columns(
             self.octo_data.feature_columns,
             [self.octo_data.sample_id],
             "features",
             "sample_id",
-        )
+        ):
+            report.append(overlap_feat_sample)
 
-        # check if targets or sample_id overlap
-        self.overlap_columns(
-            report,
+        # # check if targets or sample_id overlap
+        if overlap_targ_sample := self.overlap_columns(
             self.octo_data.target_columns,
             [self.octo_data.sample_id],
             "targets",
             "sample_id",
-        )
+        ):
+            report.append(overlap_targ_sample)
 
         # missing columns in dataframe
-        self.missing_columns(report)
+        # is is not working anyway, because octodata can not be created
+        if missing_columns := self.missing_columns():
+            report.append(missing_columns)
 
         # check for duplicates in features and sample
-        self.duplicates_features_samples(report, warning)
+        if datasplit_required := self.duplicates_features_samples():
+            if datasplit_required[0]:
+                report.append(datasplit_required[0])
+            if datasplit_required[1]:
+                warning.append(datasplit_required[1])
 
         # check values for Infs and NaN
-        self.nan_infs(report)
+        if nan := self.not_allowed_values([np.nan], "NaN"):
+            report.append(nan)
+
+        if infs := self.not_allowed_values([np.inf, -np.inf], "Inf"):
+            report.append(infs)
 
         # check dtypes
-        self.check_nonnumeric(report, "Feature", self.octo_data.feature_columns, "iuf")
-        self.check_nonnumeric(report, "Target", self.octo_data.target_columns, "iufb")
-        self.check_nonnumeric(
-            report, "Stratification ", self.octo_data.stratification_column, "iub"
-        )
+        if dtype_feature := self.check_nonnumeric(
+            "Feature", self.octo_data.feature_columns, "iuf"
+        ):
+            report.append(dtype_feature)
+        if dtype_target := self.check_nonnumeric(
+            "Target", self.octo_data.target_columns, "iufb"
+        ):
+            report.append(dtype_target)
+        if dtype_stratifictaion := self.check_nonnumeric(
+            "Stratification ", self.octo_data.stratification_column, "iub"
+        ):
+            report.append(dtype_stratifictaion)
 
         return report, warning
 
@@ -311,27 +339,24 @@ class QualityChecker:
             .union(set(self.octo_data.stratification_column))
         )
 
-    def unique_rowid(self, report: List[str]) -> None:
-        """Add row ID uniqueness check to the report."""
-        if not self.octo_data.data.index.is_unique:
-            report.append("Row_ID is not unique")
+    def unique_rowid_values(self) -> str | None:
+        """Check if values of row_id are unique."""
+        if not self.octo_data.data[self.octo_data.row_id].is_unique:
+            return "Row_ID is not unique"
+        return None
 
-    def unique_column(
-        self, report: List[str], columns: List[str], column_type: str
-    ) -> None:
+    def unique_column(self, columns: List[str], column_type: str | None) -> None:
         """Add non-unique columns check to the report."""
         non_unique_columns = list({item for item in columns if columns.count(item) > 1})
         if non_unique_columns:
-            report.append(
-                (
-                    f"The following {column_type} are not unique: "
-                    f"{', '.join(non_unique_columns)}"
-                )
+            return (
+                f"The following {column_type} are not unique: "
+                f"{', '.join(non_unique_columns)}"
             )
+        return None
 
     def overlap_columns(
         self,
-        report: List[str],
         list1: List[str],
         list2: List[str],
         name1: str,
@@ -340,24 +365,22 @@ class QualityChecker:
         """Add overlap check between feature and target columns to the report."""
         overlapping_columns = set(list1).intersection(list2)
         if overlapping_columns:
-            report.append(
-                (
-                    f"Columns shared between {name1} and {name2}: "
-                    f"{', '.join(overlapping_columns)}"
-                )
+            return (
+                f"Columns shared between {name1} and {name2}: "
+                f"{', '.join(overlapping_columns)}"
             )
+        return None
 
-    def missing_columns(self, report: List[str]) -> None:
+    def missing_columns(self) -> str | None:
         """Adding missing columns in dataframe to the report."""
         missing_columns = list(
             self._relevant_columns() - set(self.octo_data.data.columns)
         )
         if missing_columns:
-            report.append(f"Missing columns in dataset: {', '.join(missing_columns)}")
+            return f"Missing columns in dataset: {', '.join(missing_columns)}"
+        return None
 
-    def duplicates_features_samples(
-        self, report: List[str], warning: List[str]
-    ) -> None:
+    def duplicates_features_samples(self):
         """Check for duplicates (rows) in all features."""
         duplicated_features = (
             self.octo_data.data[self.octo_data.feature_columns].duplicated().any()
@@ -370,56 +393,41 @@ class QualityChecker:
             .any()
         )
         if duplicated_features and not duplicated_features_and_sample:
-            warning.append("Duplicates (rows) in features")
             if self.octo_data.datasplit_type == "sample":
-                report.append(
-                    (
-                        "Duplicates in features require datasplit type "
-                        "`group_features` or `group_sample_and_features`."
-                    )
+                return (
+                    "Duplicates in features require datasplit type "
+                    "`group_features` or `group_sample_and_features`.",
+                    "Duplicates (rows) in features",
                 )
+            return (None, "Duplicates (rows) in features")
 
         if duplicated_features_and_sample:
-            warning.append("Duplicates (rows) in features and sample")
             if self.octo_data.datasplit_type != "group_sample_and_features":
-                report.append(
-                    (
-                        "Duplicates in features and sample require datasplit "
-                        "type `group_sample_and_features`."
-                    )
+                return (
+                    "Duplicates in features and sample require datasplit "
+                    "type `group_sample_and_features`.",
+                    "Duplicates (rows) in features and sample",
                 )
+            return (
+                None,
+                "Duplicates (rows) in features and sample",
+            )
+        return None
 
-    def nan_infs(self, report: List[str]) -> None:
+    def not_allowed_values(self, values: List, name: str) -> str | None:
         """Check if all relevant columns are free of Infs."""
-        columns_with_issues = {
-            "Infs": [
-                col
-                for col in list(self._relevant_columns())
-                if self.octo_data.data[col].isin([np.inf, -np.inf]).any()
-            ],
-            "NaNs": [
-                col
-                for col in list(self._relevant_columns())
-                if self.octo_data.data[col].isna().any()
-            ],
-        }
-
-        # Append issues to the report
-        for issue, columns in columns_with_issues.items():
-            if columns:
-                report.append(f"{issue} in columns: {', '.join(columns)}")
+        columns_with_nan = [
+            col
+            for col in list(self._relevant_columns())
+            if self.octo_data.data[col].isin(values).any()
+        ]
+        if columns_with_nan:
+            return f"{name} in columns: {', '.join(columns_with_nan)}"
 
     def check_nonnumeric(
-        self, report: List[str], name: str, columns: List[str], allowed_dtypes: str
-    ) -> None:
-        """Check if specified columns contain only allowed data types.
-
-        Args:
-            report: report with all findings
-            name: name of column list for print output
-            columns: list of columns
-            allowed_dtypes: allwoed dtypes
-        """
+        self, name: str, columns: List[str], allowed_dtypes: str
+    ) -> str | None:
+        """Check if specified columns contain only allowed data types."""
         # Initialize list to store non-numeric column names
         non_numeric_columns = []
 
@@ -429,7 +437,8 @@ class QualityChecker:
                 non_numeric_columns.append(column)
 
         if non_numeric_columns:
-            report.append(
-                f"{name} columns are not in types '{allowed_dtypes}': \
-                    {', '.join(non_numeric_columns)}"
+            return (
+                f"{name} columns are not in types '{allowed_dtypes}': "
+                f"{', '.join(non_numeric_columns)}"
             )
+        return None

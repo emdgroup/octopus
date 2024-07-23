@@ -348,6 +348,7 @@ class Training:
             else:
                 # multi target models, incl. time2event
                 model.fit(self.data_train[selected_features], self.y_train)
+
             # get lofo dev + test scores
             score_dev = get_performance_score(
                 model,

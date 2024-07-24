@@ -4,7 +4,7 @@ import gzip
 import pickle
 from typing import Any, List
 
-from attrs import define, field, validators
+from attrs import Factory, define, field, validators
 
 from octopus.modules.metrics import metrics_inventory
 
@@ -44,137 +44,6 @@ class BaseSequenceItem:
     description: str = field(validator=[validators.instance_of(str)])
     """Description for the sequence."""
 
-    load_sequence_item: bool = field(
-        init=False, validator=validators.instance_of(bool), default=False
-    )
-    """Load existing sequence item. Default is False"""
-
-
-@define
-class Octo(BaseSequenceItem):
-    """Octofull sequence config.
-
-    Model options:
-        Classification:
-            "ExtraTreesClassifier",
-            "RandomForestClassifier",
-            "XGBClassifier",
-            "GradientBoostingClassifier",
-            "CatBoostClassifier",
-            "TabPFNClassifier"
-
-
-        Regression:
-            "ExtraTreesRegressor",
-            "RandomForestRegressor",
-            "XGBRegressor",
-            "RidgeRegressor",
-            "ElasticNetRegressor",
-            "ARDRegressor",
-            "GradientBoostingRegressor",
-            "SvrRegressor",
-            "CatBoostRegressor"
-
-
-        Time to event:
-            "ExtraTreesSurv"
-
-
-    """
-
-    models: List = field()
-    """Models for ML."""
-
-    module: str = field(default="octofull")
-    """Models for ML."""
-
-    # datasplit
-    n_folds_inner: int = field(validator=[validators.instance_of(int)], default=5)
-    """Number of inner folds."""
-
-    datasplit_seed_inner: int = field(
-        validator=[validators.instance_of(int)], default=0
-    )
-    """Data split seed for inner loops."""
-    # model training
-
-    model_seed: int = field(validator=[validators.instance_of(int)], default=0)
-    """Model seed."""
-
-    n_jobs: int = field(validator=[validators.instance_of(int)], default=1)
-    """Number of parallel jobs."""
-
-    dim_red_methods: List = field(default=[""])
-    """Methods for dimension reduction."""
-
-    max_outl: int = field(validator=[validators.instance_of(int)], default=5)
-    """Maximum number of outliers, optimized by Optuna"""
-
-    fi_methods_bestbag: list = field(
-        validator=[validators.instance_of(list)], default=[]
-    )
-    """Feature importance methods to be appleid to best bag"""
-    hyper_parameters: dict = field(validator=[validators.instance_of(dict)], default={})
-
-    inner_parallelization: bool = field(
-        validator=[validators.instance_of(bool)], default=False
-    )
-
-    n_workers: int = field(default=None)
-    """Number of workers."""
-
-    optuna_seed: int = field(validator=[validators.instance_of(int)], default=0)
-    """Seed for Optuna TPESampler, default=no seed"""
-
-    n_optuna_startup_trials: int = field(
-        validator=[validators.instance_of(int)], default=10
-    )
-    """Number of Optuna startup trials (random sampler)"""
-
-    global_hyperparameter: bool = field(
-        validator=[validators.in_([True, False])], default=True
-    )
-    """Selection of hyperparameter set."""
-
-    ensemble_selection: bool = field(
-        validator=[validators.in_([True, False])], default=False
-    )
-    """Whether to perform ensemble selection."""
-
-    ensel_n_save_trials: int = field(
-        validator=[validators.instance_of(int)], default=50
-    )
-    """Number of top trials to be saved for ensemble selection (bags)."""
-
-    n_trials: int = field(validator=[validators.instance_of(int)], default=100)
-    """Number of Optuna trials."""
-
-    hyperparameter: dict = field(validator=[validators.instance_of(dict)], default={})
-    """Bring own hyperparameter space."""
-
-    max_features: int = field(validator=[validators.instance_of(int)], default=0)
-    """Maximum features."""
-
-    penalty_factor: float = field(
-        validator=[validators.instance_of(float)], default=1.0
-    )
-    """Factor to penalyse optuna target related to feature constraint."""
-
-    resume_optimization: bool = field(
-        validator=[validators.instance_of(bool)], default=False
-    )
-    """Resume HPO, use existing optuna.db, don't delete optuna.de"""
-
-    def __attrs_post_init__(self):
-        # set default of n_workers to n_folds_inner
-        if self.n_workers is None:
-            self.n_workers = self.n_folds_inner
-        if self.n_workers != self.n_folds_inner:
-            print(
-                f"Octofull Warning: n_workers ({self.n_workers}) "
-                f"does not match n_folds_inner ({self.n_folds_inner})",
-            )
-
 
 @define
 class MrmrConfig(BaseSequenceItem):
@@ -201,6 +70,11 @@ class MrmrConfig(BaseSequenceItem):
         default="permutation",
     )
     """Selection of feature importance method."""
+
+    load_sequence_item: bool = field(
+        init=False, validator=validators.instance_of(bool), default=False
+    )
+    """Load existing sequence item. Default is False"""
 
 
 @define
@@ -232,6 +106,9 @@ class ConfigStudy:
     datasplit_seed_outer: int = field(default=0)
     """The seed used for data splitting in outer cross-validation. Defaults to 0."""
 
+    overwrite_existing_study: bool = field(default=Factory(lambda: False))
+    """Indicates whether the study can be overwritten. Defaults to False."""
+
     # is this really useful?
     metrics: List = field(
         default=["AUCROC", "ACCBAL", "ACC", "LOGLOSS", "MAE", "MSE", "R2", "CI"],
@@ -252,9 +129,6 @@ class ConfigManager:
 
     run_single_experiment_num: int = field(default=-1)
     """Select a single experiment to execute. Defaults to -1 to run all experiments"""
-
-    production_mode: bool = field(default=True)
-    """Indicates whether the study is in production mode. Defaults to True."""
 
 
 @define

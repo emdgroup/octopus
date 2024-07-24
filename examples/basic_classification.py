@@ -11,7 +11,8 @@ import os
 import pandas as pd
 
 from octopus import OctoData, OctoML
-from octopus.config import ConfigManager, ConfigSequence, ConfigStudy, Octo
+from octopus.config import ConfigManager, ConfigSequence, ConfigStudy
+from octopus.modules.octo.sequence import Octo
 
 ### Load and Preprocess Data
 
@@ -87,7 +88,7 @@ config_manager = ConfigManager(outer_parallelization=True)
 
 config_sequence = ConfigSequence(
     sequence_items=[
-        Octo(description="step_1_octo", models=["RandomForestClassifier"], n_trials=20)
+        Octo(description="step_1_octo", models=["RandomForestClassifier"], n_trials=3)
     ]
 )
 

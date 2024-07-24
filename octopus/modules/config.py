@@ -5,12 +5,12 @@ try:
 except ImportError:
     print("Info: Auto-sklearn not available in this conda environment")
 
-from octopus.modules.mrmr import Mrmr
+from octopus.modules.mrmr.module import MrmrModule
 from octopus.modules.octo.octofull import OctoFull
 
 # inventory for all available modules
 modules_inventory = {
     "autosklearn": Autosklearn,
     "octofull": OctoFull,
-    "mrmr": Mrmr,
+    "mrmr": MrmrModule,
 }

@@ -7,7 +7,7 @@ import attrs
 import pandas as pd
 
 from octopus import OctoConfig, OctoData, OctoML
-from octopus.modules.octo.config import OctopusFullConfig
+from octopus.modules.octo.sequence import OctopusFullConfig
 
 # Conda and Host information
 print("Notebook kernel is running on server:", socket.gethostname())

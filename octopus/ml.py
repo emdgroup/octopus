@@ -95,7 +95,7 @@ class OctoML:
             path_study: The path to the study directory.
         """
         if path_study.exists():
-            if self.configs.manager.production_mode:
+            if not self.configs.study.overwrite_existing_study:
                 confirmation = input(
                     "Study exists, do you want to continue (resume)? (yes/no): "
                 )

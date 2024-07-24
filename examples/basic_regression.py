@@ -11,7 +11,8 @@ import os
 import pandas as pd
 
 from octopus import OctoData, OctoML
-from octopus.config import ConfigManager, ConfigSequence, ConfigStudy, Octo
+from octopus.config import ConfigManager, ConfigSequence, ConfigStudy
+from octopus.modules.octo.sequence import Octo
 
 ### Load and Preprocess Data
 
@@ -71,7 +72,10 @@ octo_data = OctoData(
 # we use one sequence with the `RandomForestRegressor` and `XGBRegressor` model.
 
 config_study = ConfigStudy(
-    name="basic_regression_example", ml_type="regression", target_metric="MAE"
+    name="basic_regression_example",
+    ml_type="regression",
+    target_metric="MAE",
+    overwrite_existing_study=True,
 )
 
 config_manager = ConfigManager(outer_parallelization=True)
@@ -81,7 +85,8 @@ config_sequence = ConfigSequence(
         Octo(
             description="step_1",
             models=["RandomForestRegressor", "XGBRegressor"],
-            n_trials=20,
+            n_trials=3,
+            load_sequence_item=True,
         )
     ]
 )

@@ -11,7 +11,7 @@ import pandas as pd
 from sklearn.preprocessing import PolynomialFeatures
 
 from octopus import OctoConfig, OctoData, OctoML
-from octopus.modules.octo.config import OctopusFullConfig
+from octopus.modules.octo.sequence import OctopusFullConfig
 
 print("Notebook kernel is running on server:", socket.gethostname())
 print("Conda environment on server:", os.environ["CONDA_DEFAULT_ENV"])

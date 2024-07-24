@@ -8,7 +8,8 @@ import socket
 import pandas as pd
 
 from octopus import OctoData, OctoML
-from octopus.config import ConfigManager, ConfigSequence, ConfigStudy, Octo
+from octopus.config import ConfigManager, ConfigSequence, ConfigStudy
+from octopus.modules.octo.sequence import Octo
 
 print("Notebook kernel is running on server:", socket.gethostname())
 print("Conda environment on server:", os.environ["CONDA_DEFAULT_ENV"])

@@ -109,6 +109,9 @@ class OctoManager:
             if not element.load_sequence_item:
                 # add config to experiment
                 experiment = copy.deepcopy(base_experiment)
+                print(element)
+                print(experiment.experiment_id)
+                print(cnt)
                 experiment.ml_module = element.module
                 experiment.ml_config = element
                 experiment.id = experiment.id + "_" + str(cnt)

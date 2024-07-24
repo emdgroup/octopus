@@ -71,7 +71,7 @@ dependencies:
   - dash-core-components=2.0.0=pyhd8ed1ab_1
   - dash-html-components=2.0.0=pyhd8ed1ab_1
   - dash-iconify=0.1.2=pyhd8ed1ab_0
-  - dash-mantine-components=0.12.1=pyhd8ed1ab_0
+  - dash-mantine-components=0.14.3=pyhd8ed1ab_0
   - dash-table=5.0.0=pyhd8ed1ab_1
   - dbus=1.13.6=h5008d03_3
   - debugpy=1.8.1=py312h30efb56_0
@@ -288,7 +288,7 @@ dependencies:
   - oauthlib=3.2.2=pyhd8ed1ab_0
   - ocl-icd=2.3.2=hd590300_1
   - openjpeg=2.5.2=h488ebb8_0
-  - openssl=3.3.1=h4ab18f5_1
+  - openssl=3.3.1=h4bc722e_2
   - optuna=3.6.1=pyhd8ed1ab_0
   - orc=2.0.0=h17fec99_1
   - osqp=0.6.3=py312hd553d1a_1

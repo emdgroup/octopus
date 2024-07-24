@@ -103,7 +103,7 @@ sequence_item_1 = OctopusFullConfig(
     n_jobs=1,
     dim_red_methods=[""],
     max_outl=0,
-    fi_methods_bestbag=["permutation"],
+    fi_methods_bestbag=["shap"],
     # parallelization
     inner_parallelization=True,
     n_workers=5,

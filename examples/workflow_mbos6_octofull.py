@@ -55,7 +55,7 @@ data = OctoData(**data_input)
 
 # configure study
 config_study = {
-    "study_name": "20240322A_MBOS6_octofull_5x5_ETREE",
+    "study_name": "MBOS6_test1",
     "output_path": "./studies/",
     "production_mode": False,
     "start_with_empty_study": True,
@@ -88,7 +88,7 @@ sequence_item_1 = OctopusFullConfig(
     n_jobs=1,
     dim_red_methods=[""],
     max_outl=0,
-    fi_methods_bestbag=["permutation"],
+    fi_methods_bestbag=["lofo"],
     # parallelization
     inner_parallelization=True,
     n_workers=5,
@@ -97,7 +97,7 @@ sequence_item_1 = OctopusFullConfig(
     n_optuna_startup_trials=10,
     resume_optimization=False,
     global_hyperparameter=True,
-    n_trials=700,
+    n_trials=50,
     max_features=70,
     penalty_factor=1.0,
 )

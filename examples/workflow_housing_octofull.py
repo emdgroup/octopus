@@ -62,7 +62,7 @@ data = OctoData(**data_input)
 config_study = {
     "study_name": "housing_octofull_multi_sequence",
     "output_path": "./studies/",
-    "production_mode": True,
+    "production_mode": False,
     "ml_type": "regression",
     "n_folds_outer": 5,
     "target_metric": "R2",
@@ -73,6 +73,8 @@ config_study = {
 # configure manager
 config_manager = {
     "outer_parallelization": True,
+    # only process first outer loop experiment, for quick testing
+    "run_single_experiment_num": 1,
 }
 
 # define processing sequence
@@ -87,13 +89,14 @@ sequence_item_1 = OctopusFullConfig(
     model_seed=0,
     n_jobs=1,
     dim_red_methods=[""],
+    fi_methods_bestbag=["shap"],
     # max_outl=5,
     # parallelization
-    inner_parallelization=False,
+    inner_parallelization=True,
     n_workers=5,
     # HPO
     global_hyperparameter=True,
-    n_trials=3,
+    n_trials=5,
     max_features=70,
     # remove_trials=False,
 )

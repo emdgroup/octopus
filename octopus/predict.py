@@ -2,6 +2,7 @@
 
 # import itertools
 import math
+import warnings
 from pathlib import Path
 
 import matplotlib.pyplot as plt
@@ -16,6 +17,13 @@ from matplotlib.backends.backend_pdf import PdfPages
 from octopus.data import OctoData
 from octopus.experiment import OctoExperiment
 from octopus.modules.utils import get_performance_score, rdc_correlation_matrix
+
+# Suppress specific sklearn warning
+warnings.filterwarnings(
+    "ignore",
+    category=UserWarning,
+    message="X does not have valid feature names",
+)
 
 # TOBEDONE
 # (1) !calculate_fi(data_df)
@@ -217,10 +225,10 @@ class OctoPredict:
         data: pd.DataFrame,
         n_repeat: int = 10,
         fi_type: str = "permutation",
-        shap_type: str = "exact",
+        shap_type: str = "kernel",
     ) -> pd.DataFrame:
         """Calculate feature importances on new data."""
-        if shap_type not in ["exact", "permutation"]:
+        if shap_type not in ["exact", "permutation", "kernel"]:
             raise ValueError("Specified shap_type not supported.")
 
         # feature importances for every single available experiment/model
@@ -278,7 +286,7 @@ class OctoPredict:
         shap_type: str = "exact",
     ) -> pd.DataFrame:
         """Calculate feature importances on available test data."""
-        if shap_type not in ["exact", "permutation"]:
+        if shap_type not in ["exact", "permutation", "kernel"]:
             raise ValueError("Specified shap_type not supported.")
 
         print("Calculating feature importances for every experiment/model.")
@@ -585,16 +593,26 @@ class OctoPredict:
         if ml_type == "classification":
             if shap_type == "exact":
                 explainer = shap.explainers.Exact(model.predict_proba, data)
-            else:
+            elif shap_type == "permutation":
                 explainer = shap.explainers.Permutation(model.predict_proba, data)
+            elif shap_type == "kernel":
+                explainer = shap.explainers.Kernel(model.predict_proba, data)
+            else:
+                raise ValueError(f"Shap type {shap_type} not supported.")
+
             shap_values = explainer(data)
             # only use pos class
             shap_values = shap_values[:, :, 1]  # pylint: disable=E1126
         else:
             if shap_type == "exact":
                 explainer = shap.explainers.Exact(model.predict, data)
-            else:
+            elif shap_type == "permutation":
                 explainer = shap.explainers.Permutation(model.predict, data)
+            elif shap_type == "kernel":
+                explainer = shap.explainers.Kernel(model.predict, data)
+            else:
+                raise ValueError(f"Shap type {shap_type} not supported.")
+
             shap_values = explainer(data)
 
         results_path = self.study_path.joinpath(
@@ -634,5 +652,8 @@ class OctoPredict:
         shap_fi_df = shap_fi_df.sort_values(
             by="importance", ascending=False
         ).reset_index(drop=True)
+        # remove features with extremly small fi
+        threshold = shap_fi_df["importance"].max() / 1000
+        shap_fi_df = shap_fi_df[shap_fi_df["importance"] > threshold]
 
         return shap_fi_df

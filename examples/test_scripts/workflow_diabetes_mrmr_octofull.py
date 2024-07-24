@@ -72,6 +72,7 @@ config_study = ConfigStudy(
     n_folds_outer=5,
     start_with_empty_study=True,
     path="./studies/",
+    overwrite_existing_study=True,
 )
 
 config_manager = ConfigManager(
@@ -79,7 +80,6 @@ config_manager = ConfigManager(
     outer_parallelization=True,
     # only process first outer loop experiment, for quick testing
     run_single_experiment_num=1,
-    production_mode=False,
 )
 
 config_sequence = ConfigSequence(
@@ -90,6 +90,7 @@ config_sequence = ConfigSequence(
             # datasplit
             n_folds_inner=5,
             datasplit_seed_inner=0,
+            load_sequence_item=True,
             # model training
             models=["ExtraTreesRegressor", "RandomForestRegressor"],
             model_seed=0,

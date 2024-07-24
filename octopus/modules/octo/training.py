@@ -239,7 +239,7 @@ class Training:
             self.calculate_fi_internal()
             fi_df = self.feature_importances["internal"]
         elif feature_method == "shap":
-            self.calculate_fi_shap(partition="dev")
+            self.calculate_fi_featuresused_shap(partition="dev")
             fi_df = self.feature_importances["shap_dev"]
         elif feature_method == "permutation":
             self.calculate_fi_permutation(
@@ -371,8 +371,8 @@ class Training:
         self.feature_importances["lofo" + "_dev"] = fi_dev_df
         self.feature_importances["lofo" + "_test"] = fi_test_df
 
-    def calculate_fi_shap(self, partition="dev"):
-        """Shap feature importance."""
+    def calculate_fi_featuresused_shap(self, partition="dev"):
+        """Shap feature importance, specifically for calc_features_used."""
         print("Calculating shape feature importances. This may take a while...")
         # Initialize shape explainer using training data
         # improve speed by self.x_train.sample(n=100, replace=True, random_state=0)
@@ -382,7 +382,7 @@ class Training:
         if self.ml_type == "timetoevent":
             raise ValueError("Shap feature importance not supported for timetoevent")
         else:
-            # this works for line linear and tree models
+            # this works for linear and tree models
             explainer = shap.Explainer(
                 self.model,
                 self.x_train,
@@ -399,9 +399,9 @@ class Training:
                 raise ValueError("dataset type not supported")
 
         # Calculate the feature importances as the absolute mean of SHAP values
-        if isinstance(shap_values, list):  # shap < 0.45, multi-output, e.g. 2 classes
+        if isinstance(shap_values, list):  # shap v.< 0.45, multi-output, e.g. 2 classes
             feature_importances = np.abs(shap_values[0]).mean(axis=0)
-        elif isinstance(shap_values, np.ndarray):  # shap >= 0.45 or single output
+        elif isinstance(shap_values, np.ndarray):  # shap v. >= 0.45 or single output
             if shap_values.ndim == 2:  # single output
                 feature_importances = np.abs(shap_values).mean(axis=0)
             elif (
@@ -416,6 +416,65 @@ class Training:
         fi_df = pd.DataFrame()
         fi_df["feature"] = self.feature_columns
         fi_df["importance"] = feature_importances
+        # remove features with extremly small fi
+        fi_df = fi_df[fi_df["importance"] > fi_df["importance"].max() / 1000]
+        self.feature_importances["shap" + "_" + partition] = fi_df
+
+    def calculate_fi_shap(self, partition="dev", shap_type="kernel"):
+        """Shap feature importance."""
+        print(
+            f"Calculating shape feature importances ({partition})"
+            ". This may take a while..."
+        )
+        # here we use model agnostic methods to estimate shap values
+        # methods: (a) kernel (b) permutation (c) exact
+
+        if self.ml_type == "classification":
+            model = self.model.predict_proba
+        else:
+            model = self.model.predict
+
+        # select data
+        if partition == "dev":
+            data = self.x_dev
+        elif partition == "test":
+            data = self.x_test
+        else:
+            raise ValueError("dataset type not supported")
+
+        # select explainer based on shap_type
+        if shap_type == "exact":
+            explainer = shap.explainers.Exact(model, data)
+        elif shap_type == "permutation":
+            explainer = shap.explainers.Permutation(model, data)
+        elif shap_type == "kernel":
+            explainer = shap.explainers.Kernel(model, data)
+        else:
+            raise ValueError(f"Shap type {shap_type} not supported.")
+
+        # get shap values
+        shap_values = explainer(data).values
+
+        # Calculate the feature importances as the absolute mean of SHAP values
+        if isinstance(shap_values, list):  # shap v.< 0.45, multi-output, e.g. 2 classes
+            feature_importances = np.abs(shap_values[0]).mean(axis=0)
+        elif isinstance(shap_values, np.ndarray):  # shap v. >= 0.45 or single output
+            if shap_values.ndim == 2:  # single output
+                feature_importances = np.abs(shap_values).mean(axis=0)
+            elif (
+                shap_values.ndim == 3
+            ):  # multi-output (e.g. 2 classes) for shap v. >= 0.45
+                feature_importances = np.abs(shap_values[:, :, 0]).mean(axis=0)
+            else:
+                raise TypeError("Type error shape_value")
+        else:
+            raise TypeError("Type error shape_value")
+
+        fi_df = pd.DataFrame()
+        fi_df["feature"] = data.columns.tolist()
+        fi_df["importance"] = feature_importances
+        # remove features with extremly small fi
+        fi_df = fi_df[fi_df["importance"] > fi_df["importance"].max() / 1000]
         self.feature_importances["shap" + "_" + partition] = fi_df
 
     def predict(self, x):

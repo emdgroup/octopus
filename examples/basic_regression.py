@@ -75,7 +75,6 @@ config_study = ConfigStudy(
     name="basic_regression_example",
     ml_type="regression",
     target_metric="MAE",
-    silently_overwrite_study=True,
 )
 
 config_manager = ConfigManager(outer_parallelization=False, run_single_experiment_num=0)

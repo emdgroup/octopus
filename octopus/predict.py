@@ -2,6 +2,7 @@
 
 # import itertools
 import math
+import warnings
 from pathlib import Path
 
 import matplotlib.pyplot as plt
@@ -15,8 +16,14 @@ from matplotlib.backends.backend_pdf import PdfPages
 
 from octopus.data import OctoData
 from octopus.experiment import OctoExperiment
-from octopus.modules.metrics import metrics_inventory
-from octopus.modules.utils import optuna_direction, rdc_correlation_matrix
+from octopus.modules.utils import get_performance_score, rdc_correlation_matrix
+
+# Suppress specific sklearn warning
+warnings.filterwarnings(
+    "ignore",
+    category=UserWarning,
+    message="X does not have valid feature names",
+)
 
 # TOBEDONE
 # (1) !calculate_fi(data_df)
@@ -218,10 +225,10 @@ class OctoPredict:
         data: pd.DataFrame,
         n_repeat: int = 10,
         fi_type: str = "permutation",
-        shap_type: str = "exact",
+        shap_type: str = "kernel",
     ) -> pd.DataFrame:
         """Calculate feature importances on new data."""
-        if shap_type not in ["exact", "permutation"]:
+        if shap_type not in ["exact", "permutation", "kernel"]:
             raise ValueError("Specified shap_type not supported.")
 
         # feature importances for every single available experiment/model
@@ -279,7 +286,7 @@ class OctoPredict:
         shap_type: str = "exact",
     ) -> pd.DataFrame:
         """Calculate feature importances on available test data."""
-        if shap_type not in ["exact", "permutation"]:
+        if shap_type not in ["exact", "permutation", "kernel"]:
             raise ValueError("Specified shap_type not supported.")
 
         print("Calculating feature importances for every experiment/model.")
@@ -346,36 +353,6 @@ class OctoPredict:
             pdf.savefig(plt.gcf(), orientation="portrait")
             plt.close()
 
-    def _get_performance_score(
-        self, model, data, feature_columns, target_metric, target_assignments
-    ) -> float:
-        """Calculate model performance score on dataset."""
-        if target_metric in ["AUCROC", "LOGLOSS"]:
-            target_col = list(target_assignments.values())[0]
-            target = data[target_col]
-            probabilities = model.predict_proba(data[feature_columns])[
-                :, 1
-            ]  # binary only!!
-            score = metrics_inventory[target_metric]["method"](target, probabilities)
-        elif target_metric in ["CI"]:
-            estimate = model.predict(data)
-            event_time = data[target_assignments["duration"]].astype(float)
-            event_indicator = data[target_assignments["event"]].astype(bool)
-            score, _, _, _, _ = metrics_inventory[target_metric]["method"](
-                event_indicator, event_time, estimate
-            )
-        else:
-            target_col = list(target_assignments.values())[0]
-            target = data[target_col]
-            probabilities = model.predict(data)
-            score = metrics_inventory[target_metric]["method"](target, probabilities)
-
-        # make sure that the sign of the feature importances is correct
-        if optuna_direction(target_metric) == "maximize":
-            return score
-        else:
-            return -score
-
     def _get_fi_permutation(self, experiment, n_repeat, data) -> pd.DataFrame:
         """Calculate permutation feature importances."""
         # fixed confidence level
@@ -397,7 +374,7 @@ class OctoPredict:
         # MISSING
 
         # calculate baseline score
-        baseline_score = self._get_performance_score(
+        baseline_score = get_performance_score(
             model, data, feature_columns, target_metric, target_assignments
         )
 
@@ -425,7 +402,7 @@ class OctoPredict:
                 data_pfi[feature] = np.random.choice(
                     data_all[feature], len(data_pfi), replace=False
                 )
-                pfi_score = self._get_performance_score(
+                pfi_score = get_performance_score(
                     model, data_pfi, feature_columns, target_metric, target_assignments
                 )
                 fi_lst.append(baseline_score - pfi_score)
@@ -521,7 +498,7 @@ class OctoPredict:
         features_list = [[f] for f in feature_columns] + auto_groups
 
         # calculate baseline score
-        baseline_score = self._get_performance_score(
+        baseline_score = get_performance_score(
             model, data, feature_columns, target_metric, target_assignments
         )
 
@@ -550,7 +527,7 @@ class OctoPredict:
                     data_pfi[feat] = np.random.choice(
                         data_all[feat], len(data_pfi), replace=False
                     )
-                pfi_score = self._get_performance_score(
+                pfi_score = get_performance_score(
                     model, data_pfi, feature_columns, target_metric, target_assignments
                 )
                 fi_lst.append(baseline_score - pfi_score)
@@ -616,16 +593,26 @@ class OctoPredict:
         if ml_type == "classification":
             if shap_type == "exact":
                 explainer = shap.explainers.Exact(model.predict_proba, data)
-            else:
+            elif shap_type == "permutation":
                 explainer = shap.explainers.Permutation(model.predict_proba, data)
+            elif shap_type == "kernel":
+                explainer = shap.explainers.Kernel(model.predict_proba, data)
+            else:
+                raise ValueError(f"Shap type {shap_type} not supported.")
+
             shap_values = explainer(data)
             # only use pos class
             shap_values = shap_values[:, :, 1]  # pylint: disable=E1126
         else:
             if shap_type == "exact":
                 explainer = shap.explainers.Exact(model.predict, data)
-            else:
+            elif shap_type == "permutation":
                 explainer = shap.explainers.Permutation(model.predict, data)
+            elif shap_type == "kernel":
+                explainer = shap.explainers.Kernel(model.predict, data)
+            else:
+                raise ValueError(f"Shap type {shap_type} not supported.")
+
             shap_values = explainer(data)
 
         results_path = self.study_path.joinpath(
@@ -665,5 +652,8 @@ class OctoPredict:
         shap_fi_df = shap_fi_df.sort_values(
             by="importance", ascending=False
         ).reset_index(drop=True)
+        # remove features with extremely small fi
+        threshold = shap_fi_df["importance"].max() / 1000
+        shap_fi_df = shap_fi_df[shap_fi_df["importance"] > threshold]
 
         return shap_fi_df

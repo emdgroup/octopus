@@ -94,13 +94,14 @@ sequence_item_1 = OctopusFullConfig(
     model_seed=0,
     n_jobs=1,
     dim_red_methods=[""],
+    fi_methods_bestbag=["shap"],
     # max_outl=5,
     # parallelization
-    inner_parallelization=False,
+    inner_parallelization=True,
     n_workers=5,
     # HPO
     global_hyperparameter=True,
-    n_trials=2,
+    n_trials=5,
     max_features=70,
     # remove_trials=False,
 )

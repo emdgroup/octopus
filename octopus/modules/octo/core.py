@@ -39,15 +39,15 @@ for line in [319, 330, 338]:
 # - check that openblas settings are correct and suggest solutions
 
 # TOBEDONE OCTOFULL
-# - (1) FI counts
-# - (2) !Calculate performance of survival models: CI, CI_uno,  IBS, dynAUC,
-# - (3) rename ensemble test
-# - (4) include data preprocessing
-# - (5) Ensemble selection
-# - (6) feature counts in bag
-# - (7) num feat constraint (automatic parameters)
+# - (1) Complete Ensemble Selection
+# - (2) Feature Counts in Bag - is everything available
+# - (3) !Calculate performance of survival models: CI, CI_uno,  IBS, dynAUC,
+# - (4) rename ensemble test
+# - (5) include data preprocessing
+# - (6) num feat constraint (automatic parameters)
 #       + scaling factor from first random optuna runs
 #       + max_feature from dataset size
+# - (7) add kernel shape feature importance
 # - (8) create predict/predict_proba function for bag
 #       Does it work with shap and permutation feature importance?
 # - (9) TestFI: Apply shape and permutation feature importance to bag to test
@@ -69,7 +69,7 @@ for line in [319, 330, 338]:
 # - improve create_best_bags - use a direct way, from returned best trial or optuna.db
 # - xgoost class weights need to be set in training! How to solve that?
 # - check disk space and inform about disk space requirements
-# - Shap FI is too complicated for sksurv models.
+# - Shap FI is too complicated for sksurv models - strangely, it takes very long
 
 
 # TOBEDONE OPTUNA
@@ -89,6 +89,17 @@ for line in [319, 330, 338]:
 # - add scaling, as a HP?
 # - include dimensionality reduction
 # - include outlier elimination
+
+# TOBEDONE FEATURE_IMPORTANCE
+# - (1) grouped permutation importance, see predict class
+# - (2) use feature importance counts
+# - separate fi code from training class
+# - group identification (experiment.py) - add hirarchical clustering
+# - create new module that filters out correlated variables
+# - crate new module that replaces groups with PCA 1st component
+# - https://arxiv.org/pdf/2312.10858
+# - see alibi package, ALE, https://github.com/SeldonIO/alibi/tree/master
+# - add kernel shape fi
 
 
 @define

@@ -7,10 +7,10 @@ from pathlib import Path
 import networkx as nx
 import numpy as np
 import pandas as pd
+import scipy.stats
 from attrs import define, field, validators
 
 from octopus.config.core import OctoConfig
-from octopus.modules.utils import rdc_correlation_matrix
 
 
 @define
@@ -88,31 +88,45 @@ class OctoExperiment:
 
     def _calculate_feature_groups(self) -> None:
         """Calculate Feature Groups."""
-        auto_group_threshold = 0.6
+        # looking for groups arising from different thresholds
+        auto_group_thresholds = [0.7, 0.8, 0.9]
+        auto_groups = list()
         print("Calculating feature groups.")
-        pos_corr_matrix = np.abs(
-            rdc_correlation_matrix(self.data_traindev[self.feature_columns])
+        # correlation matrix
+        # (A) spearmamr correlation matrix
+        pos_corr_matrix, _ = scipy.stats.spearmanr(
+            np.nan_to_num(self.data_traindev[self.feature_columns].values)
         )
+        pos_corr_matrix = np.abs(pos_corr_matrix)
+        # (B) RDC correlation matrix
+        # pos_corr_matrix = np.abs(
+        #    rdc_correlation_matrix(self.data_traindev[self.feature_columns])
+        # )
+        # get groups depending on threshold
+        for threshold in auto_group_thresholds:
+            g = nx.Graph()
 
-        g = nx.Graph()
+            for i in range(len(self.feature_columns)):
+                for j in range(i + 1, len(self.feature_columns)):
+                    if pos_corr_matrix[i, j] > threshold:
+                        g.add_edge(i, j)
 
-        for i in range(len(self.feature_columns)):
-            for j in range(i + 1, len(self.feature_columns)):
-                if pos_corr_matrix[i, j] > auto_group_threshold:
-                    g.add_edge(i, j)
+            subgraphs = [g.subgraph(c) for c in nx.connected_components(g)]
 
-        subgraphs = [g.subgraph(c) for c in nx.connected_components(g)]
+            groups = []
+            for sg in subgraphs:
+                groups.append([self.feature_columns[node] for node in sg.nodes()])
 
-        groups = []
-        for sg in subgraphs:
-            groups.append([self.feature_columns[node] for node in sg.nodes()])
+            auto_groups.extend([sorted(g) for g in groups])
 
-        auto_groups = [sorted(g) for g in groups]
-
+        # find unique groups
+        auto_groups_unique = [list(t) for t in set(map(tuple, auto_groups))]
+        # create groups dicts
         groups_dict = dict()
-        for i, group in enumerate(auto_groups):
+        for i, group in enumerate(auto_groups_unique):
             groups_dict[f"group{i}"] = group
 
+        print("Feature Groups:", groups_dict)
         self.feature_groups = groups_dict
 
     def to_pickle(self, file_path: str) -> None:

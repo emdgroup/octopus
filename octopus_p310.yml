@@ -258,7 +258,7 @@ dependencies:
   - ocl-icd=2.3.2=hd590300_0
   - ocl-icd-system=1.0.0=1
   - openjpeg=2.5.0=h488ebb8_3
-  - openssl=3.3.1=h4ab18f5_1
+  - openssl=3.3.1=h4bc722e_2
   - optuna=3.6.1=pyhd8ed1ab_0
   - orc=2.0.1=h17fec99_1
   - osqp=0.6.3=py310hcc13569_2

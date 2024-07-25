@@ -28,7 +28,12 @@ from octopus.modules.utils import rdc
 # https://github.com/smazzanti/mrmr
 
 # TOBEDONE:
-# (1) saving results? any plots?
+# (1) use counts instead of pfi
+# (2) use combined counts and pfi !!! as input
+# (3) how to deal with grouped features ???
+# (4) use results from ensemble selection (count + pfi)
+# (5) saving results? any plots?
+# ()
 
 
 @define
@@ -124,6 +129,9 @@ class MrmrCore:
         n_features: number of features to be extracted
         """
         FLOOR = 0.001
+
+        # remove all group features
+        fi_df = fi_df[~fi_df["feature"].str.startswith("group")]
 
         # extract features from feature importance table
         fi_features = fi_df["feature"].tolist()

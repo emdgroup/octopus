@@ -7,7 +7,7 @@ import attrs
 import pandas as pd
 
 from octopus import OctoConfig, OctoData, OctoML
-from octopus.modules.rfe import Rfe
+from octopus.modules.sfs import Sfs
 
 # Conda and Host information
 print("Notebook kernel is running on server:", socket.gethostname())
@@ -69,7 +69,7 @@ data = OctoData(**data_input)
 # configure study
 config_study = {
     # OctoML
-    "study_name": "Titanic-RFE",
+    "study_name": "Titanic-SFS",
     "output_path": "./studies/",
     "production_mode": False,
     "ml_type": "classification",  # ['classification','regression','timetoevent']
@@ -88,8 +88,8 @@ config_manager = {
 }
 
 # define processing sequence
-sequence_item_1 = Rfe(
-    description="RFE",
+sequence_item_1 = Sfs(
+    description="SFS",
     cv=5,  # number of CV folds
 )
 

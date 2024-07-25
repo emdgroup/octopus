@@ -99,13 +99,20 @@ sequence_item_1 = OctopusFullConfig(
     # datasplit
     n_folds_inner=5,
     # model training
-    models=["XGBClassifier"],  # "XGBClassifier", "RandomForestClassifier"
+    models=[
+        # "TabPFNClassifier",
+        "ExtraTreesClassifier",
+        # "RandomForestClassifier",
+        # "CatBoostClassifier",
+        # "XGBClassifier",
+    ],
+    fi_methods_bestbag=["lofo"],
     # parallelization
     inner_parallelization=True,
     n_workers=5,
     # HPO
     global_hyperparameter=True,
-    n_trials=20,
+    n_trials=5,
 )
 
 config_sequence = [attrs.asdict(sequence_item_1)]

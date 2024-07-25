@@ -10,7 +10,7 @@ import pandas as pd
 import scipy.stats
 from attrs import define, field, validators
 
-# from octopus.modules.utils import rdc_correlation_matrix
+from octopus.config.core import OctoConfig
 
 
 @define
@@ -21,7 +21,7 @@ class OctoExperiment:
     experiment_id: int = field(validator=[validators.instance_of(int)])
     sequence_item_id: int = field(validator=[validators.instance_of(int)])
     path_sequence_item: Path = field(validator=[validators.instance_of(Path)])
-    config: dict = field(validator=[validators.instance_of(dict)])
+    configs: OctoConfig = field(validator=[validators.instance_of(OctoConfig)])
     datasplit_column: str = field(validator=[validators.instance_of(str)])
     row_column: str = field(validator=[validators.instance_of(str)])
     feature_columns: list = field(validator=[validators.instance_of(list)])
@@ -40,9 +40,7 @@ class OctoExperiment:
         init=False, default=0, validator=[validators.instance_of(int)]
     )
 
-    ml_config: dict = field(
-        init=False, default=dict(), validator=[validators.instance_of(dict)]
-    )
+    ml_config: dict = field(init=False, default=None)
     # experiment outputs, initialized in post_init
     selected_features: list = field(
         init=False, validator=[validators.instance_of(list)]
@@ -69,12 +67,12 @@ class OctoExperiment:
     @property
     def path_study(self) -> Path:
         """Path study."""
-        return Path(self.config["output_path"], self.config["study_name"])
+        return Path(self.configs.study.path, self.configs.study.name)
 
     @property
     def ml_type(self) -> str:
         """Shortcut to ml_type."""
-        return self.config["ml_type"]
+        return self.configs.study.ml_type
 
     def __attrs_post_init__(self):
         # initialization here due to "Python immutable default"
@@ -85,11 +83,12 @@ class OctoExperiment:
         self.predictions = dict()
         self.models = dict()
         self.results = dict()
+        # self.feature_groups = dict()
         self._calculate_feature_groups()
 
     def _calculate_feature_groups(self) -> None:
         """Calculate Feature Groups."""
-        # looking for goups arising from different thresholds
+        # looking for groups arising from different thresholds
         auto_group_thresholds = [0.7, 0.8, 0.9]
         auto_groups = list()
         print("Calculating feature groups.")

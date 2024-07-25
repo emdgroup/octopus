@@ -1,4 +1,4 @@
-"""MRMR Module."""
+"""MRMR core function."""
 
 import numpy as np
 import pandas as pd
@@ -37,8 +37,8 @@ from octopus.modules.utils import rdc
 
 
 @define
-class Mrmr:
-    """MRMR."""
+class MrmrCore:
+    """MRMR module."""
 
     experiment: OctoExperiment = field(
         validator=[validators.instance_of(OctoExperiment)]
@@ -52,12 +52,12 @@ class Mrmr:
     @property
     def correlation_type(self) -> str:
         """Correlation type."""
-        return self.experiment.ml_config["correlation_type"]
+        return self.experiment.ml_config.correlation_type
 
     @property
     def n_features(self) -> int:
         """Number of features selected by MRMR."""
-        return self.experiment.ml_config["n_features"]
+        return self.experiment.ml_config.n_features
 
     @property
     def feature_importances(self) -> dict:
@@ -67,8 +67,8 @@ class Mrmr:
     @property
     def feature_importance_key(self) -> str:
         """Feature importance key."""
-        fi_type = self.experiment.ml_config["feature_importance_type"]
-        fi_method = self.experiment.ml_config["feature_importance_method"]
+        fi_type = self.experiment.ml_config.feature_importance_type
+        fi_method = self.experiment.ml_config.feature_importance_method
         if fi_method == "internal":
             key = "internal" + "_" + fi_type
         else:
@@ -217,38 +217,3 @@ class Mrmr:
 
         print("selected: ", selected)
         return selected
-
-
-@define
-class MrmrConfig:
-    """MRMR Config."""
-
-    module: str = field(default="mrmr")
-    """Module name."""
-
-    load_sequence_item: bool = field(
-        init=False, validator=validators.instance_of(bool), default=False
-    )
-    """Load existing sequence item, fixed, set to False"""
-
-    description: str = field(validator=[validators.instance_of(str)], default=None)
-    """Description."""
-
-    n_features: int = field(validator=[validators.instance_of(int)], default=30)
-    """Number of features selected by MRMR."""
-
-    correlation_type: str = field(
-        validator=[validators.in_(["pearson", "rdc"])], default="pearson"
-    )
-    """Selection of correlation type."""
-
-    feature_importance_type: str = field(
-        validator=[validators.in_(["mean", "count"])], default="mean"
-    )
-    """Selection of feature importance type."""
-
-    feature_importance_method: str = field(
-        validator=[validators.in_(["permutation", "shap", "internal", "lofo"])],
-        default="permutation",
-    )
-    """Selection of feature importance method."""

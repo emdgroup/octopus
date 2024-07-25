@@ -7,7 +7,7 @@ import attrs
 import pandas as pd
 
 from octopus import OctoConfig, OctoData, OctoML
-from octopus.modules.octo.config import OctopusFullConfig
+from octopus.modules.octo.sequence import OctopusFullConfig
 
 # Conda and Host information
 print("Notebook kernel is running on server:", socket.gethostname())
@@ -60,7 +60,7 @@ data = OctoData(**data_input)
 
 # configure study
 config_study = {
-    "study_name": "housing_octofull_multi_sequence",
+    "study_name": "housing_octofull_own_hp",
     "output_path": "./studies/",
     "production_mode": False,
     "ml_type": "regression",
@@ -72,9 +72,8 @@ config_study = {
 
 # configure manager
 config_manager = {
-    "outer_parallelization": True,
-    # only process first outer loop experiment, for quick testing
-    "run_single_experiment_num": 1,
+    "outer_parallelization": False,
+    "run_single_experiment_num": 0,
 }
 
 # define processing sequence
@@ -85,7 +84,13 @@ sequence_item_1 = OctopusFullConfig(
     datasplit_seed_inner=0,
     # model training
     optuna_seed=5,
-    models=["RandomForestRegressor"],
+    models=["RandomForestRegressor", "XGBRegressor"],
+    hyper_parameters={
+        "RandomForestRegressor": [
+            ("int", {"name": "max_depth", "low": 2, "high": 32}),
+            ("int", {"name": "min_samples_split", "low": 2, "high": 100}),
+        ]
+    },
     model_seed=0,
     n_jobs=1,
     dim_red_methods=[""],
@@ -101,29 +106,7 @@ sequence_item_1 = OctopusFullConfig(
     # remove_trials=False,
 )
 
-sequence_item_2 = OctopusFullConfig(
-    description="step2_octofull",
-    # datasplit
-    n_folds_inner=5,
-    datasplit_seed_inner=0,
-    # model training
-    optuna_seed=5,
-    models=["RandomForestRegressor"],
-    model_seed=0,
-    n_jobs=1,
-    dim_red_methods=[""],
-    # max_outl=5,
-    # parallelization
-    inner_parallelization=False,
-    n_workers=5,
-    # HPO
-    global_hyperparameter=True,
-    n_trials=5,
-    max_features=70,
-    # remove_trials=False,
-)
-
-config_sequence = [attrs.asdict(sequence_item_1)]  # , attrs.asdict(sequence_item_2)]
+config_sequence = [attrs.asdict(sequence_item_1)]
 
 print(config_sequence)
 

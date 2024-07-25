@@ -1,4 +1,4 @@
-"""OctoFull Module."""
+"""OctoFull core function."""
 
 # import concurrent.futures
 import json
@@ -40,7 +40,7 @@ for line in [319, 330, 338]:
 
 # TOBEDONE OCTOFULL
 # - (1) Complete Ensemble Selection
-# - (2) Feature Counts in Bag - is everything availalbe
+# - (2) Feature Counts in Bag - is everything available
 # - (3) !Calculate performance of survival models: CI, CI_uno,  IBS, dynAUC,
 # - (4) rename ensemble test
 # - (5) include data preprocessing
@@ -94,7 +94,7 @@ for line in [319, 330, 338]:
 # - (1) grouped permutation importance, see predict class
 # - (2) use feature importance counts
 # - separate fi code from training class
-# - group indentification (experiment.py) - add hirarchical clustering
+# - group identification (experiment.py) - add hirarchical clustering
 # - create new module that filters out correlated variables
 # - crate new module that replaces groups with PCA 1st component
 # - https://arxiv.org/pdf/2312.10858
@@ -103,7 +103,7 @@ for line in [319, 330, 338]:
 
 
 @define
-class OctoFull:
+class OctoCore:
     """Manages and executes machine learning experiments.
 
     This class integrates all components necessary for conducting
@@ -173,8 +173,8 @@ class OctoFull:
         self.data_splits = DataSplit(
             dataset=self.experiment.data_traindev,
             datasplit_col=self.experiment.datasplit_column,
-            seed=self.experiment.ml_config["datasplit_seed_inner"],
-            num_folds=self.experiment.ml_config["n_folds_inner"],
+            seed=self.experiment.ml_config.datasplit_seed_inner,
+            num_folds=self.experiment.ml_config.n_folds_inner,
             stratification_col=self.experiment.stratification_column,
         ).get_datasplits()
         # if we don't want to resume optimization:
@@ -183,7 +183,7 @@ class OctoFull:
         # as optuna.create(...,load_if_exists=True)
         # create directory if it does not exist
         for directory in [self.path_optuna, self.path_trials, self.path_results]:
-            if not self.experiment.ml_config["resume_optimization"]:
+            if not self.experiment.ml_config.resume_optimization:
                 if directory.exists():
                     shutil.rmtree(directory)
             directory.mkdir(parents=True, exist_ok=True)
@@ -202,13 +202,12 @@ class OctoFull:
         )
 
         # assuming n_jobs=1 for every model
-        if self.experiment.ml_config["inner_parallelization"] is True:
+        if self.experiment.ml_config.inner_parallelization is True:
             num_requested_cpus = (
-                self.experiment.ml_config["n_workers"]
-                * self.experiment.ml_config["n_jobs"]
+                self.experiment.ml_config.n_workers * self.experiment.ml_config.n_jobs
             )
         else:
-            num_requested_cpus = self.experiment.ml_config["n_jobs"]
+            num_requested_cpus = self.experiment.ml_config.n_jobs
 
         print(f"Number of requested CPUs for this experiment: {num_requested_cpus}")
         print()
@@ -216,7 +215,7 @@ class OctoFull:
     def run_experiment(self):
         """Run experiment."""
         # (1) model training and optimization
-        if self.experiment.ml_config["global_hyperparameter"]:
+        if self.experiment.ml_config.global_hyperparameter:
             self._run_globalhp_optimization()
         else:
             self._run_individualhp_optimization()
@@ -228,8 +227,8 @@ class OctoFull:
 
         # (2) ensemble selection, only globalhp scenario is supported
         if (
-            self.experiment.ml_config["global_hyperparameter"]
-            & self.experiment.ml_config["ensemble_selection"]
+            self.experiment.ml_config.global_hyperparameter
+            & self.experiment.ml_config.ensemble_selection
         ):
             self._run_ensemble_selection()
 
@@ -267,9 +266,9 @@ class OctoFull:
                 bag_id=self.experiment.id + "_best",
                 trainings=trainings,
                 target_assignments=self.experiment.target_assignments,
-                parallel_execution=self.experiment.ml_config["inner_parallelization"],
-                num_workers=self.experiment.ml_config["n_workers"],
-                target_metric=self.experiment.config["target_metric"],
+                parallel_execution=self.experiment.ml_config.inner_parallelization,
+                num_workers=self.experiment.ml_config.n_workers,
+                target_metric=self.experiment.config.target_metric,
                 row_column=self.experiment.row_column,
             )
             # save best bag
@@ -282,13 +281,13 @@ class OctoFull:
         # show and save test results
         print(
             f"Experiment: {self.experiment.id} "
-            f"Test(ensembled, hard vote) {self.experiment.config['target_metric']}:"
+            f"Test(ensembled, hard vote) {self.experiment.configs.study.target_metric}:"
             f"{best_bag_scores['test_pool_hard']}"
         )
         if self.experiment.ml_type == "classification":
             print(
                 f"Experiment: {self.experiment.id} "
-                f"Test(ensembled, soft vote) {self.experiment.config['target_metric']}:"
+                f"Test(ensembled, soft vote) {self.experiment.configs.study.target_metric}:"  # noqa E501
                 f"{best_bag_scores['test_pool_soft']}"
             )
 
@@ -304,7 +303,7 @@ class OctoFull:
         self.experiment.scores = best_bag_scores
 
         # calculate and save specified feature importances of best bag
-        fi_methods = self.experiment.ml_config["fi_methods_bestbag"]
+        fi_methods = self.experiment.ml_config.fi_methods_bestbag
         self.experiment.feature_importances = best_bag.get_feature_importances(
             fi_methods
         )
@@ -348,7 +347,7 @@ class OctoFull:
 
         # same config parameters also used for parallelization of bag trainings
 
-        if self.experiment.ml_config["inner_parallelization"]:
+        if self.experiment.ml_config.inner_parallelization:
             # (A) joblib parallelization, compatible with xgboost
             def optimize_split(split, split_index):
                 try:
@@ -361,7 +360,7 @@ class OctoFull:
                     print(f"Exception type: {type(e).__name__}")
 
             print("Parallel execution of Optuna optimizations for individual HPs")
-            with Parallel(n_jobs=self.experiment.ml_config["n_workers"]) as parallel:
+            with Parallel(n_jobs=self.experiment.ml_config.n_workers) as parallel:
                 parallel(
                     delayed(optimize_split)(split, idx)
                     for idx, split in enumerate(splits)
@@ -421,8 +420,8 @@ class OctoFull:
             multivariate=True,
             group=True,
             constant_liar=True,
-            seed=self.experiment.ml_config["optuna_seed"],
-            n_startup_trials=self.experiment.ml_config["n_optuna_startup_trials"],
+            seed=self.experiment.ml_config.optuna_seed,
+            n_startup_trials=self.experiment.ml_config.n_optuna_startup_trials,
         )
 
         # create study with unique name and database
@@ -441,7 +440,7 @@ class OctoFull:
         study.optimize(
             objective,
             n_jobs=1,
-            n_trials=self.experiment.ml_config["n_trials"],
+            n_trials=self.experiment.ml_config.n_trials,
         )
 
         # copy bag of best trial to results
@@ -481,8 +480,8 @@ class OctoFull:
                     data_dev=split["test"],  # inner datasplit, dev
                     data_test=self.experiment.data_test,
                     config_training=user_attrs["config_training"],
-                    target_metric=self.experiment.config["target_metric"],
-                    max_features=self.experiment.ml_config["max_features"],
+                    target_metric=self.experiment.configs.study.target_metric,
+                    max_features=self.experiment.ml_config.max_features,
                     feature_groups=self.experiment.feature_groups,
                 )
             )
@@ -491,9 +490,9 @@ class OctoFull:
             bag_id=self.experiment.id + "_best",
             trainings=best_trainings,
             target_assignments=self.experiment.target_assignments,
-            parallel_execution=self.experiment.ml_config["inner_parallelization"],
-            num_workers=self.experiment.ml_config["n_workers"],
-            target_metric=self.experiment.config["target_metric"],
+            parallel_execution=self.experiment.ml_config.inner_parallelization,
+            num_workers=self.experiment.ml_config.n_workers,
+            target_metric=self.experiment.configs.study.target_metric,
             row_column=self.experiment.row_column,
             # path?
         )

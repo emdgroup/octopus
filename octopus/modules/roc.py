@@ -16,7 +16,8 @@ from octopus.modules.utils import rdc_correlation_matrix
 # - add hierarchical clustering
 #   https://scikit-learn.org/stable/auto_examples/inspection/plot_permutation_importance_multicollinear.html
 # - add pearson
-# - maybe, a function that create as table showing the seleted feature and the removed group features
+# - maybe, a function that create as table showing the selected feature and
+# the removed group features
 
 
 @define
@@ -90,7 +91,7 @@ class RocModule:
             raise ValueError(f"Correlation type {correlation_type} not supported")
 
         # get auto_groups
-        auto_groups = list()
+        # auto_groups = list()
         g = nx.Graph()
 
         for i in range(len(self.feature_columns)):

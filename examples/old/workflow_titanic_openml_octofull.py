@@ -7,7 +7,7 @@ import attrs
 import pandas as pd
 
 from octopus import OctoConfig, OctoData, OctoML
-from octopus.modules.octo.config import OctopusFullConfig
+from octopus.modules.rfe import Rfe
 
 # Conda and Host information
 print("Notebook kernel is running on server:", socket.gethostname())
@@ -69,9 +69,9 @@ data = OctoData(**data_input)
 # configure study
 config_study = {
     # OctoML
-    "study_name": "classification_2",
+    "study_name": "Titanic-RFE",
     "output_path": "./studies/",
-    "production_mode": True,
+    "production_mode": False,
     "ml_type": "classification",  # ['classification','regression','timetoevent']
     "n_folds_outer": 5,
     "target_metric": "AUCROC",
@@ -84,23 +84,13 @@ config_manager = {
     # outer loop parallelization
     "outer_parallelization": True,
     # only process first outer loop experiment, for quick testing
-    # "run_single_experiment_num": 1,
+    "run_single_experiment_num": 1,
 }
 
 # define processing sequence
-sequence_item_1 = OctopusFullConfig(
-    description="step1_octofull",
-    # datasplit
-    n_folds_inner=5,
-    # model training
-    models=["ExtraTreesClassifier", "RandomForestClassifier"],
-    # parallelization
-    inner_parallelization=True,
-    n_workers=20,
-    # HPO
-    global_hyperparameter=True,
-    n_trials=5,
-    fi_methods_bestbag=["permutation"],
+sequence_item_1 = Rfe(
+    description="RFE",
+    cv=5,  # number of CV folds
 )
 
 config_sequence = [attrs.asdict(sequence_item_1)]
@@ -117,3 +107,8 @@ oml.create_outer_experiments()
 oml.run_outer_experiments()
 
 print("Workflow completed")
+
+# use dashboard
+# path_study = Path(config_study["output_path"]).joinpath(config_study["study_name"])
+# octo_dashboard = OctoDash(path_study)
+# octo_dashboard.run()

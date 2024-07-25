@@ -3,15 +3,14 @@
 import os
 import socket
 
-import attrs
-
 # OPENBLASE config needs to be before pandas, autosk
 # os.environ["OPENBLAS_NUM_THREADS"] = "1"
 import pandas as pd
 from sklearn.preprocessing import PolynomialFeatures
 
-from octopus import OctoConfig, OctoData, OctoML
-from octopus.modules.octo.config import OctopusFullConfig
+from octopus import OctoData, OctoML
+from octopus.config import ConfigManager, ConfigSequence, ConfigStudy
+from octopus.modules.octo.sequence import Octo
 
 print("Notebook kernel is running on server:", socket.gethostname())
 print("Conda environment on server:", os.environ["CONDA_DEFAULT_ENV"])
@@ -19,7 +18,7 @@ print("Conda environment on server:", os.environ["CONDA_DEFAULT_ENV"])
 print("Working directory: ", os.getcwd())
 
 
-# load test dataset from Martin from csv and perform pre-processing
+# load test dataset from csv and perform pre-processing
 # stored in ./datasets_local/ to avoid accidental uploading to github
 data = pd.read_csv("./datasets_local/df_data_lights.csv", index_col=0)
 
@@ -94,73 +93,95 @@ print("Number of original features:", len(ls_final))
 ls_final = [col for col in ls_final if col not in ls_features_const]
 print("Number of features after removal of const. features:", len(ls_final))
 
+### Create OctoData Object
 
-data_input = {
-    "data": data_final,
-    "sample_id": id_data[0],
-    "target_columns": ls_targets,
-    "datasplit_type": "sample",
-    "feature_columns": ls_final,
-}
-
-
-# create OctoData object
-data = OctoData(**data_input)
-
-# configure study
-config_study = {
-    "study_name": "20240214F_Martin_wf2_octofull_7x6_poly_global_ridge",
-    "output_path": "./studies/",
-    "production_mode": False,
-    "ml_type": "regression",
-    "n_folds_outer": 7,
-    "target_metric": "MAE",
-    "metrics": ["MSE", "MAE", "R2"],
-    "datasplit_seed_outer": 1234,
-}
-
-# configure manager
-config_manager = {
-    # outer loop
-    "outer_parallelization": True,
-    # only run specific single experiment, for quick testing
-    # "run_single_experiment_num": 0,
-}
-
-# define processing sequence
-sequence_item_1 = OctopusFullConfig(
-    description="step1_octofull",
-    # datasplit
-    n_folds_inner=6,
-    datasplit_seed_inner=0,
-    # model training
-    models=["RidgeRegressor"],
-    model_seed=0,
-    n_jobs=1,
-    dim_red_methods=[""],
-    max_outl=0,
-    # parallelization
-    inner_parallelization=True,
-    n_workers=6,
-    # HPO
-    optuna_seed=0,
-    n_optuna_startup_trials=10,
-    resume_optimization=False,
-    global_hyperparameter=True,
-    n_trials=50,
-    max_features=70,
+# We define the data, target columns, feature columns, sample ID to identify groups,
+# and the data split type. For this classification approach,
+# we also define a stratification column.
+octo_data = OctoData(
+    data=data_final,
+    target_columns=ls_targets,
+    feature_columns=ls_final,
+    sample_id=id_data[0],
+    datasplit_type="sample",
 )
 
-config_sequence = [attrs.asdict(sequence_item_1)]
-# create study config
-octo_config = OctoConfig(config_manager, config_sequence, **config_study)
+### Create Configuration
 
-# create ML object
-oml = OctoML(data, octo_config)
+# We create three types of configurations:
+# 1. `ConfigStudy`: Sets the name, machine learning type (classification),
+# and target metric.
 
-oml.create_outer_experiments()
+# 2. `ConfigManager`: Manages how the machine learning will be executed.
+# We use the default settings.
 
-oml.run_outer_experiments()
+# 3. `ConfigSequence`: Defines the sequences to be executed. In this example,
+# we use one sequence with the `RandomForestClassifier` model.
+
+config_study = ConfigStudy(
+    name="LargeRegression",
+    ml_type="regression",
+    target_metric="MAE",
+    metrics=["MSE", "MAE", "R2"],
+    datasplit_seed_outer=1234,
+    n_folds_outer=7,
+    start_with_empty_study=True,
+    path="./studies/",
+)
+
+config_manager = ConfigManager(
+    # outer loop parallelization
+    outer_parallelization=True,
+    # only process first outer loop experiment, for quick testing
+    run_single_experiment_num=1,
+    production_mode=False,
+)
+
+config_sequence = ConfigSequence(
+    [
+        # Step1: octo
+        Octo(
+            description="step1_octofull",
+            # datasplit
+            n_folds_inner=6,
+            datasplit_seed_inner=0,
+            # model training
+            models=["RidgeRegressor"],
+            model_seed=0,
+            n_jobs=1,
+            dim_red_methods=[""],
+            max_outl=0,
+            # parallelization
+            inner_parallelization=True,
+            n_workers=6,
+            # HPO
+            optuna_seed=0,
+            n_optuna_startup_trials=10,
+            resume_optimization=False,
+            global_hyperparameter=True,
+            n_trials=50,
+            max_features=70,
+        ),
+        # Step2: ....
+    ]
+)
+
+### Execute the Machine Learning Workflow
+
+# We add the data and the configurations defined earlier
+# and run the machine learning workflow.
+octo_ml = OctoML(
+    octo_data,
+    config_study=config_study,
+    config_manager=config_manager,
+    config_sequence=config_sequence,
+)
+octo_ml.create_outer_experiments()
+octo_ml.run_outer_experiments()
 
 print("Workflow completed")
-print("Workflow completed")
+
+# This completes the basic example for using Octopus Regression
+# with the LargeRegression dataset. The workflow involves loading and preprocessing
+# the data, creating necessary configurations, and executing the machine
+# learning pipeline.

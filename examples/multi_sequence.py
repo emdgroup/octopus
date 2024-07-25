@@ -10,8 +10,7 @@ import pandas as pd
 
 from octopus import OctoData, OctoML
 from octopus.config import ConfigManager, ConfigSequence, ConfigStudy
-from octopus.modules.mrmr.sequence import Mrmr
-from octopus.modules.octo.sequence import Octo
+from octopus.modules import Mrmr, Octo
 
 # Regression Analysis on Diabetes Dataset
 # http://statweb.lsu.edu/faculty/li/teach/exst7142/diabetes.html
@@ -53,7 +52,7 @@ config_study = ConfigStudy(
     name="example_multisequence",
     ml_type="regression",
     target_metric="R2",
-    overwrite_existing_study=True,
+    silently_overwrite_study=True,
 )
 
 config_manager = ConfigManager(

@@ -9,7 +9,7 @@ from pathlib import Path
 from attrs import define, field, validators
 from joblib import Parallel, delayed
 
-from octopus.config import OctoConfig
+from octopus.config.core import OctoConfig
 from octopus.experiment import OctoExperiment
 from octopus.modules.config import modules_inventory
 
@@ -109,9 +109,6 @@ class OctoManager:
             if not element.load_sequence_item:
                 # add config to experiment
                 experiment = copy.deepcopy(base_experiment)
-                print(element)
-                print(experiment.experiment_id)
-                print(cnt)
                 experiment.ml_module = element.module
                 experiment.ml_config = element
                 experiment.id = experiment.id + "_" + str(cnt)

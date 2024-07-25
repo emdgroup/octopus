@@ -12,7 +12,7 @@ import pandas as pd
 
 from octopus import OctoData, OctoML
 from octopus.config import ConfigManager, ConfigSequence, ConfigStudy
-from octopus.modules.octo.sequence import Octo
+from octopus.modules import Octo
 
 ### Load and Preprocess Data
 
@@ -75,10 +75,10 @@ config_study = ConfigStudy(
     name="basic_regression_example",
     ml_type="regression",
     target_metric="MAE",
-    overwrite_existing_study=True,
+    silently_overwrite_study=True,
 )
 
-config_manager = ConfigManager(outer_parallelization=True)
+config_manager = ConfigManager(outer_parallelization=False, run_single_experiment_num=0)
 
 config_sequence = ConfigSequence(
     [
@@ -86,12 +86,11 @@ config_sequence = ConfigSequence(
             description="step_1",
             models=["RandomForestRegressor", "XGBRegressor"],
             n_trials=3,
-            load_sequence_item=True,
-        )
+        ),
     ]
 )
 
-### Execute the Machine Learning Workflow
+## Execute the Machine Learning Workflow
 
 # We add the data and the configurations defined earlier
 # and run the machine learning workflow.

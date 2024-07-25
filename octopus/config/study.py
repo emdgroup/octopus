@@ -7,7 +7,6 @@ from attrs import Factory, define, field, validators
 from octopus.modules.metrics import metrics_inventory
 
 
-# Custom validator for target_metric
 def validate_target_metric(instance: "ConfigStudy", attribute: Any, value: str) -> None:
     """Validate the target_metric based on the ml_type.
 
@@ -29,6 +28,33 @@ def validate_target_metric(instance: "ConfigStudy", attribute: Any, value: str) 
     if value not in valid_metrics:
         raise ValueError(
             f"Invalid target metric '{value}' for ml_type '{ml_type}'. "
+            f"Valid options are: {valid_metrics}"
+        )
+
+
+# Custom validator for target_metric
+def validate_metrics(instance: "ConfigStudy", attribute: Any, value: str) -> None:
+    """Validate metrics based on the ml_type.
+
+    Args:
+        instance: The ConfigStudy instance being validated.
+        attribute: The name of the attribute being validated.
+        value: The value of metrics being validated.
+
+    Raises:
+        ValueError: If any metric is not valid for the given ml_type.
+    """
+    ml_type = instance.ml_type
+    valid_metrics = [
+        metric
+        for metric, details in metrics_inventory.items()
+        if details["ml_type"] == ml_type
+    ]
+
+    invalid_metrics = [metric for metric in value if metric not in valid_metrics]
+    if invalid_metrics:
+        raise ValueError(
+            f"Invalid metrics {','.join(invalid_metrics)} for ml_type '{ml_type}'. "
             f"Valid options are: {valid_metrics}"
         )
 
@@ -73,10 +99,8 @@ class ConfigStudy:
 
     # is this really useful?
     metrics: List = field(
-        default=Factory(
-            lambda: ["AUCROC", "ACCBAL", "ACC", "LOGLOSS", "MAE", "MSE", "R2", "CI"]
-        ),
-        validator=[validators.instance_of(list)],
+        default=Factory(lambda self: [self.target_metric], takes_self=True),
+        validator=[validators.instance_of(list), validate_metrics],
     )
     """A list of metrics to be calculated.
-    Defaults to ["AUCROC", "ACCBAL", "ACC", "LOGLOSS", "MAE", "MSE", "R2", "CI"]."""
+    Defaults to target_metric value."""

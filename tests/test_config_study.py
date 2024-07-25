@@ -7,7 +7,6 @@ from octopus.config import ConfigStudy
 
 def test_config_study_defaults():
     """Test default values."""
-    "Test creation of a default study."
     config = ConfigStudy(
         name="Test_study", ml_type="classification", target_metric="AUCROC"
     )
@@ -19,16 +18,7 @@ def test_config_study_defaults():
     assert config.n_folds_outer == 5
     assert config.datasplit_seed_outer == 0
     assert config.silently_overwrite_study is False
-    assert config.metrics == [
-        "AUCROC",
-        "ACCBAL",
-        "ACC",
-        "LOGLOSS",
-        "MAE",
-        "MSE",
-        "R2",
-        "CI",
-    ]
+    assert config.metrics == ["AUCROC"]
 
 
 def test_config_study_custom_values():
@@ -56,27 +46,35 @@ def test_config_study_custom_values():
 
 
 @pytest.mark.parametrize(
-    "ml_type, target_metric",
+    "ml_type, target_metric, metrics, allowed",
     [
-        ("classification", "MAE"),
-        ("classification", "MSE"),
-        ("classification", "R2"),
-        ("classification", "CI"),
-        ("regression", "AUCROC"),
-        ("regression", "ACCBAL"),
-        ("regression", "ACC"),
-        ("regression", "LOGLOSS"),
-        ("regression", "CI"),
-        ("timetoevent", "MAE"),
-        ("timetoevent", "MSE"),
-        ("timetoevent", "R2"),
-        ("timetoevent", "AUCROC"),
-        ("timetoevent", "ACCBAL"),
-        ("timetoevent", "ACC"),
-        ("timetoevent", "LOGLOSS"),
+        ("classification", "AUCROC", ["AUCROC", "ACCBAL", "MAE"], False),
+        ("classification", "ACC", ["ACC", "ACCBAL", "LOGLOSS"], True),
+        ("regression", "R2", ["R2", "MAE", "MSE"], True),
+        ("classification", "ACC", ["AUCROC", "ACC", "LOGLOSS"], True),
+        ("regression", "MAE", ["MAE", "MSE"], True),
+        ("classification", "R2", ["ACC", "ACCBAL"], False),
+        ("regression", "ACC", ["MAE", "MSE"], False),
+        ("timetoevent", "AUCROC", ["CI"], False),
+        ("regression", "LOGLOSS", ["MAE", "R2"], False),
+        ("classification", "MSE", ["AUCROC", "ACC"], False),
+        ("timetoevent", "CI", ["CI"], True),
     ],
 )
-def test_target_metric_validation(ml_type, target_metric):
+def test_metric_validation(ml_type, target_metric, metrics, allowed):
     """Test if ml_type does not match target_metric."""
-    with pytest.raises(ValueError):
-        ConfigStudy(name="Test_study", ml_type=ml_type, target_metric=target_metric)
+    if allowed:
+        ConfigStudy(
+            name="Test_study",
+            ml_type=ml_type,
+            target_metric=target_metric,
+            metrics=metrics,
+        )
+    else:
+        with pytest.raises(ValueError):
+            ConfigStudy(
+                name="Test_study",
+                ml_type=ml_type,
+                target_metric=target_metric,
+                metrics=metrics,
+            )

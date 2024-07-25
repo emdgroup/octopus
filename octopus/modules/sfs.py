@@ -7,9 +7,6 @@ import pandas as pd
 from attrs import define, field, validators
 
 from octopus.experiment import OctoExperiment
-from octopus.models.config import model_inventory
-from octopus.modules.metrics import metrics_inventory
-
 
 scorer_string_inventory = {
     "AUCROC": "roc_auc",
@@ -103,7 +100,9 @@ class SfsModule:
         # - model = model_inventory[model_type]
         # - model_type = "CatBoostRegressor" or "CatBoostClassifier"
 
-        # class sklearn.feature_selection.RFECV(estimator, *, step=1, min_features_to_select=1, cv=None, scoring=None, verbose=0, n_jobs=None, importance_getter='auto')
+        # class sklearn.feature_selection.RFECV(
+        #   estimator, *, step=1, min_features_to_select=1, cv=None,
+        #   scoring=None, verbose=0, n_jobs=None, importance_getter='auto')
         # I would suggest:
         #  step=1 (configurable)
         #  min_features_to_select=1 (configurable)
@@ -111,11 +110,13 @@ class SfsModule:
         #  scoring - needs to be adjusted to the target metric
         #  verbose =  0
         #  n_jobs = 1 (configurate in module config)
-        #  importance_getter = 'auto' # here it would be nice to use permutation feature importance
+        #  importance_getter = 'auto' # here it would be nice to use permutation
+        # feature importance
         #
         #
 
-        # scoring - we need a sklearn scoring functions. This is provided with metrics_inventory
+        # scoring - we need a sklearn scoring functions. This is provided
+        # with metrics_inventory
         # or use scoring_type, see above
         # scorer = metrics_inventory[target_metric]["method"]
 

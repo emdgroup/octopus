@@ -7,7 +7,7 @@ import attrs
 import pandas as pd
 
 from octopus import OctoConfig, OctoData, OctoML
-from octopus.modules.octo.config import OctopusFullConfig
+from octopus.modules.octo.sequence import OctopusFullConfig
 
 # OPENBLASE config needs to be before pandas, autosk
 # os.environ["OPENBLAS_NUM_THREADS"] = "1"
@@ -99,13 +99,20 @@ sequence_item_1 = OctopusFullConfig(
     # datasplit
     n_folds_inner=5,
     # model training
-    models=["XGBClassifier"],  # "XGBClassifier", "RandomForestClassifier"
+    models=[
+        # "TabPFNClassifier",
+        "ExtraTreesClassifier",
+        # "RandomForestClassifier",
+        # "CatBoostClassifier",
+        # "XGBClassifier",
+    ],
+    fi_methods_bestbag=["lofo"],
     # parallelization
     inner_parallelization=True,
     n_workers=5,
     # HPO
     global_hyperparameter=True,
-    n_trials=20,
+    n_trials=5,
 )
 
 config_sequence = [attrs.asdict(sequence_item_1)]

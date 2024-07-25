@@ -652,7 +652,7 @@ class OctoPredict:
         shap_fi_df = shap_fi_df.sort_values(
             by="importance", ascending=False
         ).reset_index(drop=True)
-        # remove features with extremly small fi
+        # remove features with extremely small fi
         threshold = shap_fi_df["importance"].max() / 1000
         shap_fi_df = shap_fi_df[shap_fi_df["importance"] > threshold]
 

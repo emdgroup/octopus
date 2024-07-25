@@ -1,11 +1,11 @@
 """Example - ensemble selection."""
 
 # import copy
-from pathlib import Path
+# from pathlib import Path
 
-import pandas as pd
+# import pandas as pd
 
-from octopus.modules.octo.enssel import EnSel
+# from octopus.modules.octo.enssel import EnSel
 
 # Inputs
 # target_metric: str = field(validator=[validators.instance_of(str)])

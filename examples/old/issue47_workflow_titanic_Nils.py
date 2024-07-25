@@ -2,14 +2,12 @@
 
 import os
 import socket
-from pathlib import Path
 
 import attrs
 import pandas as pd
 
 from octopus import OctoConfig, OctoData, OctoML
-from octopus.dashboard.run import OctoDash
-from octopus.modules.octo.config import OctopusFullConfig
+from octopus.modules.octo.sequence import OctopusFullConfig
 
 # Conda and Host information
 print("Notebook kernel is running on server:", socket.gethostname())
@@ -71,9 +69,9 @@ data = OctoData(**data_input)
 # configure study
 config_study = {
     # OctoML
-    "study_name": "20240110B",
+    "study_name": "classification_2",
     "output_path": "./studies/",
-    "production_mode": False,
+    "production_mode": True,
     "ml_type": "classification",  # ['classification','regression','timetoevent']
     "n_folds_outer": 5,
     "target_metric": "AUCROC",
@@ -86,7 +84,7 @@ config_manager = {
     # outer loop parallelization
     "outer_parallelization": True,
     # only process first outer loop experiment, for quick testing
-    "run_single_experiment_num": 1,
+    # "run_single_experiment_num": 1,
 }
 
 # define processing sequence
@@ -95,20 +93,14 @@ sequence_item_1 = OctopusFullConfig(
     # datasplit
     n_folds_inner=5,
     # model training
-    models=[
-        # "TabPFNClassifier",
-        "ExtraTreesClassifier",
-        # "RandomForestClassifier",
-        # "CatBoostClassifier",
-        # "XGBClassifier",
-    ],
-    fi_methods_bestbag=["lofo"],
+    models=["ExtraTreesClassifier", "RandomForestClassifier"],
     # parallelization
     inner_parallelization=True,
-    n_workers=5,
+    n_workers=20,
     # HPO
     global_hyperparameter=True,
     n_trials=5,
+    fi_methods_bestbag=["permutation"],
 )
 
 config_sequence = [attrs.asdict(sequence_item_1)]

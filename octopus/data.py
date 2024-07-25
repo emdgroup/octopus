@@ -25,7 +25,7 @@ class OctoData:
     datasplit_type: str = field(
         validator=[
             validators.in_(["sample", "group_features", "group_sample_and_features"])
-        ]
+        ],
     )
     row_id = field(default=None)
     disable_checknan: bool = field(

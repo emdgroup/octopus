@@ -11,9 +11,8 @@ import pandas as pd
 from sklearn.preprocessing import PolynomialFeatures
 
 from octopus import OctoConfig, OctoData, OctoML
-from octopus.modules.octo.config import OctopusFullConfig
+from octopus.modules.octo.sequence import OctopusFullConfig
 
-# Conda and Host information
 print("Notebook kernel is running on server:", socket.gethostname())
 print("Conda environment on server:", os.environ["CONDA_DEFAULT_ENV"])
 # show directory name
@@ -54,6 +53,7 @@ ls_rd_fp = [f"rdfp_{i}" for i in range(2048)]
 ls_features = ls_numbers + ls_props + ls_graph + ls_morgan_fp + ls_rd_fp
 ls_targets = ["T_SETARAM"]
 id_data = ["MATERIAL_ID"]
+
 
 # pre-process data
 # there are NaNs in the target column
@@ -103,12 +103,13 @@ data_input = {
     "feature_columns": ls_final,
 }
 
+
 # create OctoData object
 data = OctoData(**data_input)
 
 # configure study
 config_study = {
-    "study_name": "20240214B_Martin_wf2_octofull_7x6_global_ardreg",
+    "study_name": "20240214F_Martin_wf2_octofull_7x6_poly_global_ridge",
     "output_path": "./studies/",
     "production_mode": False,
     "ml_type": "regression",
@@ -121,9 +122,9 @@ config_study = {
 # configure manager
 config_manager = {
     # outer loop
-    "outer_parallelization": False,
-    # only process first outer loop experiment, for quick testing
-    # "run_single_experiment_num": 3,
+    "outer_parallelization": True,
+    # only run specific single experiment, for quick testing
+    # "run_single_experiment_num": 0,
 }
 
 # define processing sequence
@@ -133,7 +134,7 @@ sequence_item_1 = OctopusFullConfig(
     n_folds_inner=6,
     datasplit_seed_inner=0,
     # model training
-    models=["ARDRegressor"],
+    models=["RidgeRegressor"],
     model_seed=0,
     n_jobs=1,
     dim_red_methods=[""],
@@ -146,7 +147,7 @@ sequence_item_1 = OctopusFullConfig(
     n_optuna_startup_trials=10,
     resume_optimization=False,
     global_hyperparameter=True,
-    n_trials=15,
+    n_trials=50,
     max_features=70,
 )
 

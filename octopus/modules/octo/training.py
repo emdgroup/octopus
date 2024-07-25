@@ -416,7 +416,7 @@ class Training:
         fi_df = pd.DataFrame()
         fi_df["feature"] = self.feature_columns
         fi_df["importance"] = feature_importances
-        # remove features with extremly small fi
+        # remove features with extremely small fi
         fi_df = fi_df[fi_df["importance"] > fi_df["importance"].max() / 1000]
         self.feature_importances["shap" + "_" + partition] = fi_df
 
@@ -473,7 +473,7 @@ class Training:
         fi_df = pd.DataFrame()
         fi_df["feature"] = data.columns.tolist()
         fi_df["importance"] = feature_importances
-        # remove features with extremly small fi
+        # remove features with extremely small fi
         fi_df = fi_df[fi_df["importance"] > fi_df["importance"].max() / 1000]
         self.feature_importances["shap" + "_" + partition] = fi_df
 

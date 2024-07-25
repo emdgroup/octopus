@@ -6,7 +6,7 @@ from octopus.predict import OctoPredict
 
 # setup
 path_study = Path("./studies/20240322A_MBOS6_octofull_5x5_ETREE/")
-sequence_item_id = 2
+sequence_item_id = 1
 
 
 # create study-predict object
@@ -29,13 +29,13 @@ study = OctoPredict(path_study, sequence_item_id=sequence_item_id)
 
 # (C) calculate permutation feature importances using final models (bag)
 #     on test data
-study.calculate_fi_test(fi_type="group_permutation", n_repeat=60, experiment_id=4)
+# study.calculate_fi_test(fi_type="group_permutation", n_repeat=60, experiment_id=4)
 # - fi tables are saved in the  study.results dictionary
 # - pdf plots are saved in the results directory
 
 # (D) calculate shap feature importances using final models (bag)
 #     on test data
-# study.calculate_fi_test(fi_type="shap", shap_type="permutation")
+study.calculate_fi_test(fi_type="shap", shap_type="kernel")
 # - shap_type could be ["exact", "permutation"]
 # - shap_type "exact" does not scale well with number of features
 # - shap_type "permutation" scales better than "exact" but

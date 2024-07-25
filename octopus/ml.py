@@ -7,7 +7,8 @@ from pathlib import Path
 import pandas as pd
 from attrs import define, field, validators
 
-from octopus.config import ConfigManager, ConfigSequence, ConfigStudy, OctoConfig
+from octopus.config import ConfigManager, ConfigSequence, ConfigStudy
+from octopus.config.core import OctoConfig
 from octopus.data import OctoData
 from octopus.experiment import OctoExperiment
 from octopus.manager import OctoManager
@@ -95,7 +96,7 @@ class OctoML:
             path_study: The path to the study directory.
         """
         if path_study.exists():
-            if not self.configs.study.overwrite_existing_study:
+            if not self.configs.study.silently_overwrite_study:
                 confirmation = input(
                     "Study exists, do you want to continue (resume)? (yes/no): "
                 )

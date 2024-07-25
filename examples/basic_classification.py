@@ -12,7 +12,7 @@ import pandas as pd
 
 from octopus import OctoData, OctoML
 from octopus.config import ConfigManager, ConfigSequence, ConfigStudy
-from octopus.modules.octo.sequence import Octo
+from octopus.modules import Octo
 
 ### Load and Preprocess Data
 
@@ -97,6 +97,7 @@ config_sequence = ConfigSequence(
 
 # We add the data and the configurations defined earlier
 # and run the machine learning workflow.
+
 octo_ml = OctoML(
     octo_data,
     config_study=config_study,

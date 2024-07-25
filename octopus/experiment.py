@@ -9,7 +9,7 @@ import numpy as np
 import pandas as pd
 from attrs import define, field, validators
 
-from octopus.config import OctoConfig
+from octopus.config.core import OctoConfig
 from octopus.modules.utils import rdc_correlation_matrix
 
 

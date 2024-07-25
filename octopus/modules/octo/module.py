@@ -1,10 +1,10 @@
-"""Octo sequence."""
+"""Octo module."""
 
 from typing import List
 
 from attrs import Factory, define, field, validators
 
-from octopus.config import BaseSequenceItem
+from octopus.config.base_sequence_item import BaseSequenceItem
 
 
 @define
@@ -42,7 +42,7 @@ class Octo(BaseSequenceItem):
     models: List = field()
     """Models for ML."""
 
-    module: str = field(default=Factory(lambda: "octofull"))
+    module: str = field(default=Factory(lambda: "octo"))
     """Models for ML."""
 
     load_sequence_item: bool = field(

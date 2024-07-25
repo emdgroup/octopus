@@ -1,4 +1,4 @@
-"""OctoFull Module."""
+"""OctoFull core function."""
 
 # import concurrent.futures
 import json
@@ -92,7 +92,7 @@ for line in [319, 330, 338]:
 
 
 @define
-class OctoFull:
+class OctoCore:
     """Manages and executes machine learning experiments.
 
     This class integrates all components necessary for conducting

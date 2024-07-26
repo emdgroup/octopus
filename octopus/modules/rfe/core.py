@@ -1,4 +1,4 @@
-"""RFE Module."""
+"""Rfe core."""
 
 import shutil
 from pathlib import Path
@@ -8,30 +8,10 @@ from attrs import define, field, validators
 
 from octopus.experiment import OctoExperiment
 
-scorer_string_inventory = {
-    "AUCROC": "roc_auc",
-    "ACC": "accuracy_score",
-    "ACCBAL": "balanced_accuracy",
-    "LOGLOSS": "neg_log_loss",
-    "MAE": "neg_mean_absolute_error",
-    "MSE": "neg_mean_squared_error",
-    "R2": "r2",
-}
-
-# RFE module
-
-
-# TASKS:
-# - (1) use (A) catboost  model for RFE, as they work well with default parameters
-# - (2) perform RFE on the given traindev dataset, using RFE_CV
-#   https://scikit-learn.org/stable/modules/generated/sklearn.feature_selection.RFECV.html#sklearn.feature_selection.RFECV
-# - (3) measure model performance in each RFE step
-# - (4) return list of selected features
-
 
 @define
-class RfeModule:
-    """RFE Module."""
+class RfeCore:
+    """RFE Core."""
 
     experiment: OctoExperiment = field(
         validator=[validators.instance_of(OctoExperiment)]
@@ -126,39 +106,3 @@ class RfeModule:
         self.experiment.selected_features = []  # update
 
         return self.experiment
-
-
-# check input parameters
-@define
-class Rfe:
-    """RFE Config."""
-
-    module: str = field(default="rfe")
-    """Module name."""
-
-    description: str = field(validator=[validators.instance_of(str)], default="")
-    """Description."""
-
-    load_sequence_item: bool = field(
-        init=False, validator=validators.instance_of(bool), default=False
-    )
-    """Load existing sequence item, fixed, set to False"""
-
-    cv: int = field(validator=[validators.instance_of(int)], default=5)
-    """Number of CV folds for RFE_CV."""
-
-    # correlation_type: str = field(
-    #    validator=[validators.in_(["pearson", "rdc"])], default="pearson"
-    # )
-    # """Selection of correlation type."""
-    #
-    # feature_importance_type: str = field(
-    #    validator=[validators.in_(["mean", "count"])], default="mean"
-    # )
-    # """Selection of feature importance type."""
-    #
-    # feature_importance_method: str = field(
-    #    validator=[validators.in_(["permutation", "shap", "internal"])],
-    #    default="permutation",
-    # )
-    # """Selection of feature importance method."""

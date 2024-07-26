@@ -9,7 +9,7 @@ from attrs import asdict, define, field
 
 from octopus.config.core import OctoConfig
 from octopus.data import OctoData
-from octopus.modules.metrics import metrics_inventory
+from octopus.modules.metrics_inventory import metrics_inventory
 
 
 @define

@@ -7,7 +7,7 @@ import pandas as pd
 
 from octopus import OctoData, OctoML
 from octopus.config import ConfigManager, ConfigSequence, ConfigStudy
-from octopus.modules.octo.sequence import Octo
+from octopus.modules import Octo
 
 # Conda and Host information
 print("Notebook kernel is running on server:", socket.gethostname())
@@ -78,6 +78,7 @@ config_study = ConfigStudy(
     n_folds_outer=5,
     start_with_empty_study=True,
     path="./studies/",
+    silently_overwrite_study=True,
 )
 
 config_manager = ConfigManager(
@@ -85,7 +86,6 @@ config_manager = ConfigManager(
     outer_parallelization=True,
     # only process first outer loop experiment, for quick testing
     run_single_experiment_num=1,
-    production_mode=False,
 )
 
 config_sequence = ConfigSequence(

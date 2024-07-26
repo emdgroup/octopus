@@ -6,8 +6,8 @@ import socket
 import pandas as pd
 
 from octopus import OctoData, OctoML
-from octopus.config import ConfigManager, ConfigSequence, ConfigStudy, MrmrConfig
-from octopus.modules.octo.sequence import Octo
+from octopus.config import ConfigManager, ConfigSequence, ConfigStudy
+from octopus.modules import Octo, Mrmr
 
 # Conda and Host information
 print("Notebook kernel is running on server:", socket.gethostname())
@@ -72,14 +72,13 @@ config_study = ConfigStudy(
     n_folds_outer=5,
     start_with_empty_study=True,
     path="./studies/",
-    overwrite_existing_study=True,
+    silently_overwrite_study=True,
 )
 
 config_manager = ConfigManager(
     # outer loop parallelization
     outer_parallelization=True,
     # only process first outer loop experiment, for quick testing
-    run_single_experiment_num=1,
 )
 
 config_sequence = ConfigSequence(
@@ -90,7 +89,7 @@ config_sequence = ConfigSequence(
             # datasplit
             n_folds_inner=5,
             datasplit_seed_inner=0,
-            load_sequence_item=True,
+            load_sequence_item=False,
             # model training
             models=["ExtraTreesRegressor", "RandomForestRegressor"],
             model_seed=0,
@@ -107,7 +106,7 @@ config_sequence = ConfigSequence(
             max_features=70,
         ),
         # Step2: MRMR
-        MrmrConfig(
+        Mrmr(
             description="step2_mrmr",
             # number of features selected by MRMR
             n_features=6,

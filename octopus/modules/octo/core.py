@@ -40,25 +40,26 @@ for line in [319, 330, 338]:
 
 # TOBEDONE OCTOFULL
 # - (1) Complete Ensemble Selection
-# - (2) Feature Counts in Bag - is everything available
-# - (3) !Calculate performance of survival models: CI, CI_uno,  IBS, dynAUC,
-# - (4) rename ensemble test
-# - (5) include data preprocessing
-# - (6) num feat constraint (automatic parameters)
+# - (2) Feature Counts in Bag - is everything available?
+# - (3) Octo - show dev + test performance metrics !!
+# - (4) Revise sequence handover. Handover a dict that may contain
+#       (a) selected feature (b) previous fis (c) changed dataset
+# - (5) use numba to speed up rdc
+# - (6) auto-groups need to be created for every new experiment!!!
+# - (7) hierarcical clustering for feature auto-groups
+# - (8) !Calculate performance of survival models: CI, CI_uno,  IBS, dynAUC,
+# - (9) rename ensemble test?
+# - (10) include data preprocessing
+# - (11) num feat constraint (automatic parameters)
 #       + scaling factor from first random optuna runs
 #       + max_feature from dataset size
-# - (7) add kernel shape feature importance
-# - (8) create predict/predict_proba function for bag
-#       Does it work with shap and permutation feature importance?
-# - (9) TestFI: Apply shape and permutation feature importance to bag to test
-#       compare to fis from individual trainings
-# - (10) is there a good way to determine which shap values are relevant, stats test?
-# - (11) make bag compatible with sklearn
+# - (12) is there a good way to determine which shap values are relevant, stats test?
+# - (13) make bag compatible with sklearn
 #   +very difficult as sklearn differentiates between regression, classification
 #   RegressionBag, ClassBag
 #   +we also want to include T2E
 #   + check if a single predict function is sufficient for shap/permutation importance
-# - (12) Make use of default model parameters, see autosk, optuna
+# - (14) Make use of default model parameters, see autosk, optuna -- meaningful?
 # - predictions, replace "ensemble_test" with
 #   experiment_id+ sequence_id + ensemble + [test]
 # - Performance evaluation generalize: ensemble_hard, ensemble_soft
@@ -93,8 +94,10 @@ for line in [319, 330, 338]:
 # TOBEDONE FEATURE_IMPORTANCE
 # - (1) grouped permutation importance, see predict class
 # - (2) use feature importance counts
+# - (3) !!!! Average FIs differently -- see bag, no groupby.mean()
+# - check alibi package
 # - separate fi code from training class
-# - group identification (experiment.py) - add hirarchical clustering
+# - group indentification (experiment.py) - add hirarchical clustering
 # - create new module that filters out correlated variables
 # - crate new module that replaces groups with PCA 1st component
 # - https://arxiv.org/pdf/2312.10858

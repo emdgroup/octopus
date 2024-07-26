@@ -234,7 +234,7 @@ class Bag:
             elif fi_type == "shap":
                 training.calculate_fi_shap(partition=partition)
             elif fi_type == "permutation":
-                training.calculate_fi_permutation(partition=partition)
+                training.calculate_fi_group_permutation(partition=partition)
             elif fi_type == "lofo":
                 training.calculate_fi_lofo()
             else:
@@ -250,25 +250,25 @@ class Bag:
         if fi_methods is None:
             fi_methods = []
 
-        feat_lst = list()
         if "permutation" in fi_methods:
             for training in self.trainings:
                 fi_df = training.feature_importances["permutation_dev"]
-                feat_lst.extend(fi_df[fi_df["importance"] != 0]["feature"].tolist())
-            return list(set(feat_lst))
         elif "shap" in fi_methods:
             for training in self.trainings:
                 fi_df = training.feature_importances["shap_dev"]
-                feat_lst.extend(fi_df[fi_df["importance"] != 0]["feature"].tolist())
-            return list(set(feat_lst))
         elif "internal" in fi_methods:
             for training in self.trainings:
                 fi_df = training.feature_importances["internal"]
-                feat_lst.extend(fi_df[fi_df["importance"] != 0]["feature"].tolist())
-            return list(set(feat_lst))
         else:
-            print("No features importances calculated")
+            print("No features importances calculated, return empty list")
             return []
+
+        # remove all group features
+        fi_df = fi_df[~fi_df["feature"].str.startswith("group")]
+        # extract list of nonzero features
+        feat_lst = fi_df[fi_df["importance"] != 0]["feature"].tolist()
+
+        return list(set(feat_lst))
 
     def get_feature_importances(self, fi_methods=None):
         """Extract feature importances of all models in bag."""
@@ -294,9 +294,9 @@ class Bag:
 
         # save feature importances for every training in bag
         for training in self.trainings:
-            self.feature_importances[
-                training.training_id
-            ] = training.feature_importances
+            self.feature_importances[training.training_id] = (
+                training.feature_importances
+            )
 
         # summary feature importances for all trainings (mean + count)
         # internal, permutation_dev, shap_dev only

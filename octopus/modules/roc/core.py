@@ -69,8 +69,8 @@ class RocCore:
         """Run ROC module on experiment."""
         # run experiment and return updated experiment object
 
-        correlation_type = self.config["correlation_type"]
-        threshold = self.config["threshold"]
+        correlation_type = self.config.correlation_type
+        threshold = self.config.threshold
 
         print("Correlation type:", correlation_type)
         print("Threshold:", threshold)

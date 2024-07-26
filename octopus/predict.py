@@ -6,7 +6,6 @@ import warnings
 from pathlib import Path
 
 import matplotlib.pyplot as plt
-import networkx as nx
 import numpy as np
 import pandas as pd
 import scipy.stats
@@ -16,7 +15,7 @@ from matplotlib.backends.backend_pdf import PdfPages
 
 from octopus.data import OctoData
 from octopus.experiment import OctoExperiment
-from octopus.modules.utils import get_performance_score, rdc_correlation_matrix
+from octopus.modules.utils import get_performance_score
 
 # Suppress specific sklearn warning
 warnings.filterwarnings(
@@ -63,7 +62,7 @@ class OctoPredict:
     @property
     def n_experiments(self) -> int:
         """Number of experiments."""
-        return self.config.n_folds_outer
+        return self.config.study.n_folds_outer
 
     def __attrs_post_init__(self):
         # initialization here due to "Python immutable default"
@@ -100,9 +99,9 @@ class OctoPredict:
                     "feature_columns": experiment.feature_columns,
                     "row_column": experiment.row_column,
                     "target_assignments": experiment.target_assignments,
-                    "target_metric": experiment.config["target_metric"],
-                    "ml_type": experiment.config["ml_type"],
-                    "feature_group_dict": dict(),
+                    "target_metric": experiment.configs.study.target_metric,
+                    "ml_type": experiment.configs.study.ml_type,
+                    "feature_group_dict": experiment.feature_groups,
                 }
         print(f"{len(experiments)} experiment(s) out of {self.n_experiments} found.")
         return experiments
@@ -281,7 +280,7 @@ class OctoPredict:
     def calculate_fi_test(
         self,
         n_repeat: int = 10,
-        fi_type: str = "permutation",
+        fi_type: str = "group_permutation",
         experiment_id: int = -1,
         shap_type: str = "exact",
     ) -> pd.DataFrame:
@@ -444,13 +443,13 @@ class OctoPredict:
         """Calculate permutation feature importances."""
         # fixed confidence level
         confidence_level = 0.95
-        auto_group_threshold = 0.6
         feature_columns = experiment["feature_columns"]
         data_traindev = experiment["data_traindev"]
         data_test = experiment["data_test"]
         target_assignments = experiment["target_assignments"]
         target_metric = experiment["target_metric"]
         model = experiment["model"]
+        feature_groups = experiment["feature_group_dict"]
 
         # initialize feature_groups_dict
         experiment["feature_group_dict"] = dict()
@@ -464,38 +463,10 @@ class OctoPredict:
         # check that targets are in dataset
         # MISSING
 
-        # calculate auto-groups
-        # (a1) spearmamr correlation matrix
-        # feature_matrix = data_traindev[feature_columns].values
-        # corr_matrix, _ = scipy.stats.spearmanr(np.nan_to_num(feature_matrix))
-        # corr_matrix = np.abs(corr_matrix)
-        # (a2) rdc correlation matrix
-        pos_corr_matrix = np.abs(rdc_correlation_matrix(data_traindev[feature_columns]))
-
-        g = nx.Graph()
-
-        for i in range(len(feature_columns)):
-            for j in range(i + 1, len(feature_columns)):
-                if pos_corr_matrix[i, j] > auto_group_threshold:
-                    g.add_edge(i, j)
-
-        subgraphs = [g.subgraph(c) for c in nx.connected_components(g)]
-
-        groups = []
-        for sg in subgraphs:
-            groups.append([feature_columns[node] for node in sg.nodes()])
-
-        auto_groups = [sorted(g) for g in groups]
-        print("Number of auto-groups", len(auto_groups))
-        print("auto_groups", auto_groups)
-        # grouped_features = list(itertools.chain(*[list(g) for g in groups]))
-        # remove features already in groups
-        # features_list = [
-        #    [f] for f in list(set(feature_columns) - set(grouped_features))
-        # ] + auto_groups
-
         # keep all features and add group features
-        features_list = [[f] for f in feature_columns] + auto_groups
+        # create features dict
+        feature_columns_dict = {x: [x] for x in feature_columns}
+        features_dict = {**feature_columns_dict, **feature_groups}
 
         # calculate baseline score
         baseline_score = get_performance_score(
@@ -516,7 +487,8 @@ class OctoPredict:
                 "ci_high_95",
             ]
         )
-        for feature in features_list:
+        # calculate pfi
+        for name, feature in features_dict.items():
             data_pfi = data.copy()
             fi_lst = list()
 
@@ -552,17 +524,9 @@ class OctoPredict:
                 ci_high = pfi_mean + t_val * stddev / math.sqrt(n)
                 ci_low = pfi_mean - t_val * stddev / math.sqrt(n)
 
-            # give a feature group a group name, for visualization purposes
-            if len(feature) > 1:
-                group_nr = len(experiment["feature_group_dict"])
-                feature_name = f"group{group_nr}"
-                experiment["feature_group_dict"][feature_name] = "_".join(feature)
-            else:
-                feature_name = feature[0]
-
             # save results
             results_df.loc[len(results_df)] = [
-                feature_name,
+                name,
                 pfi_mean,
                 stddev,
                 p_value,

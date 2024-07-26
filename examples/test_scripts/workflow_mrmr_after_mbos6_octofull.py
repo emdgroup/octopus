@@ -9,8 +9,8 @@ import socket
 import pandas as pd
 
 from octopus import OctoData, OctoML
-from octopus.config import ConfigManager, ConfigSequence, ConfigStudy, MrmrConfig
-from octopus.modules.octo.sequence import Octo
+from octopus.config import ConfigManager, ConfigSequence, ConfigStudy
+from octopus.modules import Octo, Mrmr
 
 print("Notebook kernel is running on server:", socket.gethostname())
 print("Conda environment on server:", os.environ["CONDA_DEFAULT_ENV"])
@@ -70,7 +70,7 @@ octo_data = OctoData(
 # we use one sequence with the `RandomForestClassifier` model.
 
 config_study = ConfigStudy(
-    name="MBOS6_test",
+    name="MBOS6_test2",
     ml_type="classification",
     target_metric="AUCROC",
     metrics=["AUCROC", "ACCBAL", "ACC", "LOGLOSS"],
@@ -78,6 +78,7 @@ config_study = ConfigStudy(
     n_folds_outer=5,
     start_with_empty_study=True,
     path="./studies/",
+    silently_overwrite_study=True,
 )
 
 config_manager = ConfigManager(
@@ -85,7 +86,6 @@ config_manager = ConfigManager(
     outer_parallelization=True,
     # only process first outer loop experiment, for quick testing
     run_single_experiment_num=1,
-    production_mode=False,
 )
 
 config_sequence = ConfigSequence(
@@ -94,7 +94,7 @@ config_sequence = ConfigSequence(
         Octo(
             description="step_1_octo",
             # loading of existing results
-            load_sequence_item=True,
+            load_sequence_item=False,
             # datasplit
             n_folds_inner=5,
             # model selection
@@ -118,12 +118,12 @@ config_sequence = ConfigSequence(
             n_optuna_startup_trials=10,
             resume_optimization=False,
             global_hyperparameter=True,
-            n_trials=40,
+            n_trials=5,
             max_features=70,
             penalty_factor=1.0,
         ),
         # Step2: MRMR
-        MrmrConfig(
+        Mrmr(
             description="step2_mrmr",
             # number of features selected by MRMR
             n_features=50,

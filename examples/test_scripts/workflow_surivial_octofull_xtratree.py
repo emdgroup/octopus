@@ -9,7 +9,7 @@ import pandas as pd
 
 from octopus import OctoData, OctoML
 from octopus.config import ConfigManager, ConfigSequence, ConfigStudy
-from octopus.modules.octo.sequence import Octo
+from octopus.modules import Octo
 
 print("Notebook kernel is running on server:", socket.gethostname())
 print("Conda environment on server:", os.environ["CONDA_DEFAULT_ENV"])
@@ -91,14 +91,14 @@ config_study = ConfigStudy(
     n_folds_outer=5,
     start_with_empty_study=True,
     path="./studies/",
+    silently_overwrite_study=True,
 )
 
 config_manager = ConfigManager(
     # outer loop parallelization
     outer_parallelization=True,
     # only process first outer loop experiment, for quick testing
-    run_single_experiment_num=1,
-    production_mode=False,
+    run_single_experiment_num=1,yes
 )
 
 config_sequence = ConfigSequence(

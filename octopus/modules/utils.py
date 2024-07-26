@@ -4,7 +4,7 @@ import numpy as np
 from scipy.stats import rankdata
 
 # from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
-from octopus.modules.metrics_inventory import metrics_inventory
+from octopus.metrics import metrics_inventory
 
 # def get_score(metric: str, y_true: np.array, y_pred: np.array) -> float:
 #    """Calculate the specified metric for the given true and predicted values.

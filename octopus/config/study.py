@@ -4,7 +4,7 @@ from typing import Any, List
 
 from attrs import Factory, define, field, validators
 
-from octopus.modules.metrics_inventory import metrics_inventory
+from octopus.metrics import metrics_inventory
 
 
 def validate_target_metric(instance: "ConfigStudy", attribute: Any, value: str) -> None:

@@ -11,7 +11,7 @@ import pandas as pd
 from attrs import define, field, validators
 from joblib import Parallel, delayed
 
-from octopus.modules.metrics_inventory import metrics_inventory
+from octopus.metrics import metrics_inventory
 from octopus.modules.octo.scores import add_pooling_scores
 
 # logging.basicConfig(

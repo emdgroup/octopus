@@ -1,6 +1,6 @@
 """OctoFull Module."""
 
-from octopus.modules.metrics_inventory import metrics_inventory
+from octopus.metrics import metrics_inventory
 
 
 def add_pooling_scores(pool, scores, target_metric, target_assignments):

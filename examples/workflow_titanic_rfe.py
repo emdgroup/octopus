@@ -3,11 +3,11 @@
 import os
 import socket
 
-import attrs
 import pandas as pd
 
-from octopus import OctoConfig, OctoData, OctoML
-from octopus.modules.rfe import Rfe
+from octopus import OctoData, OctoML
+from octopus.config import ConfigManager, ConfigSequence, ConfigStudy
+from octopus.modules import Sfs
 
 # Conda and Host information
 print("Notebook kernel is running on server:", socket.gethostname())
@@ -62,53 +62,32 @@ data_input = {
 }
 
 # create OctoData object
-data = OctoData(**data_input)
+octo_data = OctoData(**data_input)
 
 
 # define inputs for OctoConfig
 # configure study
-config_study = {
-    # OctoML
-    "study_name": "Titanic-RFE",
-    "output_path": "./studies/",
-    "production_mode": False,
-    "ml_type": "classification",  # ['classification','regression','timetoevent']
-    "n_folds_outer": 5,
-    "target_metric": "AUCROC",
-    "metrics": ["AUCROC", "ACCBAL", "ACC", "LOGLOSS"],
-    "datasplit_seed_outer": 1234,
-}
-
-# configure manager
-config_manager = {
-    # outer loop parallelization
-    "outer_parallelization": True,
-    # only process first outer loop experiment, for quick testing
-    "run_single_experiment_num": 1,
-}
-
-# define processing sequence
-sequence_item_1 = Rfe(
-    description="RFE",
-    cv=5,  # number of CV folds
+config_study = ConfigStudy(
+    name="Sfs",
+    ml_type="classification",
+    target_metric="AUCROC",
 )
 
-config_sequence = [attrs.asdict(sequence_item_1)]
+# configure manager
+config_manager = ConfigManager(outer_parallelization=False, run_single_experiment_num=0)
 
-# create study config
-octo_config = OctoConfig(config_manager, config_sequence, **config_study)
 
-# create ML object
-oml = OctoML(data, octo_config)
-# print(oml)
+# define processing sequence
+config_sequence = ConfigSequence([Sfs(description="Sfs", cv=5)])
 
-oml.create_outer_experiments()
+octo_ml = OctoML(
+    octo_data,
+    config_study=config_study,
+    config_manager=config_manager,
+    config_sequence=config_sequence,
+)
+octo_ml.create_outer_experiments()
 
-oml.run_outer_experiments()
+octo_ml.run_outer_experiments()
 
 print("Workflow completed")
-
-# use dashboard
-# path_study = Path(config_study["output_path"]).joinpath(config_study["study_name"])
-# octo_dashboard = OctoDash(path_study)
-# octo_dashboard.run()

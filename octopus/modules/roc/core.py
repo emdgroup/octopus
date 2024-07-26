@@ -1,4 +1,4 @@
-"""ROC Module (removal of correlated features)."""
+"""ROC core (removal of correlated features)."""
 
 import shutil
 from pathlib import Path
@@ -21,7 +21,7 @@ from octopus.modules.utils import rdc_correlation_matrix
 
 
 @define
-class RocModule:
+class RocCore:
     """Roc Module."""
 
     experiment: OctoExperiment = field(
@@ -134,28 +134,3 @@ class RocModule:
         print("ROC completed")
 
         return self.experiment
-
-
-# check input parameters
-@define
-class Roc:
-    """Roc Config."""
-
-    module: str = field(default="roc")
-    """Module name."""
-
-    description: str = field(validator=[validators.instance_of(str)], default="")
-    """Description."""
-
-    load_sequence_item: bool = field(
-        init=False, validator=validators.instance_of(bool), default=False
-    )
-    """Load existing sequence item, fixed, set to False"""
-
-    threshold: float = field(validator=[validators.instance_of(float)], default=0.8)
-    """Threshold for feature removal."""
-
-    correlation_type: str = field(
-        validator=[validators.in_(["spearmanr", "rdc"])], default="spearmanr"
-    )
-    """Selection of correlation type."""

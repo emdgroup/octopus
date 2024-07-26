@@ -10,7 +10,7 @@ from attrs import define, field, validators
 from sklearn.inspection import permutation_importance
 from sklearn.preprocessing import MaxAbsScaler
 
-from octopus.models.config import model_inventory
+from octopus.models.models_inventory import model_inventory
 from octopus.modules.utils import get_performance_score
 
 scorer_string_inventory = {

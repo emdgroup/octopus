@@ -4,7 +4,7 @@ import numpy as np
 from scipy.stats import rankdata
 
 # from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
-from octopus.modules.metrics_inventory import metrics_inventory
+from octopus.metrics import metrics_inventory
 
 # def get_score(metric: str, y_true: np.array, y_pred: np.array) -> float:
 #    """Calculate the specified metric for the given true and predicted values.
@@ -55,7 +55,7 @@ def get_performance_score(
     else:
         target_col = list(target_assignments.values())[0]
         target = data[target_col]
-        probabilities = model.predict(data)
+        probabilities = model.predict(data[feature_columns])
         score = metrics_inventory[target_metric]["method"](target, probabilities)
 
     # make sure that the sign of the feature importances is correct

@@ -45,12 +45,12 @@ for line in [319, 330, 338]:
 #        group selection
 # - (4) MRMR -- qubim either uses F1, Smolonogov-stats or Shapley as input
 #       https://github.com/smazzanti/mrmr/blob/main/mrmr/pandas.py
-#       use this implemenation?
+#       use this implementation?
 # - (5) Feature Counts in Bag - is everything available?
 # - (6) Revise sequence handover. Handover a dict that may contain
 #       (a) selected feature (b) previous fis (c) changed dataset
 # - (7) use numba to speed up rdc
-# - (8) hierarcical clustering for feature auto-groups
+# - (8) hierarchical clustering for feature auto-groups
 # - (9) !Calculate performance of survival models: CI, CI_uno,  IBS, dynAUC,
 # - (10) rename ensemble test?
 # - (11) include data preprocessing
@@ -101,7 +101,7 @@ for line in [319, 330, 338]:
 # - (3) !!!! Average FIs differently -- see bag, no groupby.mean()
 # - check alibi package
 # - separate fi code from training class
-# - group indentification (experiment.py) - add hirarchical clustering
+# - group identification (experiment.py) - add hirarchical clustering
 # - create new module that filters out correlated variables
 # - crate new module that replaces groups with PCA 1st component
 # - https://arxiv.org/pdf/2312.10858

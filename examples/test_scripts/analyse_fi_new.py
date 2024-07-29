@@ -1,4 +1,5 @@
-# analyse experiment
+"""Analyse experiment."""
+
 
 from pathlib import Path
 

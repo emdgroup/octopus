@@ -6,7 +6,7 @@ from typing import List
 
 import numpy as np
 import pandas as pd
-from attrs import define, field, validators
+from attrs import Factory, define, field, validators
 
 # tobedone:
 # - check that column definitions fit with pandas dataframe
@@ -29,13 +29,13 @@ class OctoData:
     )
     row_id = field(default=None)
     disable_checknan: bool = field(
-        default=False, validator=[validators.instance_of(bool)]
+        default=Factory(lambda: False), validator=[validators.instance_of(bool)]
     )
     target_asignments: dict = field(
-        default={}, validator=[validators.instance_of(dict)]
+        default=Factory(dict), validator=[validators.instance_of(dict)]
     )
     stratification_column: list = field(
-        default=[], validator=[validators.instance_of(list)]
+        default=Factory(list), validator=[validators.instance_of(list)]
     )
 
     @property

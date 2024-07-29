@@ -7,9 +7,9 @@ from pathlib import Path
 import pandas as pd
 from attrs import define, field, validators
 
+from octopus import OctoData
 from octopus.config import ConfigManager, ConfigSequence, ConfigStudy
 from octopus.config.core import OctoConfig
-from octopus.data import OctoData
 from octopus.experiment import OctoExperiment
 from octopus.manager import OctoManager
 from octopus.utils import DataSplit
@@ -188,7 +188,7 @@ class OctoML:
                     row_column=self.data.row_id,
                     feature_columns=self.data.feature_columns,
                     stratification_column="".join(self.data.stratification_column),
-                    target_assignments=self.data.target_asignments,
+                    target_assignments=self.data.target_assignments,
                     data_traindev=value["train"],
                     data_test=value["test"],
                 )

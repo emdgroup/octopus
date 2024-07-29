@@ -55,7 +55,7 @@ def get_performance_score(
     else:
         target_col = list(target_assignments.values())[0]
         target = data[target_col]
-        probabilities = model.predict(data)
+        probabilities = model.predict(data[feature_columns])
         score = metrics_inventory[target_metric]["method"](target, probabilities)
 
     # make sure that the sign of the feature importances is correct

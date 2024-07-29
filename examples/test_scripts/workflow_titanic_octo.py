@@ -109,12 +109,13 @@ config_sequence = ConfigSequence(
                 # "CatBoostClassifier",
                 # "XGBClassifier",
             ],
+            fi_methods_bestbag=["permutation"],
             # parallelization
             inner_parallelization=True,
             n_workers=5,
             # HPO
             global_hyperparameter=True,
-            n_trials=20,
+            n_trials=30,
         ),
         # Step2: ....
     ]

@@ -10,7 +10,7 @@ from sklearn.preprocessing import PolynomialFeatures
 
 from octopus import OctoData, OctoML
 from octopus.config import ConfigManager, ConfigSequence, ConfigStudy
-from octopus.modules.octo.sequence import Octo
+from octopus.modules import Octo
 
 print("Notebook kernel is running on server:", socket.gethostname())
 print("Conda environment on server:", os.environ["CONDA_DEFAULT_ENV"])
@@ -127,6 +127,7 @@ config_study = ConfigStudy(
     n_folds_outer=7,
     start_with_empty_study=True,
     path="./studies/",
+    silently_overwrite_study=True,
 )
 
 config_manager = ConfigManager(
@@ -134,7 +135,6 @@ config_manager = ConfigManager(
     outer_parallelization=True,
     # only process first outer loop experiment, for quick testing
     run_single_experiment_num=1,
-    production_mode=False,
 )
 
 config_sequence = ConfigSequence(
@@ -159,7 +159,7 @@ config_sequence = ConfigSequence(
             n_optuna_startup_trials=10,
             resume_optimization=False,
             global_hyperparameter=True,
-            n_trials=50,
+            n_trials=5,
             max_features=70,
         ),
         # Step2: ....

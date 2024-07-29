@@ -1,45 +1,47 @@
-"""Workflow script for the titanic example."""
+"""Workflow script T2E analysis using German Breast Cancer Study group 2."""
 
 import os
 import socket
 
+# OPENBLASE config needs to be before pandas, autosk
+# os.environ["OPENBLAS_NUM_THREADS"] = "1"
 import pandas as pd
 
 from octopus import OctoData, OctoML
 from octopus.config import ConfigManager, ConfigSequence, ConfigStudy
-from octopus.modules.octo.sequence import Octo
+from octopus.modules import Octo
 
-# Conda and Host information
 print("Notebook kernel is running on server:", socket.gethostname())
 print("Conda environment on server:", os.environ["CONDA_DEFAULT_ENV"])
 # show directory name
 print("Working directory: ", os.getcwd())
 
-# load data from csv and perform pre-processing
-# all features should be numeric (and not bool)
-data_df = (
-    pd.read_csv(
-        os.path.join(os.getcwd(), "datasets", "titanic_openml.csv"), index_col=0
-    )
-    .astype({"age": float})
-    .assign(
-        age=lambda df_: df_["age"].fillna(df_["age"].median()).astype(int),
-        embarked=lambda df_: df_["embarked"].fillna(df_["embarked"].mode()[0]),
-        fare=lambda df_: df_["fare"].fillna(df_["fare"].median()),
-    )
-    .astype({"survived": bool})
-    .pipe(
-        lambda df_: df_.reindex(
-            columns=["survived"] + list([a for a in df_.columns if a != "survived"])
-        )
-    )
-    .pipe(
-        lambda df_: df_.reindex(
-            columns=["name"] + list([a for a in df_.columns if a != "name"])
-        )
-    )
-    .pipe(pd.get_dummies, columns=["embarked", "sex"], drop_first=True, dtype=int)
-)
+
+# load test dataset from Martin from csv and perform pre-processing
+# stored in ./datasets_local/ to avoid accidental uploading to github
+data = pd.read_csv("./datasets/gbs2.csv", index_col=0)
+# data pre-processing
+# check for NaNs
+assert not pd.isna(data).any().any()
+
+# one-hot encoding of categorical columns
+columns = ["horTh", "menostat", "tgrade"]
+df_list = [data]
+for column in columns:
+    df_list.append(pd.get_dummies(data[column], prefix=column, drop_first=True))
+data_processed = pd.concat(df_list, axis=1)
+for column in columns:
+    data_processed.drop(column, axis=1, inplace=True)
+
+# convert boolean columns to int
+# Find the boolean columns
+boolean_columns = data_processed.select_dtypes(include=bool).columns
+
+# Convert boolean columns to int
+data_processed[boolean_columns] = data_processed[boolean_columns].astype(int)
+# create patient ID
+data_processed.reset_index(inplace=True)
+data_processed.rename(columns={"index": "patient"}, inplace=True)
 
 ### Create OctoData Object
 
@@ -47,21 +49,25 @@ data_df = (
 # and the data split type. For this classification approach,
 # we also define a stratification column.
 octo_data = OctoData(
-    data=data_df,
-    target_columns=["survived"],
-    feature_columns=[
-        "pclass",
-        "age",
-        "sibsp",
-        "parch",
-        "fare",
-        "embarked_Q",
-        "embarked_S",
-        "sex_male",
+    data=data_processed,
+    target_columns=[
+        "Event",
+        "Duration",
     ],
-    sample_id="name",
-    datasplit_type="group_sample_and_features",
-    stratification_column=["survived"],
+    feature_columns=[
+        "age",
+        "estrec",
+        "pnodes",
+        "progrec",
+        "tsize",
+        "horTh_yes",
+        "menostat_Pre",
+        "tgrade_II",
+        "tgrade_III",
+    ],
+    sample_id="patient",
+    datasplit_type="sample",
+    target_asignments={"event": "Event", "duration": "Duration"},
 )
 
 ### Create Configuration
@@ -77,14 +83,15 @@ octo_data = OctoData(
 # we use one sequence with the `RandomForestClassifier` model.
 
 config_study = ConfigStudy(
-    name="Titanic",
-    ml_type="classification",
-    target_metric="AUCROC",
-    metrics=["AUCROC", "ACCBAL", "ACC", "LOGLOSS"],
+    name="Survial-Test",
+    ml_type="timetoevent",
+    target_metric="CI",
+    metrics=["CI"],
     datasplit_seed_outer=1234,
     n_folds_outer=5,
     start_with_empty_study=True,
     path="./studies/",
+    silently_overwrite_study=True,
 )
 
 config_manager = ConfigManager(
@@ -92,34 +99,38 @@ config_manager = ConfigManager(
     outer_parallelization=True,
     # only process first outer loop experiment, for quick testing
     run_single_experiment_num=1,
-    production_mode=False,
 )
 
 config_sequence = ConfigSequence(
     [
         # Step1: octo
         Octo(
-            description="step_1_octo",
+            description="step1_octo",
+            # datasplit
             n_folds_inner=5,
-            # model selection
-            models=[
-                # "TabPFNClassifier",
-                "ExtraTreesClassifier",
-                # "RandomForestClassifier",
-                # "CatBoostClassifier",
-                # "XGBClassifier",
-            ],
+            datasplit_seed_inner=0,
+            # model training
+            models=["ExtraTreesSurv"],
+            model_seed=0,
+            n_jobs=1,
+            dim_red_methods=[""],
+            max_outl=0,
+            fi_methods_bestbag=["permutation"],
             # parallelization
             inner_parallelization=True,
             n_workers=5,
             # HPO
+            optuna_seed=0,
+            n_optuna_startup_trials=10,
+            resume_optimization=False,
             global_hyperparameter=True,
-            n_trials=20,
+            n_trials=10,
+            max_features=0,
+            penalty_factor=10.0,
         ),
         # Step2: ....
     ]
 )
-
 
 ### Execute the Machine Learning Workflow
 

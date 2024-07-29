@@ -1,4 +1,4 @@
-"""Workflow script for the housing."""
+"""Workflow script for the titanic example."""
 
 import os
 import socket
@@ -6,7 +6,8 @@ import socket
 import pandas as pd
 
 from octopus import OctoData, OctoML
-from octopus.config import ConfigManager, ConfigSequence, ConfigStudy, Octo
+from octopus.config import ConfigManager, ConfigSequence, ConfigStudy
+from octopus.modules import Octo
 
 # Conda and Host information
 print("Notebook kernel is running on server:", socket.gethostname())
@@ -14,23 +15,30 @@ print("Conda environment on server:", os.environ["CONDA_DEFAULT_ENV"])
 # show directory name
 print("Working directory: ", os.getcwd())
 
-
-# California housing dataset
 # load data from csv and perform pre-processing
+# all features should be numeric (and not bool)
 data_df = (
-    pd.read_csv(os.path.join(os.getcwd(), "datasets", "california_housing_prices.csv"))
-    .reset_index()
-    .astype(
-        {
-            "housing_median_age": int,
-            "total_rooms": int,
-            "population": int,
-            "households": int,
-            "median_income": int,
-            "median_house_value": int,
-        }
+    pd.read_csv(
+        os.path.join(os.getcwd(), "datasets", "titanic_openml.csv"), index_col=0
     )
-    .loc[0:100, :]
+    .astype({"age": float})
+    .assign(
+        age=lambda df_: df_["age"].fillna(df_["age"].median()).astype(int),
+        embarked=lambda df_: df_["embarked"].fillna(df_["embarked"].mode()[0]),
+        fare=lambda df_: df_["fare"].fillna(df_["fare"].median()),
+    )
+    .astype({"survived": bool})
+    .pipe(
+        lambda df_: df_.reindex(
+            columns=["survived"] + list([a for a in df_.columns if a != "survived"])
+        )
+    )
+    .pipe(
+        lambda df_: df_.reindex(
+            columns=["name"] + list([a for a in df_.columns if a != "name"])
+        )
+    )
+    .pipe(pd.get_dummies, columns=["embarked", "sex"], drop_first=True, dtype=int)
 )
 
 ### Create OctoData Object
@@ -40,20 +48,20 @@ data_df = (
 # we also define a stratification column.
 octo_data = OctoData(
     data=data_df,
-    target_columns=["median_house_value"],
+    target_columns=["survived"],
     feature_columns=[
-        "longitude",
-        "latitude",
-        "housing_median_age",
-        "total_rooms",
-        # "total_bedrooms",
-        "population",
-        "households",
-        "median_income",
-        # "ocean_proximity": str,
+        "pclass",
+        "age",
+        "sibsp",
+        "parch",
+        "fare",
+        "embarked_Q",
+        "embarked_S",
+        "sex_male",
     ],
-    sample_id="index",
-    datasplit_type="sample",
+    sample_id="name",
+    datasplit_type="group_sample_and_features",
+    stratification_column=["survived"],
 )
 
 ### Create Configuration
@@ -69,14 +77,15 @@ octo_data = OctoData(
 # we use one sequence with the `RandomForestClassifier` model.
 
 config_study = ConfigStudy(
-    name="Housing",
-    ml_type="regression",
-    target_metric="R2",
-    metrics=["MSE", "MAE", "R2"],
+    name="Titanic",
+    ml_type="classification",
+    target_metric="AUCROC",
+    metrics=["AUCROC", "ACCBAL", "ACC", "LOGLOSS"],
     datasplit_seed_outer=1234,
     n_folds_outer=5,
     start_with_empty_study=True,
     path="./studies/",
+    silently_overwrite_study=True,
 )
 
 config_manager = ConfigManager(
@@ -84,59 +93,33 @@ config_manager = ConfigManager(
     outer_parallelization=True,
     # only process first outer loop experiment, for quick testing
     run_single_experiment_num=1,
-    production_mode=False,
 )
 
 config_sequence = ConfigSequence(
     [
         # Step1: octo
         Octo(
-            description="step1_octo",
-            # datasplit
+            description="step_1_octo",
             n_folds_inner=5,
-            datasplit_seed_inner=0,
-            # model training
-            optuna_seed=5,
-            models=["RandomForestRegressor"],
-            model_seed=0,
-            n_jobs=1,
-            dim_red_methods=[""],
-            fi_methods_bestbag=["permutation"],
-            # max_outl=5,
+            # model selection
+            models=[
+                # "TabPFNClassifier",
+                "ExtraTreesClassifier",
+                # "RandomForestClassifier",
+                # "CatBoostClassifier",
+                # "XGBClassifier",
+            ],
             # parallelization
-            inner_parallelization=False,
+            inner_parallelization=True,
             n_workers=5,
             # HPO
             global_hyperparameter=True,
-            n_trials=5,
-            max_features=70,
-            # remove_trials=False,
+            n_trials=20,
         ),
         # Step2: ....
-        Octo(
-            description="step2_octo",
-            # datasplit
-            n_folds_inner=5,
-            datasplit_seed_inner=0,
-            # model training
-            optuna_seed=5,
-            models=["RandomForestRegressor"],
-            model_seed=0,
-            n_jobs=1,
-            dim_red_methods=[""],
-            fi_methods_bestbag=["permutation"],
-            # max_outl=5,
-            # parallelization
-            inner_parallelization=False,
-            n_workers=5,
-            # HPO
-            global_hyperparameter=True,
-            n_trials=5,
-            max_features=70,
-            # remove_trials=False,
-        ),
     ]
 )
+
 
 ### Execute the Machine Learning Workflow
 

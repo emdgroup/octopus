@@ -6,7 +6,8 @@ import socket
 import pandas as pd
 
 from octopus import OctoData, OctoML
-from octopus.config import ConfigManager, ConfigSequence, ConfigStudy, Octo
+from octopus.config import ConfigManager, ConfigSequence, ConfigStudy
+from octopus.modules import Rfe
 
 # Conda and Host information
 print("Notebook kernel is running on server:", socket.gethostname())
@@ -84,6 +85,7 @@ config_study = ConfigStudy(
     n_folds_outer=5,
     start_with_empty_study=True,
     path="./studies/",
+    silently_overwrite_study=True,
 )
 
 config_manager = ConfigManager(
@@ -91,34 +93,18 @@ config_manager = ConfigManager(
     outer_parallelization=True,
     # only process first outer loop experiment, for quick testing
     run_single_experiment_num=1,
-    production_mode=False,
 )
 
 config_sequence = ConfigSequence(
     [
         # Step1: octo
-        Octo(
-            description="step_1_octo",
-            n_folds_inner=5,
-            # model selection
-            models=[
-                # "TabPFNClassifier",
-                "ExtraTreesClassifier",
-                # "RandomForestClassifier",
-                # "CatBoostClassifier",
-                # "XGBClassifier",
-            ],
-            # parallelization
-            inner_parallelization=True,
-            n_workers=5,
-            # HPO
-            global_hyperparameter=True,
-            n_trials=20,
+        Rfe(
+            description="RFE",
+            cv=5,  # number of CV folds
         ),
         # Step2: ....
     ]
 )
-
 
 ### Execute the Machine Learning Workflow
 

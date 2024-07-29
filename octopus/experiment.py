@@ -84,9 +84,9 @@ class OctoExperiment:
         self.models = dict()
         self.results = dict()
         # self.feature_groups = dict()
-        self._calculate_feature_groups()
+        self.calculate_feature_groups()
 
-    def _calculate_feature_groups(self) -> None:
+    def calculate_feature_groups(self) -> None:
         """Calculate Feature Groups."""
         # looking for groups arising from different thresholds
         auto_group_thresholds = [0.7, 0.8, 0.9]

@@ -39,26 +39,31 @@ for line in [319, 330, 338]:
 # - check that openblas settings are correct and suggest solutions
 
 # TOBEDONE OCTOFULL
-# - (1) Complete Ensemble Selection
-# - (2) Feature Counts in Bag - is everything available
-# - (3) !Calculate performance of survival models: CI, CI_uno,  IBS, dynAUC,
-# - (4) rename ensemble test
-# - (5) include data preprocessing
-# - (6) num feat constraint (automatic parameters)
+# - (1) complete ensemble selection -- important for mrmr!, feature counts, etc..
+# - (2) Clean up fi code and, remove duplicates and put into one place!
+# - (3) predict group_pfi --- now based on feature_groups (may not use rdc) for
+#        group selection
+# - (4) MRMR -- qubim either uses F1, Smolonogov-stats or Shapley as input
+#       https://github.com/smazzanti/mrmr/blob/main/mrmr/pandas.py
+#       use this implementation?
+# - (5) Feature Counts in Bag - is everything available?
+# - (6) Revise sequence handover. Handover a dict that may contain
+#       (a) selected feature (b) previous fis (c) changed dataset
+# - (7) use numba to speed up rdc
+# - (8) hierarchical clustering for feature auto-groups
+# - (9) !Calculate performance of survival models: CI, CI_uno,  IBS, dynAUC,
+# - (10) rename ensemble test?
+# - (11) include data preprocessing
+# - (12) num feat constraint (automatic parameters)
 #       + scaling factor from first random optuna runs
 #       + max_feature from dataset size
-# - (7) add kernel shape feature importance
-# - (8) create predict/predict_proba function for bag
-#       Does it work with shap and permutation feature importance?
-# - (9) TestFI: Apply shape and permutation feature importance to bag to test
-#       compare to fis from individual trainings
-# - (10) is there a good way to determine which shap values are relevant, stats test?
-# - (11) make bag compatible with sklearn
+# - (13) is there a good way to determine which shap values are relevant, stats test?
+# - (14) make bag compatible with sklearn
 #   +very difficult as sklearn differentiates between regression, classification
 #   RegressionBag, ClassBag
 #   +we also want to include T2E
 #   + check if a single predict function is sufficient for shap/permutation importance
-# - (12) Make use of default model parameters, see autosk, optuna
+# - (14) Make use of default model parameters, see autosk, optuna -- meaningful?
 # - predictions, replace "ensemble_test" with
 #   experiment_id+ sequence_id + ensemble + [test]
 # - Performance evaluation generalize: ensemble_hard, ensemble_soft
@@ -93,6 +98,8 @@ for line in [319, 330, 338]:
 # TOBEDONE FEATURE_IMPORTANCE
 # - (1) grouped permutation importance, see predict class
 # - (2) use feature importance counts
+# - (3) !!!! Average FIs differently -- see bag, no groupby.mean()
+# - check alibi package
 # - separate fi code from training class
 # - group identification (experiment.py) - add hirarchical clustering
 # - create new module that filters out correlated variables
@@ -281,14 +288,16 @@ class OctoCore:
         # show and save test results
         print(
             f"Experiment: {self.experiment.id} "
-            f"Test(ensembled, hard vote) {self.experiment.configs.study.target_metric}:"
-            f"{best_bag_scores['test_pool_hard']}"
+            f"{self.experiment.configs.study.target_metric} (ensembled, hard vote):"  # noqa E501
+            f"Dev {best_bag_scores['dev_pool_hard']:.3f}, "
+            f"Test {best_bag_scores['test_pool_hard']:.3f}"
         )
         if self.experiment.ml_type == "classification":
             print(
                 f"Experiment: {self.experiment.id} "
-                f"Test(ensembled, soft vote) {self.experiment.configs.study.target_metric}:"  # noqa E501
-                f"{best_bag_scores['test_pool_soft']}"
+                f"{self.experiment.configs.study.target_metric} (ensembled, soft vote):"  # noqa E501
+                f"Dev {best_bag_scores['dev_pool_soft']:.3f}, "
+                f"Test {best_bag_scores['test_pool_soft']:.3f}"
             )
 
         with open(

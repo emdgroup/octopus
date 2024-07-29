@@ -11,7 +11,7 @@ import pandas as pd
 from attrs import define, field, validators
 from joblib import Parallel, delayed
 
-from octopus.modules.metrics import metrics_inventory
+from octopus.metrics import metrics_inventory
 from octopus.modules.octo.scores import add_pooling_scores
 
 # logging.basicConfig(
@@ -234,7 +234,9 @@ class Bag:
             elif fi_type == "shap":
                 training.calculate_fi_shap(partition=partition)
             elif fi_type == "permutation":
-                training.calculate_fi_permutation(partition=partition)
+                training.calculate_fi_group_permutation(partition=partition)
+            elif fi_type == "lofo":
+                training.calculate_fi_lofo()
             else:
                 raise ValueError("FI type not supported")
 
@@ -248,25 +250,25 @@ class Bag:
         if fi_methods is None:
             fi_methods = []
 
-        feat_lst = list()
         if "permutation" in fi_methods:
             for training in self.trainings:
                 fi_df = training.feature_importances["permutation_dev"]
-                feat_lst.extend(fi_df[fi_df["importance"] != 0]["feature"].tolist())
-            return list(set(feat_lst))
         elif "shap" in fi_methods:
             for training in self.trainings:
                 fi_df = training.feature_importances["shap_dev"]
-                feat_lst.extend(fi_df[fi_df["importance"] != 0]["feature"].tolist())
-            return list(set(feat_lst))
         elif "internal" in fi_methods:
             for training in self.trainings:
                 fi_df = training.feature_importances["internal"]
-                feat_lst.extend(fi_df[fi_df["importance"] != 0]["feature"].tolist())
-            return list(set(feat_lst))
         else:
-            print("No features importances calculated")
+            print("No features importances calculated, return empty list")
             return []
+
+        # remove all group features
+        fi_df = fi_df[~fi_df["feature"].str.startswith("group")]
+        # extract list of nonzero features
+        feat_lst = fi_df[fi_df["importance"] != 0]["feature"].tolist()
+
+        return list(set(feat_lst))
 
     def get_feature_importances(self, fi_methods=None):
         """Extract feature importances of all models in bag."""
@@ -285,6 +287,8 @@ class Bag:
             elif method == "permutation":
                 self._calculate_fi(fi_type="permutation", partition="dev")
                 self._calculate_fi(fi_type="permutation", partition="test")
+            elif method == "lofo":
+                self._calculate_fi(fi_type="lofo")
             else:
                 raise ValueError(f"Feature importance method {method} not supported.")
 
@@ -308,12 +312,17 @@ class Bag:
             # calculate mean and count feature importances
             fi = pd.concat(fi_pool, axis=0)
             self.feature_importances[method_str + "_mean"] = (
-                fi[["feature", "importance"]].groupby(by="feature").mean().reset_index()
-            )
-            self.feature_importances[method_str + "_count"] = (
                 fi[["feature", "importance"]]
                 .groupby(by="feature")
+                .mean()
+                .sort_values(by="importance", ascending=False)
+                .reset_index()
+            )
+            self.feature_importances[method_str + "_count"] = (
+                fi[fi["importance"] != 0][["feature", "importance"]]
+                .groupby(by="feature")
                 .count()
+                .sort_values(by="importance", ascending=False)
                 .reset_index()
             )
 

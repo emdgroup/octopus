@@ -3,11 +3,12 @@
 import pandas as pd
 import pytest
 
-from octopus.data import OctoData
+from octopus import OctoData
 
 
 @pytest.fixture
 def sample_data():
+    """Sample data."""
     df = pd.DataFrame(
         {
             "target_1": [0, 1, 0, 1],

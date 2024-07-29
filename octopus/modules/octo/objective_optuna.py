@@ -27,21 +27,21 @@ class ObjectiveOptuna:
         self.study_name = study_name
         self.top_trials = top_trials
         # saving trials
-        self.ensel = self.experiment.ml_config["ensemble_selection"]
-        self.n_save_trials = self.experiment.ml_config["ensel_n_save_trials"]
+        self.ensel = self.experiment.ml_config.ensemble_selection
+        self.n_save_trials = self.experiment.ml_config.ensel_n_save_trials
         # parameters potentially used for optimizations
-        self.ml_model_types = self.experiment.ml_config["models"]
-        self.dim_red_methods = self.experiment.ml_config["dim_red_methods"]
-        self.max_outl = self.experiment.ml_config["max_outl"]
-        self.max_features = self.experiment.ml_config["max_features"]
-        self.penalty_factor = self.experiment.ml_config["penalty_factor"]
-        self.hyper_parameters = self.experiment.ml_config["hyper_parameters"]
+        self.ml_model_types = self.experiment.ml_config.models
+        self.dim_red_methods = self.experiment.ml_config.dim_red_methods
+        self.max_outl = self.experiment.ml_config.max_outl
+        self.max_features = self.experiment.ml_config.max_features
+        self.penalty_factor = self.experiment.ml_config.penalty_factor
+        self.hyper_parameters = self.experiment.ml_config.hyper_parameters
         # fixed parameters
-        self.ml_seed = self.experiment.ml_config["model_seed"]
-        self.ml_jobs = self.experiment.ml_config["n_jobs"]
+        self.ml_seed = self.experiment.ml_config.model_seed
+        self.ml_jobs = self.experiment.ml_config.n_jobs
         # training parameters
-        self.parallel_execution = self.experiment.ml_config["inner_parallelization"]
-        self.num_workers = self.experiment.ml_config["n_workers"]
+        self.parallel_execution = self.experiment.ml_config.inner_parallelization
+        self.num_workers = self.experiment.ml_config.n_workers
 
     def __call__(self, trial):
         """Call.
@@ -122,8 +122,8 @@ class ObjectiveOptuna:
                     data_dev=split["test"],  # inner datasplit, dev
                     data_test=self.experiment.data_test,
                     config_training=config_training,
-                    target_metric=self.experiment.config["target_metric"],
-                    max_features=self.experiment.ml_config["max_features"],
+                    target_metric=self.experiment.configs.study.target_metric,
+                    max_features=self.experiment.ml_config.max_features,
                     feature_groups=self.experiment.feature_groups,
                 )
             )
@@ -135,7 +135,7 @@ class ObjectiveOptuna:
             target_assignments=self.experiment.target_assignments,
             parallel_execution=self.parallel_execution,
             num_workers=self.num_workers,
-            target_metric=self.experiment.config["target_metric"],
+            target_metric=self.experiment.configs.study.target_metric,
             row_column=self.experiment.row_column,
             # path?
         )
@@ -158,7 +158,7 @@ class ObjectiveOptuna:
         trial.set_user_attr("config_training", config_training)
 
         # print scores info to console
-        print(f"Trial scores for metric: {self.experiment.config['target_metric']}")
+        print(f"Trial scores for metric: {self.experiment.configs.study.target_metric}")
         for key, value in scores.items():
             if isinstance(value, list):
                 print(f"{key}:{value}")
@@ -169,7 +169,7 @@ class ObjectiveOptuna:
         optuna_target = scores["dev_avg"]
 
         # adjust direction, optuna in octofull always minimizes
-        if optuna_direction(self.experiment.config["target_metric"]) == "maximize":
+        if optuna_direction(self.experiment.configs.study.target_metric) == "maximize":
             optuna_target = -optuna_target
 
         # add penaltiy for n_features > max_features if configured
@@ -193,7 +193,7 @@ class ObjectiveOptuna:
         return optuna_target
 
     def _save_topn_trials(self, bag, target_value, n_trial):
-        max_n_trials = self.experiment.ml_config["ensel_n_save_trials"]
+        max_n_trials = self.experiment.ml_config.ensel_n_save_trials
         path_save = self.experiment.path_study.joinpath(
             self.experiment.path_sequence_item,
             "trials",

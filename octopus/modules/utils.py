@@ -2,35 +2,67 @@
 
 import numpy as np
 from scipy.stats import rankdata
-from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
+
+# from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
+from octopus.metrics import metrics_inventory
+
+# def get_score(metric: str, y_true: np.array, y_pred: np.array) -> float:
+#    """Calculate the specified metric for the given true and predicted values.
+#
+#    Args:
+#        metric: The name of the metric to compute.
+#            Valid options are 'MAE', 'R2', and 'MSE'.
+#        y_true: An array of true values for the model's predictions
+#            to be evaluated against.
+#        y_pred: An array of predicted values to evaluate.
+#
+#    Returns:
+#        The computed score of the specified metric.
+#
+#    Raises:
+#        ValueError: If the metric provided is not recognized or supported.
+#    """
+#    if metric == "MAE":
+#        return mean_absolute_error(y_true, y_pred)
+#    elif metric == "R2":
+#        return r2_score(y_true, y_pred)
+#    elif metric == "MSE":
+#        return mean_squared_error(y_true, y_pred)
+#    else:
+#        raise ValueError(
+#            f"Unsupported metric '{metric}'. Supported metrics are 'MAE', 'R2', 'MSE'."
+#        )
 
 
-def get_score(metric: str, y_true: np.array, y_pred: np.array) -> float:
-    """Calculate the specified metric for the given true and predicted values.
-
-    Args:
-        metric: The name of the metric to compute.
-            Valid options are 'MAE', 'R2', and 'MSE'.
-        y_true: An array of true values for the model's predictions
-            to be evaluated against.
-        y_pred: An array of predicted values to evaluate.
-
-    Returns:
-        The computed score of the specified metric.
-
-    Raises:
-        ValueError: If the metric provided is not recognized or supported.
-    """
-    if metric == "MAE":
-        return mean_absolute_error(y_true, y_pred)
-    elif metric == "R2":
-        return r2_score(y_true, y_pred)
-    elif metric == "MSE":
-        return mean_squared_error(y_true, y_pred)
-    else:
-        raise ValueError(
-            f"Unsupported metric '{metric}'. Supported metrics are 'MAE', 'R2', 'MSE'."
+def get_performance_score(
+    model, data, feature_columns, target_metric, target_assignments
+) -> float:
+    """Calculate model performance score on dataset."""
+    if target_metric in ["AUCROC", "LOGLOSS"]:
+        target_col = list(target_assignments.values())[0]
+        target = data[target_col]
+        probabilities = model.predict_proba(data[feature_columns])[
+            :, 1
+        ]  # binary only!!
+        score = metrics_inventory[target_metric]["method"](target, probabilities)
+    elif target_metric in ["CI"]:
+        estimate = model.predict(data)
+        event_time = data[target_assignments["duration"]].astype(float)
+        event_indicator = data[target_assignments["event"]].astype(bool)
+        score, _, _, _, _ = metrics_inventory[target_metric]["method"](
+            event_indicator, event_time, estimate
         )
+    else:
+        target_col = list(target_assignments.values())[0]
+        target = data[target_col]
+        probabilities = model.predict(data[feature_columns])
+        score = metrics_inventory[target_metric]["method"](target, probabilities)
+
+    # make sure that the sign of the feature importances is correct
+    if optuna_direction(target_metric) == "maximize":
+        return score
+    else:
+        return -score
 
 
 def optuna_direction(metric: str) -> str:

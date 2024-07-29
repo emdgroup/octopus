@@ -74,7 +74,7 @@ octo_data = OctoData(
 config_study = ConfigStudy(
     name="basic_regression_example",
     ml_type="regression",
-    target_metric="MAE",
+    target_metric="R2",
 )
 
 config_manager = ConfigManager(outer_parallelization=False, run_single_experiment_num=0)

@@ -11,7 +11,7 @@ from joblib import Parallel, delayed
 
 from octopus.config.core import OctoConfig
 from octopus.experiment import OctoExperiment
-from octopus.modules.moduls_inventory import modules_inventory
+from octopus.modules import modules_inventory
 
 
 @define

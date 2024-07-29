@@ -14,7 +14,7 @@ from octopus.modules.utils import rdc
 #     - n_features: number of features to be extracted
 # (2) Qubim either uses F1, Smolonogov-stats or Shapley as input
 #     https://github.com/smazzanti/mrmr/blob/main/mrmr/pandas.py
-#     use this implemenation?
+#     use this implementation?
 # (2) Output:
 #     - selected features, saved in experiment
 # (2) Feature importances from the development dataset are preferable as they show

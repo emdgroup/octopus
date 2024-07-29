@@ -137,18 +137,23 @@ class OctoManager:
                 path_save = path_study_sequence.joinpath(
                     f"exp{experiment.experiment_id}_{experiment.sequence_item_id}.pkl"
                 )
-                experiment.to_pickle(path_save)
 
                 # update features with selected features from previous run
                 if cnt > 0:
                     experiment.feature_columns = selected_features
                     experiment.prior_feature_importances = prior_feature_importances
 
+                # update feature groups as feature_columns may have changed
+                experiment.calculate_feature_groups()
+
                 # get desired module and intitialze with experiment
                 if experiment.ml_module in modules_inventory:
                     module = modules_inventory[experiment.ml_module](experiment)
                 else:
                     raise ValueError(f"ml_module {experiment.ml_module} not supported")
+
+                # save experiment before running module
+                experiment.to_pickle(path_save)
 
                 # run module and overwrite experiment
                 experiment = module.run_experiment()

@@ -2,9 +2,11 @@
 
 # import os
 import copy
+import math
 
 import numpy as np
 import pandas as pd
+import scipy
 import shap
 from attrs import define, field, validators
 from sklearn.inspection import permutation_importance
@@ -268,6 +270,103 @@ class Training:
             print("Warning: Internal features importances not available.")
         self.feature_importances["internal"] = fi_df
 
+    def calculate_fi_group_permutation(self, partition="dev", n_repeats=10):
+        """Permutation feature importance, group version."""
+        print(
+            f"Calculating permutation feature importances ({partition})"
+            ". This may take a while..."
+        )
+        # fixed confidence level
+        confidence_level = 0.95
+        feature_columns = self.feature_columns
+        target_assignments = self.target_assignments
+        target_metric = self.target_metric
+        model = self.model
+        feature_groups = self.feature_groups
+
+        if partition == "dev":
+            data = self.data_dev
+        elif partition == "test":
+            data = self.data_test
+
+        if not set(feature_columns).issubset(data.columns):
+            raise ValueError("Features missing in provided dataset.")
+
+        # check that targets are in dataset
+        # MISSING
+
+        # keep all features and add group features
+        # create features dict
+        feature_columns_dict = {x: [x] for x in feature_columns}
+        features_dict = {**feature_columns_dict, **feature_groups}
+
+        # calculate baseline score
+        baseline_score = get_performance_score(
+            model, data, feature_columns, target_metric, target_assignments
+        )
+
+        results_df = pd.DataFrame(
+            columns=[
+                "feature",
+                "importance",
+                "stddev",
+                "p-value",
+                "n",
+                "ci_low_95",
+                "ci_high_95",
+            ]
+        )
+        # calculate pfi
+        for name, feature in features_dict.items():
+            data_pfi = data.copy()
+            fi_lst = list()
+
+            for _ in range(n_repeats):
+                # replace column with random selection from that column of data_all
+                # we use data_all as the validation dataset may be small
+                for feat in feature:
+                    data_pfi[feat] = np.random.choice(
+                        data[feat], len(data_pfi), replace=False
+                    )
+                pfi_score = get_performance_score(
+                    model, data_pfi, feature_columns, target_metric, target_assignments
+                )
+                fi_lst.append(baseline_score - pfi_score)
+
+            # calculate statistics
+            pfi_mean = np.mean(fi_lst)
+            n = len(fi_lst)
+            p_value = np.nan
+            stddev = np.std(fi_lst, ddof=1) if n > 1 else np.nan
+            if stddev not in (np.nan, 0):
+                t_stat = pfi_mean / (stddev / math.sqrt(n))
+                p_value = scipy.stats.t.sf(t_stat, n - 1)
+            elif stddev == 0:
+                p_value = 0.5
+
+            # calculate confidence intervals
+            if np.nan in (stddev, n, pfi_mean) or n == 1:
+                ci_high = np.nan
+                ci_low = np.nan
+            else:
+                t_val = scipy.stats.t.ppf(1 - (1 - confidence_level) / 2, n - 1)
+                ci_high = pfi_mean + t_val * stddev / math.sqrt(n)
+                ci_low = pfi_mean - t_val * stddev / math.sqrt(n)
+
+            # save results
+            results_df.loc[len(results_df)] = [
+                name,
+                pfi_mean,
+                stddev,
+                p_value,
+                n,
+                ci_low,
+                ci_high,
+            ]
+
+        results_df = results_df.sort_values(by="importance", ascending=False)
+        self.feature_importances["permutation" + "_" + partition] = results_df
+
     def calculate_fi_permutation(self, partition="dev", n_repeats=10):
         """Permutation feature importance."""
         print(
@@ -283,23 +382,21 @@ class Training:
             scoring_type = scorer_string_inventory[self.target_metric]
 
         if partition == "dev":
-            perm_importance = permutation_importance(
-                self.model,
-                X=self.x_dev,
-                y=self.y_dev,
-                n_repeats=n_repeats,
-                random_state=0,
-                scoring=scoring_type,
-            )
+            x = self.x_dev
+            y = self.y_dev
         elif partition == "test":
-            perm_importance = permutation_importance(
-                self.model,
-                X=self.x_test,
-                y=self.y_test,
-                n_repeats=n_repeats,
-                random_state=0,
-                scoring=scoring_type,
-            )
+            x = self.x_test
+            y = self.y_test
+
+        perm_importance = permutation_importance(
+            self.model,
+            X=x,
+            y=y,
+            n_repeats=n_repeats,
+            random_state=0,
+            scoring=scoring_type,
+        )
+
         fi_df = pd.DataFrame()
         fi_df["feature"] = self.feature_columns
         fi_df["importance"] = perm_importance.importances_mean

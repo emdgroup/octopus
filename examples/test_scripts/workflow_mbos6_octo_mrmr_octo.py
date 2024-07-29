@@ -1,30 +1,47 @@
-"""Workflow script for the diabetes regression example."""
+"""Workflow script for test dataset Martin."""
 
 import os
 import socket
 
+# OPENBLASE config needs to be before pandas, autosk
+# os.environ["OPENBLAS_NUM_THREADS"] = "1"
+# os.environ["OMP_NUM_THREADS"] = "1"
 import pandas as pd
 
 from octopus import OctoData, OctoML
-from octopus.config import ConfigManager, ConfigSequence, ConfigStudy, MrmrConfig
-from octopus.modules.octo.sequence import Octo
+from octopus.config import ConfigManager, ConfigSequence, ConfigStudy
+from octopus.modules import Mrmr, Octo
 
-# Conda and Host information
 print("Notebook kernel is running on server:", socket.gethostname())
 print("Conda environment on server:", os.environ["CONDA_DEFAULT_ENV"])
 # show directory name
 print("Working directory: ", os.getcwd())
 
-# Regression Analysis on Diabetes Dataset
-# http://statweb.lsu.edu/faculty/li/teach/exst7142/diabetes.html
-# https://shap.readthedocs.io/en/latest/example_notebooks/tabular_examples/model_agnostic/Diabetes%20regression.html
-# https://automl.github.io/auto-sklearn/master/examples/20_basic/example_regression.html
 
-# load data from csv and perform pre-processing
-data_df = pd.read_csv(
-    os.path.join(os.getcwd(), "datasets", "diabetes.csv"), index_col=0
+# load test dataset from Martin from csv and perform pre-processing
+# stored in ./datasets_local/ to avoid accidental uploading to github
+# pylint: disable=invalid-name
+file_path = (
+    "./datasets_local/baseline_dataframe_OS6_20230724A_mb_clini_haema"
+    "_3random(2-4)_treatmentarm(1)_strat.csv"
 )
 
+data = pd.read_csv(file_path, index_col=0)
+data.columns = data.columns.astype(str)
+
+
+features = pd.read_csv(
+    "./datasets_local/20221109_compl90_remcorr_trmtarm_3noise.csv", index_col=0
+)
+features = features["features"].astype(str).tolist()
+
+target_column = ["OS_DURATION_6MONTHS"]
+sample_column = "SUBJECT_ID"
+stratification_column = ["STRAT_OS6_TRT_NUM"]
+
+
+# pre-process data
+print("Number of samples with target values:", len(data[target_column]))
 
 ### Create OctoData Object
 
@@ -32,23 +49,12 @@ data_df = pd.read_csv(
 # and the data split type. For this classification approach,
 # we also define a stratification column.
 octo_data = OctoData(
-    data=data_df,
-    disable_checknan=True,
-    target_columns=["progression"],
-    feature_columns=[
-        "age",
-        "sex",
-        "bmi",
-        "bp",
-        "s1",
-        "s2",
-        "s3",
-        "s4",
-        "s5",
-        "s6",
-    ],
-    sample_id="patient_id",
-    datasplit_type="group_sample_and_features",
+    data=data,
+    target_columns=target_column,
+    feature_columns=features,
+    sample_id=sample_column,
+    datasplit_type="sample",
+    stratification_column=stratification_column,
 )
 
 ### Create Configuration
@@ -64,15 +70,15 @@ octo_data = OctoData(
 # we use one sequence with the `RandomForestClassifier` model.
 
 config_study = ConfigStudy(
-    name="Diabetes",
-    ml_type="regression",
-    target_metric="R2",
-    metrics=["MSE", "MAE", "R2"],
+    name="MBOS6_test2",
+    ml_type="classification",
+    target_metric="AUCROC",
+    metrics=["AUCROC", "ACCBAL", "ACC", "LOGLOSS"],
     datasplit_seed_outer=1234,
     n_folds_outer=5,
     start_with_empty_study=True,
     path="./studies/",
-    overwrite_existing_study=True,
+    silently_overwrite_study=True,
 )
 
 config_manager = ConfigManager(
@@ -86,31 +92,41 @@ config_sequence = ConfigSequence(
     [
         # Step1: octo
         Octo(
-            description="step1_octofull",
+            description="step_1_octo",
+            # loading of existing results
+            load_sequence_item=False,
             # datasplit
             n_folds_inner=5,
-            datasplit_seed_inner=0,
-            load_sequence_item=True,
-            # model training
-            models=["ExtraTreesRegressor", "RandomForestRegressor"],
+            # model selection
+            models=[
+                # "TabPFNClassifier",
+                "ExtraTreesClassifier",
+                # "RandomForestClassifier",
+                # "CatBoostClassifier",
+                # "XGBClassifier",
+            ],
             model_seed=0,
             n_jobs=1,
             dim_red_methods=[""],
-            max_outl=5,
+            max_outl=0,
             fi_methods_bestbag=["permutation"],
             # parallelization
             inner_parallelization=True,
             n_workers=5,
             # HPO
+            optuna_seed=0,
+            n_optuna_startup_trials=10,
+            resume_optimization=False,
             global_hyperparameter=True,
             n_trials=5,
             max_features=70,
+            penalty_factor=1.0,
         ),
         # Step2: MRMR
-        MrmrConfig(
+        Mrmr(
             description="step2_mrmr",
             # number of features selected by MRMR
-            n_features=6,
+            n_features=50,
             # what correlation type should be used
             correlation_type="rdc",
             # feature importance type (mean/count)
@@ -118,26 +134,38 @@ config_sequence = ConfigSequence(
             # feature importance method (permuation/shap/internal)
             feature_importance_method="permutation",
         ),
-        # Step3: octo
+        # Step3: Octo
         Octo(
-            description="step1_octofull",
+            description="step2_octofull",
+            # loading of existing results
+            # load_sequence_item=False,
             # datasplit
             n_folds_inner=5,
             datasplit_seed_inner=0,
             # model training
-            models=["ExtraTreesRegressor", "RandomForestRegressor"],
+            models=[
+                # "TabPFNClassifier",
+                "ExtraTreesClassifier",
+                # "RandomForestClassifier",
+                # "CatBoostClassifier",
+                # "XGBClassifier",
+            ],
             model_seed=0,
             n_jobs=1,
             dim_red_methods=[""],
-            max_outl=5,
-            fi_methods_bestbag=["permutation"],
+            max_outl=0,
+            # fi_methods_bestbag=["permutation"],
             # parallelization
             inner_parallelization=True,
             n_workers=5,
             # HPO
+            optuna_seed=0,
+            n_optuna_startup_trials=10,
+            resume_optimization=False,
             global_hyperparameter=True,
-            n_trials=10,
-            max_features=70,
+            n_trials=30,
+            # max_features=70,
+            # penalty_factor=1.0,
         ),
     ]
 )
@@ -157,7 +185,7 @@ octo_ml.run_outer_experiments()
 
 print("Workflow completed")
 
-# This completes the basic example for using Octopus Regression
-# with the Diabetes dataset. The workflow involves loading and preprocessing
+# This completes the basic example for using Octopus Classification
+# with the Titanic dataset. The workflow involves loading and preprocessing
 # the data, creating necessary configurations, and executing the machine
 # learning pipeline.

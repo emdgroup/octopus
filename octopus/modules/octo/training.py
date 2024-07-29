@@ -1,14 +1,19 @@
 """OctoFull Trainings."""
 
 # import os
+import copy
+import math
+
 import numpy as np
 import pandas as pd
+import scipy
 import shap
 from attrs import define, field, validators
 from sklearn.inspection import permutation_importance
 from sklearn.preprocessing import MaxAbsScaler
 
-from octopus.models.config import model_inventory
+from octopus.models.models_inventory import model_inventory
+from octopus.modules.utils import get_performance_score
 
 scorer_string_inventory = {
     "AUCROC": "roc_auc",
@@ -236,7 +241,7 @@ class Training:
             self.calculate_fi_internal()
             fi_df = self.feature_importances["internal"]
         elif feature_method == "shap":
-            self.calculate_fi_shap(partition="dev")
+            self.calculate_fi_featuresused_shap(partition="dev")
             fi_df = self.feature_importances["shap_dev"]
         elif feature_method == "permutation":
             self.calculate_fi_permutation(
@@ -265,6 +270,103 @@ class Training:
             print("Warning: Internal features importances not available.")
         self.feature_importances["internal"] = fi_df
 
+    def calculate_fi_group_permutation(self, partition="dev", n_repeats=10):
+        """Permutation feature importance, group version."""
+        print(
+            f"Calculating permutation feature importances ({partition})"
+            ". This may take a while..."
+        )
+        # fixed confidence level
+        confidence_level = 0.95
+        feature_columns = self.feature_columns
+        target_assignments = self.target_assignments
+        target_metric = self.target_metric
+        model = self.model
+        feature_groups = self.feature_groups
+
+        if partition == "dev":
+            data = self.data_dev
+        elif partition == "test":
+            data = self.data_test
+
+        if not set(feature_columns).issubset(data.columns):
+            raise ValueError("Features missing in provided dataset.")
+
+        # check that targets are in dataset
+        # MISSING
+
+        # keep all features and add group features
+        # create features dict
+        feature_columns_dict = {x: [x] for x in feature_columns}
+        features_dict = {**feature_columns_dict, **feature_groups}
+
+        # calculate baseline score
+        baseline_score = get_performance_score(
+            model, data, feature_columns, target_metric, target_assignments
+        )
+
+        results_df = pd.DataFrame(
+            columns=[
+                "feature",
+                "importance",
+                "stddev",
+                "p-value",
+                "n",
+                "ci_low_95",
+                "ci_high_95",
+            ]
+        )
+        # calculate pfi
+        for name, feature in features_dict.items():
+            data_pfi = data.copy()
+            fi_lst = list()
+
+            for _ in range(n_repeats):
+                # replace column with random selection from that column of data_all
+                # we use data_all as the validation dataset may be small
+                for feat in feature:
+                    data_pfi[feat] = np.random.choice(
+                        data[feat], len(data_pfi), replace=False
+                    )
+                pfi_score = get_performance_score(
+                    model, data_pfi, feature_columns, target_metric, target_assignments
+                )
+                fi_lst.append(baseline_score - pfi_score)
+
+            # calculate statistics
+            pfi_mean = np.mean(fi_lst)
+            n = len(fi_lst)
+            p_value = np.nan
+            stddev = np.std(fi_lst, ddof=1) if n > 1 else np.nan
+            if stddev not in (np.nan, 0):
+                t_stat = pfi_mean / (stddev / math.sqrt(n))
+                p_value = scipy.stats.t.sf(t_stat, n - 1)
+            elif stddev == 0:
+                p_value = 0.5
+
+            # calculate confidence intervals
+            if np.nan in (stddev, n, pfi_mean) or n == 1:
+                ci_high = np.nan
+                ci_low = np.nan
+            else:
+                t_val = scipy.stats.t.ppf(1 - (1 - confidence_level) / 2, n - 1)
+                ci_high = pfi_mean + t_val * stddev / math.sqrt(n)
+                ci_low = pfi_mean - t_val * stddev / math.sqrt(n)
+
+            # save results
+            results_df.loc[len(results_df)] = [
+                name,
+                pfi_mean,
+                stddev,
+                p_value,
+                n,
+                ci_low,
+                ci_high,
+            ]
+
+        results_df = results_df.sort_values(by="importance", ascending=False)
+        self.feature_importances["permutation" + "_" + partition] = results_df
+
     def calculate_fi_permutation(self, partition="dev", n_repeats=10):
         """Permutation feature importance."""
         print(
@@ -280,31 +382,94 @@ class Training:
             scoring_type = scorer_string_inventory[self.target_metric]
 
         if partition == "dev":
-            perm_importance = permutation_importance(
-                self.model,
-                X=self.x_dev,
-                y=self.y_dev,
-                n_repeats=n_repeats,
-                random_state=0,
-                scoring=scoring_type,
-            )
+            x = self.x_dev
+            y = self.y_dev
         elif partition == "test":
-            perm_importance = permutation_importance(
-                self.model,
-                X=self.x_test,
-                y=self.y_test,
-                n_repeats=n_repeats,
-                random_state=0,
-                scoring=scoring_type,
-            )
+            x = self.x_test
+            y = self.y_test
+
+        perm_importance = permutation_importance(
+            self.model,
+            X=x,
+            y=y,
+            n_repeats=n_repeats,
+            random_state=0,
+            scoring=scoring_type,
+        )
+
         fi_df = pd.DataFrame()
         fi_df["feature"] = self.feature_columns
         fi_df["importance"] = perm_importance.importances_mean
         fi_df["importance_std"] = perm_importance.importances_std
         self.feature_importances["permutation" + "_" + partition] = fi_df
 
-    def calculate_fi_shap(self, partition="dev"):
-        """Shap feature importance."""
+    def calculate_fi_lofo(self):
+        """LOFO feature importance."""
+        print("Calculating LOFO feature importance. This may take a while...")
+        # first, dev only
+        feature_columns = self.feature_columns
+        # calculate dev+test baseline scores
+        baseline_dev = get_performance_score(
+            self.model,
+            self.data_dev,
+            feature_columns,
+            self.target_metric,
+            self.target_assignments,
+        )
+        baseline_test = get_performance_score(
+            self.model,
+            self.data_test,
+            feature_columns,
+            self.target_metric,
+            self.target_assignments,
+        )
+
+        # create features dict
+        feature_columns_dict = {x: [x] for x in feature_columns}
+        lofo_features = {**feature_columns_dict, **self.feature_groups}
+
+        # lofo
+        fi_dev_df = pd.DataFrame(columns=["feature", "importance"])
+        fi_test_df = pd.DataFrame(columns=["feature", "importance"])
+        for name, lofo_feature in lofo_features.items():
+            selected_features = copy.deepcopy(feature_columns)
+            model = copy.deepcopy(self.model)
+            selected_features = [x for x in selected_features if x not in lofo_feature]
+            # retrain model
+            if len(self.target_assignments) == 1:
+                # standard sklearn single target models
+                model.fit(
+                    self.data_train[selected_features],
+                    self.y_train.squeeze(axis=1),
+                )
+            else:
+                # multi target models, incl. time2event
+                model.fit(self.data_train[selected_features], self.y_train)
+
+            # get lofo dev + test scores
+            score_dev = get_performance_score(
+                model,
+                self.data_dev,
+                selected_features,
+                self.target_metric,
+                self.target_assignments,
+            )
+            score_test = get_performance_score(
+                model,
+                self.data_test,
+                selected_features,
+                self.target_metric,
+                self.target_assignments,
+            )
+
+            fi_dev_df.loc[len(fi_dev_df)] = [name, baseline_dev - score_dev]
+            fi_test_df.loc[len(fi_test_df)] = [name, baseline_test - score_test]
+
+        self.feature_importances["lofo" + "_dev"] = fi_dev_df
+        self.feature_importances["lofo" + "_test"] = fi_test_df
+
+    def calculate_fi_featuresused_shap(self, partition="dev"):
+        """Shap feature importance, specifically for calc_features_used."""
         print("Calculating shape feature importances. This may take a while...")
         # Initialize shape explainer using training data
         # improve speed by self.x_train.sample(n=100, replace=True, random_state=0)
@@ -314,7 +479,7 @@ class Training:
         if self.ml_type == "timetoevent":
             raise ValueError("Shap feature importance not supported for timetoevent")
         else:
-            # this works for line linear and tree models
+            # this works for linear and tree models
             explainer = shap.Explainer(
                 self.model,
                 self.x_train,
@@ -331,9 +496,9 @@ class Training:
                 raise ValueError("dataset type not supported")
 
         # Calculate the feature importances as the absolute mean of SHAP values
-        if isinstance(shap_values, list):  # shap < 0.45, multi-output, e.g. 2 classes
+        if isinstance(shap_values, list):  # shap v.< 0.45, multi-output, e.g. 2 classes
             feature_importances = np.abs(shap_values[0]).mean(axis=0)
-        elif isinstance(shap_values, np.ndarray):  # shap >= 0.45 or single output
+        elif isinstance(shap_values, np.ndarray):  # shap v. >= 0.45 or single output
             if shap_values.ndim == 2:  # single output
                 feature_importances = np.abs(shap_values).mean(axis=0)
             elif (
@@ -348,6 +513,65 @@ class Training:
         fi_df = pd.DataFrame()
         fi_df["feature"] = self.feature_columns
         fi_df["importance"] = feature_importances
+        # remove features with extremely small fi
+        fi_df = fi_df[fi_df["importance"] > fi_df["importance"].max() / 1000]
+        self.feature_importances["shap" + "_" + partition] = fi_df
+
+    def calculate_fi_shap(self, partition="dev", shap_type="kernel"):
+        """Shap feature importance."""
+        print(
+            f"Calculating shape feature importances ({partition})"
+            ". This may take a while..."
+        )
+        # here we use model agnostic methods to estimate shap values
+        # methods: (a) kernel (b) permutation (c) exact
+
+        if self.ml_type == "classification":
+            model = self.model.predict_proba
+        else:
+            model = self.model.predict
+
+        # select data
+        if partition == "dev":
+            data = self.x_dev
+        elif partition == "test":
+            data = self.x_test
+        else:
+            raise ValueError("dataset type not supported")
+
+        # select explainer based on shap_type
+        if shap_type == "exact":
+            explainer = shap.explainers.Exact(model, data)
+        elif shap_type == "permutation":
+            explainer = shap.explainers.Permutation(model, data)
+        elif shap_type == "kernel":
+            explainer = shap.explainers.Kernel(model, data)
+        else:
+            raise ValueError(f"Shap type {shap_type} not supported.")
+
+        # get shap values
+        shap_values = explainer(data).values
+
+        # Calculate the feature importances as the absolute mean of SHAP values
+        if isinstance(shap_values, list):  # shap v.< 0.45, multi-output, e.g. 2 classes
+            feature_importances = np.abs(shap_values[0]).mean(axis=0)
+        elif isinstance(shap_values, np.ndarray):  # shap v. >= 0.45 or single output
+            if shap_values.ndim == 2:  # single output
+                feature_importances = np.abs(shap_values).mean(axis=0)
+            elif (
+                shap_values.ndim == 3
+            ):  # multi-output (e.g. 2 classes) for shap v. >= 0.45
+                feature_importances = np.abs(shap_values[:, :, 0]).mean(axis=0)
+            else:
+                raise TypeError("Type error shape_value")
+        else:
+            raise TypeError("Type error shape_value")
+
+        fi_df = pd.DataFrame()
+        fi_df["feature"] = data.columns.tolist()
+        fi_df["importance"] = feature_importances
+        # remove features with extremely small fi
+        fi_df = fi_df[fi_df["importance"] > fi_df["importance"].max() / 1000]
         self.feature_importances["shap" + "_" + partition] = fi_df
 
     def predict(self, x):

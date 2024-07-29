@@ -9,6 +9,7 @@ from octopus.data import OctoData, QualityChecker
 
 @pytest.fixture
 def df_data():
+    """Sample data."""
     df_data = pd.DataFrame(
         {
             "target_0": [0, 1, 0, 1],

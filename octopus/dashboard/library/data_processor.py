@@ -7,9 +7,9 @@ import optuna
 import pandas as pd
 from attrs import asdict, define, field
 
-from octopus.config import OctoConfig
+from octopus.config.core import OctoConfig
 from octopus.data import OctoData
-from octopus.modules.metrics import metrics_inventory
+from octopus.metrics import metrics_inventory
 
 
 @define
@@ -201,21 +201,29 @@ class ResultsDataProcessor:
         """Get configurations."""
         # get config files
         config_files = list(self.study_path.glob("**/config.pkl"))
-        config_file = OctoConfig.from_pickle(config_files[0])
+        configs = OctoConfig.from_pickle(config_files[0])
 
-        # manager config
-        df_config_manager = (
-            pd.DataFrame.from_dict(
-                {key: str(value) for key, value in config_file.cfg_manager.items()},
-                orient="index",
-            )
-            .reset_index()
-            .set_axis(["Parameter", "Value"], axis="columns")
+        # config study
+        df_config_study = pd.DataFrame(
+            [
+                (key, str(value) if not isinstance(value, (int, float, str)) else value)
+                for key, value in asdict(configs.study).items()
+            ],
+            columns=["Parameter", "Value"],
+        )
+
+        # config study
+        df_config_manager = pd.DataFrame(
+            [
+                (key, str(value) if not isinstance(value, (int, float, str)) else value)
+                for key, value in asdict(configs.manager).items()
+            ],
+            columns=["Parameter", "Value"],
         )
 
         # sequence config
         df_config_sequence = pd.DataFrame()
-        for idx, sequence in enumerate(config_file.cfg_sequence):
+        for idx, sequence in enumerate(configs.sequence.sequence_items):
             df_config_sequence_temp = pd.DataFrame.from_dict(
                 {
                     key: (
@@ -223,7 +231,7 @@ class ResultsDataProcessor:
                         if not isinstance(value, (int, float, str))
                         else value
                     )
-                    for key, value in sequence.items()
+                    for key, value in asdict(sequence).items()
                 },
                 orient="index",
             )
@@ -236,23 +244,6 @@ class ResultsDataProcessor:
             ["Parameter", "Value", "sequence_id"], axis="columns"
         )
 
-        # study config
-        df_config_study = (
-            pd.DataFrame.from_dict(
-                {
-                    key: (
-                        str(value)
-                        if not isinstance(value, (int, float, str))
-                        else value
-                    )
-                    for key, value in asdict(config_file).items()
-                    if key not in ["cfg_manager", "cfg_sequence"]
-                },
-                orient="index",
-            )
-            .reset_index()
-            .set_axis(["Parameter", "Value"], axis="columns")
-        )
         return df_config_study, df_config_manager, df_config_sequence
 
     def get_feature_importances(self) -> pd.DataFrame:

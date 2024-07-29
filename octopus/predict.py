@@ -2,10 +2,10 @@
 
 # import itertools
 import math
+import warnings
 from pathlib import Path
 
 import matplotlib.pyplot as plt
-import networkx as nx
 import numpy as np
 import pandas as pd
 import scipy.stats
@@ -13,10 +13,16 @@ import shap
 from attrs import define, field, validators
 from matplotlib.backends.backend_pdf import PdfPages
 
-from octopus.data import OctoData
+from octopus.data.data_core import OctoData
 from octopus.experiment import OctoExperiment
-from octopus.modules.metrics import metrics_inventory
-from octopus.modules.utils import optuna_direction, rdc_correlation_matrix
+from octopus.modules.utils import get_performance_score
+
+# Suppress specific sklearn warning
+warnings.filterwarnings(
+    "ignore",
+    category=UserWarning,
+    message="X does not have valid feature names",
+)
 
 # TOBEDONE
 # (1) !calculate_fi(data_df)
@@ -56,7 +62,7 @@ class OctoPredict:
     @property
     def n_experiments(self) -> int:
         """Number of experiments."""
-        return self.config.n_folds_outer
+        return self.config.study.n_folds_outer
 
     def __attrs_post_init__(self):
         # initialization here due to "Python immutable default"
@@ -93,9 +99,9 @@ class OctoPredict:
                     "feature_columns": experiment.feature_columns,
                     "row_column": experiment.row_column,
                     "target_assignments": experiment.target_assignments,
-                    "target_metric": experiment.config["target_metric"],
-                    "ml_type": experiment.config["ml_type"],
-                    "feature_group_dict": dict(),
+                    "target_metric": experiment.configs.study.target_metric,
+                    "ml_type": experiment.configs.study.ml_type,
+                    "feature_group_dict": experiment.feature_groups,
                 }
         print(f"{len(experiments)} experiment(s) out of {self.n_experiments} found.")
         return experiments
@@ -218,10 +224,10 @@ class OctoPredict:
         data: pd.DataFrame,
         n_repeat: int = 10,
         fi_type: str = "permutation",
-        shap_type: str = "exact",
+        shap_type: str = "kernel",
     ) -> pd.DataFrame:
         """Calculate feature importances on new data."""
-        if shap_type not in ["exact", "permutation"]:
+        if shap_type not in ["exact", "permutation", "kernel"]:
             raise ValueError("Specified shap_type not supported.")
 
         # feature importances for every single available experiment/model
@@ -274,12 +280,12 @@ class OctoPredict:
     def calculate_fi_test(
         self,
         n_repeat: int = 10,
-        fi_type: str = "permutation",
+        fi_type: str = "group_permutation",
         experiment_id: int = -1,
         shap_type: str = "exact",
     ) -> pd.DataFrame:
         """Calculate feature importances on available test data."""
-        if shap_type not in ["exact", "permutation"]:
+        if shap_type not in ["exact", "permutation", "kernel"]:
             raise ValueError("Specified shap_type not supported.")
 
         print("Calculating feature importances for every experiment/model.")
@@ -346,36 +352,6 @@ class OctoPredict:
             pdf.savefig(plt.gcf(), orientation="portrait")
             plt.close()
 
-    def _get_performance_score(
-        self, model, data, feature_columns, target_metric, target_assignments
-    ) -> float:
-        """Calculate model performance score on dataset."""
-        if target_metric in ["AUCROC", "LOGLOSS"]:
-            target_col = list(target_assignments.values())[0]
-            target = data[target_col]
-            probabilities = model.predict_proba(data[feature_columns])[
-                :, 1
-            ]  # binary only!!
-            score = metrics_inventory[target_metric]["method"](target, probabilities)
-        elif target_metric in ["CI"]:
-            estimate = model.predict(data)
-            event_time = data[target_assignments["duration"]].astype(float)
-            event_indicator = data[target_assignments["event"]].astype(bool)
-            score, _, _, _, _ = metrics_inventory[target_metric]["method"](
-                event_indicator, event_time, estimate
-            )
-        else:
-            target_col = list(target_assignments.values())[0]
-            target = data[target_col]
-            probabilities = model.predict(data)
-            score = metrics_inventory[target_metric]["method"](target, probabilities)
-
-        # make sure that the sign of the feature importances is correct
-        if optuna_direction(target_metric) == "maximize":
-            return score
-        else:
-            return -score
-
     def _get_fi_permutation(self, experiment, n_repeat, data) -> pd.DataFrame:
         """Calculate permutation feature importances."""
         # fixed confidence level
@@ -397,7 +373,7 @@ class OctoPredict:
         # MISSING
 
         # calculate baseline score
-        baseline_score = self._get_performance_score(
+        baseline_score = get_performance_score(
             model, data, feature_columns, target_metric, target_assignments
         )
 
@@ -425,7 +401,7 @@ class OctoPredict:
                 data_pfi[feature] = np.random.choice(
                     data_all[feature], len(data_pfi), replace=False
                 )
-                pfi_score = self._get_performance_score(
+                pfi_score = get_performance_score(
                     model, data_pfi, feature_columns, target_metric, target_assignments
                 )
                 fi_lst.append(baseline_score - pfi_score)
@@ -467,13 +443,13 @@ class OctoPredict:
         """Calculate permutation feature importances."""
         # fixed confidence level
         confidence_level = 0.95
-        auto_group_threshold = 0.6
         feature_columns = experiment["feature_columns"]
         data_traindev = experiment["data_traindev"]
         data_test = experiment["data_test"]
         target_assignments = experiment["target_assignments"]
         target_metric = experiment["target_metric"]
         model = experiment["model"]
+        feature_groups = experiment["feature_group_dict"]
 
         # initialize feature_groups_dict
         experiment["feature_group_dict"] = dict()
@@ -487,41 +463,13 @@ class OctoPredict:
         # check that targets are in dataset
         # MISSING
 
-        # calculate auto-groups
-        # (a1) spearmamr correlation matrix
-        # feature_matrix = data_traindev[feature_columns].values
-        # corr_matrix, _ = scipy.stats.spearmanr(np.nan_to_num(feature_matrix))
-        # corr_matrix = np.abs(corr_matrix)
-        # (a2) rdc correlation matrix
-        pos_corr_matrix = np.abs(rdc_correlation_matrix(data_traindev[feature_columns]))
-
-        g = nx.Graph()
-
-        for i in range(len(feature_columns)):
-            for j in range(i + 1, len(feature_columns)):
-                if pos_corr_matrix[i, j] > auto_group_threshold:
-                    g.add_edge(i, j)
-
-        subgraphs = [g.subgraph(c) for c in nx.connected_components(g)]
-
-        groups = []
-        for sg in subgraphs:
-            groups.append([feature_columns[node] for node in sg.nodes()])
-
-        auto_groups = [sorted(g) for g in groups]
-        print("Number of auto-groups", len(auto_groups))
-        print("auto_groups", auto_groups)
-        # grouped_features = list(itertools.chain(*[list(g) for g in groups]))
-        # remove features already in groups
-        # features_list = [
-        #    [f] for f in list(set(feature_columns) - set(grouped_features))
-        # ] + auto_groups
-
         # keep all features and add group features
-        features_list = [[f] for f in feature_columns] + auto_groups
+        # create features dict
+        feature_columns_dict = {x: [x] for x in feature_columns}
+        features_dict = {**feature_columns_dict, **feature_groups}
 
         # calculate baseline score
-        baseline_score = self._get_performance_score(
+        baseline_score = get_performance_score(
             model, data, feature_columns, target_metric, target_assignments
         )
 
@@ -539,7 +487,8 @@ class OctoPredict:
                 "ci_high_95",
             ]
         )
-        for feature in features_list:
+        # calculate pfi
+        for name, feature in features_dict.items():
             data_pfi = data.copy()
             fi_lst = list()
 
@@ -550,7 +499,7 @@ class OctoPredict:
                     data_pfi[feat] = np.random.choice(
                         data_all[feat], len(data_pfi), replace=False
                     )
-                pfi_score = self._get_performance_score(
+                pfi_score = get_performance_score(
                     model, data_pfi, feature_columns, target_metric, target_assignments
                 )
                 fi_lst.append(baseline_score - pfi_score)
@@ -575,17 +524,9 @@ class OctoPredict:
                 ci_high = pfi_mean + t_val * stddev / math.sqrt(n)
                 ci_low = pfi_mean - t_val * stddev / math.sqrt(n)
 
-            # give a feature group a group name, for visualization purposes
-            if len(feature) > 1:
-                group_nr = len(experiment["feature_group_dict"])
-                feature_name = f"group{group_nr}"
-                experiment["feature_group_dict"][feature_name] = "_".join(feature)
-            else:
-                feature_name = feature[0]
-
             # save results
             results_df.loc[len(results_df)] = [
-                feature_name,
+                name,
                 pfi_mean,
                 stddev,
                 p_value,
@@ -616,16 +557,26 @@ class OctoPredict:
         if ml_type == "classification":
             if shap_type == "exact":
                 explainer = shap.explainers.Exact(model.predict_proba, data)
-            else:
+            elif shap_type == "permutation":
                 explainer = shap.explainers.Permutation(model.predict_proba, data)
+            elif shap_type == "kernel":
+                explainer = shap.explainers.Kernel(model.predict_proba, data)
+            else:
+                raise ValueError(f"Shap type {shap_type} not supported.")
+
             shap_values = explainer(data)
             # only use pos class
             shap_values = shap_values[:, :, 1]  # pylint: disable=E1126
         else:
             if shap_type == "exact":
                 explainer = shap.explainers.Exact(model.predict, data)
-            else:
+            elif shap_type == "permutation":
                 explainer = shap.explainers.Permutation(model.predict, data)
+            elif shap_type == "kernel":
+                explainer = shap.explainers.Kernel(model.predict, data)
+            else:
+                raise ValueError(f"Shap type {shap_type} not supported.")
+
             shap_values = explainer(data)
 
         results_path = self.study_path.joinpath(
@@ -665,5 +616,8 @@ class OctoPredict:
         shap_fi_df = shap_fi_df.sort_values(
             by="importance", ascending=False
         ).reset_index(drop=True)
+        # remove features with extremely small fi
+        threshold = shap_fi_df["importance"].max() / 1000
+        shap_fi_df = shap_fi_df[shap_fi_df["importance"] > threshold]
 
         return shap_fi_df

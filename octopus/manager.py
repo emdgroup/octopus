@@ -9,9 +9,9 @@ from pathlib import Path
 from attrs import define, field, validators
 from joblib import Parallel, delayed
 
-from octopus.config import OctoConfig
+from octopus.config.core import OctoConfig
 from octopus.experiment import OctoExperiment
-from octopus.modules.config import modules_inventory
+from octopus.modules import modules_inventory
 
 
 @define
@@ -21,31 +21,29 @@ class OctoManager:
     base_experiments: list = field(
         validator=[validators.instance_of(list)],
     )
-    oconfig: OctoConfig = field(
+    configs: OctoConfig = field(
         validator=[validators.instance_of(OctoConfig)],
     )
 
-    def __attrs_post_init__(self):
-        # set defaults in cfg_manager
-        self.oconfig.cfg_manager.setdefault("run_single_experiment_num", -1)
-        self.oconfig.cfg_manager.setdefault("outer_parallelization", False)
+    # def __attrs_post_init__(self):
+    # set defaults in cfg_manager
+    # self.configs.manager.setdefault("run_single_experiment_num", -1)
+    # self.configs.manager.setdefault("outer_parallelization", False)
 
     def run_outer_experiments(self):
         """Run outer experiments."""
         print("Preparing execution of experiments.......")
-        print(
-            "Outer parallelization:", self.oconfig.cfg_manager["outer_parallelization"]
-        )
-        single_exp = self.oconfig.cfg_manager["run_single_experiment_num"]
+        print("Outer parallelization:", self.configs.manager.outer_parallelization)
+        single_exp = self.configs.manager.run_single_experiment_num
         if single_exp == -1:
             print("Run all experiments")
         else:
             print("Run single experiment:", single_exp)
         print()
         print("Parallel execution info")
-        print("Number of outer folds: ", self.oconfig.n_folds_outer)
+        print("Number of outer folds: ", self.configs.study.n_folds_outer)
         print("Number of logical CPUs:", cpu_count())
-        num_workers = min([self.oconfig.n_folds_outer, cpu_count()])
+        num_workers = min([self.configs.study.n_folds_outer, cpu_count()])
         print("Number of outer fold workers:", num_workers)
         print()
 
@@ -56,13 +54,13 @@ class OctoManager:
             print("Only running experiment:", single_exp)
             self.create_execute_mlmodules(self.base_experiments[single_exp])
 
-        elif self.oconfig.cfg_manager["outer_parallelization"] is False:  # sequential
+        elif self.configs.manager.outer_parallelization is False:  # sequential
             for cnt, base_experiment in enumerate(self.base_experiments):
                 print("#### Outerfold:", cnt)
                 self.create_execute_mlmodules(base_experiment)
                 print()
         # tobedone: suppress output
-        elif self.oconfig.cfg_manager["outer_parallelization"] is True:  # parallel
+        elif self.configs.manager.outer_parallelization is True:  # parallel
             # (A) code using joblib
             def execute_task(base_experiment, index):
                 try:
@@ -100,18 +98,18 @@ class OctoManager:
         """Create and execute ml modules."""
         selected_features = []
         prior_feature_importances = {}
-        for cnt, element in enumerate(self.oconfig.cfg_sequence):
+        for cnt, element in enumerate(self.configs.sequence.sequence_items):
             print("------------------------------------------")
             print("Step:", cnt)
-            print("Module:", element["module"])
-            print("Description:", element["description"])
-            print("Load existing sequence item:", element["load_sequence_item"])
+            print("Module:", element.module)
+            print("Description:", element.description)
+            print("Load existing sequence item:", element.load_sequence_item)
 
             # sequence item is created and not load
-            if not element["load_sequence_item"]:
+            if not element.load_sequence_item:
                 # add config to experiment
                 experiment = copy.deepcopy(base_experiment)
-                experiment.ml_module = element["module"]
+                experiment.ml_module = element.module
                 experiment.ml_config = element
                 experiment.id = experiment.id + "_" + str(cnt)
                 experiment.sequence_item_id = cnt
@@ -120,13 +118,13 @@ class OctoManager:
                 )
 
                 # calculating number of CPUs available to every experiment
-                if self.oconfig.cfg_manager["outer_parallelization"]:
+                if self.configs.manager.outer_parallelization:
                     experiment.num_assigned_cpus = math.floor(
-                        cpu_count() / self.oconfig.n_folds_outer
+                        cpu_count() / self.configs.study.n_folds_outer
                     )
                 else:
                     experiment.num_assigned_cpus = cpu_count()
-                if self.oconfig.cfg_manager["run_single_experiment_num"] != -1:
+                if self.configs.manager.run_single_experiment_num != -1:
                     experiment.num_assigned_cpus = cpu_count()
 
                 # create directory for sequence item
@@ -139,18 +137,23 @@ class OctoManager:
                 path_save = path_study_sequence.joinpath(
                     f"exp{experiment.experiment_id}_{experiment.sequence_item_id}.pkl"
                 )
-                experiment.to_pickle(path_save)
 
                 # update features with selected features from previous run
                 if cnt > 0:
                     experiment.feature_columns = selected_features
                     experiment.prior_feature_importances = prior_feature_importances
 
+                # update feature groups as feature_columns may have changed
+                experiment.calculate_feature_groups()
+
                 # get desired module and intitialze with experiment
                 if experiment.ml_module in modules_inventory:
                     module = modules_inventory[experiment.ml_module](experiment)
                 else:
                     raise ValueError(f"ml_module {experiment.ml_module} not supported")
+
+                # save experiment before running module
+                experiment.to_pickle(path_save)
 
                 # run module and overwrite experiment
                 experiment = module.run_experiment()

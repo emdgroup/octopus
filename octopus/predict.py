@@ -13,7 +13,7 @@ import shap
 from attrs import define, field, validators
 from matplotlib.backends.backend_pdf import PdfPages
 
-from octopus.data import OctoData
+from octopus.data.data_core import OctoData
 from octopus.experiment import OctoExperiment
 from octopus.modules.utils import get_performance_score
 

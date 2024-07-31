@@ -9,9 +9,11 @@ import numpy as np
 import pandas as pd
 from attrs import Factory, define, field, validators
 
-# Configure logging
-logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
+from octopus.logger import configure_logging
 
+# Configure logging
+# logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
+configure_logging()
 # tobedone:
 # - identify categorical columns -- require pandas categorical
 # - dtype check

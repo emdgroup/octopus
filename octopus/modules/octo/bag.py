@@ -315,7 +315,8 @@ class Bag:
             self.feature_importances[method_str + "_mean"] = (
                 fi[["feature", "importance"]]
                 .groupby(by="feature")
-                .mean()
+                .sum()
+                .div(len(self.trainings))  # not all features in each fi-table
                 .sort_values(by="importance", ascending=False)
                 .reset_index()
             )

@@ -1,6 +1,7 @@
 """OctoFull core function."""
 
 # import concurrent.futures
+import copy
 import json
 import shutil
 import warnings
@@ -14,6 +15,7 @@ from optuna.samplers._tpe.sampler import ExperimentalWarning
 
 from octopus.experiment import OctoExperiment
 from octopus.modules.octo.bag import Bag
+from octopus.modules.octo.enssel import EnSel
 from octopus.modules.octo.objective_optuna import ObjectiveOptuna
 from octopus.modules.octo.training import Training
 from octopus.utils import DataSplit
@@ -39,6 +41,13 @@ for line in [319, 330, 338]:
 # - check that openblas settings are correct and suggest solutions
 
 # TOBEDONE OCTOFULL
+# - (0) ensemble selection - use training weight
+#       training weight needs to be considere in bag fi, score, predict
+# - (1) ensemble selection - missing
+#       - save best bag scores to the experiment
+#       - calculate and save specified feature importances of best bag
+#       - save selected features to experiment
+#       - save test predictions to experiment
 # - (1) complete ensemble selection -- important for mrmr!, feature counts, etc..
 # - (2) Clean up fi code and, remove duplicates and put into one place!
 # - (3) predict group_pfi --- now based on feature_groups (may not use rdc) for
@@ -243,6 +252,83 @@ class OctoCore:
 
     def _run_ensemble_selection(self):
         """Run ensemble selection."""
+        ensel = EnSel(
+            target_metric="AUCROC",
+            path_trials=Path("./studies/Titanic/experiment1/sequence0/trials/"),
+            max_n_iterations=100,
+            row_column="row_id",
+            target_assignments={"default": "survived"},
+        )
+        ensemble_paths_dict = ensel.optimized_ensemble
+        self._create_ensemble_bag(ensemble_paths_dict)
+
+    def _create_ensemble_bag(self, ensemble_paths_dict):
+        """Create ensemble bag from a ensemble path dict."""
+        if len(ensemble_paths_dict) == 0:
+            raise ValueError("Valid ensemble information need to be provided")
+
+        # extract trainings
+        # here, we don't use the weight info
+        # this requires more work for scores and feature importances
+        trainings = list()
+        training_id = 0
+        for path, weight in ensemble_paths_dict:
+            bag = Bag.from_pickle(path)
+            for training in bag.trainings:
+                # training.training_weight - tobedone
+                for _ in range(int(weight)):
+                    train_cp = copy.deepcopy(training)
+                    train_cp.training_id = training_id
+                    train_cp.training_weight = 1.0
+                    training_id = training_id + 1
+                    trainings.append(train_cp)
+
+        # create ensemble bag
+        ensemble_bag = Bag(
+            bag_id=self.experiment.id + "_ensel",
+            trainings=trainings,
+            train_status=True,
+            target_assignments=self.experiment.target_assignments,
+            parallel_execution=self.experiment.ml_config.inner_parallelization,
+            num_workers=self.experiment.ml_config.n_workers,
+            target_metric=self.experiment.config.target_metric,
+            row_column=self.experiment.row_column,
+        )
+        # save best bag
+        ensemble_bag.to_pickle(self.path_results.joinpath("ensel_bag.pkl"))
+
+        # save performance values of best bag
+        ensel_scores = ensemble_bag.get_scores()
+        # show and save test results
+        print(
+            f"Experiment: {self.experiment.id} "
+            f"{self.experiment.configs.study.target_metric} (ensembled, hard vote):"  # noqa E501
+            f"Dev {ensel_scores['dev_pool_hard']:.3f}, "
+            f"Test {ensel_scores['test_pool_hard']:.3f}"
+        )
+        if self.experiment.ml_type == "classification":
+            print(
+                f"Experiment: {self.experiment.id} "
+                f"{self.experiment.configs.study.target_metric} (ensembled, soft vote):"  # noqa E501
+                f"Dev {ensel_scores['dev_pool_soft']:.3f}, "
+                f"Test {ensel_scores['test_pool_soft']:.3f}"
+            )
+
+        with open(
+            self.path_results.joinpath("ensel_scores_scores.json"),
+            "w",
+            encoding="utf-8",
+        ) as f:
+            json.dump(ensel_scores, f)
+
+        # save best bag to the experiment
+        self.experiment.models["ensel"] = ensemble_bag
+
+        # MISSING:
+        # - save best bag scores to the experiment
+        # - calculate and save specified feature importances of best bag
+        # - save selected features to experiment
+        # - save test predictions to experiment
 
     def _create_best_bag(self):
         """Create best bag from bags found in results.

@@ -46,7 +46,7 @@ def get_performance_score(
         ]  # binary only!!
         score = metrics_inventory[target_metric]["method"](target, probabilities)
     elif target_metric in ["CI"]:
-        estimate = model.predict(data)
+        estimate = model.predict(data[feature_columns])
         event_time = data[target_assignments["duration"]].astype(float)
         event_indicator = data[target_assignments["event"]].astype(bool)
         score, _, _, _, _ = metrics_inventory[target_metric]["method"](

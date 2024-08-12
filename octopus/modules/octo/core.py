@@ -44,6 +44,7 @@ for line in [319, 330, 338]:
 # - (0) ensemble selection - use training weight
 #       training weight needs to be considere in bag fi, score, predict
 # - (1) ensemble selection - missing
+#       - max_n_iterations need to become configurable
 #       - save best bag scores to the experiment
 #       - calculate and save specified feature importances of best bag
 #       - save selected features to experiment
@@ -253,11 +254,11 @@ class OctoCore:
     def _run_ensemble_selection(self):
         """Run ensemble selection."""
         ensel = EnSel(
-            target_metric="AUCROC",
-            path_trials=Path("./studies/Titanic/experiment1/sequence0/trials/"),
+            target_metric=self.experiment.configs.study.target_metric,
+            path_trials=self.path_trials,
             max_n_iterations=100,
-            row_column="row_id",
-            target_assignments={"default": "survived"},
+            row_column=self.experiment.row_column,
+            target_assignments=self.experiment.target_assignments,
         )
         ensemble_paths_dict = ensel.optimized_ensemble
         self._create_ensemble_bag(ensemble_paths_dict)
@@ -271,16 +272,16 @@ class OctoCore:
         # here, we don't use the weight info
         # this requires more work for scores and feature importances
         trainings = list()
-        training_id = 0
-        for path, weight in ensemble_paths_dict:
+        train_id = 0
+        for path, weight in ensemble_paths_dict.items():
             bag = Bag.from_pickle(path)
             for training in bag.trainings:
                 # training.training_weight - tobedone
                 for _ in range(int(weight)):
                     train_cp = copy.deepcopy(training)
-                    train_cp.training_id = training_id
-                    train_cp.training_weight = 1.0
-                    training_id = training_id + 1
+                    train_cp.training_id = self.experiment.id + "_" + str(train_id)
+                    train_cp.training_weight = 1
+                    train_id += 1
                     trainings.append(train_cp)
 
         # create ensemble bag
@@ -291,7 +292,7 @@ class OctoCore:
             target_assignments=self.experiment.target_assignments,
             parallel_execution=self.experiment.ml_config.inner_parallelization,
             num_workers=self.experiment.ml_config.n_workers,
-            target_metric=self.experiment.config.target_metric,
+            target_metric=self.experiment.configs.study.target_metric,
             row_column=self.experiment.row_column,
         )
         # save best bag
@@ -300,6 +301,7 @@ class OctoCore:
         # save performance values of best bag
         ensel_scores = ensemble_bag.get_scores()
         # show and save test results
+        print("Ensemble selection performance")
         print(
             f"Experiment: {self.experiment.id} "
             f"{self.experiment.configs.study.target_metric} (ensembled, hard vote):"  # noqa E501

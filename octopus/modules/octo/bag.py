@@ -2,10 +2,11 @@
 
 # import concurrent.futures
 # import logging
-import gzip
+# import gzip
 import pickle
 from statistics import mean
 
+import lz4.frame
 import numpy as np
 import pandas as pd
 from attrs import define, field, validators
@@ -294,9 +295,9 @@ class Bag:
 
         # save feature importances for every training in bag
         for training in self.trainings:
-            self.feature_importances[
-                training.training_id
-            ] = training.feature_importances
+            self.feature_importances[training.training_id] = (
+                training.feature_importances
+            )
 
         # summary feature importances for all trainings (mean + count)
         # internal, permutation_dev, shap_dev only
@@ -358,7 +359,9 @@ class Bag:
         Args:
             file_path: The name of the file to save the pickle data to.
         """
-        with gzip.GzipFile(file_path, "wb") as file:
+        # with gzip.GzipFile(file_path, "wb") as file:
+        #    pickle.dump(self, file)
+        with lz4.frame.open(file_path, "wb") as file:
             pickle.dump(self, file)
 
     @classmethod
@@ -371,5 +374,7 @@ class Bag:
         Returns:
             Bag: The loaded instance of Bag.
         """
-        with gzip.GzipFile(file_path, "rb") as file:
+        # with gzip.GzipFile(file_path, "rb") as file:
+        #    return pickle.load(file)
+        with lz4.frame.open(file_path, "rb") as file:
             return pickle.load(file)

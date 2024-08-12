@@ -21,7 +21,12 @@ def configure_logging():
                 "level": "INFO",
                 "handlers": ["console"],
                 "propagate": False,
-            }
+            },
+            "optuna": {
+                "level": "INFO",
+                "handlers": ["console"],
+                "propagate": False,
+            },
         },
         "root": {"level": "DEBUG", "handlers": ["console"]},
     }

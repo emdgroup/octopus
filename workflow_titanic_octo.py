@@ -115,7 +115,7 @@ config_sequence = ConfigSequence(
             n_workers=5,
             # HPO
             global_hyperparameter=True,
-            n_trials=50,
+            n_trials=500,
             # ensemble selection
             ensemble_selection=True,
             ensel_n_save_trials=50,

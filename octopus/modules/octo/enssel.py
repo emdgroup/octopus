@@ -193,16 +193,23 @@ class EnSel:
 
         # ensemble_optimmization, reference score
         # we start with the bags found in ensemble scan
+        results_df = pd.DataFrame(columns=["model", "performance", "bags_lst"])
         start_bags = list(escan_ensemble.keys())
         scores = self._ensemble_models(start_bags)
         start_perf = scores[self.score_type]
         print("Ensemble optimization")
         print("Start performance:", start_perf)
+        # record start performance
+        results_df.loc[len(results_df)] = [
+            ["ensemble scan"],
+            start_perf,
+            copy.deepcopy(start_bags),
+        ]
 
         # optimization
         bags_ensemble = copy.deepcopy(start_bags)
         best_global = copy.deepcopy(start_perf)
-        results_df = pd.DataFrame(columns=["model", "performance", "bags_lst"])
+
         for i in range(self.max_n_iterations):
             df = pd.DataFrame(columns=["model", "performance"])
             # find additional model
@@ -232,7 +239,7 @@ class EnSel:
             # add best model to ensemble
             bags_ensemble.append(best_model)
 
-            # measure perfom
+            # record results
             results_df.loc[len(results_df)] = [
                 best_model,
                 best_performance,

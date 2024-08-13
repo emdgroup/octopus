@@ -25,6 +25,39 @@ scorer_string_inventory = {
 # - do RFE with model hyperparameter optimization at each RFE step
 # - use fixed parameters to silence catboost
 
+# RFE with grid search for HPO
+# import numpy as np
+# from sklearn.datasets import make_classification
+# from sklearn.model_selection import GridSearchCV
+# from sklearn.feature_selection import RFECV
+# from sklearn.ensemble import RandomForestClassifier
+# from sklearn.pipeline import Pipeline
+# from sklearn.model_selection import StratifiedKFold
+# Create a synthetic dataset
+# X, y = make_classification(n_samples=1000, n_features=20, random_state=42)
+# Define the model
+# model = RandomForestClassifier(random_state=42)
+# Define the parameter grid for hyperparameter tuning
+# param_grid = {
+#    'n_estimators': [50, 100, 200],
+#    'max_depth': [None, 10, 20, 30],
+#    'min_samples_split': [2, 5, 10]
+# }
+# Define the cross-validation strategy
+# cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
+# Create the GridSearchCV object
+# grid_search = GridSearchCV(estimator=model, param_grid=param_grid, cv=cv, n_jobs=-1, scoring='accuracy')
+# Create the RFECV object with GridSearchCV as the estimator
+# rfecv = RFECV(estimator=grid_search, step=1, cv=cv, scoring='accuracy', n_jobs=-1)
+# Fit the RFECV model
+# rfecv.fit(X, y)
+# Print the optimal number of features
+# print("Optimal number of features: %d" % rfecv.n_features_)
+# Print the selected features
+# print("Selected features: %s" % np.where(rfecv.support_)[0])
+# Print the best hyperparameters found
+# print("Best hyperparameters found: %s" % rfecv.estimator_.best_params_)
+
 
 @define
 class RfeCore:

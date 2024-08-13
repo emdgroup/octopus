@@ -12,26 +12,24 @@ class Rfe(BaseSequenceItem):
     module: str = field(default="rfe")
     """Module name."""
 
+    description: str = field(validator=[validators.instance_of(str)], default="")
+    """Description."""
+
     load_sequence_item: bool = field(
         init=False, validator=validators.instance_of(bool), default=False
     )
     """Load existing sequence item, fixed, set to False"""
 
+    model: str = field(validator=[validators.instance_of(str)], default="")
+    """Model used by RFE."""
+
+    step: int = field(validator=[validators.instance_of(int)], default=1)
+    """Number of features to remove at each iteration."""
+
+    min_features_to_select: int = field(
+        validator=[validators.instance_of(int)], default=1
+    )
+    """Minimum number of features to be selected."""
+
     cv: int = field(validator=[validators.instance_of(int)], default=5)
     """Number of CV folds for RFE_CV."""
-
-    # correlation_type: str = field(
-    #    validator=[validators.in_(["pearson", "rdc"])], default="pearson"
-    # )
-    # """Selection of correlation type."""
-    #
-    # feature_importance_type: str = field(
-    #    validator=[validators.in_(["mean", "count"])], default="mean"
-    # )
-    # """Selection of feature importance type."""
-    #
-    # feature_importance_method: str = field(
-    #    validator=[validators.in_(["permutation", "shap", "internal"])],
-    #    default="permutation",
-    # )
-    # """Selection of feature importance method."""

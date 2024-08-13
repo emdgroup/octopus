@@ -207,7 +207,7 @@ catboost_class = {
         ("fixed", {"name": "iterations", "value": 500}),
         # "Ordered" gives higher quality, but is slower
         # ("fixed", {"name": "boosting_type", "value": "Plain"}),  # "Plain, Ordered"
-        # ("fixed", {"name": "silent", "value": True}),
+        # ("fixed", {"name": "silent", "value": True}), # only set one verbose parameter
         ("fixed", {"name": "allow_writing_files", "value": False}),
         ("fixed", {"name": "verbose", "value": 250}),
     ],
@@ -228,7 +228,7 @@ catboost_reg = {
         ("fixed", {"name": "iterations", "value": 500}),
         # "Ordered" gives higher quality, but is slower
         # ("fixed", {"name": "boosting_type", "value": "Plain"}),  # "Plain, Ordered"
-        # ("fixed", {"name": "silent", "value": True}),
+        # ("fixed", {"name": "silent", "value": True}), # only set one verbose parameter
         ("fixed", {"name": "allow_writing_files", "value": False}),
         ("fixed", {"name": "verbose", "value": 250}),
     ],
@@ -238,7 +238,7 @@ catboost_reg = {
     },
 }
 
-# CatBoost regressor parameter settings
+# TabPFN classifier parameter settings
 tabpfn_class = {
     "default": [
         ("fixed", {"name": "N_ensemble_configurations", "value": 16}),

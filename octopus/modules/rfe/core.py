@@ -5,13 +5,30 @@ from pathlib import Path
 
 import pandas as pd
 from attrs import define, field, validators
+from sklearn.feature_selection import RFECV
 
 from octopus.experiment import OctoExperiment
+from octopus.models.models_inventory import model_inventory
+
+scorer_string_inventory = {
+    "AUCROC": "roc_auc",
+    "ACC": "accuracy_score",
+    "ACCBAL": "balanced_accuracy",
+    "LOGLOSS": "neg_log_loss",
+    "MAE": "neg_mean_absolute_error",
+    "MSE": "neg_mean_squared_error",
+    "R2": "r2",
+}
+# TOBEDONE:
+# - put scorer_string_inventory in central place
+# - print dev and test model performance after completion of rfe
+# - do RFE with model hyperparameter optimization at each RFE step
+# - use fixed parameters to silence catboost
 
 
 @define
 class RfeCore:
-    """RFE Core."""
+    """RFE Module."""
 
     experiment: OctoExperiment = field(
         validator=[validators.instance_of(OctoExperiment)]
@@ -54,6 +71,11 @@ class RfeCore:
         """Module configuration."""
         return self.experiment.ml_config
 
+    @property
+    def feature_columns(self) -> pd.DataFrame:
+        """Feature Columns."""
+        return self.experiment.feature_columns
+
     def __attrs_post_init__(self):
         # delete directories /trials /optuna /results to ensure clean state
         # of module when restarted
@@ -67,42 +89,46 @@ class RfeCore:
         """Run RFE module on experiment."""
         # run experiment and return updated experiment object
 
-        # Inputs:
-        # - self.config (see above) gives you access all config parameters
-        # - self.experiment.ml_type == "classification"  ["regression"]
-        # - self.x_traindev
-        # - self.y_traindev
-        # - self.x_test
-        # - self.y_test
-        # - self.experiment.feature_columns
-        # - target_metric = self.experiment.config["target_metric"]  #target metric
-        # - scoring_type = scorer_string_inventory[target_metric] # scoring type string
-        # - model = model_inventory[model_type]
-        # - model_type = "CatBoostRegressor" or "CatBoostClassifier"
+        # Configuration, define default model
+        if self.experiment.ml_type == "classification":
+            default_model = "CatBoostClassifier"
+        elif self.experiment.ml_type == "regression":
+            default_model = "CatBoostRegressor"
+        else:
+            raise ValueError(f"{self.experiment.ml_type} not supported")
 
-        # class sklearn.feature_selection.RFECV(estimator, *,
-        # step=1, min_features_to_select=1,
-        # cv=None, scoring=None, verbose=0, n_jobs=None, importance_getter='auto')
-        # I would suggest:
-        #  step=1 (configurable)
-        #  min_features_to_select=1 (configurable)
-        #  cv = 5 (configurable)
-        #  scoring - needs to be adjusted to the target metric
-        #  verbose =  0
-        #  n_jobs = 1 (configurate in module config)
-        #  importance_getter = 'auto' # here it would be nice to use
-        #  permutation feature importance
-        #
-        #
+        model_type = self.config.model
+        if model_type == "":
+            model_type = default_model
+        print("Model used:", model_type)
 
-        # scoring - we need a sklearn scoring functions.
-        # This is provided with metrics_inventory
-        # or use scoring_type, see above
-        # scorer = metrics_inventory[target_metric]["method"]
+        # set up model and scoring type
+        model = model_inventory[model_type]["model"]()
+        target_metric = self.experiment.configs.study.target_metric
+        scoring_type = scorer_string_inventory[target_metric]
+
+        rfecv = RFECV(
+            estimator=model,
+            step=self.config.step,
+            min_features_to_select=self.config.min_features_to_select,
+            cv=self.config.cv,
+            scoring=scoring_type,
+            verbose=0,
+            n_jobs=1,
+            importance_getter="auto",
+        )
+
+        rfecv.fit(self.x_traindev, self.y_traindev.squeeze(axis=1))
 
         print("RFE completed")
+        print(f"Optimal number of features: {rfecv.n_features_}")
 
         # save features selected by RFE
-        self.experiment.selected_features = []  # update
+        self.experiment.selected_features = [
+            self.feature_columns[i]
+            for i in range(len(rfecv.support_))
+            if rfecv.support_[i]
+        ]
+        print(f"Selected features: {self.experiment.selected_features}")
 
         return self.experiment

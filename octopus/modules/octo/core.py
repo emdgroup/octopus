@@ -8,7 +8,6 @@ import warnings
 from pathlib import Path
 
 import optuna
-import pandas as pd
 from attrs import define, field, validators
 from joblib import Parallel, delayed
 from optuna.samplers._tpe.sampler import ExperimentalWarning
@@ -18,6 +17,7 @@ from octopus.modules.octo.bag import Bag
 from octopus.modules.octo.enssel import EnSel
 from octopus.modules.octo.objective_optuna import ObjectiveOptuna
 from octopus.modules.octo.training import Training
+from octopus.results import ModelResults
 from octopus.utils import DataSplit
 
 # ignore three Optuna experimental warnings
@@ -41,6 +41,8 @@ for line in [319, 330, 338]:
 # - check that openblas settings are correct and suggest solutions
 
 # TOBEDONE OCTOFULL
+# - (0) selected features is currently only taken from best bag, and not ensel
+# - (0) fix sklearn due to new ModelResults
 # - (0) ensemble selection - use training weight
 #       training weight needs to be considere in bag fi, score, predict
 # - (1) ensemble selection - missing
@@ -285,7 +287,7 @@ class OctoCore:
                     trainings.append(train_cp)
 
         # create ensemble bag
-        ensemble_bag = Bag(
+        ensel_bag = Bag(
             bag_id=self.experiment.id + "_ensel",
             trainings=trainings,
             train_status=True,
@@ -295,11 +297,11 @@ class OctoCore:
             target_metric=self.experiment.configs.study.target_metric,
             row_column=self.experiment.row_column,
         )
-        # save best bag
-        ensemble_bag.to_pickle(self.path_results.joinpath("ensel_bag.pkl"))
+        # save ensel bag
+        ensel_bag.to_pickle(self.path_results.joinpath("ensel_bag.pkl"))
 
         # save performance values of best bag
-        ensel_scores = ensemble_bag.get_scores()
+        ensel_scores = ensel_bag.get_scores()
         # show and save test results
         print("Ensemble selection performance")
         print(
@@ -325,14 +327,22 @@ class OctoCore:
         ) as f:
             json.dump(ensel_scores, f)
 
-        # save best bag to the experiment
-        self.experiment.models["ensel"] = ensemble_bag
+        # calculate feature importances of best bag
+        fi_methods = self.experiment.ml_config.fi_methods_bestbag
+        ensel_bag_fi = ensel_bag.get_feature_importances(fi_methods)
 
-        # MISSING:
-        # - save best bag scores to the experiment
-        # - calculate and save specified feature importances of best bag
-        # - save selected features to experiment
-        # - save test predictions to experiment
+        # calculate selected features
+        selected_features = ensel_bag.get_selected_features(fi_methods)
+
+        # save best bag and results to experiment
+        self.experiment.results["ensel"] = ModelResults(
+            id="ensel",
+            model=ensel_bag,
+            scores=ensel_scores,
+            feature_importances=ensel_bag_fi,
+            predictions=ensel_bag.get_predictions(),
+            selected_features=selected_features,
+        )
 
     def _create_best_bag(self):
         """Create best bag from bags found in results.
@@ -397,30 +407,32 @@ class OctoCore:
         ) as f:
             json.dump(best_bag_scores, f)
 
-        # save best bag to the experiment
-        self.experiment.models["best"] = best_bag
-
-        # save best bag scores to the experiment
-        self.experiment.scores = best_bag_scores
-
-        # calculate and save specified feature importances of best bag
+        # calculate feature importances of best bag
         fi_methods = self.experiment.ml_config.fi_methods_bestbag
-        self.experiment.feature_importances = best_bag.get_feature_importances(
-            fi_methods
+        best_bag_fi = best_bag.get_feature_importances(fi_methods)
+
+        # calculate selected features
+        selected_features = best_bag.get_selected_features(fi_methods)
+
+        # save best bag and results to experiment
+        self.experiment.results["best"] = ModelResults(
+            id="best",
+            model=best_bag,
+            scores=best_bag_scores,
+            feature_importances=best_bag_fi,
+            selected_features=selected_features,
+            predictions=best_bag.get_predictions(),
         )
 
         # save selected features to experiment
         print("Number of original features:", len(self.experiment.feature_columns))
-        self.experiment.selected_features = best_bag.get_selected_features(fi_methods)
+        self.experiment.selected_features = selected_features
         print("Number of selected features:", len(self.experiment.selected_features))
         if len(self.experiment.selected_features) == 0:
             print(
                 "Warning: No feature importance method specified, "
                 "or specified method is not applicable to model."
             )
-
-        # save test predictions to experiment
-        self.experiment.predictions = best_bag.get_predictions()
 
     def _run_globalhp_optimization(self):
         """Optimization run with a global HP set over all inner folds."""
@@ -608,18 +620,3 @@ class OctoCore:
         )
 
         return True
-
-    def predict(self, dataset: pd.DataFrame):
-        """Predict on new dataset."""
-        # this is old and not working code
-        # model = self.experiment.models["model_0"]
-        # return model.predict(dataset[self.experiment.feature_columns])
-
-    def predict_proba(self, dataset: pd.DataFrame):
-        """Predict_proba on new dataset."""
-        # this is old and not working code
-        # if self.experiment.ml_type == "classification":
-        #    self.model = self.experiment.models["model_0"]
-        #    return self.model.predict_proba(dataset[self.experiment.feature_columns])
-        # else:
-        #    raise ValueError("predict_proba only supported for classifications")

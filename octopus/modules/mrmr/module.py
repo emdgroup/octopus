@@ -23,13 +23,19 @@ class Mrmr(BaseSequenceItem):
     )
     """Selection of correlation type."""
 
+    model_name: str = field(
+        validator=[validators.in_(["best", "ensel", "autosk"])],
+        default=Factory(lambda: "best"),
+    )
+    """Selection of model from with feature importances were created."""
+
     feature_importance_type: str = field(
         validator=[validators.in_(["mean", "count"])], default=Factory(lambda: "mean")
     )
     """Selection of feature importance type."""
 
     feature_importance_method: str = field(
-        validator=[validators.in_(["permutation", "shap", "internal"])],
+        validator=[validators.in_(["permutation", "shap", "internal", "lofo"])],
         default=Factory(lambda: "permutation"),
     )
     """Selection of feature importance method."""

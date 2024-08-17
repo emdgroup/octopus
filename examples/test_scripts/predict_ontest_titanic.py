@@ -5,11 +5,14 @@ from pathlib import Path
 from octopus.predict import OctoPredict
 
 # setup
-path_study = Path("./studies/Titanic/")
+study_path = Path("./studies/Titanic/")
 sequence_item_id = 0
+model_name = "best"
 
 # create study-predict object
-study = OctoPredict(path_study, sequence_item_id)
+study = OctoPredict(
+    study_path=study_path, sequence_item_id=sequence_item_id, model_name=model_name
+)
 
 
 # (A) predict on internally available test data

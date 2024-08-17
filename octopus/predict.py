@@ -10,10 +10,10 @@ import numpy as np
 import pandas as pd
 import scipy.stats
 import shap
-from attrs import define, field, validators
+from attrs import Factory, define, field, validators
 from matplotlib.backends.backend_pdf import PdfPages
 
-from octopus.data.data_core import OctoData
+from octopus.data import OctoData
 from octopus.experiment import OctoExperiment
 from octopus.modules.utils import get_performance_score
 
@@ -43,14 +43,21 @@ class OctoPredict:
     sequence_item_id: int = field(default=-1, validator=[validators.instance_of(int)])
     """Sequence item id."""
 
+    model_name: str = field(
+        default=Factory("best"), validator=[validators.instance_of(str)]
+    )
+    """Sequence item id."""
+
     experiments: dict = field(init=False, validator=[validators.instance_of(dict)])
     """Dictionary containing model and corresponding test_dataset."""
 
-    results: dict = field(init=False, validator=[validators.instance_of(dict)])
+    results: dict = field(
+        default=Factory(dict), validator=[validators.instance_of(dict)]
+    )
     """Results."""
 
     feature_group_dict: dict = field(
-        init=False, validator=[validators.instance_of(dict)]
+        default=Factory(dict), validator=[validators.instance_of(dict)]
     )
     """Feature groups dictionary."""
 
@@ -65,9 +72,6 @@ class OctoPredict:
         return self.config.study.n_folds_outer
 
     def __attrs_post_init__(self):
-        # initialization here due to "Python immutable default"
-        self.results = dict()
-        self.feature_group_dict = dict()
         # set last sequence item as default
         if self.sequence_item_id < 0:
             self.sequence_item_id = len(self.config.cfg_sequence) - 1
@@ -90,10 +94,18 @@ class OctoPredict:
                 print(
                     f"Experiment{experiment_id}, sequence{self.sequence_item_id} found."
                 )
+                # load experiment
                 experiment = OctoExperiment.from_pickle(path_exp)
+                # check if model_name exists
+                if self.model_name not in experiment.results:
+                    raise ValueError(
+                        f"Specified model name not found: {self.model_name}. "
+                        f"Available model names: {list(experiment.results.keys())}"
+                    )
+
                 experiments[experiment_id] = {
                     "id": experiment_id,
-                    "model": experiment.models["best"],
+                    "model": experiment.results[self.model_name].model,
                     "data_traindev": experiment.data_traindev,
                     "data_test": experiment.data_test,
                     "feature_columns": experiment.feature_columns,
@@ -144,13 +156,6 @@ class OctoPredict:
                 preds_lst.append(df)
             else:
                 raise ValueError("Features missing in provided dataset.")
-
-        grouped_df = pd.concat(preds_lst, axis=0).groupby("row_id").mean()
-
-        if return_df is True:
-            return grouped_df
-        else:
-            return grouped_df.to_numpy()
 
         grouped_df = (
             pd.concat(preds_lst, axis=0)

@@ -97,14 +97,12 @@ config_manager = ConfigManager(
 
 config_sequence = ConfigSequence(
     [
-        # Step1: octo
-        Rfe(
-            description="RFE",
-            cv=5,  # number of CV folds
-        ),
+        # Step1: rfe
+        Rfe(description="rfe", model="CatBoostClassifier"),
         # Step2: ....
     ]
 )
+
 
 ### Execute the Machine Learning Workflow
 

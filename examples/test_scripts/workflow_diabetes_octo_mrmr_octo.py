@@ -79,6 +79,7 @@ config_manager = ConfigManager(
     # outer loop parallelization
     outer_parallelization=True,
     # only process first outer loop experiment, for quick testing
+    run_single_experiment_num=1,
 )
 
 config_sequence = ConfigSequence(

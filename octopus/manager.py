@@ -160,7 +160,7 @@ class OctoManager:
 
                 # extract selected features and feature importances after running module
                 selected_features = experiment.selected_features
-                prior_feature_importances = experiment.feature_importances
+                prior_feature_importances = experiment.extract_fi_from_results()
 
                 # save experiment after experiment has been completed
                 experiment.to_pickle(path_save)

@@ -58,6 +58,11 @@ class MrmrCore:
         return self.experiment.ml_config.correlation_type
 
     @property
+    def model_name(self) -> str:
+        """Model name."""
+        return self.experiment.ml_config.model_name
+
+    @property
     def n_features(self) -> int:
         """Number of features selected by MRMR."""
         return self.experiment.ml_config.n_features
@@ -65,7 +70,7 @@ class MrmrCore:
     @property
     def feature_importances(self) -> dict:
         """Feature importances calculated by preceding module."""
-        return self.experiment.prior_feature_importances
+        return self.experiment.prior_feature_importances[self.model_name]
 
     @property
     def feature_importance_key(self) -> str:
@@ -83,6 +88,19 @@ class MrmrCore:
         # MRMR should not be the first sequence item
         if self.experiment.sequence_item_id == 0:
             raise ValueError("MRMR module should not be the first sequence item.")
+        # check if model_name exists
+        if self.model_name not in self.experiment.prior_feature_importances:
+            raise ValueError(
+                f"Specified model name not found: {self.model_name}. "
+                f"Available model names: {list(self.experiment.prior_feature_importances.keys())}"
+            )
+        # check if feature_importance key exists
+        if self.feature_importance_key not in self.feature_importances:
+            raise ValueError(
+                f"No feature importances available for "
+                f"key {self.feature_importance_key} "
+                f"Available keys: {self.feature_importances.keys()}"
+            )
 
     def run_experiment(self):
         """Run mrmr module on experiment."""
@@ -96,17 +114,11 @@ class MrmrCore:
         print(f"Sequence item: {self.experiment.sequence_item_id}")
         print(f"Number of features selected by MRMR: {self.n_features}")
         print(f"Correlation type used by MRMR: {self.correlation_type}")
-
-        # check if feature_importance key exists
-        if self.feature_importance_key not in self.experiment.prior_feature_importances:
-            raise ValueError(
-                f"No feature importances available for "
-                f"key {self.feature_importance_key}"
-            )
+        print(f"Specified model name: {self.model_name}")
 
         # (a) get feature importances
         # (b) only use feaures with positive importances
-        fi_df = self.experiment.prior_feature_importances[self.feature_importance_key]
+        fi_df = self.feature_importances[self.feature_importance_key]
         print("Number of features in provided fi table: ", len(fi_df))
         fi_df = fi_df[fi_df["importance"] > 0].reset_index()
         print("Number features with positive importance: ", len(fi_df))

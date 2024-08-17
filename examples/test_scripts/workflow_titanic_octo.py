@@ -104,10 +104,10 @@ config_sequence = ConfigSequence(
             # model selection
             models=[
                 # "TabPFNClassifier",
-                "ExtraTreesClassifier",
+                # "ExtraTreesClassifier",
                 # "RandomForestClassifier",
                 # "CatBoostClassifier",
-                # "XGBClassifier",
+                "XGBClassifier",
             ],
             fi_methods_bestbag=["permutation"],
             # parallelization
@@ -116,6 +116,9 @@ config_sequence = ConfigSequence(
             # HPO
             global_hyperparameter=True,
             n_trials=30,
+            # ensemble selection
+            ensemble_selection=True,
+            ensel_n_save_trials=50,
         ),
         # Step2: ....
     ]

@@ -8,7 +8,7 @@ import networkx as nx
 import numpy as np
 import pandas as pd
 import scipy.stats
-from attrs import define, field, validators
+from attrs import Factory, define, field, validators
 
 from octopus.config.core import OctoConfig
 
@@ -41,27 +41,21 @@ class OctoExperiment:
     )
 
     ml_config: dict = field(init=False, default=None)
-    # experiment outputs, initialized in post_init
-    selected_features: list = field(
-        init=False, validator=[validators.instance_of(list)]
-    )
-    results: dict = field(init=False, validator=[validators.instance_of(dict)])
-    models: dict = field(init=False, validator=[validators.instance_of(dict)])
-    feature_groups: dict = field(init=False, validator=[validators.instance_of(dict)])
 
-    feature_importances: dict = field(
-        init=False, validator=[validators.instance_of(dict)]
+    selected_features: list = field(
+        default=Factory(list), validator=[validators.instance_of(list)]
+    )
+
+    feature_groups: dict = field(
+        default=Factory(dict), validator=[validators.instance_of(dict)]
     )
 
     prior_feature_importances: dict = field(
-        init=False, validator=[validators.instance_of(dict)]
+        default=Factory(dict), validator=[validators.instance_of(dict)]
     )
 
-    scores: dict = field(init=False, validator=[validators.instance_of(dict)])
-
-    predictions: dict = field(
-        init=False,
-        validator=[validators.instance_of(dict)],
+    results: dict = field(
+        default=Factory(dict), validator=[validators.instance_of(dict)]
     )
 
     @property
@@ -75,14 +69,6 @@ class OctoExperiment:
         return self.configs.study.ml_type
 
     def __attrs_post_init__(self):
-        # initialization here due to "Python immutable default"
-        self.selected_features = list()
-        self.feature_importances = dict()
-        self.prior_feature_importances = dict()
-        self.scores = dict()
-        self.predictions = dict()
-        self.models = dict()
-        self.results = dict()
         # self.feature_groups = dict()
         self.calculate_feature_groups()
 
@@ -128,6 +114,13 @@ class OctoExperiment:
 
         print("Feature Groups:", groups_dict)
         self.feature_groups = groups_dict
+
+    def extract_fi_from_results(self):
+        """Extract features importances from results."""
+        feature_importances = dict()
+        for key, result in self.results.items():
+            feature_importances[key] = result.feature_importances
+        return feature_importances
 
     def to_pickle(self, file_path: str) -> None:
         """Save object to a compressed pickle file.

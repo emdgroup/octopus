@@ -8,16 +8,22 @@ import numpy as np
 import pandas as pd
 import scipy.stats
 from attrs import define, field, validators
+from sklearn.feature_selection import mutual_info_classif, mutual_info_regression
 
 from octopus.experiment import OctoExperiment
 from octopus.modules.utils import rdc_correlation_matrix
 
 # TOBEDONE
 # - add hierarchical clustering
-#   https://scikit-learn.org/stable/auto_examples/inspection/plot_permutation_importance_multicollinear.html
+#   https://scikit-learn.org/stable/auto_examples/inspection/
+#   plot_permutation_importance_multicollinear.html
 # - add pearson
 # - maybe, a function that create as table showing the selected feature and
 # the removed group features
+# - How to select best feature im group
+#   (a) classification and regression --> mutual information
+#   (b) timetoevent --> first feature
+# - Use univariate model to assess association with target, should work for all ml_types
 
 
 @define
@@ -42,13 +48,25 @@ class RocCore:
 
     @property
     def x_traindev(self) -> pd.DataFrame:
-        """x_train."""
+        """x_traindev."""
         return self.experiment.data_traindev[self.experiment.feature_columns]
+
+    @property
+    def y_traindev(self) -> pd.DataFrame:
+        """y_traindev."""
+        return self.experiment.data_traindev[
+            self.experiment.target_assignments.values()
+        ]
 
     @property
     def feature_columns(self) -> list:
         """feature_columns."""
         return self.experiment.feature_columns
+
+    @property
+    def ml_type(self) -> str:
+        """ML type."""
+        return self.experiment.ml_type
 
     @property
     def config(self) -> dict:
@@ -75,8 +93,28 @@ class RocCore:
         print("Correlation type:", correlation_type)
         print("Threshold:", threshold)
 
-        print("Calculating feature groups.")
+        print("Calculating dependency to target")
+        # Note, timetoevent is treated differently
+        if self.ml_type == "classification":
+            mi = pd.Series(
+                mutual_info_classif(
+                    self.x_traindev, self.y_traindev.to_numpy().ravel()
+                ),
+                index=self.feature_columns,
+            )
+        elif self.ml_type == "regression":
+            mi = pd.Series(
+                mutual_info_regression(
+                    self.x_traindev, self.y_traindev.to_numpy().ravel()
+                ),
+                index=self.feature_columns,
+            )
+        elif self.ml_type == "timetoevent":
+            print("Time2Event: Note, that the first group element is selected.")
+        else:
+            raise ValueError(f"ML-type {self.ml_type} not supported.")
 
+        print("Calculating feature groups.")
         # correlation matrix
         if correlation_type == "spearmanr":
             # (A) spearmamr correlation matrix
@@ -114,11 +152,17 @@ class RocCore:
         # Process each group
         for group in self.feature_groups:
             if group:
-                # Pick the first feature to keep
-                keep_feature = group[0]
+                if self.ml_type == "timetoevent":
+                    # timetovent: keep first features
+                    keep_feature = group[0]
+                else:
+                    # regression, classification: use mutual information
+                    # to find group element with maximum mutual information
+                    keep_feature = mi[group].idxmax()
+
                 keep_list.append(keep_feature)
                 # Add the remaining features to the remove list
-                remove_list.extend(group[1:])
+                remove_list.extend([x for x in group if x != keep_feature])
 
         # get features after filtering
         remaining_features = list(set(self.feature_columns) - set(remove_list))

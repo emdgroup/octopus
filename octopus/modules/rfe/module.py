@@ -33,3 +33,6 @@ class Rfe(BaseSequenceItem):
 
     cv: int = field(validator=[validators.instance_of(int)], default=5)
     """Number of CV folds for RFE_CV."""
+
+    mode: str = field(validator=[validators.in_(["Mode1", "Mode2"])], default="Mode1")
+    """Mode used by RFE."""

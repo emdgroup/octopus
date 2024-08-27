@@ -16,9 +16,11 @@ from .roc.core import RocCore
 from .roc.module import Roc
 from .sfs.core import SfsCore
 from .sfs.module import Sfs
+from .efs.core import EfsCore
+from .efs.module import Efs
 
 # Define the __all__ variable to specify what is available to import from this package
-__all__ = ["Mrmr", "Octo", "Rfe", "Roc", "Sfs"]
+__all__ = ["Mrmr", "Octo", "Rfe", "Roc", "Sfs", "Efs"]
 
 # Type for the modules inventory dictionary
 ModulesInventoryType = Dict[str, Type]
@@ -30,4 +32,5 @@ modules_inventory: ModulesInventoryType = {
     "rfe": RfeCore,
     "roc": RocCore,
     "sfs": SfsCore,
+    "efs": EfsCore,
 }

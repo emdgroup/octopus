@@ -1,5 +1,6 @@
 """ROC core (removal of correlated features)."""
 
+import random
 import shutil
 from pathlib import Path
 
@@ -8,7 +9,12 @@ import numpy as np
 import pandas as pd
 import scipy.stats
 from attrs import define, field, validators
-from sklearn.feature_selection import mutual_info_classif, mutual_info_regression
+from sklearn.feature_selection import (
+    f_classif,
+    f_regression,
+    mutual_info_classif,
+    mutual_info_regression,
+)
 
 from octopus.experiment import OctoExperiment
 from octopus.modules.utils import rdc_correlation_matrix
@@ -24,6 +30,17 @@ from octopus.modules.utils import rdc_correlation_matrix
 #   (a) classification and regression --> mutual information
 #   (b) timetoevent --> first feature
 # - Use univariate model to assess association with target, should work for all ml_types
+
+filter_inventory = {
+    "mutual_info": {
+        "classification": mutual_info_classif,
+        "regression": mutual_info_regression,
+    },
+    "f_statistics": {
+        "classification": f_classif,
+        "regression": f_regression,
+    },
+}
 
 
 @define
@@ -73,6 +90,11 @@ class RocCore:
         """Module configuration."""
         return self.experiment.ml_config
 
+    @property
+    def filter_type(self) -> str:
+        """Filter Type."""
+        return self.experiment.ml_config.filter_type
+
     def __attrs_post_init__(self):
         self.feature_groups = list()
         # delete directories /trials /optuna /results to ensure clean state
@@ -87,32 +109,32 @@ class RocCore:
         """Run ROC module on experiment."""
         # run experiment and return updated experiment object
 
+        # set seeds for reproducibility
+        random.seed(0)
+        np.random.seed(0)
+
         correlation_type = self.config.correlation_type
         threshold = self.config.threshold
 
         print("Correlation type:", correlation_type)
         print("Threshold:", threshold)
+        print("Filter type:", self.filter_type)
 
         print("Calculating dependency to target")
         # Note, timetoevent is treated differently
-        if self.ml_type == "classification":
-            mi = pd.Series(
-                mutual_info_classif(
-                    self.x_traindev, self.y_traindev.to_numpy().ravel()
-                ),
-                index=self.feature_columns,
-            )
-        elif self.ml_type == "regression":
-            mi = pd.Series(
-                mutual_info_regression(
-                    self.x_traindev, self.y_traindev.to_numpy().ravel()
-                ),
-                index=self.feature_columns,
-            )
-        elif self.ml_type == "timetoevent":
+        if self.ml_type == "timetoevent":
             print("Time2Event: Note, that the first group element is selected.")
-        else:
-            raise ValueError(f"ML-type {self.ml_type} not supported.")
+        elif self.filter_type == "mutual_info":
+            values = filter_inventory[self.filter_type][self.ml_type](
+                self.x_traindev, self.y_traindev.to_numpy().ravel()
+            )
+            mi = pd.Series(values, index=self.feature_columns)
+        elif self.filter_type == "f_statistics":
+            # ignoring p-values
+            values, _ = filter_inventory[self.filter_type][self.ml_type](
+                self.x_traindev, self.y_traindev.to_numpy().ravel()
+            )
+            mi = pd.Series(values, index=self.feature_columns)
 
         print("Calculating feature groups.")
         # correlation matrix

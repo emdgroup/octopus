@@ -1,5 +1,8 @@
 """Utils."""
 
+import random
+
+import numpy as np
 import pandas as pd
 from attrs import define, field, validators
 from sklearn.model_selection import KFold, StratifiedKFold
@@ -10,7 +13,8 @@ class DataSplit:
     """Data Split.
 
     We don't use groupKFold as it does not offer the shuffle option.
-    StratifiedGroupKfold would work but is not available for sklearn 0.24.3
+    The StratifiedGroupKfold might work as an alternative (check examples).
+    StratifiedGroupKfold is not available for sklearn 0.24.3
     which is required for Auto-Sklearn 0.15.
     stratification_col: contains the group info used for stratification
     datasplit_col: contains group info on samples. Each group goes either
@@ -29,6 +33,10 @@ class DataSplit:
 
     def get_datasplits(self):
         """Get datasplits."""
+        # set seeds for reproducibility
+        random.seed(0)
+        np.random.seed(0)
+
         # Allow for grouped rows as defined in datasplit_col
         # The split is done on dataset_unique, with an reset index.
         # This ensures that we split by group.

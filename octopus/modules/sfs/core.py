@@ -10,7 +10,7 @@ from octopus.experiment import OctoExperiment
 
 scorer_string_inventory = {
     "AUCROC": "roc_auc",
-    "ACC": "accuracy_score",
+    "ACC": "accuracy",
     "ACCBAL": "balanced_accuracy",
     "LOGLOSS": "neg_log_loss",
     "MAE": "neg_mean_absolute_error",

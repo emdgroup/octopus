@@ -41,6 +41,12 @@ for line in [319, 330, 338]:
 # - check that openblas settings are correct and suggest solutions
 
 # TOBEDONE OCTOFULL
+# - (0) reproducibility issue - check out ROC, maybe data split??
+# - (0) Cleanup: get rid of individual HP
+# - (0) Cleanup: add more info to metrics (prict/proba, scoring, scoring_string sklearn)
+# - (0) Cleanup: Optuna, use score to remove complexity
+# - (0) Improvement high priority: IMPUTATION
+# - (0) Improvement high priority: sequence handover
 # - (0) selected features is currently only taken from best bag, and not ensel
 # - (0) fix sklearn due to new ModelResults
 # - (0) ensemble selection - use training weight

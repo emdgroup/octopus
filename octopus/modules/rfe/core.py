@@ -7,14 +7,14 @@ from pathlib import Path
 import pandas as pd
 from attrs import define, field, validators
 from sklearn.feature_selection import RFECV
-from sklearn.model_selection import GridSearchCV
+from sklearn.model_selection import GridSearchCV, StratifiedKFold
 
 from octopus.experiment import OctoExperiment
 from octopus.models.models_inventory import model_inventory
 
 scorer_string_inventory = {
     "AUCROC": "roc_auc",
-    "ACC": "accuracy_score",
+    "ACC": "accuracy",
     "ACCBAL": "balanced_accuracy",
     "LOGLOSS": "neg_log_loss",
     "MAE": "neg_mean_absolute_error",
@@ -33,65 +33,63 @@ supported_models = {
     "XGBRegressor",
 }
 
-# param_grid = {
-#    'n_estimators': [50, 100, 200],
-#    'max_depth': [None, 10, 20, 30],
-#    'min_samples_split': [2, 5, 10]
-# }
-
+# for quick result
 # param_grid = {
 #    'iterations': [100, 200],
 #    'depth': [4, 6],
 #    'learning_rate': [0.01, 0.1],
-#    #'random_state': [42],
 #    'l2_leaf_reg': [1, 3]
 # }
 
 
-# handle feature importance for different modes
-def get_feature_importances(estimator, *args, **kwargs):
+def get_feature_importances(estimator):
+    """Set feature importance based on mode."""
     if hasattr(estimator, "best_estimator_"):
         return estimator.best_estimator_.feature_importances_
-    else:
-        return estimator.feature_importances_
+    return estimator.feature_importances_
 
 
-# Hyperparameters initialization
 def get_param_grid(model_type):
-    if model_type == "CatBoostClassifier" or model_type == "CatBoostRegressor":
+    """Hyperparameter grid initialization."""
+    if model_type in ("CatBoostClassifier", "CatBoostRegressor"):
         param_grid = {
-            "learning_rate": [0.01, 0.1],
-            "depth": [3, 5],
-            "l2_leaf_reg": [2, 5],
-            "random_strength": [5, 10],
-            "rsm": [0.1, 1],
+            "learning_rate": [0.001, 0.01, 0.1],
+            "depth": [3, 6, 8, 10],
+            "l2_leaf_reg": [2, 5, 7, 10],
+            #'random_strength': [2, 5, 7, 10],
+            #'rsm': [0.1, 0.5, 1],
             "iterations": [500],
         }
-    elif model_type == "XGBClassifier" or model_type == "XGBRegressor":
+    elif model_type in ("XGBClassifier", "XGBRegressor"):
         param_grid = {
-            "learning_rate": [0.0001, 0.01, 0.3],
-            "min_child_weight": [2, 8, 15],
-            "subsample": [0.15, 0.5, 1],
-            "n_estimators": [30, 120, 200],
+            "learning_rate": [0.0001, 0.001, 0.01, 0.3],
+            "min_child_weight": [2, 5, 10, 15],
+            "subsample": [0.15, 0.3, 0.7, 1],
+            "n_estimators": [30, 70, 140, 200],
             "max_depth": [3, 5, 7, 9],
         }
     else:
         # RF and ExtraTrees
         param_grid = {
-            "max_depth": [2, 15, 32],
-            "min_samples_split": [2, 50, 100],
-            "min_samples_leaf": [1, 25, 50],
+            "max_depth": [2, 10, 20, 32],
+            "min_samples_split": [2, 25, 50, 100],
+            "min_samples_leaf": [1, 15, 30, 50],
             "max_features": [0.1, 0.5, 1],
             "n_estimators": [100, 250, 500],
         }
     return param_grid
 
 
-# TOBEDONE:
+# TOBEDONE/IDEAS:
 # - put scorer_string_inventory in central place
-# - print dev and test model performance after completion of rfe
-# - do RFE with model hyperparameter optimization at each RFE step
-# - use fixed parameters to silence catboost
+# - better datasplit (stratification + groups)
+# - replace gridsearch with optuna
+# - mode2: only one training per reduction and not for every experiment
+# - option: random search insteat of grid search
+# - permutation feature importances on dev! requires roc
+# - new approach on how many features to eliminate. See autogluon issue.
+#   Add random features (3-5) and remove all features below worst random feature.
+#   See autoglupn
 
 
 @define
@@ -144,6 +142,11 @@ class RfeCore:
         """Feature Columns."""
         return self.experiment.feature_columns
 
+    @property
+    def stratification_column(self) -> list:
+        """Stratification Column."""
+        return self.experiment.stratification_column
+
     def __attrs_post_init__(self):
         # delete directories /trials /optuna /results to ensure clean state
         # of module when restarted
@@ -174,9 +177,15 @@ class RfeCore:
         print("Model used:", model_type)
 
         # set up model and scoring type
-        model = model_inventory[model_type]["model"](random_seed=42)
+        model = model_inventory[model_type]["model"](random_state=42)
         target_metric = self.experiment.configs.study.target_metric
         scoring_type = scorer_string_inventory[target_metric]
+
+        stratification_column = self.experiment.stratification_column
+        if stratification_column:
+            cv = StratifiedKFold(n_splits=self.config.cv, shuffle=True, random_state=42)
+        else:
+            cv = self.config.cv
 
         # Silence catboost output
         if model_type == default_model:
@@ -186,7 +195,7 @@ class RfeCore:
         grid_search = GridSearchCV(
             estimator=model,
             param_grid=get_param_grid(model_type),
-            cv=self.config.cv,
+            cv=cv,
             scoring=scoring_type,
             n_jobs=1,
         )
@@ -215,11 +224,11 @@ class RfeCore:
             estimator=estimator,
             step=self.config.step,
             min_features_to_select=self.config.min_features_to_select,
-            cv=self.config.cv,
+            cv=cv,
             scoring=scoring_type,
             verbose=0,
             n_jobs=1,
-            importance_getter=get_feature_importances,  # auto
+            importance_getter=get_feature_importances,
         )
 
         rfecv.fit(self.x_traindev, self.y_traindev.squeeze(axis=1))
@@ -243,11 +252,9 @@ class RfeCore:
         results = {
             "best_cv_score": best_cv_score,
             "best_params": best_params,
-            "optimal_features": int(optimal_features),  # int32
+            "optimal_features": int(optimal_features),
             "selected_features": self.experiment.selected_features,
-            "Mean CV Scores": (
-                rfecv.cv_results_["mean_test_score"]
-            ).tolist(),  # nd.array
+            "Best Mean CV Score": max(rfecv.cv_results_["mean_test_score"]),
             "Dev set performance": test_score,
         }
         with open(

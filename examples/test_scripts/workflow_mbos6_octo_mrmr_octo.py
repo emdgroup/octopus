@@ -1,4 +1,4 @@
-"""Workflow script for test dataset Martin."""
+"""Workflow script for MB dataset."""
 
 import os
 import socket

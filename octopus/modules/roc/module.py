@@ -27,3 +27,9 @@ class Roc(BaseSequenceItem):
         validator=[validators.in_(["spearmanr", "rdc"])], default="spearmanr"
     )
     """Selection of correlation type."""
+
+    filter_type: str = field(
+        validator=[validators.in_(["mutual_info", "f_statistics"])],
+        default="f_statistics",
+    )
+    """Selection of filter type for correlated features."""

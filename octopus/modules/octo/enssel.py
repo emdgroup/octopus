@@ -1,6 +1,8 @@
 """Ensemble selection."""
 
 # TOBEDONE
+# - issue: ACC and BALACC need integer pooling values!
+# - potential issue: check start_n, +1 or not
 # - get FI and counts
 # - display results summary
 # - save results to experiment
@@ -38,6 +40,10 @@ class EnSel:
         default=pd.DataFrame(),
         validator=[validators.instance_of(pd.DataFrame)],
     )
+    optimized_ensemble: dict = field(
+        init=False, validator=[validators.instance_of(dict)]
+    )
+    bags: dict = field(init=False, validator=[validators.instance_of(dict)])
 
     @property
     def direction(self) -> str:
@@ -51,11 +57,6 @@ class EnSel:
             return "dev_pool_soft"
         else:
             return "dev_pool_hard"
-
-    bags: dict = field(init=False, validator=[validators.instance_of(dict)])
-    optimized_ensemble = dict = field(
-        init=False, validator=[validators.instance_of(dict)]
-    )
 
     def __attrs_post_init__(self):
         # initialization here due to "Python immutable default"
@@ -158,8 +159,8 @@ class EnSel:
                 columns=["#models", "dev_pool_hard", "test_pool_hard"]
             )
 
-        for i in range(1, len(self.model_table)):
-            bag_keys = self.model_table[:i]["path"].tolist()
+        for i in range(len(self.model_table)):
+            bag_keys = self.model_table[: i + 1]["path"].tolist()
             scores = self._ensemble_models(bag_keys)
             if self.score_type == "dev_pool_soft":
                 self.scan_table.loc[i] = [
@@ -181,9 +182,9 @@ class EnSel:
         # we start with an best N models exammple derived from self.scan_table,
         # assuming that is sorted correctly
         if self.direction == "maximize":
-            start_n = int(self.scan_table[self.score_type].idxmax())
+            start_n = int(self.scan_table[self.score_type].idxmax()) + 1
         else:
-            start_n = int(self.scan_table[self.score_type].idxmin())
+            start_n = int(self.scan_table[self.score_type].idxmin()) + 1
         print("Ensemble scan, number of included best models: ", start_n)
 
         # startn_bags dict with path as key and repeats=1 as value

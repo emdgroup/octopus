@@ -41,9 +41,11 @@ for line in [319, 330, 338]:
 # - check that openblas settings are correct and suggest solutions
 
 # TOBEDONE OCTOFULL
+# - (0) ensemble or pooling, some metrics (ACC) require int, others not (MSE)
 # - (0) reproducibility issue - check out ROC, maybe data split??
 # - (0) Cleanup: get rid of individual HP
-# - (0) Cleanup: add more info to metrics (prict/proba, scoring, scoring_string sklearn)
+# - (0) Cleanup: add more info to metrics (prict/proba, scoring,
+#       scoring_string sklearn, input type (int, float))
 # - (0) Cleanup: Optuna, use score to remove complexity
 # - (0) Improvement high priority: IMPUTATION
 # - (0) Improvement high priority: sequence handover

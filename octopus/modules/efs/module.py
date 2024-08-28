@@ -31,3 +31,9 @@ class Efs(BaseSequenceItem):
 
     cv: int = field(validator=[validators.instance_of(int)], default=5)
     """Number of CV folds for EFS."""
+
+    max_n_iterations: int = field(validator=[validators.instance_of(int)], default=50)
+    """Number of iterations for ensemble optimization."""
+
+    max_n_models: int = field(validator=[validators.instance_of(int)], default=30)
+    """Maximum number of models used in optimization, pruning."""

@@ -17,7 +17,7 @@ from octopus.modules.octo.bag import Bag
 from octopus.modules.octo.enssel import EnSel
 from octopus.modules.octo.objective_optuna import ObjectiveOptuna
 from octopus.modules.octo.training import Training
-from octopus.results import ModelResults
+from octopus.results import ModuleResults
 from octopus.utils import DataSplit
 
 # ignore three Optuna experimental warnings
@@ -41,8 +41,8 @@ for line in [319, 330, 338]:
 # - check that openblas settings are correct and suggest solutions
 
 # TOBEDONE OCTOFULL
+# - (0) RFE - better test results than octo (datasplit difference?)
 # - (0) ensemble or pooling, some metrics (ACC) require int, others not (MSE)
-# - (0) reproducibility issue - check out ROC, maybe data split??
 # - (0) Cleanup: get rid of individual HP
 # - (0) Cleanup: add more info to metrics (prict/proba, scoring,
 #       scoring_string sklearn, input type (int, float))
@@ -343,7 +343,7 @@ class OctoCore:
         selected_features = ensel_bag.get_selected_features(fi_methods)
 
         # save best bag and results to experiment
-        self.experiment.results["ensel"] = ModelResults(
+        self.experiment.results["ensel"] = ModuleResults(
             id="ensel",
             model=ensel_bag,
             scores=ensel_scores,
@@ -423,7 +423,7 @@ class OctoCore:
         selected_features = best_bag.get_selected_features(fi_methods)
 
         # save best bag and results to experiment
-        self.experiment.results["best"] = ModelResults(
+        self.experiment.results["best"] = ModuleResults(
             id="best",
             model=best_bag,
             scores=best_bag_scores,

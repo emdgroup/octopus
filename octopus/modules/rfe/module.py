@@ -1,6 +1,6 @@
 """rfe module."""
 
-from attrs import define, field, validators
+from attrs import Factory, define, field, validators
 
 from octopus.config.base_sequence_item import BaseSequenceItem
 
@@ -16,9 +16,10 @@ class Rfe(BaseSequenceItem):
     """Description."""
 
     load_sequence_item: bool = field(
-        init=False, validator=validators.instance_of(bool), default=False
+        validator=validators.instance_of(bool),
+        default=Factory(lambda: False),
     )
-    """Load existing sequence item, fixed, set to False"""
+    """Load existing sequence item. Default is False"""
 
     model: str = field(validator=[validators.instance_of(str)], default="")
     """Model used by RFE."""

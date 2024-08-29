@@ -118,8 +118,8 @@ class OctoExperiment:
     def extract_fi_from_results(self):
         """Extract features importances from results."""
         feature_importances = dict()
-        for key, result in self.results.items():
-            feature_importances[key] = result.feature_importances
+        for key, moduleresult in self.results.items():
+            feature_importances[key] = moduleresult.feature_importances
         return feature_importances
 
     def to_pickle(self, file_path: str) -> None:

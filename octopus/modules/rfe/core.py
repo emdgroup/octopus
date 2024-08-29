@@ -71,16 +71,17 @@ def get_param_grid(model_type):
     else:
         # RF and ExtraTrees
         param_grid = {
-            "max_depth": [2, 10, 20, 32],
-            "min_samples_split": [2, 25, 50, 100],
-            "min_samples_leaf": [1, 15, 30, 50],
-            "max_features": [0.1, 0.5, 1],
-            "n_estimators": [100, 250, 500],
+            "max_depth": [3, 6, 10],  # [2, 10, 20, 32],
+            # "min_samples_split": [2, 25, 50, 100],
+            # "min_samples_leaf": [1, 15, 30, 50],
+            # "max_features": [0.1, 0.5, 1],
+            "n_estimators": [500],  # [100, 250, 500],
         }
     return param_grid
 
 
 # TOBEDONE/IDEAS:
+# - (0) RFE - better test results than octo (datasplit difference?)
 # - put scorer_string_inventory in central place
 # - better datasplit (stratification + groups)
 # - replace gridsearch with optuna
@@ -199,7 +200,7 @@ class RfeCore:
             scoring=scoring_type,
             n_jobs=1,
         )
-
+        print("Optimize base model....")
         # Perform Grid Search and Cross-Validation
         grid_search.fit(self.x_traindev, self.y_traindev.squeeze(axis=1))
         best_model = grid_search.best_estimator_
@@ -207,7 +208,7 @@ class RfeCore:
         best_params = grid_search.best_params_
 
         # Report performance
-        print(f"Best CV score: {best_cv_score}")
+        print(f"Dev start performance: {best_cv_score:.3f}")
         print(f"Best params: {best_params}")
 
         # Mode selection
@@ -240,22 +241,23 @@ class RfeCore:
         ]
 
         print("RFE completed")
+        # print(f"CV Results: {rfecv.cv_results_}")
         print(f"Optimal number of features: {optimal_features}")
         print(f"Selected features: {self.experiment.selected_features}")
-        print(f"CV Results: {rfecv.cv_results_}")
+        print(f"Dev set performance: {rfecv.cv_results_['mean_test_score'].max():.3f}")
 
         # Report performance on test set
         test_score = rfecv.score(self.x_test, self.y_test)
-        print(f"Test set performance: {test_score}")
+        print(f"Test set performance: {test_score:.3f}")
 
         # Save results to JSON
         results = {
-            "best_cv_score": best_cv_score,
+            "Dev score start": best_cv_score,
             "best_params": best_params,
             "optimal_features": int(optimal_features),
             "selected_features": self.experiment.selected_features,
-            "Best Mean CV Score": max(rfecv.cv_results_["mean_test_score"]),
-            "Dev set performance": test_score,
+            "Dev set performance": max(rfecv.cv_results_["mean_test_score"]),
+            "Test set performance": test_score,
         }
         with open(
             self.path_results.joinpath("results.json"),

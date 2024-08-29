@@ -173,7 +173,7 @@ config_sequence = ConfigSequence(
         Efs(
             description="EFS",
             model="RandomForestClassifier",
-            n_subsets=1000,
+            n_subsets=10,
             subset_size=20,
             cv=3,
             max_n_iterations=50,

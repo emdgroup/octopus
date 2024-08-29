@@ -41,6 +41,7 @@ dependencies:
   - blas=1.0=mkl
   - bleach=6.1.0=pyhd8ed1ab_0
   - blinker=1.7.0=pyhd8ed1ab_0
+  - boruta_py=0.3=py_0
   - botocore=1.34.81=pyge310_1234567_0
   - brotli=1.1.0=hd590300_1
   - brotli-bin=1.1.0=hd590300_1
@@ -264,6 +265,7 @@ dependencies:
   - mkl-devel=2023.2.0=ha770c72_50496
   - mkl-include=2023.2.0=h84fe81f_50496
   - mkl-service=2.4.1=py312h4daa2fd_0
+  - mlxtend=0.23.1=pyhd8ed1ab_0
   - mpc=1.3.1=hfe3b2da_0
   - mpfr=4.2.1=h9458935_1
   - mpg123=1.32.6=h59595ed_0
@@ -289,7 +291,7 @@ dependencies:
   - oauthlib=3.2.2=pyhd8ed1ab_0
   - ocl-icd=2.3.2=hd590300_1
   - openjpeg=2.5.2=h488ebb8_0
-  - openssl=3.3.1=h4bc722e_2
+  - openssl=3.3.1=hb9d3cd8_3
   - optuna=3.6.1=pyhd8ed1ab_0
   - orc=2.0.0=h17fec99_1
   - osqp=0.6.3=py312hd553d1a_1

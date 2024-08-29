@@ -12,6 +12,12 @@ class Mrmr(BaseSequenceItem):
     module: str = field(default="mrmr")
     """Models for ML."""
 
+    load_sequence_item: bool = field(
+        validator=validators.instance_of(bool),
+        default=Factory(lambda: False),
+    )
+    """Load existing sequence item. Default is False"""
+
     n_features: int = field(
         validator=[validators.instance_of(int)], default=Factory(lambda: 30)
     )
@@ -39,10 +45,3 @@ class Mrmr(BaseSequenceItem):
         default=Factory(lambda: "permutation"),
     )
     """Selection of feature importance method."""
-
-    load_sequence_item: bool = field(
-        init=False,
-        validator=validators.instance_of(bool),
-        default=Factory(lambda: False),
-    )
-    """Load existing sequence item. Default is False"""

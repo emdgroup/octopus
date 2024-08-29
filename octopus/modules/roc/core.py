@@ -125,16 +125,17 @@ class RocCore:
         if self.ml_type == "timetoevent":
             print("Time2Event: Note, that the first group element is selected.")
         elif self.filter_type == "mutual_info":
+            # set random state
             values = filter_inventory[self.filter_type][self.ml_type](
-                self.x_traindev, self.y_traindev.to_numpy().ravel()
+                self.x_traindev, self.y_traindev.to_numpy().ravel(), random_state=0
             )
-            mi = pd.Series(values, index=self.feature_columns)
+            dependency = pd.Series(values, index=self.feature_columns)
         elif self.filter_type == "f_statistics":
             # ignoring p-values
             values, _ = filter_inventory[self.filter_type][self.ml_type](
                 self.x_traindev, self.y_traindev.to_numpy().ravel()
             )
-            mi = pd.Series(values, index=self.feature_columns)
+            dependency = pd.Series(values, index=self.feature_columns)
 
         print("Calculating feature groups.")
         # correlation matrix
@@ -150,22 +151,43 @@ class RocCore:
         else:
             raise ValueError(f"Correlation type {correlation_type} not supported")
 
-        # get auto_groups
-        # auto_groups = list()
         g = nx.Graph()
 
+        # Add edges to the graph based on the correlation matrix
         for i in range(len(self.feature_columns)):
             for j in range(i + 1, len(self.feature_columns)):
                 if pos_corr_matrix[i, j] > threshold:
                     g.add_edge(i, j)
 
-        subgraphs = [g.subgraph(c) for c in nx.connected_components(g)]
+        # Get connected components and sort them to ensure determinism
+        subgraphs = [
+            g.subgraph(c).copy()
+            for c in sorted(
+                nx.connected_components(g), key=lambda x: (len(x), sorted(x))
+            )
+        ]
 
+        # Create groups of feature columns
         groups = []
         for sg in subgraphs:
-            groups.append([self.feature_columns[node] for node in sg.nodes()])
+            groups.append([self.feature_columns[node] for node in sorted(sg.nodes())])
 
+        # Sort each group to ensure determinism
         self.feature_groups = [sorted(g) for g in groups]
+
+        # g = nx.Graph()
+        #
+        # for i in range(len(self.feature_columns)):
+        #    for j in range(i + 1, len(self.feature_columns)):
+        #        if pos_corr_matrix[i, j] > threshold:
+        #            g.add_edge(i, j)
+        #
+        # subgraphs = [g.subgraph(c) for c in nx.connected_components(g)]
+        #
+        # groups = []
+        # for sg in subgraphs:
+        #    groups.append([self.feature_columns[node] for node in sg.nodes()])
+        # self.feature_groups = [sorted(g) for g in groups]
 
         # select features to keep and to remove
         keep_list = []
@@ -180,14 +202,17 @@ class RocCore:
                 else:
                     # regression, classification: use mutual information
                     # to find group element with maximum mutual information
-                    keep_feature = mi[group].idxmax()
+                    keep_feature = dependency[group].idxmax()
 
                 keep_list.append(keep_feature)
                 # Add the remaining features to the remove list
                 remove_list.extend([x for x in group if x != keep_feature])
 
         # get features after filtering
-        remaining_features = list(set(self.feature_columns) - set(remove_list))
+        # remaining_features = sorted(set(self.feature_columns) - set(remove_list))
+        remaining_features = sorted(set(self.feature_columns) - set(remove_list))
+
+        print("remaining features:", remaining_features)
 
         print(
             "Number of features before correlation removal:", len(self.feature_columns)

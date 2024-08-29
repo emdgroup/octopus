@@ -1,6 +1,6 @@
 """ROC core (removal of correlated features)."""
 
-from attrs import define, field, validators
+from attrs import Factory, define, field, validators
 
 from octopus.config.base_sequence_item import BaseSequenceItem
 
@@ -16,9 +16,10 @@ class Roc(BaseSequenceItem):
     """Description."""
 
     load_sequence_item: bool = field(
-        init=False, validator=validators.instance_of(bool), default=False
+        validator=validators.instance_of(bool),
+        default=Factory(lambda: False),
     )
-    """Load existing sequence item, fixed, set to False"""
+    """Load existing sequence item. Default is False"""
 
     threshold: float = field(validator=[validators.instance_of(float)], default=0.8)
     """Threshold for feature removal."""

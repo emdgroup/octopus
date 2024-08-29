@@ -4,13 +4,13 @@ from attrs import Factory, define, field, validators
 
 
 @define
-class ModelResults:
+class ModuleResults:
     """Results."""
 
     id: str = field(validator=[validators.instance_of(str)])
     """Results str id."""
 
-    model = field()
+    model = field(default="")
     """Saved Model."""
 
     scores: dict = field(

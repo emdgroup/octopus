@@ -21,6 +21,7 @@ from octopus.experiment import OctoExperiment
 from octopus.metrics import metrics_inventory
 from octopus.models.models_inventory import model_inventory
 from octopus.modules.utils import optuna_direction
+from octopus.results import ModuleResults
 
 scorer_string_inventory = {
     "AUCROC": "roc_auc",
@@ -77,6 +78,7 @@ def get_param_grid(model_type):
 
 
 # TOBEDONE:
+# - (0) RFE(maybe EFS) - better test results than octo (datasplit difference?)
 # - provide:
 #   + random features 5
 #   + best parameters based on traindev-size
@@ -593,5 +595,14 @@ class EfsCore:
         print(feature_counts_relative_df.head(50))
 
         # save results to experiment
-        self.experiment.results["feature_counts"] = feature_counts_df
-        self.experiment.results["feature_counts_relative"] = feature_counts_relative_df
+        self.experiment.results["Efs"] = ModuleResults(
+            id="efs",
+            # model=None,
+            # scores=scores,
+            feature_importances={
+                "Efs_counts": feature_counts_df,
+                "Efs_counts_relative": feature_counts_relative_df,
+            },
+            # predictions=ensel_bag.get_predictions(),
+            # selected_features=selected_features,
+        )

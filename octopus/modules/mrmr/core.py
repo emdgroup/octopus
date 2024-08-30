@@ -3,6 +3,7 @@
 import numpy as np
 import pandas as pd
 from attrs import define, field, validators
+from scipy.stats import spearmanr
 from sklearn.feature_selection import (
     f_classif,
     f_regression,
@@ -35,14 +36,8 @@ from octopus.modules.utils import rdc
 # https://github.com/smazzanti/mrmr
 
 # TOBEDONE:
-# (0) if MRMR is used as the first sequence item,
-#     then relaveance needs to be f-statistics
-# (1) use counts instead of pfi
-# (2) use combined counts and pfi !!! as input
-# (3) how to deal with grouped features ???
-# (4) use results from ensemble selection (count + pfi)
-# (5) saving results? any plots?
-# ()
+# (1) add mutual information to relevance methods
+# (2) saving results? any plots?
 
 
 @define
@@ -117,24 +112,25 @@ class MrmrCore:
         return key
 
     def __attrs_post_init__(self):
-        # initialization here due to "Python immutable default"
-        # MRMR should not be the first sequence item
-        # if self.experiment.sequence_item_id == 0:
-        #    raise ValueError("MRMR module should not be the first sequence item.")
-        # check if model_name exists
-        # if self.model_name not in self.experiment.prior_feature_importances:
-        #    raise ValueError(
-        #        f"Specified model name not found: {self.model_name}. "
-        #        f"Available model names: "
-        #        f"{list(self.experiment.prior_feature_importances.keys())}"
-        #    )
-        # check if feature_importance key exists
-        if self.feature_importance_key not in self.feature_importances:
-            raise ValueError(
-                f"No feature importances available for "
-                f"key {self.feature_importance_key} "
-                f"Available keys: {self.feature_importances.keys()}"
-            )
+        # checks performed when feature importances are used
+        if self.relevance_type == "permutation":
+            # MRMR should not be the first sequence item
+            if self.experiment.sequence_item_id == 0:
+                raise ValueError("MRMR module should not be the first sequence item.")
+            # check if model_name exists
+            if self.model_name not in self.experiment.prior_feature_importances:
+                raise ValueError(
+                    f"Specified model name not found: {self.model_name}. "
+                    f"Available model names: "
+                    f"{list(self.experiment.prior_feature_importances.keys())}"
+                )
+            # check if feature_importance key exists
+            if self.feature_importance_key not in self.feature_importances:
+                raise ValueError(
+                    f"No feature importances available for "
+                    f"key {self.feature_importance_key} "
+                    f"Available keys: {self.feature_importances.keys()}"
+                )
 
     def run_experiment(self):
         """Run mrmr module on experiment."""
@@ -160,8 +156,8 @@ class MrmrCore:
             re_df = re_df[re_df["importance"] > 0].reset_index()
             print("Number features with positive importance: ", len(re_df))
         elif self.relevance_type == "f-statistics":
-            re_df = pd.DataFrame(columns=["features", "importance"])
-            re_df["features"] = self.feature_columns
+            re_df = pd.DataFrame(columns=["feature", "importance"])
+            re_df["feature"] = self.feature_columns
 
             if self.ml_type == "classification":
                 values, _ = f_classif(
@@ -185,7 +181,10 @@ class MrmrCore:
         )
 
         # save features selected by mrmr
-        self.experiment.selected_features = selected_mrmr_features
+        self.experiment.selected_features = sorted(
+            selected_mrmr_features, key=lambda s: (len(s), s)
+        )
+        print("Selected features: ", self.experiment.selected_features)
 
         return self.experiment
 
@@ -257,8 +256,20 @@ class MrmrCore:
                             FLOOR,
                             None,
                         )
+                elif correlation_type == "spearmanr":
+                    # Calculate correlation (Spearman)
+                    for col in not_selected:
+                        corr_value, _ = spearmanr(
+                            features_df[col], features_df[last_selected]
+                        )
+                        corr_value = max(
+                            abs(corr_value), FLOOR
+                        )  # Ensure non-negative correlation with a floor value
+                        corr.loc[col, last_selected] = corr_value
                 else:
-                    raise ValueError
+                    raise ValueError(
+                        f"Correlation type {correlation_type} not supported."
+                    )
                 # add "corr" column to score_df
                 score_df["corr"] = (
                     corr.loc[not_selected, selected]
@@ -284,5 +295,4 @@ class MrmrCore:
             selected.append(best)
             not_selected.remove(best)
 
-        print("selected: ", selected)
         return selected

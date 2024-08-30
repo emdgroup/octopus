@@ -24,8 +24,8 @@ class Mrmr(BaseSequenceItem):
     """Number of features selected by MRMR."""
 
     correlation_type: str = field(
-        validator=[validators.in_(["pearson", "rdc"])],
-        default=Factory(lambda: "pearson"),
+        validator=[validators.in_(["pearson", "rdc", "spearmanr"])],
+        default=Factory(lambda: "spearmanr"),
     )
     """Selection of correlation type."""
 

@@ -11,6 +11,7 @@ from sklearn.model_selection import GridSearchCV, StratifiedKFold
 
 from octopus.experiment import OctoExperiment
 from octopus.models.models_inventory import model_inventory
+from octopus.results import ModuleResults
 
 scorer_string_inventory = {
     "AUCROC": "roc_auc",
@@ -249,6 +250,28 @@ class RfeCore:
         # Report performance on test set
         test_score = rfecv.score(self.x_test, self.y_test)
         print(f"Test set performance: {test_score:.3f}")
+
+        # feature importances, model internal
+        # Missing!
+        # placeholder, feature importance of best model
+        # - rfecv.support_ to get best features
+        # - rfecv.estimator_
+        # - refit using best features
+        # - extract feature names
+        # - extract feature importances estimator.feature_importances_
+        fi_df = pd.DataFrame(columns=["feature", "importances"])
+
+        # save results to experiment
+        self.experiment.results["Rfe"] = ModuleResults(
+            id="rfe",
+            model=rfecv.estimator_,
+            # scores=scores,
+            feature_importances={
+                "internal": fi_df,
+            },
+            # predictions=ensel_bag.get_predictions(),
+            # selected_features=selected_features,
+        )
 
         # Save results to JSON
         results = {

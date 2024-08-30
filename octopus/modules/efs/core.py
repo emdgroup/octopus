@@ -88,7 +88,6 @@ def get_param_grid(model_type):
 # - should be done with a proper datasplit (see octo, stratification + groups)
 # - should be done with optuna
 # - make it work with timetoevent
-# - reproducibility issue, seems to come from earlier sequence item
 
 
 @define
@@ -285,9 +284,10 @@ class EfsCore:
         else:
             cv = KFold(n_splits=self.config.cv, shuffle=True, random_state=42)
 
-        # Silence catboost output
+        # Silence catboost output, stop it writing files
         if model_type == default_model:
             model.set_params(verbose=False)
+            model.set_params(allow_writing_files=False)
 
         # Define GridSearch for HPO
         grid_search = GridSearchCV(

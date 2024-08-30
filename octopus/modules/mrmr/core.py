@@ -3,6 +3,10 @@
 import numpy as np
 import pandas as pd
 from attrs import define, field, validators
+from sklearn.feature_selection import (
+    f_classif,
+    f_regression,
+)
 
 from octopus.experiment import OctoExperiment
 from octopus.modules.utils import rdc
@@ -31,6 +35,8 @@ from octopus.modules.utils import rdc
 # https://github.com/smazzanti/mrmr
 
 # TOBEDONE:
+# (0) if MRMR is used as the first sequence item,
+#     then relaveance needs to be f-statistics
 # (1) use counts instead of pfi
 # (2) use combined counts and pfi !!! as input
 # (3) how to deal with grouped features ???
@@ -53,9 +59,36 @@ class MrmrCore:
         return self.experiment.data_traindev
 
     @property
+    def x_traindev(self) -> pd.DataFrame:
+        """x_traindev."""
+        return self.experiment.data_traindev[self.experiment.feature_columns]
+
+    @property
+    def y_traindev(self) -> pd.DataFrame:
+        """y_traindev."""
+        return self.experiment.data_traindev[
+            self.experiment.target_assignments.values()
+        ]
+
+    @property
+    def feature_columns(self) -> list:
+        """feature_columns."""
+        return self.experiment.feature_columns
+
+    @property
+    def ml_type(self) -> str:
+        """ML type."""
+        return self.experiment.ml_type
+
+    @property
     def correlation_type(self) -> str:
         """Correlation type."""
         return self.experiment.ml_config.correlation_type
+
+    @property
+    def relevance_type(self) -> str:
+        """Relevance type."""
+        return self.experiment.ml_config.relevance_type
 
     @property
     def model_name(self) -> str:
@@ -86,14 +119,15 @@ class MrmrCore:
     def __attrs_post_init__(self):
         # initialization here due to "Python immutable default"
         # MRMR should not be the first sequence item
-        if self.experiment.sequence_item_id == 0:
-            raise ValueError("MRMR module should not be the first sequence item.")
+        # if self.experiment.sequence_item_id == 0:
+        #    raise ValueError("MRMR module should not be the first sequence item.")
         # check if model_name exists
-        if self.model_name not in self.experiment.prior_feature_importances:
-            raise ValueError(
-                f"Specified model name not found: {self.model_name}. "
-                f"Available model names: {list(self.experiment.prior_feature_importances.keys())}"
-            )
+        # if self.model_name not in self.experiment.prior_feature_importances:
+        #    raise ValueError(
+        #        f"Specified model name not found: {self.model_name}. "
+        #        f"Available model names: "
+        #        f"{list(self.experiment.prior_feature_importances.keys())}"
+        #    )
         # check if feature_importance key exists
         if self.feature_importance_key not in self.feature_importances:
             raise ValueError(
@@ -114,18 +148,38 @@ class MrmrCore:
         print(f"Sequence item: {self.experiment.sequence_item_id}")
         print(f"Number of features selected by MRMR: {self.n_features}")
         print(f"Correlation type used by MRMR: {self.correlation_type}")
+        print(f"Relevance type used by MRMR: {self.relevance_type}")
         print(f"Specified model name: {self.model_name}")
 
-        # (a) get feature importances
-        # (b) only use feaures with positive importances
-        fi_df = self.feature_importances[self.feature_importance_key]
-        print("Number of features in provided fi table: ", len(fi_df))
-        fi_df = fi_df[fi_df["importance"] > 0].reset_index()
-        print("Number features with positive importance: ", len(fi_df))
+        # select relevance information
+        if self.relevance_type == "permuation":
+            # (a) get feature importances
+            # (b) only use feaures with positive importances
+            re_df = self.feature_importances[self.feature_importance_key]
+            print("Number of features in provided fi table: ", len(re_df))
+            re_df = re_df[re_df["importance"] > 0].reset_index()
+            print("Number features with positive importance: ", len(re_df))
+        elif self.relevance_type == "f-statistics":
+            re_df = pd.DataFrame(columns=["features", "importance"])
+            re_df["features"] = self.feature_columns
+
+            if self.ml_type == "classification":
+                values, _ = f_classif(
+                    self.x_traindev, self.y_traindev.to_numpy().ravel()
+                )
+            elif self.ml_type == "regression":
+                values, _ = f_regression(
+                    self.x_traindev, self.y_traindev.to_numpy().ravel()
+                )
+            else:
+                raise ValueError(f"ML-type {self.ml_type} not supported.")
+            re_df["importance"] = values
+        else:
+            raise ValueError(f"Relevance type  {self.relevance_type} not supported.")
 
         # calculate MRMR features
         selected_mrmr_features = self._maxrminr(
-            fi_df,
+            re_df,
             n_features=self.n_features,
             correlation_type=self.correlation_type,
         )

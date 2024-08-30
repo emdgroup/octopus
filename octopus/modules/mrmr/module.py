@@ -29,6 +29,12 @@ class Mrmr(BaseSequenceItem):
     )
     """Selection of correlation type."""
 
+    relevance_type: str = field(
+        validator=[validators.in_(["permutation", "f-statistics"])],
+        default="permutation",
+    )
+    """Selection of relevance measure."""
+
     model_name: str = field(
         validator=[validators.in_(["best", "ensel", "autosk"])],
         default=Factory(lambda: "best"),

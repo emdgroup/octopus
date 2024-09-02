@@ -97,14 +97,17 @@ config_manager = ConfigManager(
 
 config_sequence = ConfigSequence(
     [
-        # Step1: octo
+        # Step1: sfs
         Sfs(
-            description="RFE",
-            cv=5,  # number of CV folds
-        ),
+            description="SFS",
+            model="RandomForestClassifier",  # CatBoostClassifier
+            cv=5,
+            sfs_type="floating_backward",
+        )
         # Step2: ....
     ]
 )
+
 
 ### Execute the Machine Learning Workflow
 

@@ -161,7 +161,7 @@ class EfsCore:
 
     @property
     def max_n_iterations(self) -> int:
-        """Maximum interations for ensemble optimization."""
+        """Maximum iterations for ensemble optimization."""
         return self.config.max_n_iterations
 
     @property
@@ -330,9 +330,7 @@ class EfsCore:
                 )
                 cv_preds_df["probabilities"] = cross_val_predict(
                     best_model, x, y, cv=cv, method="predict_proba"
-                )[
-                    :, 1
-                ]  # binary only
+                )[:, 1]  # binary only
             elif self.ml_type == "regression":
                 cv_preds_df = pd.DataFrame()
                 cv_preds_df[self.row_column] = row_ids
@@ -384,7 +382,7 @@ class EfsCore:
         self.model_table = pd.concat(df_lst, axis=1).T
         self.model_table["id"] = self.model_table["id"].astype(int)
 
-        # oder of table is important, depending on metric,
+        # order of table is important, depending on metric,
         # (a) direction (b) dev_pool_soft or dev_pool_hard
         if self.direction == "maximize":
             ascending = False
@@ -573,7 +571,7 @@ class EfsCore:
             row = self.model_table[self.model_table["id"] == key]
             model_features = row["used_features"].tolist()
             model_features = sum(model_features, [])  # flatten list
-            # replicate model features wiht model count
+            # replicate model features with model count
             feature_lst.extend(model_features * value)
 
         feature_counts = Counter(feature_lst)

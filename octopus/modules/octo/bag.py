@@ -295,9 +295,9 @@ class Bag:
 
         # save feature importances for every training in bag
         for training in self.trainings:
-            self.feature_importances[training.training_id] = (
-                training.feature_importances
-            )
+            self.feature_importances[
+                training.training_id
+            ] = training.feature_importances
 
         # summary feature importances for all trainings (mean + count)
         # internal, permutation_dev, shap_dev only

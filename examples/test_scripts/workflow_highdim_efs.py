@@ -2,7 +2,7 @@
 
 # The AlonDS data set was collected by Alon et. al. and consists of 2000 genes measured
 # on 62 patients: 40 diagnosed with colon cancer and 22 healthy patients. The patient
-# status (tissue type) is described in ‘tissse_numberic’ and the gene values are given
+# status (tissue type) is described in ‘tissse_numeric’ and the gene values are given
 # by the numeric variables ‘genes.1’ through ‘genes.2000’
 #
 # Link:https://rdrr.io/cran/HiDimDA/man/AlonDS.html
@@ -16,7 +16,7 @@
 # The direct link to the dataset is here:
 # http://genomics-pubs.princeton.edu/oncology/affydata/index.html
 
-# performance comparision here:
+# performance comparison here:
 # https://github.com/AutoViML/featurewiz/blob/main/examples/Featurewiz_on_2000_variables.ipynb
 
 import numpy as np

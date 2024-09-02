@@ -17,8 +17,21 @@ class Sfs(BaseSequenceItem):
     )
     """Load existing sequence item, fixed, set to False"""
 
+    model: str = field(validator=[validators.instance_of(str)], default="")
+    """Model used by SFS."""
+
     cv: int = field(validator=[validators.instance_of(int)], default=5)
     """Number of CV folds for RFE_CV."""
+
+    sfs_type: str = field(
+        validator=[
+            validators.in_(
+                ["forward", "backward", "floating_forward", "floating_backward"]
+            )
+        ],
+        default="floating_backward",
+    )
+    """Sfs type used."""
 
     # correlation_type: str = field(
     #    validator=[validators.in_(["pearson", "rdc"])], default="pearson"

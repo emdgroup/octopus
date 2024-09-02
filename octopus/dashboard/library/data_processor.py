@@ -16,7 +16,7 @@ from octopus.metrics import metrics_inventory
 class EDADataProcessor:
     """Load data for EDA."""
 
-    octo_data: OctoData | Path = field(default=None)
+    octo_data: OctoData = field(default=None)
 
     def __attrs_post_init__(self):
         # load octo data from file if Path is provided
@@ -116,10 +116,10 @@ class ResultsDataProcessor:
         for file in list(experiment_files):
             exp = OctoData.from_pickle(file)
             default_target_column = exp.target_assignments["default"]
-            for split in exp.predictions:
-                for dataset in exp.predictions[split]:
+            for split in exp.results["best"].predictions:
+                for dataset in exp.results["best"].predictions[split]:
                     # get predictions
-                    df_temp = exp.predictions[split][dataset]
+                    df_temp = exp.results["best"].predictions[split][dataset]
                     df_temp["experiment_id"] = exp.experiment_id
                     df_temp["sequence_id"] = exp.sequence_item_id
                     df_temp["split_id"] = split
@@ -129,7 +129,9 @@ class ResultsDataProcessor:
                     # calculate scores
                     for metric, value in metrics_inventory.items():
                         if value.get("ml_type") == exp.ml_type:
-                            prediction = exp.predictions[split][dataset]["prediction"]
+                            prediction = exp.results["best"].predictions[split][
+                                dataset
+                            ]["prediction"]
                             if exp.ml_type == "classification":
                                 prediction = prediction.astype(int)
                             dict_socre_temp = {
@@ -139,7 +141,7 @@ class ResultsDataProcessor:
                                 "testset": dataset,
                                 "metric": metric,
                                 "score": value["method"](
-                                    exp.predictions[split][dataset][
+                                    exp.results["best"].predictions[split][dataset][
                                         default_target_column
                                     ],
                                     prediction,
@@ -254,10 +256,12 @@ class ResultsDataProcessor:
         df_feature_importances = pd.DataFrame()
         for file in list(experiment_files):
             exp = OctoData.from_pickle(file)
-            for split in exp.feature_importances:
+            for split in exp.results["best"].feature_importances:
                 if split != "test":
-                    for dataset in exp.feature_importances[split]:
-                        df_temp = exp.feature_importances[split][dataset]
+                    for dataset in exp.results["best"].feature_importances[split]:
+                        df_temp = exp.results["best"].feature_importances[split][
+                            dataset
+                        ]
                         df_temp["experiment_id"] = exp.experiment_id
                         df_temp["sequence_id"] = exp.sequence_item_id
                         df_temp["split_id"] = split

@@ -21,7 +21,10 @@ class OctoML:
 
     Attributes:
         data (OctoData): The data used in the experiments.
-        config (OctoConfig): The configuration settings for the experiments.
+        config_study (ConfigStudy): Configuration for the study.
+        config_manager (ConfigManager): Configuration for the manager.
+        config_sequence (ConfigSequence): Configuration for the sequence.
+        configs (OctoConfig): The configuration settings for the experiments.
         experiments (List): A list to store experiment details.
         manager (Optional[OctoManager]): An optional manager for the experiments.
     """

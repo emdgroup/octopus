@@ -3,7 +3,6 @@
 import os
 import socket
 
-
 # OPENBLASE config needs to be before pandas, autosk
 # os.environ["OPENBLAS_NUM_THREADS"] = "1"
 # os.environ["OMP_NUM_THREADS"] = "1"
@@ -11,7 +10,7 @@ import pandas as pd
 
 from octopus import OctoData, OctoML
 from octopus.config import ConfigManager, ConfigSequence, ConfigStudy
-from octopus.modules import Mrmr, Octo, Roc
+from octopus.modules import Roc
 
 print("Notebook kernel is running on server:", socket.gethostname())
 print("Conda environment on server:", os.environ["CONDA_DEFAULT_ENV"])

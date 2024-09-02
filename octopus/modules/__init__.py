@@ -3,6 +3,9 @@
 
 from typing import Dict, Type
 
+from .efs.core import EfsCore
+from .efs.module import Efs
+
 # Import the core classes from their respective modules
 from .mrmr.core import MrmrCore
 
@@ -16,8 +19,6 @@ from .roc.core import RocCore
 from .roc.module import Roc
 from .sfs.core import SfsCore
 from .sfs.module import Sfs
-from .efs.core import EfsCore
-from .efs.module import Efs
 
 # Define the __all__ variable to specify what is available to import from this package
 __all__ = ["Mrmr", "Octo", "Rfe", "Roc", "Sfs", "Efs"]

@@ -106,7 +106,7 @@ class EnSel:
 
         self.model_table = pd.concat(df_lst, axis=1).T
 
-        # oder of table is important, depending on metric,
+        # order of table is important, depending on metric,
         # (a) direction (b) dev_pool_soft or dev_pool_hard
         if self.direction == "maximize":
             ascending = False

@@ -52,7 +52,7 @@ for line in [319, 330, 338]:
 # - (0) selected features is currently only taken from best bag, and not ensel
 # - (0) fix sklearn due to new ModelResults
 # - (0) ensemble selection - use training weight
-#       training weight needs to be considere in bag fi, score, predict
+#       training weight needs to be considered in bag fi, score, predict
 # - (1) ensemble selection - missing
 #       - max_n_iterations need to become configurable
 #       - save best bag scores to the experiment

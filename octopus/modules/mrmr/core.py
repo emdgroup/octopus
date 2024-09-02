@@ -148,7 +148,7 @@ class MrmrCore:
         print(f"Specified model name: {self.model_name}")
 
         # select relevance information
-        if self.relevance_type == "permuation":
+        if self.relevance_type == "permutation":
             # (a) get feature importances
             # (b) only use feaures with positive importances
             re_df = self.feature_importances[self.feature_importance_key]

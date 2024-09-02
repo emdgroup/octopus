@@ -82,6 +82,7 @@ def get_param_grid(model_type):
 
 
 # TOBEDONE/IDEAS:
+# - (1) refit, gridsearch/refit on best feature set
 # - (0) RFE - better test results than octo (datasplit difference?)
 # - put scorer_string_inventory in central place
 # - better datasplit (stratification + groups)
@@ -91,7 +92,7 @@ def get_param_grid(model_type):
 # - permutation feature importances on dev! requires roc
 # - new approach on how many features to eliminate. See autogluon issue.
 #   Add random features (3-5) and remove all features below worst random feature.
-#   See autoglupn
+#   See autogluon
 
 
 @define
@@ -191,7 +192,7 @@ class RfeCore:
 
         # Silence catboost output
         if model_type == default_model:
-            model.set_params(verbose=False)
+            model.set_params(verbose=False, allow_writing_files=False)
 
         # Hyperparameter optimization
         grid_search = GridSearchCV(
@@ -219,6 +220,8 @@ class RfeCore:
         elif self.config.mode == "Mode2":
             # RFE with hyperparameter optimization at each step
             estimator = grid_search
+        else:
+            raise ValueError(f"Unsupported Mode: {self.config.mode}")
 
         print(f"Number of features before RFE: {self.x_traindev.shape[1]}")
 
@@ -251,15 +254,14 @@ class RfeCore:
         test_score = rfecv.score(self.x_test, self.y_test)
         print(f"Test set performance: {test_score:.3f}")
 
-        # feature importances, model internal
-        # Missing!
-        # placeholder, feature importance of best model
-        # - rfecv.support_ to get best features
-        # - rfecv.estimator_
-        # - refit using best features
-        # - extract feature names
-        # - extract feature importances estimator.feature_importances_
-        fi_df = pd.DataFrame(columns=["feature", "importances"])
+        # feature importances
+        fi_df = pd.DataFrame(
+            {
+                "feature": self.experiment.selected_features,
+                "importances": estimator.feature_importances_[rfecv.support_],
+            }
+        ).sort_values(by="importances", ascending=False)
+        # print(fi_df)
 
         # save results to experiment
         self.experiment.results["Rfe"] = ModuleResults(

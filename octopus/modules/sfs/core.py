@@ -64,7 +64,7 @@ def get_param_grid(model_type):
         # RF and ExtraTrees
         param_grid = {
             "max_depth": [3, 6, 10],  # [2, 10, 20, 32],
-            # "min_samples_split": [2, 25, 50, 100],
+            "min_samples_split": [2, 25, 50, 100],
             # "min_samples_leaf": [1, 15, 30, 50],
             # "max_features": [0.1, 0.5, 1],
             "n_estimators": [500],  # [100, 250, 500],
@@ -74,6 +74,8 @@ def get_param_grid(model_type):
 
 # TOBEDONE/IDEAS:
 # - put scorer_string_inventory in central place
+# - try verbose = 1, useful?
+# - use cv object, stratifiedKfold
 
 
 @define
@@ -214,7 +216,7 @@ class SfsCore:
             floating=floating,
             cv=cv,
             scoring=scoring_type,
-            verbose=0,
+            verbose=1,
             n_jobs=1,
         )
 

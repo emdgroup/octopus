@@ -76,7 +76,7 @@ class Octo(BaseSequenceItem):
     """Methods for dimension reduction."""
 
     max_outl: int = field(
-        validator=[validators.instance_of(int)], default=Factory(lambda: 5)
+        validator=[validators.instance_of(int)], default=Factory(lambda: 3)
     )
     """Maximum number of outliers, optimized by Optuna"""
 

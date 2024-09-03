@@ -205,6 +205,7 @@ catboost_class = {
         ("float", {"name": "random_strength", "low": 2, "high": 10}),
         ("float", {"name": "rsm", "low": 0.1, "high": 1}),
         ("fixed", {"name": "iterations", "value": 500}),
+        ("categorical", {"name": "auto_class_weights", "choices": [None, "Balanced"]}),
         # "Ordered" gives higher quality, but is slower
         # ("fixed", {"name": "boosting_type", "value": "Plain"}),  # "Plain, Ordered"
         # ("fixed", {"name": "silent", "value": True}), # only set one verbose parameter
@@ -250,6 +251,23 @@ tabpfn_class = {
     },
 }
 
+# LogistiRegression classifier parameter settings
+logistic_class = {
+    "default": [
+        ("int", {"name": "max_iter", "low": 100, "high": 500}),
+        ("float", {"name": "C", "low": 1e-2, "high": 100, "log": True}),
+        ("float", {"name": "tol", "low": 1e-4, "high": 1e-2, "log": True}),
+        ("categorical", {"name": "penalty", "choices": ["l2", "none"]}),
+        ("categorical", {"name": "fit_intercept", "choices": [True, False]}),
+        ("categorical", {"name": "class_weight", "choices": [None, "balanced"]}),
+        ("fixed", {"name": "solver", "value": "lbfgs"}),
+    ],
+    "translate": {
+        "n_jobs": "n_jobs",
+        "model_seed": "random_state",
+    },
+}
+
 parameters_inventory = {
     "ExtraTreesClassifier": extratree_class,
     "ExtraTreesRegressor": extratree_reg,
@@ -266,4 +284,5 @@ parameters_inventory = {
     "CatBoostClassifier": catboost_class,
     "CatBoostRegressor": catboost_reg,
     "TabPFNClassifier": tabpfn_class,
+    "LogisticRegressionClassifier": logistic_class,
 }

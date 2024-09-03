@@ -1,6 +1,5 @@
-"""OctoFull Trainings."""
+"""Octo Training."""
 
-# import os
 import copy
 import math
 
@@ -8,7 +7,8 @@ import numpy as np
 import pandas as pd
 import scipy
 import shap
-from attrs import define, field, validators
+from attrs import Factory, define, field, validators
+from sklearn.ensemble import IsolationForest
 from sklearn.inspection import permutation_importance
 from sklearn.preprocessing import MaxAbsScaler
 
@@ -31,29 +31,69 @@ class Training:
     """Model Training Class."""
 
     training_id: str = field(validator=[validators.instance_of(str)])
+    """Training id."""
+
     ml_type: str = field(validator=[validators.instance_of(str)])
+    """ML-type."""
+
     target_assignments: dict = field(validator=[validators.instance_of(dict)])
+    """Target assignments."""
+
     feature_columns: list = field(validator=[validators.instance_of(list)])
+    """Feature columns."""
+
     row_column: str = field(validator=[validators.instance_of(str)])
+    """Row column."""
+
     data_train: pd.DataFrame = field(validator=[validators.instance_of(pd.DataFrame)])
+    "Data train."
+
     data_dev: pd.DataFrame = field(validator=[validators.instance_of(pd.DataFrame)])
+    "Data dev."
+
     data_test: pd.DataFrame = field(validator=[validators.instance_of(pd.DataFrame)])
+    """Data test."""
+
     target_metric: str = field(validator=[validators.instance_of(str)])
+    """Target metric."""
+
     max_features: int = field(validator=[validators.instance_of(int)])
+    """Maximum number of features."""
+
     feature_groups: dict = field(validator=[validators.instance_of(dict)])
-    # configuration for training
+    """Feature Groups."""
+
     config_training: dict = field(validator=[validators.instance_of(dict)])
-    # default init
+    """Training configuration."""
+
     training_weight: int = field(default=1, validator=[validators.instance_of(int)])
-    # training outputs, initialized in post_init
+    """Training weight for ensembling"""
+
     model = field(default=None)
-    predictions: dict = field(init=False, validator=[validators.instance_of(dict)])
-    feature_importances: dict = field(
-        init=False, validator=[validators.instance_of(dict)]
+    """Model."""
+
+    predictions: dict = field(
+        default=Factory(dict), validator=[validators.instance_of(dict)]
     )
-    features_used: list = field(init=False, validator=[validators.instance_of(list)])
-    # scaler
+    """Model predictions."""
+
+    feature_importances: dict = field(
+        default=Factory(dict), validator=[validators.instance_of(dict)]
+    )
+    """Feature importances."""
+
+    features_used: list = field(
+        default=Factory(list), validator=[validators.instance_of(list)]
+    )
+    """Features used."""
+
+    outlier_samples: list = field(
+        default=Factory(list), validator=[validators.instance_of(list)]
+    )
+    """Outlie samples identified."""
+
     scaler = field(init=False)
+    """Scaler."""
 
     @property
     def dim_reduction(self) -> str:
@@ -130,61 +170,88 @@ class Training:
             return self.data_test[self.target_assignments.values()]
 
     def __attrs_post_init__(self):
-        # initialization here due to "Python immutable default"
-        self.predictions = dict()
-        self.feature_importances = dict()
-        self.features_used = list()
         # scaler
         self.scaler = MaxAbsScaler()
 
-    # perform:
-    # (1) dim_reduction
-    # (2) outlier removal
-    # (3) training
-    # (4) standard feature importance
-    # (4) permutation feature importance
-    # (5) shapley feature importance
-
-    # output:
-    # (1) predictions
-    # (2) probabilities in case of classification
-    # (3) feature_importances, which
-    # (4)
+    # Training class functionality:
+    # (1) outlier removal
+    # (2) scaling
+    # (3) dim_reduction
+    # (4) model training
+    # (5) model predictions
+    # (6) calculate feature importance, on request
 
     def fit(self):
-        """Run trainings."""
+        """Preprocess and fit model."""
         # missing:
-        # (1) missing: outlier removal
-        # (2) scaling
-        # (3) missinf dim reduction
+        # (1) scaling
+        # (2) missing dim reduction
 
+        # use copy of all train variables, as they may be change due to outlier detec.
+        data_train = self.data_train.copy()
+        x_train = self.x_train.copy()
+        y_train = self.y_train.copy()
+
+        # (1) outlier removal in x_train
+        if self.outl_reduction > 0:
+            # IsolationForest for outlier detection
+            clf = IsolationForest(
+                contamination=self.outl_reduction / len(x_train),
+                random_state=42,
+                n_jobs=1,
+            )
+            clf.fit(x_train)
+
+            # Get the outlier prediction labels
+            # (-1:outliers, 1:inliers)
+            outlier_pred = clf.predict(x_train)
+            # sometimes there seems to be a mismatch in the number of outliers
+            # assert self.outl_reduction == np.sum(outlier_pred == -1)
+            # print("Number of outliers specified:", self.outl_reduction)
+            # print("Number of outliers found:", np.sum(outlier_pred == -1))
+
+            # identify outlier samples
+            self.outlier_samples = data_train[outlier_pred == -1][
+                self.row_column
+            ].tolist()
+            # print("Outlier samples:", self.outlier_samples)
+
+            # Remove outliers from data_train, x_train, y_train
+            data_train = data_train[outlier_pred == 1].copy()
+            x_train = x_train[outlier_pred == 1].copy()
+            y_train = y_train[outlier_pred == 1].copy()
+
+        # (2) Scaling - missing
         # scaling (!after outlier removal)
-        # x_train_scaled = self.scaler.fit_transform(self.x_train)
+        # x_train_scaled = self.scaler.fit_transform(x_train)
         # x_dev_scaled = self.scaler.transform(self.x_dev)
         # x_test_scaled = self.scaler.transform(self.x_test)
+
+        # (3) Dimensionality reduction - missing
+
+        # (4) Model training
+        # define ML-model
         self.model = model_inventory[self.ml_model_type]["model"](
             **self.ml_model_params
         )
-
-        # print(self.model.get_xgb_params())
-        # print(os.environ)
 
         if len(self.target_assignments) == 1:
             # standard sklearn single target models
             self.model.fit(
                 # x_train_scaled,
-                self.x_train,
-                self.y_train.squeeze(axis=1),
+                x_train,
+                y_train.squeeze(axis=1),
             )
         else:
             # multi target models, incl. time2event
-            # self.model.fit(x_train_scaled, self.y_train)
-            self.model.fit(self.x_train, self.y_train)
+            # self.model.fit(x_train_scaled, y_train)
+            self.model.fit(x_train, y_train)
 
+        # (5) Model prediction
         self.predictions["train"] = pd.DataFrame()
-        self.predictions["train"][self.row_column] = self.data_train[self.row_column]
+        self.predictions["train"][self.row_column] = data_train[self.row_column]
         # self.predictions["train"]["prediction"] = self.model.predict(x_train_scaled)
-        self.predictions["train"]["prediction"] = self.model.predict(self.x_train)
+        self.predictions["train"]["prediction"] = self.model.predict(x_train)
 
         self.predictions["dev"] = pd.DataFrame()
         self.predictions["dev"][self.row_column] = self.data_dev[self.row_column]
@@ -199,12 +266,12 @@ class Training:
         # special treatment of targets due to sklearn
         if len(self.target_assignments) == 1:
             target_col = list(self.target_assignments.values())[0]
-            self.predictions["train"][target_col] = self.y_train.squeeze(axis=1)
+            self.predictions["train"][target_col] = y_train.squeeze(axis=1)
             self.predictions["dev"][target_col] = self.y_dev.squeeze(axis=1)
             self.predictions["test"][target_col] = self.y_test.squeeze(axis=1)
         else:
             for target_col in self.target_assignments.values():
-                self.predictions["train"][target_col] = self.data_train[target_col]
+                self.predictions["train"][target_col] = data_train[target_col]
                 self.predictions["dev"][target_col] = self.data_dev[target_col]
                 self.predictions["test"][target_col] = self.data_test[target_col]
 
@@ -214,7 +281,7 @@ class Training:
             # self.predictions["train"][columns] = self.model.predict_proba(
             #    x_train_scaled
             # )
-            self.predictions["train"][columns] = self.model.predict_proba(self.x_train)
+            self.predictions["train"][columns] = self.model.predict_proba(x_train)
             # self.predictions["dev"][columns] = self.model.predict_proba(x_dev_scaled)
             self.predictions["dev"][columns] = self.model.predict_proba(self.x_dev)
             # self.predictions["test"][columns]=self.model.predict_proba(x_test_scaled)

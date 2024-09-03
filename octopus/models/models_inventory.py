@@ -15,7 +15,7 @@ from sklearn.ensemble import (
     RandomForestClassifier,
     RandomForestRegressor,
 )
-from sklearn.linear_model import ARDRegression, ElasticNet, Ridge
+from sklearn.linear_model import ARDRegression, ElasticNet, LogisticRegression, Ridge
 from sklearn.svm import SVR
 from sksurv.ensemble import ExtraSurvivalTrees
 from tabpfn import TabPFNClassifier
@@ -107,6 +107,12 @@ model_inventory = {
     },
     "TabPFNClassifier": {
         "model": TabPFNClassifier,
+        "feature_method": "permutation",
+        "n_repeats": 2,
+        "ml_type": "classification",
+    },
+    "LogisticRegressionClassifier": {
+        "model": LogisticRegression,
         "feature_method": "permutation",
         "n_repeats": 2,
         "ml_type": "classification",

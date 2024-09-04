@@ -3,6 +3,8 @@
 
 from typing import Dict, Type
 
+from .boruta.core import BorutaCore
+from .boruta.module import Boruta
 from .efs.core import EfsCore
 from .efs.module import Efs
 
@@ -21,7 +23,7 @@ from .sfs.core import SfsCore
 from .sfs.module import Sfs
 
 # Define the __all__ variable to specify what is available to import from this package
-__all__ = ["Mrmr", "Octo", "Rfe", "Roc", "Sfs", "Efs"]
+__all__ = ["Mrmr", "Octo", "Rfe", "Roc", "Sfs", "Efs", "Boruta"]
 
 # Type for the modules inventory dictionary
 ModulesInventoryType = Dict[str, Type]
@@ -34,4 +36,5 @@ modules_inventory: ModulesInventoryType = {
     "roc": RocCore,
     "sfs": SfsCore,
     "efs": EfsCore,
+    "boruta": BorutaCore,
 }

@@ -73,6 +73,7 @@ def get_param_grid(model_type):
 
 
 # TOBEDONE/IDEAS:
+# - (2) add scores to results
 # - put scorer_string_inventory in central place
 # - try verbose = 1, useful?
 # - use cv object, stratifiedKfold
@@ -254,11 +255,23 @@ class SfsCore:
         test_score_gsrefit = best_gs_estimator.score(x_test_sfs, self.y_test)
         print(f"Test set (gridsearch+refit) performance: {test_score_gsrefit:.3f}")
 
+        # feature importances
+        fi_df = pd.DataFrame(
+            {
+                "feature": self.experiment.selected_features,
+                "importances": best_gs_estimator.feature_importances_,
+            }
+        ).sort_values(by="importances", ascending=False)
+        # print(fi_df)
+
         # save results to experiment
         self.experiment.results["Sfs"] = ModuleResults(
             id="SFS",
             model=best_gs_estimator,
             # scores=scores,
+            feature_importances={
+                "internal": fi_df,
+            },
             selected_features=self.experiment.selected_features,
         )
 

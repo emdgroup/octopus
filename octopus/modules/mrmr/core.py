@@ -36,6 +36,7 @@ from octopus.modules.utils import rdc
 # https://github.com/smazzanti/mrmr
 
 # TOBEDONE:
+# (1) relevance-type "permutation", importance_type="permutation" ?
 # (1) add mutual information to relevance methods
 # (2) saving results? any plots?
 
@@ -146,6 +147,10 @@ class MrmrCore:
         print(f"Correlation type used by MRMR: {self.correlation_type}")
         print(f"Relevance type used by MRMR: {self.relevance_type}")
         print(f"Specified model name: {self.model_name}")
+        print(
+            f"Available model names: "
+            f"{list(self.experiment.prior_feature_importances.keys())}"
+        )
 
         # select relevance information
         if self.relevance_type == "permutation":

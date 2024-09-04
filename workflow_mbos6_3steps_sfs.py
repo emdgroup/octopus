@@ -70,13 +70,13 @@ octo_data = OctoData(
 # we use one sequence with the `RandomForestClassifier` model.
 
 config_study = ConfigStudy(
-    name="MBOS6_sfs",
+    name="MBOS6_3steps_sfs",
     ml_type="classification",
     target_metric="AUCROC",
     metrics=["AUCROC", "ACCBAL", "ACC", "LOGLOSS"],
     datasplit_seed_outer=1234,
     n_folds_outer=5,
-    start_with_empty_study=True,
+    start_with_empty_study=False,
     path="./studies/",
     silently_overwrite_study=True,
 )
@@ -85,34 +85,25 @@ config_manager = ConfigManager(
     # outer loop parallelization
     outer_parallelization=True,
     # only process first outer loop experiment, for quick testing
-    # run_single_experiment_num=1,
+    run_single_experiment_num=1,
 )
 
 config_sequence = ConfigSequence(
     [
-        # Step0:
-        Roc(
-            # loading of existing results
-            load_sequence_item=False,
-            description="step_0_ROC",
-            threshold=0.8,
-            correlation_type="spearmanr",
-            filter_type="f_statistics",  # "mutual_info"
-        ),
         # Step1: octo
         Octo(
             description="step_1_octo",
             # loading of existing results
-            load_sequence_item=False,
+            load_sequence_item=True,
             # datasplit
             n_folds_inner=5,
             # model selection
             models=[
                 # "TabPFNClassifier",
-                # "ExtraTreesClassifier",
+                "ExtraTreesClassifier",
                 # "RandomForestClassifier",
                 # "CatBoostClassifier",
-                "XGBClassifier",
+                # "XGBClassifier",
             ],
             model_seed=0,
             n_jobs=1,
@@ -144,7 +135,7 @@ config_sequence = ConfigSequence(
             # number of features selected by MRMR
             n_features=50,
             # what correlation type should be used
-            correlation_type="rdc",  # "rdc"
+            correlation_type="spearmanr",  # rdc
             # relevance type
             relevance_type="permutation",
             # feature importance type (mean/count)
@@ -162,10 +153,10 @@ config_sequence = ConfigSequence(
             # model selection
             models=[
                 # "TabPFNClassifier",
-                # "ExtraTreesClassifier",
+                "ExtraTreesClassifier",
                 # "RandomForestClassifier",
                 # "CatBoostClassifier",
-                "XGBClassifier",
+                # "XGBClassifier",
             ],
             model_seed=0,
             n_jobs=1,
@@ -181,7 +172,7 @@ config_sequence = ConfigSequence(
             resume_optimization=False,
             global_hyperparameter=True,
             n_trials=100,
-            max_features=70,
+            max_features=50,
             penalty_factor=1.0,
             # ensemble selection
             ensemble_selection=True,

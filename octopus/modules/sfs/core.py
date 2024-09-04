@@ -74,6 +74,9 @@ def get_param_grid(model_type):
 
 # TOBEDONE/IDEAS:
 # - (2) add scores to results
+# - it would be nice to stop after a certain feature reduction, then
+#   relearn the model parameters and the start again. k_features parameter!
+# - k_features = "parsemonious", check this out
 # - put scorer_string_inventory in central place
 # - try verbose = 1, useful?
 # - use cv object, stratifiedKfold

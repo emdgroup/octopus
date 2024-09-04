@@ -41,6 +41,7 @@ for line in [319, 330, 338]:
 # - check that openblas settings are correct and suggest solutions
 
 # TOBEDONE OCTOFULL
+# - (0) Optuna trials should be >> than optuna_start_trials
 # - (0) RFE - better test results than octo (datasplit difference?)
 # - (0) ensemble or pooling, some metrics (ACC) require int, others not (MSE)
 # - (0) Cleanup: get rid of individual HP

@@ -10,7 +10,7 @@ import pandas as pd
 
 from octopus import OctoData, OctoML
 from octopus.config import ConfigManager, ConfigSequence, ConfigStudy
-from octopus.modules import Mrmr, Octo, Roc, Sfs
+from octopus.modules import Mrmr, Octo, Rfe, Roc
 
 print("Notebook kernel is running on server:", socket.gethostname())
 print("Conda environment on server:", os.environ["CONDA_DEFAULT_ENV"])
@@ -70,13 +70,13 @@ octo_data = OctoData(
 # we use one sequence with the `RandomForestClassifier` model.
 
 config_study = ConfigStudy(
-    name="MBOS6_sfs",
+    name="MBOS6_rfe",
     ml_type="classification",
     target_metric="AUCROC",
     metrics=["AUCROC", "ACCBAL", "ACC", "LOGLOSS"],
     datasplit_seed_outer=1234,
     n_folds_outer=5,
-    start_with_empty_study=True,
+    start_with_empty_study=False,
     path="./studies/",
     silently_overwrite_study=True,
 )
@@ -93,7 +93,7 @@ config_sequence = ConfigSequence(
         # Step0:
         Roc(
             # loading of existing results
-            load_sequence_item=False,
+            load_sequence_item=True,
             description="step_0_ROC",
             threshold=0.8,
             correlation_type="spearmanr",
@@ -103,7 +103,7 @@ config_sequence = ConfigSequence(
         Octo(
             description="step_1_octo",
             # loading of existing results
-            load_sequence_item=False,
+            load_sequence_item=True,
             # datasplit
             n_folds_inner=5,
             # model selection
@@ -138,7 +138,7 @@ config_sequence = ConfigSequence(
         Mrmr(
             description="step2_mrmr",
             # loading of existing results
-            load_sequence_item=False,
+            load_sequence_item=True,
             # model_name
             model_name="best",
             # number of features selected by MRMR
@@ -156,7 +156,7 @@ config_sequence = ConfigSequence(
         Octo(
             description="step_3_octo",
             # loading of existing results
-            load_sequence_item=False,
+            load_sequence_item=True,
             # datasplit
             n_folds_inner=5,
             # model selection
@@ -187,14 +187,12 @@ config_sequence = ConfigSequence(
             ensemble_selection=True,
             ensel_n_save_trials=75,
         ),
-        # Step4: sfs
-        Sfs(
-            description="step_4_sfs",
+        # Step4: rfe
+        Rfe(
+            description="step_4_rfe",
             # loading of existing results
             load_sequence_item=False,
             model="RandomForestClassifier",
-            cv=5,
-            sfs_type="backward",
         ),
         # # Step5: octo
         # Octo(

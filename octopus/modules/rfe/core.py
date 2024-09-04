@@ -1,5 +1,6 @@
 """Rfe core."""
 
+import copy
 import json
 import shutil
 from pathlib import Path
@@ -73,7 +74,7 @@ def get_param_grid(model_type):
         # RF and ExtraTrees
         param_grid = {
             "max_depth": [3, 6, 10],  # [2, 10, 20, 32],
-            # "min_samples_split": [2, 25, 50, 100],
+            "min_samples_split": [2, 25, 50, 100],
             # "min_samples_leaf": [1, 15, 30, 50],
             # "max_features": [0.1, 0.5, 1],
             "n_estimators": [500],  # [100, 250, 500],
@@ -82,17 +83,31 @@ def get_param_grid(model_type):
 
 
 # TOBEDONE/IDEAS:
-# - (1) refit, gridsearch/refit on best feature set
-# - (0) RFE - better test results than octo (datasplit difference?)
-# - put scorer_string_inventory in central place
-# - better datasplit (stratification + groups)
-# - replace gridsearch with optuna
-# - mode2: only one training per reduction and not for every experiment
-# - option: random search insteat of grid search
-# - permutation feature importances on dev! requires roc
-# - new approach on how many features to eliminate. See autogluon issue.
-#   Add random features (3-5) and remove all features below worst random feature.
-#   See autogluon
+# - Notes:
+#   + For RFE it is important to have uncorrelated features (ROC, MRMR module)
+#   + Advantage RFE over SFS - fewer retrainings, less overfitting
+#   + Disadvantage RFE over SFS - need to rely on feature importances
+# - General topics:
+#   + (0) add scores to results
+#   + (1) put scorer_string_inventory in central place
+# - Question:  RFE - better test results than octo (datasplit difference?)
+# - Next Steps (Improvements)
+#   + separate second RFE module!
+#   + better datasplit (stratification + groups)
+#   + based on bag (inherits datasplit + feature importances)?
+#   + model retraining after n removals
+#   + find best model using stats test, smallest number of features with
+#     no significant difference to max performance!!
+#   + replace gridsearch with optuna or randomsearch
+#   + Performance: permutation fi on dev! requires ROC, MRMR
+#   + PFI: use large number of repeats, adjustable
+#   + automatically remove not used features (fi == 0)
+#   + Write own RFE code to have more options
+#   + intelligent feature removal considering groups
+#   + Efficiency option: new approach on how many features to eliminate.
+#     See autogluon issue. Add random features (3-5) and remove all features below worst
+#     random feature. See autogluon
+#   + mode2: only one training per reduction and not for every experiment??
 
 
 @define
@@ -252,13 +267,21 @@ class RfeCore:
 
         # Report performance on test set
         test_score = rfecv.score(self.x_test, self.y_test)
-        print(f"Test set performance: {test_score:.3f}")
+        print(f"Test set (cv) performance: {test_score:.3f}")
+
+        # retrain best model on x_traindev
+        best_estimator = copy.deepcopy(estimator)
+        x_traindev_rfe = self.x_traindev[self.experiment.selected_features]
+        x_test_rfe = self.x_test[self.experiment.selected_features]
+        best_estimator.fit(x_traindev_rfe, self.y_traindev.squeeze(axis=1))
+        test_score_refit = best_estimator.score(x_test_rfe, self.y_test)
+        print(f"Test set (refit) performance: {test_score_refit:.3f}")
 
         # feature importances
         fi_df = pd.DataFrame(
             {
                 "feature": self.experiment.selected_features,
-                "importances": estimator.feature_importances_[rfecv.support_],
+                "importances": best_estimator.feature_importances_,
             }
         ).sort_values(by="importances", ascending=False)
         # print(fi_df)
@@ -266,13 +289,12 @@ class RfeCore:
         # save results to experiment
         self.experiment.results["Rfe"] = ModuleResults(
             id="rfe",
-            model=rfecv.estimator_,
+            model=best_estimator,
             # scores=scores,
             feature_importances={
                 "internal": fi_df,
             },
-            # predictions=ensel_bag.get_predictions(),
-            # selected_features=selected_features,
+            selected_features=self.experiment.selected_features,
         )
 
         # Save results to JSON

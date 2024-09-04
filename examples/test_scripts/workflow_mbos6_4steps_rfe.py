@@ -70,13 +70,13 @@ octo_data = OctoData(
 # we use one sequence with the `RandomForestClassifier` model.
 
 config_study = ConfigStudy(
-    name="MBOS6_test2",
+    name="MBOS6_rfe",
     ml_type="classification",
     target_metric="AUCROC",
     metrics=["AUCROC", "ACCBAL", "ACC", "LOGLOSS"],
     datasplit_seed_outer=1234,
     n_folds_outer=5,
-    start_with_empty_study=False,
+    start_with_empty_study=True,
     path="./studies/",
     silently_overwrite_study=True,
 )
@@ -92,6 +92,8 @@ config_sequence = ConfigSequence(
     [
         # Step0:
         Roc(
+            # loading of existing results
+            load_sequence_item=False,
             description="step_0_ROC",
             threshold=0.8,
             correlation_type="spearmanr",
@@ -101,7 +103,7 @@ config_sequence = ConfigSequence(
         Octo(
             description="step_1_octo",
             # loading of existing results
-            load_sequence_item=True,
+            load_sequence_item=False,
             # datasplit
             n_folds_inner=5,
             # model selection
@@ -136,7 +138,7 @@ config_sequence = ConfigSequence(
         Mrmr(
             description="step2_mrmr",
             # loading of existing results
-            load_sequence_item=True,
+            load_sequence_item=False,
             # model_name
             model_name="best",
             # number of features selected by MRMR
@@ -152,7 +154,7 @@ config_sequence = ConfigSequence(
         Octo(
             description="step_3_octo",
             # loading of existing results
-            load_sequence_item=True,
+            load_sequence_item=False,
             # datasplit
             n_folds_inner=5,
             # model selection

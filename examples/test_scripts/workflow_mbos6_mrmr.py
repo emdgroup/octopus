@@ -10,7 +10,7 @@ import pandas as pd
 
 from octopus import OctoData, OctoML
 from octopus.config import ConfigManager, ConfigSequence, ConfigStudy
-from octopus.modules import Mrmr
+from octopus.modules import Mrmr, Octo
 
 print("Notebook kernel is running on server:", socket.gethostname())
 print("Conda environment on server:", os.environ["CONDA_DEFAULT_ENV"])
@@ -109,40 +109,40 @@ config_sequence = ConfigSequence(
             feature_importance_method="permutation",
         ),
         # Step2: octo
-        # Octo(
-        #     description="step_3_octo",
-        #     # loading of existing results
-        #     load_sequence_item=False,
-        #     # datasplit
-        #     n_folds_inner=5,
-        #     # model selection
-        #     models=[
-        #         # "TabPFNClassifier",
-        #         "ExtraTreesClassifier",
-        #         # "RandomForestClassifier",
-        #         # "CatBoostClassifier",
-        #         # "XGBClassifier",
-        #     ],
-        #     model_seed=0,
-        #     n_jobs=1,
-        #     dim_red_methods=[""],
-        #     max_outl=0,
-        #     fi_methods_bestbag=["permutation"],
-        #     # parallelization
-        #     inner_parallelization=True,
-        #     n_workers=5,
-        #     # HPO
-        #     optuna_seed=0,
-        #     n_optuna_startup_trials=10,
-        #     resume_optimization=False,
-        #     global_hyperparameter=True,
-        #     n_trials=100,
-        #     max_features=70,
-        #     penalty_factor=1.0,
-        #     # ensemble selection
-        #     ensemble_selection=True,
-        #     ensel_n_save_trials=75,
-        # ),
+        Octo(
+            description="step_3_octo",
+            # loading of existing results
+            load_sequence_item=False,
+            # datasplit
+            n_folds_inner=5,
+            # model selection
+            models=[
+                # "TabPFNClassifier",
+                "ExtraTreesClassifier",
+                # "RandomForestClassifier",
+                # "CatBoostClassifier",
+                # "XGBClassifier",
+            ],
+            model_seed=0,
+            n_jobs=1,
+            dim_red_methods=[""],
+            max_outl=0,
+            fi_methods_bestbag=["permutation"],
+            # parallelization
+            inner_parallelization=True,
+            n_workers=5,
+            # HPO
+            optuna_seed=0,
+            n_optuna_startup_trials=10,
+            resume_optimization=False,
+            global_hyperparameter=True,
+            n_trials=700,
+            max_features=70,
+            penalty_factor=1.0,
+            # ensemble selection
+            ensemble_selection=True,
+            ensel_n_save_trials=75,
+        ),
     ]
 )
 

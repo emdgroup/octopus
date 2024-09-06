@@ -76,7 +76,7 @@ config_study = ConfigStudy(
     metrics=["AUCROC", "ACCBAL", "ACC", "LOGLOSS"],
     datasplit_seed_outer=1234,
     n_folds_outer=5,
-    start_with_empty_study=True,
+    start_with_empty_study=False,
     path="./studies/",
     silently_overwrite_study=True,
 )
@@ -93,7 +93,7 @@ config_sequence = ConfigSequence(
         # Step0:
         Roc(
             # loading of existing results
-            load_sequence_item=False,
+            load_sequence_item=True,
             description="step_0_ROC",
             threshold=0.8,
             correlation_type="spearmanr",
@@ -103,7 +103,7 @@ config_sequence = ConfigSequence(
         Octo(
             description="step_1_octo",
             # loading of existing results
-            load_sequence_item=False,
+            load_sequence_item=True,
             # datasplit
             n_folds_inner=5,
             # model selection
@@ -138,13 +138,15 @@ config_sequence = ConfigSequence(
         Mrmr(
             description="step2_mrmr",
             # loading of existing results
-            load_sequence_item=False,
+            load_sequence_item=True,
             # model_name
             model_name="best",
             # number of features selected by MRMR
             n_features=50,
             # what correlation type should be used
             correlation_type="rdc",
+            # relevance type
+            relevance_type="permutation",
             # feature importance type (mean/count)
             feature_importance_type="mean",
             # feature importance method (permuation/shap/internal)
@@ -154,7 +156,7 @@ config_sequence = ConfigSequence(
         Octo(
             description="step_3_octo",
             # loading of existing results
-            load_sequence_item=False,
+            load_sequence_item=True,
             # datasplit
             n_folds_inner=5,
             # model selection

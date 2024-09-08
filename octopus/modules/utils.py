@@ -34,35 +34,46 @@ from octopus.metrics import metrics_inventory
 #        )
 
 
-def get_performance_score(
+def get_performance(
     model, data, feature_columns, target_metric, target_assignments
 ) -> float:
-    """Calculate model performance score on dataset."""
+    """Calculate model performance score on dataset for given metric."""
     if target_metric in ["AUCROC", "LOGLOSS"]:
         target_col = list(target_assignments.values())[0]
         target = data[target_col]
         probabilities = model.predict_proba(data[feature_columns])[
             :, 1
         ]  # binary only!!
-        score = metrics_inventory[target_metric]["method"](target, probabilities)
+        performance = metrics_inventory[target_metric]["method"](target, probabilities)
     elif target_metric in ["CI"]:
         estimate = model.predict(data[feature_columns])
         event_time = data[target_assignments["duration"]].astype(float)
         event_indicator = data[target_assignments["event"]].astype(bool)
-        score, _, _, _, _ = metrics_inventory[target_metric]["method"](
+        performance, _, _, _, _ = metrics_inventory[target_metric]["method"](
             event_indicator, event_time, estimate
         )
     else:
         target_col = list(target_assignments.values())[0]
         target = data[target_col]
         probabilities = model.predict(data[feature_columns])
-        score = metrics_inventory[target_metric]["method"](target, probabilities)
+        performance = metrics_inventory[target_metric]["method"](target, probabilities)
 
-    # make sure that the sign of the feature importances is correct
+    return performance
+
+
+def get_performance_score(
+    model, data, feature_columns, target_metric, target_assignments
+) -> float:
+    """Calculate performance value for given metric."""
+    performance = get_performance(
+        model, data, feature_columns, target_metric, target_assignments
+    )
+
+    # convert performance metric to score
     if optuna_direction(target_metric) == "maximize":
-        return score
+        return performance
     else:
-        return -score
+        return -performance
 
 
 def optuna_direction(metric: str) -> str:

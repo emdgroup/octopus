@@ -14,6 +14,7 @@ from sklearn.model_selection import GridSearchCV, StratifiedKFold, cross_val_sco
 
 from octopus.experiment import OctoExperiment
 from octopus.models.models_inventory import model_inventory
+from octopus.modules.utils import get_performance_score
 from octopus.results import ModuleResults
 
 # Ignore all Warnings
@@ -113,6 +114,11 @@ class SfsCore:
         ]
 
     @property
+    def data_test(self) -> pd.DataFrame:
+        """data_test."""
+        return self.experiment.data_test
+
+    @property
     def x_test(self) -> pd.DataFrame:
         """x_test."""
         return self.experiment.data_test[self.experiment.feature_columns]
@@ -121,6 +127,16 @@ class SfsCore:
     def y_test(self) -> pd.DataFrame:
         """y_test."""
         return self.experiment.data_test[self.experiment.target_assignments.values()]
+
+    @property
+    def target_assignments(self) -> dict:
+        """Target assignments."""
+        return self.experiment.target_assignments
+
+    @property
+    def target_metric(self) -> str:
+        """Target metric."""
+        return self.experiment.configs.study.target_metric
 
     @property
     def config(self) -> dict:
@@ -163,8 +179,7 @@ class SfsCore:
 
         # set up model and scoring type
         model = model_inventory[model_type]["model"](random_state=42)
-        target_metric = self.experiment.configs.study.target_metric
-        scoring_type = scorer_string_inventory[target_metric]
+        scoring_type = scorer_string_inventory[self.target_metric]
 
         stratification_column = self.experiment.stratification_column
         if stratification_column:
@@ -247,7 +262,13 @@ class SfsCore:
 
         # retrain best model on x_traindev
         best_estimator.fit(x_traindev_sfs, self.y_traindev.squeeze(axis=1))
-        test_score_refit = best_estimator.score(x_test_sfs, self.y_test)
+        test_score_refit = get_performance_score(
+            best_estimator,
+            self.data_test,
+            self.experiment.selected_features,
+            self.target_metric,
+            self.target_assignments,
+        )
         print(f"Test set (refit) performance: {test_score_refit:.3f}")
 
         # gridsearch + retrain best model on x_traindev
@@ -255,7 +276,13 @@ class SfsCore:
         best_gs_parameters = grid_search.best_params_
         best_gs_estimator = grid_search.best_estimator_
         best_gs_estimator.fit(x_traindev_sfs, self.y_traindev.squeeze(axis=1))  # refit
-        test_score_gsrefit = best_gs_estimator.score(x_test_sfs, self.y_test)
+        test_score_gsrefit = get_performance_score(
+            best_gs_estimator,
+            self.data_test,
+            self.experiment.selected_features,
+            self.target_metric,
+            self.target_assignments,
+        )
         print(f"Test set (gridsearch+refit) performance: {test_score_gsrefit:.3f}")
 
         # feature importances
@@ -267,11 +294,18 @@ class SfsCore:
         ).sort_values(by="importances", ascending=False)
         # print(fi_df)
 
+        # scores
+        scores = dict()
+        scores["dev_avg"] = sfs.k_score_
+        scores["test_avg"] = test_score_cv
+        scores["test_refit"] = test_score_refit
+        scores["test_gsrefit"] = test_score_gsrefit
+
         # save results to experiment
         self.experiment.results["Sfs"] = ModuleResults(
             id="SFS",
             model=best_gs_estimator,
-            # scores=scores,
+            scores=scores,
             feature_importances={
                 "internal": fi_df,
             },
@@ -285,7 +319,9 @@ class SfsCore:
             "optimal_features": int(n_optimal_features),
             "selected_features": self.experiment.selected_features,
             "Dev set performance": sfs.k_score_,
-            "Test set performance": test_score_gsrefit,
+            "Test set (cv) performance": test_score_cv,
+            "Test set (refit) performance": test_score_refit,
+            "Test set (gs+refit) performance": test_score_gsrefit,
         }
         with open(
             self.path_results.joinpath("results.json"),

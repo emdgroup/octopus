@@ -47,7 +47,7 @@ for line in [319, 330, 338]:
 # - (0) Cleanup: get rid of individual HP
 # - (0) Cleanup: add more info to metrics (prict/proba, scoring,
 #       scoring_string sklearn, input type (int, float))
-# - (0) Cleanup: Optuna, use score to remove complexity
+# - (0) Cleanup: Optuna, use score consitently everywhere to remove complexity
 # - (0) Improvement high priority: IMPUTATION
 # - (0) Improvement high priority: sequence handover
 # - (0) selected features is currently only taken from best bag, and not ensel

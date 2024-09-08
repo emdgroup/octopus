@@ -53,6 +53,24 @@ rf_class = {
     },
 }
 
+# RF parameters equivalent to SFS settings for RF, for testing
+# rf_class = {
+#     "default": [
+#         ("categorical", {"name": "max_depth", "choices": [3, 6, 10]}),
+#         ("categorical", {"name": "min_samples_split", "choices": [2, 25, 50, 100]}),
+#         # ("int", {"name": "min_samples_leaf", "low": 1, "high": 50}),
+#         # ("float", {"name": "max_features", "low": 0.1, "high": 1}),
+#         # ("int", {"name": "n_estimators", "low": 100, "high": 500, "log": False}),
+#         ("fixed", {"name": "n_estimators", "value": 500}),
+#         ("categorical", {"name": "class_weight", "choices": [None, "balanced"]}),
+#     ],
+#     "translate": {
+#         "n_jobs": "n_jobs",
+#         "model_seed": "random_state",
+#     },
+# }
+
+
 # Random Forest Regressor parameter settings
 rf_reg = {
     "default": [

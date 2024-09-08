@@ -142,7 +142,7 @@ class SfsCore:
             directory.mkdir(parents=True, exist_ok=True)
 
     def run_experiment(self):
-        """Run RFE module on experiment."""
+        """Run SFS module on experiment."""
         # run experiment and return updated experiment object
 
         # Configuration, define default model

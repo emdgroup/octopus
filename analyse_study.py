@@ -25,7 +25,13 @@ print("Working directory: ", os.getcwd())
 # ## Settings
 
 # %%
-path_study = Path("./studies/MBOS6_mbclhe_5steps_mb")
+# path_study = Path("./studies/MBOS6_mbclhe_5steps_mb")
+# path_study = Path("./studies/MBOS6_sfs_xtree_all") #0.79/0.808
+# path_study = Path("./studies/MBOS6_sfs_xtree_all")
+# path_study = Path("./studies/MBOS6_mbclhe_5steps_ROC08_mb")
+# path_study = Path("./studies/MBOS6_mb_5steps_ROC08_MRMR50mb")
+path_study = Path("./studies/MBOS6_mb_5steps_NoROC_MRMR50mb")
+
 
 # %% [markdown]
 # ## Read Config
@@ -39,9 +45,15 @@ target_metric = config.study.target_metric
 n_folds_outer = config.study.n_folds_outer
 sequence_items = config.sequence.sequence_items
 print("Number of sequence items:", len(sequence_items))
+
+# get octo sequences
+octo_seq_lst = list()
 for cnt, item in enumerate(sequence_items):
     print(f"Sequence {cnt}:  {item.module}")
-# print(sequence_items)
+    if item.module == "octo":
+        octo_seq_lst.append(cnt)
+print()
+print("Octo sequence items:", octo_seq_lst)
 
 # %% [markdown]
 # ## Read Scores
@@ -99,33 +111,49 @@ df
 #
 
 # %%
-df_seq = df[df["Sequence"] == 5]
-display(df_seq)
+for num_sequence, item in enumerate(sequence_items):
 
+    print(f"\033[1mSequence item: {num_sequence}({item.module})\033[0m")
 
-# Expand the Scores_dict column into separate columns
-scores_df = df_seq["Scores_dict"].apply(pd.Series)
+    df_seq = df[df["Sequence"] == num_sequence]
+    # display(df_seq)
 
-# Combine with the original DataFrame, setting 'Experiment' as the index
-result_df = df_seq[["Experiment"]].join(scores_df).set_index("Experiment")
+    # available results keys
+    res_keys = sorted(set(df_seq["Results_key"].tolist()))
+    print("Available results keys:", res_keys)
 
-# Remove columns that do not contain numeric values
-result_df = result_df.select_dtypes(include="number")
+    for key in res_keys:
+        print("Selected results key:", key)
+        df_seq_selected = df_seq.copy()
+        df_seq_selected = df_seq_selected[df_seq_selected["Results_key"] == key]
+        # Expand the Scores_dict column into separate columns
+        scores_df = df_seq_selected["Scores_dict"].apply(pd.Series)
+        # Combine with the original DataFrame, setting 'Experiment' as the index
+        result_df = (
+            df_seq_selected[["Experiment"]].join(scores_df).set_index("Experiment")
+        )
+        # Remove columns that do not contain numeric values
+        result_df = result_df.select_dtypes(include="number")
+        mean_values = {}
+        # Iterate through the columns
+        for column in result_df.columns:
+            if result_df[column].dtype in [
+                "float64",
+                "int64",
+            ]:  # Check if the column contains numeric values
+                mean_values[column] = result_df[column].mean()  # Calculate mean
+            else:
+                mean_values[column] = (
+                    ""  # Assign an empty string for non-numeric columns
+                )
+        # Append the mean values as a new row
+        result_df.loc["Mean"] = mean_values
+        display(result_df)
 
-mean_values = {}
-# Iterate through the columns
-for column in result_df.columns:
-    if result_df[column].dtype in [
-        "float64",
-        "int64",
-    ]:  # Check if the column contains numeric values
-        mean_values[column] = result_df[column].mean()  # Calculate mean
-    else:
-        mean_values[column] = ""  # Assign an empty string for non-numeric columns
+# %%
+print("done")
 
-# Append the mean values as a new row
-result_df.loc["Mean"] = mean_values
+# %%
 
-result_df
 
 # %%

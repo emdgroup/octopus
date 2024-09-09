@@ -337,7 +337,8 @@ class OctoCore:
             json.dump(ensel_scores, f)
 
         # calculate feature importances of best bag
-        fi_methods = self.experiment.ml_config.fi_methods_bestbag
+        # fi_methods = self.experiment.ml_config.fi_methods_bestbag
+        fi_methods = []  # disable calcuation of pfi for ensel_bag
         ensel_bag_fi = ensel_bag.get_feature_importances(fi_methods)
 
         # calculate selected features

@@ -15,6 +15,7 @@ extratree_class = {
         ("int", {"name": "n_estimators", "low": 100, "high": 500, "log": False}),
         ("categorical", {"name": "class_weight", "choices": [None, "balanced"]}),
         ("fixed", {"name": "criterion", "value": "entropy"}),
+        ("fixed", {"name": "bootstrap", "value": True}),
     ],
     "translate": {
         "n_jobs": "n_jobs",
@@ -30,6 +31,7 @@ extratree_reg = {
         ("int", {"name": "min_samples_leaf", "low": 1, "high": 50}),
         ("float", {"name": "max_features", "low": 0.1, "high": 1}),
         ("int", {"name": "n_estimators", "low": 100, "high": 500, "log": False}),
+        ("fixed", {"name": "bootstrap", "value": True}),
     ],
     "translate": {
         "n_jobs": "n_jobs",

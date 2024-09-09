@@ -52,13 +52,13 @@ data.columns = data.columns.astype(str)
 ##############Select features
 # features dict
 feat_inventory = {
-    "rad": "./datasets_local/20240906A_rad_trmt.csv",
+    # "rad": "./datasets_local/20240906A_rad_trmt.csv",
     "mb": "./datasets_local/20240906A_mb_trmt_3noise.csv",
-    "clhe": "./datasets_local/20240906A_clhe_trmt.csv",
-    "rad_mb": "./datasets_local/20240906A_rad_mb_trmt_3noise.csv",
-    "rad_clhe": "./datasets_local/20240906A_rad_clhe_trmt.csv",
-    "mb_clhe": "./datasets_local/20240906A_mb+clhe_trmt_3noise.csv",
-    "rad_mb_clhe": "./datasets_local/20240906A_rad_mb_clhe_trmt_3noise.csv",
+    # "clhe": "./datasets_local/20240906A_clhe_trmt.csv",
+    # "rad_mb": "./datasets_local/20240906A_rad_mb_trmt_3noise.csv",
+    # "rad_clhe": "./datasets_local/20240906A_rad_clhe_trmt.csv",
+    # "mb_clhe": "./datasets_local/20240906A_mb+clhe_trmt_3noise.csv",
+    # "rad_mb_clhe": "./datasets_local/20240906A_rad_mb_clhe_trmt_3noise.csv",
 }
 
 ## iterate through feature dicts
@@ -66,6 +66,7 @@ feat_inventory = {
 for key, feature_file in feat_inventory.items():
 
     dataset_key = str(key)
+    print("Processing dataset key:", dataset_key)
     features = pd.read_csv(
         feature_file,
         index_col=0,
@@ -141,7 +142,7 @@ for key, feature_file in feat_inventory.items():
                 # loading of existing results
                 load_sequence_item=False,
                 description="step_0_ROC",
-                threshold=0.85,
+                threshold=0.80,
                 correlation_type="spearmanr",
                 filter_type="f_statistics",  # "mutual_info"
             ),
@@ -177,8 +178,8 @@ for key, feature_file in feat_inventory.items():
                 max_features=70,
                 penalty_factor=1.0,
                 # ensemble selection
-                ensemble_selection=True,
-                ensel_n_save_trials=75,
+                # ensemble_selection=True,
+                # ensel_n_save_trials=75,
             ),
             # Step2: MRMR
             Mrmr(
@@ -188,7 +189,7 @@ for key, feature_file in feat_inventory.items():
                 # model_name
                 model_name="best",
                 # number of features selected by MRMR
-                n_features=60,
+                n_features=50,
                 # what correlation type should be used
                 correlation_type="rdc",  # "rdc"
                 # relevance type

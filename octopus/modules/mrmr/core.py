@@ -160,6 +160,9 @@ class MrmrCore:
             print("Number of features in provided fi table: ", len(re_df))
             re_df = re_df[re_df["importance"] > 0].reset_index()
             print("Number features with positive importance: ", len(re_df))
+            # remove all group features
+            re_df = re_df[~re_df["feature"].str.startswith("group")]
+            print("Number of non-group features with positive importance: ", len(re_df))
         elif self.relevance_type == "f-statistics":
             re_df = pd.DataFrame(columns=["feature", "importance"])
             re_df["feature"] = self.feature_columns
@@ -202,9 +205,6 @@ class MrmrCore:
         n_features: number of features to be extracted
         """
         FLOOR = 0.001
-
-        # remove all group features
-        fi_df = fi_df[~fi_df["feature"].str.startswith("group")]
 
         # extract features from feature importance table
         fi_features = fi_df["feature"].tolist()

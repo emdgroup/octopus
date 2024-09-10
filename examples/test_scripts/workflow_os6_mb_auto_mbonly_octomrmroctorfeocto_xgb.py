@@ -10,7 +10,7 @@ import pandas as pd
 
 from octopus import OctoData, OctoML
 from octopus.config import ConfigManager, ConfigSequence, ConfigStudy
-from octopus.modules import Mrmr, Octo, Rfe, Roc
+from octopus.modules import Mrmr, Octo, Rfe
 
 print("Notebook kernel is running on server:", socket.gethostname())
 print("Conda environment on server:", os.environ["CONDA_DEFAULT_ENV"])
@@ -53,17 +53,16 @@ data.columns = data.columns.astype(str)
 feat_inventory = {
     # "rad": "./datasets_local/20240906A_rad_trmt.csv",
     "mb": "./datasets_local/20240906A_mb_trmt_3noise.csv",
-    "clhe": "./datasets_local/20240906A_clhe_trmt.csv",
+    # "clhe": "./datasets_local/20240906A_clhe_trmt.csv",
     # "rad_mb": "./datasets_local/20240906A_rad_mb_trmt_3noise.csv",
     # "rad_clhe": "./datasets_local/20240906A_rad_clhe_trmt.csv",
-    "mb_clhe": "./datasets_local/20240906A_mb+clhe_trmt_3noise.csv",
+    # "mb_clhe": "./datasets_local/20240906A_mb+clhe_trmt_3noise.csv",
     # "rad_mb_clhe": "./datasets_local/20240906A_rad_mb_clhe_trmt_3noise.csv",
 }
 
 ## iterate through feature dicts
 
 for key, feature_file in feat_inventory.items():
-
     dataset_key = str(key)
     features = pd.read_csv(
         feature_file,
@@ -115,13 +114,13 @@ for key, feature_file in feat_inventory.items():
     # we use one sequence with the `RandomForestClassifier` model.
 
     config_study = ConfigStudy(
-        name=f"MBOS{int(timepoint)}_mbclhe_5steps_ROC08_{dataset_key}",
+        name=f"MBOS{int(timepoint)}_mb_OctoMrmrOctoRfeOcto_xgb_{dataset_key}",
         ml_type="classification",
         target_metric="AUCROC",
         metrics=["AUCROC", "ACCBAL", "ACC", "LOGLOSS"],
         datasplit_seed_outer=1234,
         n_folds_outer=5,
-        start_with_empty_study=True,
+        start_with_empty_study=False,
         path="./studies/",
         silently_overwrite_study=True,
     )
@@ -136,28 +135,28 @@ for key, feature_file in feat_inventory.items():
     config_sequence = ConfigSequence(
         [
             # Step0:
-            Roc(
-                # loading of existing results
-                load_sequence_item=False,
-                description="step_0_ROC",
-                threshold=0.80,
-                correlation_type="spearmanr",
-                filter_type="f_statistics",  # "mutual_info"
-            ),
+            # Roc(
+            #     # loading of existing results
+            #     load_sequence_item=False,
+            #     description="step_0_ROC",
+            #     threshold=0.85,
+            #     correlation_type="spearmanr",
+            #     filter_type="f_statistics",  # "mutual_info"
+            # ),
             # Step1: octo
             Octo(
                 description="step_1_octo",
                 # loading of existing results
-                load_sequence_item=False,
+                load_sequence_item=True,
                 # datasplit
                 n_folds_inner=5,
                 # model selection
                 models=[
                     # "TabPFNClassifier",
-                    "ExtraTreesClassifier",
+                    # "ExtraTreesClassifier",
                     # "RandomForestClassifier",
                     # "CatBoostClassifier",
-                    # "XGBClassifier",
+                    "XGBClassifier",
                 ],
                 model_seed=0,
                 n_jobs=1,
@@ -176,10 +175,10 @@ for key, feature_file in feat_inventory.items():
                 max_features=70,
                 penalty_factor=1.0,
                 # ensemble selection
-                # ensemble_selection=True,
-                # ensel_n_save_trials=75,
+                ensemble_selection=True,
+                ensel_n_save_trials=75,
             ),
-            # Step2: MRMR
+            # Step3: MRMR
             Mrmr(
                 description="step2_mrmr",
                 # loading of existing results
@@ -187,17 +186,17 @@ for key, feature_file in feat_inventory.items():
                 # model_name
                 model_name="best",
                 # number of features selected by MRMR
-                n_features=60,
+                n_features=40,
                 # what correlation type should be used
                 correlation_type="rdc",  # "rdc"
                 # relevance type
                 relevance_type="permutation",
                 # feature importance type (mean/count)
-                feature_importance_type="mean",
+                feature_importance_type="count",
                 # feature importance method (permuation/shap/internal)
                 feature_importance_method="permutation",
             ),
-            # Step3: octo
+            # Step2: octo
             Octo(
                 description="step_3_octo",
                 # loading of existing results
@@ -207,10 +206,10 @@ for key, feature_file in feat_inventory.items():
                 # model selection
                 models=[
                     # "TabPFNClassifier",
-                    "ExtraTreesClassifier",
+                    # "ExtraTreesClassifier",
                     # "RandomForestClassifier",
                     # "CatBoostClassifier",
-                    # "XGBClassifier",
+                    "XGBClassifier",
                 ],
                 model_seed=0,
                 n_jobs=1,
@@ -229,8 +228,8 @@ for key, feature_file in feat_inventory.items():
                 max_features=60,
                 penalty_factor=1.0,
                 # ensemble selection
-                # ensemble_selection=True,
-                # ensel_n_save_trials=75,
+                ensemble_selection=True,
+                ensel_n_save_trials=75,
             ),
             # Step4: rfe
             Rfe(
@@ -252,9 +251,9 @@ for key, feature_file in feat_inventory.items():
                 models=[
                     # "TabPFNClassifier",
                     # "ExtraTreesClassifier",
-                    "RandomForestClassifier",
+                    # "RandomForestClassifier",
                     # "CatBoostClassifier",
-                    # "XGBClassifier",
+                    "XGBClassifier",
                 ],
                 model_seed=0,
                 n_jobs=1,

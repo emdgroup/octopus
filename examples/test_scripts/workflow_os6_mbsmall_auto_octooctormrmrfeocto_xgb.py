@@ -64,7 +64,6 @@ feat_inventory = {
 ## iterate through feature dicts
 
 for key, feature_file in feat_inventory.items():
-
     dataset_key = str(key)
     print("Processing dataset key:", dataset_key)
     features = pd.read_csv(
@@ -83,10 +82,9 @@ for key, feature_file in feat_inventory.items():
 
     target_column = [f"OS_DURATION_{int(timepoint)}MONTHS"]
     sample_column = "SUBJECT_ID"
-    stratification_column = target_column
-    # stratification_column = [
-    #    f"STRAT_OS{int(timepoint)}_TRT_NUM"
-    # ]  # "OS_DURATION_6MONTHS"
+    stratification_column = [
+        f"STRAT_OS{int(timepoint)}_TRT_NUM"
+    ]  # "OS_DURATION_6MONTHS"
 
     # pre-process data
     print("Number of samples with target values:", len(data[target_column]))
@@ -118,7 +116,7 @@ for key, feature_file in feat_inventory.items():
     # we use one sequence with the `RandomForestClassifier` model.
 
     config_study = ConfigStudy(
-        name=f"MBOS{int(timepoint)}_mb(small)_OctoMrmrOctoRfeOcto_xtree_new_strat_{dataset_key}",
+        name=f"MBOS{int(timepoint)}_mb(small)_OctoOctoRfeOcto_xgb_{dataset_key}",
         ml_type="classification",
         target_metric="AUCROC",
         metrics=["AUCROC", "ACCBAL", "ACC", "LOGLOSS"],
@@ -157,10 +155,10 @@ for key, feature_file in feat_inventory.items():
                 # model selection
                 models=[
                     # "TabPFNClassifier",
-                    "ExtraTreesClassifier",
+                    # "ExtraTreesClassifier",
                     # "RandomForestClassifier",
                     # "CatBoostClassifier",
-                    # "XGBClassifier",
+                    "XGBClassifier",
                 ],
                 model_seed=0,
                 n_jobs=1,
@@ -182,24 +180,24 @@ for key, feature_file in feat_inventory.items():
                 ensemble_selection=True,
                 ensel_n_save_trials=75,
             ),
-            # Step2: MRMR
-            Mrmr(
-                description="step2_mrmr",
-                # loading of existing results
-                load_sequence_item=False,
-                # model_name
-                model_name="best",
-                # number of features selected by MRMR
-                n_features=20,
-                # what correlation type should be used
-                correlation_type="rdc",  # "rdc"
-                # relevance type
-                relevance_type="f-statistics",
-                # feature importance type (mean/count)
-                feature_importance_type="mean",
-                # feature importance method (permuation/shap/internal)
-                feature_importance_method="permutation",
-            ),
+            # # Step2: MRMR
+            # Mrmr(
+            #     description="step2_mrmr",
+            #     # loading of existing results
+            #     load_sequence_item=False,
+            #     # model_name
+            #     model_name="best",
+            #     # number of features selected by MRMR
+            #     n_features=50,
+            #     # what correlation type should be used
+            #     correlation_type="rdc",  # "rdc"
+            #     # relevance type
+            #     relevance_type="permutation",
+            #     # feature importance type (mean/count)
+            #     feature_importance_type="mean",
+            #     # feature importance method (permuation/shap/internal)
+            #     feature_importance_method="permutation",
+            # ),
             # Step3: octo
             Octo(
                 description="step_3_octo",
@@ -210,10 +208,10 @@ for key, feature_file in feat_inventory.items():
                 # model selection
                 models=[
                     # "TabPFNClassifier",
-                    "ExtraTreesClassifier",
+                    # "ExtraTreesClassifier",
                     # "RandomForestClassifier",
                     # "CatBoostClassifier",
-                    # "XGBClassifier",
+                    "XGBClassifier",
                 ],
                 model_seed=0,
                 n_jobs=1,
@@ -235,6 +233,24 @@ for key, feature_file in feat_inventory.items():
                 ensemble_selection=True,
                 ensel_n_save_trials=75,
             ),
+            # Step2: MRMR
+            Mrmr(
+                description="step2_mrmr",
+                # loading of existing results
+                load_sequence_item=False,
+                # model_name
+                model_name="best",
+                # number of features selected by MRMR
+                n_features=50,
+                # what correlation type should be used
+                correlation_type="rdc",  # "rdc"
+                # relevance type
+                relevance_type="f-statistics",
+                # feature importance type (mean/count)
+                feature_importance_type="mean",
+                # feature importance method (permuation/shap/internal)
+                feature_importance_method="permutation",
+            ),
             # Step4: rfe
             Rfe(
                 description="rfe",
@@ -254,10 +270,10 @@ for key, feature_file in feat_inventory.items():
                 # model selection
                 models=[
                     # "TabPFNClassifier",
-                    "ExtraTreesClassifier",
+                    # "ExtraTreesClassifier",
                     # "RandomForestClassifier",
                     # "CatBoostClassifier",
-                    # "XGBClassifier",
+                    "XGBClassifier",
                 ],
                 model_seed=0,
                 n_jobs=1,

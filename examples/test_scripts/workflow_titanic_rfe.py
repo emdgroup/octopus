@@ -98,7 +98,7 @@ config_manager = ConfigManager(
 config_sequence = ConfigSequence(
     [
         # Step1: rfe
-        Rfe(description="rfe", model="CatBoostClassifier"),
+        Rfe(description="rfe", model="RandomForestClassifier"),
         # Step2: ....
     ]
 )

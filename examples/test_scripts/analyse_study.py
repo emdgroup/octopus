@@ -27,10 +27,14 @@ print("Working directory: ", os.getcwd())
 # %%
 # path_study = Path("./studies/MBOS6_mbclhe_5steps_mb")
 # path_study = Path("./studies/MBOS6_sfs_xtree_all") #0.79/0.808
+# path_study = Path("./studies/MBOS6_sfs_xgb_all")
+# path_study = Path("./studies/MBOS6_sfs_rf_all")
 # path_study = Path("./studies/MBOS6_sfs_xtree_all")
 # path_study = Path("./studies/MBOS6_mbclhe_5steps_ROC08_mb")
-# path_study = Path("./studies/MBOS6_mb_5steps_ROC08_MRMR50mb")
-path_study = Path("./studies/MBOS6_mb_5steps_NoROC_MRMR50mb")
+# path_study = Path("./studies/MBOS6_mb_5steps_ROC085_MRMR50mb")
+# path_study = Path("./studies/MBOS6_mb_5steps_NoROC_MRMR50mb")
+# path_study = Path("./studies/MBOS6_mb_OctoOctoMrmrRfeOcto_xgb_mb")
+# path_study = Path("./studies/MBOS6_mb_OctoMrmrOctoRfeOcto_xgb_mb")
 
 
 # %% [markdown]
@@ -112,7 +116,6 @@ df
 
 # %%
 for num_sequence, item in enumerate(sequence_items):
-
     print(f"\033[1mSequence item: {num_sequence}({item.module})\033[0m")
 
     df_seq = df[df["Sequence"] == num_sequence]
@@ -143,9 +146,9 @@ for num_sequence, item in enumerate(sequence_items):
             ]:  # Check if the column contains numeric values
                 mean_values[column] = result_df[column].mean()  # Calculate mean
             else:
-                mean_values[column] = (
-                    ""  # Assign an empty string for non-numeric columns
-                )
+                mean_values[
+                    column
+                ] = ""  # Assign an empty string for non-numeric columns
         # Append the mean values as a new row
         result_df.loc["Mean"] = mean_values
         display(result_df)

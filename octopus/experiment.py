@@ -91,18 +91,23 @@ class OctoExperiment:
         # get groups depending on threshold
         for threshold in auto_group_thresholds:
             g = nx.Graph()
-
             for i in range(len(self.feature_columns)):
                 for j in range(i + 1, len(self.feature_columns)):
                     if pos_corr_matrix[i, j] > threshold:
                         g.add_edge(i, j)
-
-            subgraphs = [g.subgraph(c) for c in nx.connected_components(g)]
-
+            # Get connected components and sort them to ensure determinism
+            subgraphs = [
+                g.subgraph(c).copy()
+                for c in sorted(
+                    nx.connected_components(g), key=lambda x: (len(x), sorted(x))
+                )
+            ]
+            # Create groups of feature columns
             groups = []
             for sg in subgraphs:
-                groups.append([self.feature_columns[node] for node in sg.nodes()])
-
+                groups.append(
+                    [self.feature_columns[node] for node in sorted(sg.nodes())]
+                )
             auto_groups.extend([sorted(g) for g in groups])
 
         # find unique groups

@@ -45,13 +45,14 @@ data.columns = data.columns.astype(str)
 #    "./datasets_local/20221109_compl90_remcorr_trmtarm_3noise.csv", index_col=0
 # )
 
-features = pd.read_csv(  # CLHE +trmtarm
-    "./datasets_local/20230724A_clinical_haema.csv", index_col=0
-)
-
-# features = pd.read_csv( # MB + CLHE +trmtarm + 3noise
-#   "./datasets_local/20230713F_mb_compl90_remcorr_trmtarm_3noise_clinical_heama.csv", index_col=0
+# features = pd.read_csv(  # CLHE +trmtarm
+#    "./datasets_local/20230724A_clinical_haema.csv", index_col=0
 # )
+
+features = pd.read_csv(  # MB + CLHE +trmtarm + 3noise
+    "./datasets_local/20230713F_mb_compl90_remcorr_trmtarm_3noise_clinical_heama.csv",
+    index_col=0,
+)
 
 
 features = features["features"].astype(str).tolist()
@@ -91,7 +92,7 @@ octo_data = OctoData(
 # we use one sequence with the `RandomForestClassifier` model.
 
 config_study = ConfigStudy(
-    name="MBOS6_sfs_xtree_all_CLHE",
+    name="MBOS6_sfs_xtree_all_MBCLHE",
     ml_type="classification",
     target_metric="AUCROC",
     metrics=["AUCROC", "ACCBAL", "ACC", "LOGLOSS"],

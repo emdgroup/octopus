@@ -41,13 +41,16 @@ for line in [319, 330, 338]:
 # - check that openblas settings are correct and suggest solutions
 
 # TOBEDONE OCTOFULL
+# - (0) Octo: get_selected_features, take first item of pos group!
+#       How to get access to feature_groups in bag?
+#       Same applies to MRMR, consider groups
 # - (0) Optuna trials should be >> than optuna_start_trials
 # - (0) RFE - better test results than octo (datasplit difference?)
 # - (0) ensemble or pooling, some metrics (ACC) require int, others not (MSE)
 # - (0) Cleanup: get rid of individual HP
 # - (0) Cleanup: add more info to metrics (prict/proba, scoring,
 #       scoring_string sklearn, input type (int, float))
-# - (0) Cleanup: Optuna, use score consitently everywhere to remove complexity
+# - (0) Cleanup: Optuna, use score consistently everywhere to remove complexity
 # - (0) Improvement high priority: IMPUTATION
 # - (0) Improvement high priority: sequence handover
 # - (0) selected features is currently only taken from best bag, and not ensel
@@ -338,7 +341,7 @@ class OctoCore:
 
         # calculate feature importances of best bag
         # fi_methods = self.experiment.ml_config.fi_methods_bestbag
-        fi_methods = []  # disable calcuation of pfi for ensel_bag
+        fi_methods = []  # disable calculation of pfi for ensel_bag
         ensel_bag_fi = ensel_bag.get_feature_importances(fi_methods)
 
         # calculate selected features

@@ -1,16 +1,14 @@
-# %%
-# Andreas Wurl, 2024.09.08
-# Analyse Study
+"""Analyse experiment."""
 
-# %%
-from pathlib import Path
-import pandas as pd
-import re
-from octopus.experiment import OctoExperiment
-from octopus.config.core import OctoConfig
-import socket
-import os
 import copy
+import os
+import socket
+from pathlib import Path
+
+import pandas as pd
+
+from octopus.config.core import OctoConfig
+from octopus.experiment import OctoExperiment
 
 pd.set_option("display.max_rows", None)
 pd.set_option("display.max_columns", None)
@@ -54,7 +52,7 @@ print("Octo sequence items:", octo_seq_lst)
 path_experiments = [f for f in path_study.glob("experiment*") if f.is_dir()]
 
 # %% [markdown]
-# ## Analyse a specifig sequence item
+# ## Analyse a specific sequence item
 
 # %%
 # get octo
@@ -106,7 +104,7 @@ len(octo.results["best"].model.get_selected_features(fi_methods="permutation"))
 # len(octo.results["best"].model.get_selected_features(fi_methods = "internal"))
 
 # %%
-# analysie PFI, permutation_dev_mean
+# analyse PFI, permutation_dev_mean
 fis = mrmr.prior_feature_importances
 pfi_dev = fis["best"]["permutation_dev_mean"]
 print("Number of entries in pfi:", len(pfi_dev))
@@ -139,7 +137,7 @@ pfi_dev_pos
 # - why only 31 shared (43?)?
 # - where do the 12 come from that show up in selected features but not in pfi
 # - why are 46 more features in pfi?
-# - how are selected feauture calculated?
+# - how are selected feature calculated?
 # - how are pfi calculated?
 
 # %%
@@ -164,7 +162,7 @@ for training in bag.trainings:
 feat_imp["1_0_0"].keys()
 
 # %%
-# analysie PFI, permutation_dev_mean
+# analyse PFI, permutation_dev_mean
 fis = mrmr.prior_feature_importances
 pfi_dev = fis["best"]["permutation_dev_mean"]
 print("Number of entries in pfi:", len(pfi_dev))
@@ -196,7 +194,6 @@ groups_pos = groups_all[groups_all["importance"] > 0]
 
 
 # %%
-from itertools import chain
 
 groups = groups_pos["feature"].tolist()
 

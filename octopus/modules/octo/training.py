@@ -337,7 +337,7 @@ class Training:
             print("Warning: Internal features importances not available.")
         self.feature_importances["internal"] = fi_df
 
-    def calculate_fi_group_permutation(self, partition="dev", n_repeats=10):
+    def calculate_fi_group_permutation(self, partition="dev", n_repeats=15):
         """Permutation feature importance, group version."""
         print(
             f"Calculating permutation feature importances ({partition})"

@@ -105,7 +105,7 @@ class OctoManager:
             print("Description:", element.description)
             print("Load existing sequence item:", element.load_sequence_item)
 
-            # sequence item is created and not load
+            # sequence item is created and not loaded
             if not element.load_sequence_item:
                 # add config to experiment
                 experiment = copy.deepcopy(base_experiment)

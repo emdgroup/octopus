@@ -50,6 +50,12 @@ class Bag:
         init=False, validator=[validators.instance_of(float)]
     )
 
+    @property
+    def feature_groups(self) -> dict:
+        """Experiment wide feature groups."""
+        # assuming that there is at least one training
+        return self.trainings[0].feature_groups
+
     def __attrs_post_init__(self):
         # initialization here due to "Python immutable default"
         self.feature_importances = dict()
@@ -265,23 +271,32 @@ class Bag:
         # only keep nonzero features
         fi_df = fi_df[fi_df["importance"] != 0]
 
-        # Missing: for each feature group with positive importance (only),
-        # add one feature to the selected_features
-        # get groups with importance > 0
-        # groups_df = fi_df[fi_df["feature"].str.startswith("group")].copy()
-        # groups = groups_df[groups_df["importance"]>0]["feature"]
-        # gfeatures = [self.feature_groups[key][0] for key in groups
-        #              if key in self.feature_groups]
+        # store group features
+        groups_df = fi_df[fi_df["feature"].str.startswith("group")].copy()
 
-        # remove all group features
+        # remove all group features -> single features
         fi_df = fi_df[~fi_df["feature"].str.startswith("group")]
         feat_single = fi_df["feature"].tolist()
 
-        # Missing: add first elements of positive feature groups
-        # require: bag needs to have access to feature groups
-        selected_features = list(set(feat_single))
+        # For each feature group with positive importance (only),
+        # check if any feature is in feat_single. In not, add the
+        # one with the largest feature importance
+        groups = groups_df[groups_df["importance"] > 0]["feature"].tolist()
+        feat_additional = []
+        for key in groups:
+            features = self.feature_groups.get(key, [])
+            if not any(feature in feat_single for feature in features):
+                if features:  # Ensure the list is not empty
+                    # Find the feature with the highest importance in fi_df
+                    feature_importances = fi_df[fi_df["feature"].isin(features)]
+                    if not feature_importances.empty:
+                        best_feature = feature_importances.loc[
+                            feature_importances["importance"].idxmax(), "feature"
+                        ]
+                        feat_additional.append(best_feature)
 
-        return selected_features
+        # Add the additional features to feat_single and remove duplicates
+        return list(set(feat_single + feat_additional))
 
     def get_feature_importances(self, fi_methods=None):
         """Extract feature importances of all models in bag."""
@@ -307,9 +322,9 @@ class Bag:
 
         # save feature importances for every training in bag
         for training in self.trainings:
-            self.feature_importances[
-                training.training_id
-            ] = training.feature_importances
+            self.feature_importances[training.training_id] = (
+                training.feature_importances
+            )
 
         # summary feature importances for all trainings (mean + count)
         # internal, permutation_dev, shap_dev only
@@ -324,28 +339,33 @@ class Bag:
                 fi_pool.append(training.feature_importances[method_str])
             fi = pd.concat(fi_pool, axis=0)
 
-            # calculate mean feature importances
-            fi_mean = (
+            # calculate mean feature importances, keep zero entries
+            self.feature_importances[method_str + "_mean"] = (
                 fi[["feature", "importance"]]
                 .groupby(by="feature")
                 .sum()
                 .div(len(self.trainings))  # not all features in each fi-table
-            )
-            fi_mean = (
-                fi_mean[fi_mean["importance"] != 0]
                 .sort_values(by="importance", ascending=False)
                 .reset_index()
             )
-            self.feature_importances[method_str + "_mean"] = fi_mean
 
-            # calculate count feature importances
-            self.feature_importances[method_str + "_count"] = (
+            # calculate count feature importances, keep zero entries
+            non_zero_importances = (
                 fi[fi["importance"] != 0][["feature", "importance"]]
                 .groupby(by="feature")
                 .count()
-                .sort_values(by="importance", ascending=False)
-                .reset_index()
             )
+            # Create a DataFrame with all features, init importance counts to zero
+            all_features = pd.DataFrame(fi["feature"].unique(), columns=["feature"])
+            all_features["importance"] = 0
+            # Update the importance counts for non-zero importances
+            all_features = all_features.set_index("feature")
+            all_features.update(non_zero_importances)
+            all_features = all_features.reset_index()
+            # Sort and reset index
+            self.feature_importances[method_str + "_count"] = all_features.sort_values(
+                by="importance", ascending=False
+            ).reset_index(drop=True)
 
         return self.feature_importances
 

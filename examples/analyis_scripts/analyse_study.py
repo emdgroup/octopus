@@ -1,15 +1,14 @@
-# %%
-# Andreas Wurl, 2024.09.08
-# Analyse Study
+"""Analyse study."""
 
-# %%
-from pathlib import Path
-import pandas as pd
-import re
-from octopus.experiment import OctoExperiment
-from octopus.config.core import OctoConfig
-import socket
 import os
+import re
+import socket
+from pathlib import Path
+
+import pandas as pd
+
+from octopus.config.core import OctoConfig
+from octopus.experiment import OctoExperiment
 
 pd.set_option("display.max_rows", None)
 pd.set_option("display.max_columns", None)
@@ -34,7 +33,7 @@ print("Working directory: ", os.getcwd())
 # path_study = Path("./studies/MBOS6_mb_5steps_ROC085_MRMR50mb")
 # path_study = Path("./studies/MBOS6_mb_5steps_NoROC_MRMR50mb")
 # path_study = Path("./studies/MBOS6_mb_OctoOctoMrmrRfeOcto_xgb_mb")
-# path_study = Path("./studies/MBOS6_mb_OctoMrmrOctoRfeOcto_xgb_mb")
+path_study = Path("./studies/MBOS6_mb_OctoMrmrOctoRfeOcto_xgb_mb")
 
 
 # %% [markdown]
@@ -151,7 +150,7 @@ for num_sequence, item in enumerate(sequence_items):
                 ] = ""  # Assign an empty string for non-numeric columns
         # Append the mean values as a new row
         result_df.loc["Mean"] = mean_values
-        display(result_df)
+        print(result_df)
 
 # %%
 print("done")

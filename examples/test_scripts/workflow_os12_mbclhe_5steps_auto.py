@@ -24,15 +24,14 @@ print("Working directory: ", os.getcwd())
 
 
 ################# Select dataset
-timepoint = 6  # OS6
+timepoint = 12  # OS12
 
 # for rad+mb+clhe
 data_inventory = {
-    6: "./datasets_local/baseline_dataframe_OS6_20230724A_mb_clini_haema"
-    "_3random(2-4)_treatmentarm(1)_strat.csv",
-    #    9: "",
-    #    12: "",
-    #    15: "",
+    6: "./datasets_local/baseline_dataframe_OS6_20240906A_mb_clhe_3random(2-4)_treatmentarm(1)_strat.csv",
+    9: "./datasets_local/baseline_dataframe_OS9_20240906A_mb_clhe_3random(2-4)_treatmentarm(1)_strat.csv",
+    12: "./datasets_local/baseline_dataframe_OS12_20240906A_mb_clhe_3random(2-4)_treatmentarm(1)_strat.csv",
+    15: "./datasets_local/baseline_dataframe_OS15_20240906A_mb_clhe_3random(2-4)_treatmentarm(1)_strat.csv",
 }
 
 file_path = data_inventory[timepoint]
@@ -53,17 +52,16 @@ data.columns = data.columns.astype(str)
 feat_inventory = {
     # "rad": "./datasets_local/20240906A_rad_trmt.csv",
     "mb": "./datasets_local/20240906A_mb_trmt_3noise.csv",
-    # "clhe": "./datasets_local/20240906A_clhe_trmt.csv",
+    "clhe": "./datasets_local/20240906A_clhe_trmt.csv",
     # "rad_mb": "./datasets_local/20240906A_rad_mb_trmt_3noise.csv",
     # "rad_clhe": "./datasets_local/20240906A_rad_clhe_trmt.csv",
-    # "mb_clhe": "./datasets_local/20240906A_mb+clhe_trmt_3noise.csv",
+    "mb_clhe": "./datasets_local/20240906A_mb+clhe_trmt_3noise.csv",
     # "rad_mb_clhe": "./datasets_local/20240906A_rad_mb_clhe_trmt_3noise.csv",
 }
 
 ## iterate through feature dicts
 
 for key, feature_file in feat_inventory.items():
-
     dataset_key = str(key)
     features = pd.read_csv(
         feature_file,
@@ -115,7 +113,7 @@ for key, feature_file in feat_inventory.items():
     # we use one sequence with the `RandomForestClassifier` model.
 
     config_study = ConfigStudy(
-        name=f"MBOS{int(timepoint)}_mb_5steps_NoROC_MRMR50{dataset_key}",
+        name=f"MBOS{int(timepoint)}_mbclhe_5steps_{dataset_key}",
         ml_type="classification",
         target_metric="AUCROC",
         metrics=["AUCROC", "ACCBAL", "ACC", "LOGLOSS"],
@@ -136,14 +134,14 @@ for key, feature_file in feat_inventory.items():
     config_sequence = ConfigSequence(
         [
             # Step0:
-            # Roc(
-            #     # loading of existing results
-            #     load_sequence_item=False,
-            #     description="step_0_ROC",
-            #     threshold=0.85,
-            #     correlation_type="spearmanr",
-            #     filter_type="f_statistics",  # "mutual_info"
-            # ),
+            Roc(
+                # loading of existing results
+                load_sequence_item=False,
+                description="step_0_ROC",
+                threshold=0.85,
+                correlation_type="spearmanr",
+                filter_type="f_statistics",  # "mutual_info"
+            ),
             # Step1: octo
             Octo(
                 description="step_1_octo",
@@ -176,8 +174,8 @@ for key, feature_file in feat_inventory.items():
                 max_features=70,
                 penalty_factor=1.0,
                 # ensemble selection
-                ensemble_selection=True,
-                ensel_n_save_trials=75,
+                # ensemble_selection=True,
+                # ensel_n_save_trials=75,
             ),
             # Step2: MRMR
             Mrmr(
@@ -187,7 +185,7 @@ for key, feature_file in feat_inventory.items():
                 # model_name
                 model_name="best",
                 # number of features selected by MRMR
-                n_features=50,
+                n_features=60,
                 # what correlation type should be used
                 correlation_type="rdc",  # "rdc"
                 # relevance type
@@ -229,8 +227,8 @@ for key, feature_file in feat_inventory.items():
                 max_features=60,
                 penalty_factor=1.0,
                 # ensemble selection
-                ensemble_selection=True,
-                ensel_n_save_trials=75,
+                # ensemble_selection=True,
+                # ensel_n_save_trials=75,
             ),
             # Step4: rfe
             Rfe(
@@ -273,8 +271,8 @@ for key, feature_file in feat_inventory.items():
                 max_features=40,
                 penalty_factor=1.0,
                 # ensemble selection
-                ensemble_selection=True,
-                ensel_n_save_trials=75,
+                # ensemble_selection=True,
+                # ensel_n_save_trials=75,
             ),
         ]
     )

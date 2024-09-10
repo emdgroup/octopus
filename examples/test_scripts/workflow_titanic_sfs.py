@@ -97,13 +97,13 @@ config_manager = ConfigManager(
 
 config_sequence = ConfigSequence(
     [
-        # Step1: sfs
+        # Step1: SFS
         Sfs(
-            description="SFS",
-            model="RandomForestClassifier",  # CatBoostClassifier
+            description="sfs",
+            model="RandomForestClassifier",
             cv=5,
-            sfs_type="floating_backward",
-        )
+            sfs_type="backward",
+        ),
         # Step2: ....
     ]
 )

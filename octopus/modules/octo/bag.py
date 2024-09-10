@@ -248,28 +248,40 @@ class Bag:
         importance method out of the ones specified in fi_methods,
         with the following ranking: (1) permutation (2) shap (3) internal.
         """
+        # we assume that feature_importances were previously calculated
         if fi_methods is None:
             fi_methods = []
 
         if "permutation" in fi_methods:
-            for training in self.trainings:
-                fi_df = training.feature_importances["permutation_dev"]
+            fi_df = self.feature_importances["permutation_dev_mean"]
         elif "shap" in fi_methods:
-            for training in self.trainings:
-                fi_df = training.feature_importances["shap_dev"]
+            fi_df = self.feature_importances["shap_dev_mean"]
         elif "internal" in fi_methods:
-            for training in self.trainings:
-                fi_df = training.feature_importances["internal"]
+            fi_df = self.feature_importances["internal_mean"]
         else:
-            print("No features importances calculated, return empty list")
+            print("No features selected, return empty list")
             return []
+
+        # only keep nonzero features
+        fi_df = fi_df[fi_df["importance"] != 0]
+
+        # Missing: for each feature group with positive importance (only),
+        # add one feature to the selected_features
+        # get groups with importance > 0
+        # groups_df = fi_df[fi_df["feature"].str.startswith("group")].copy()
+        # groups = groups_df[groups_df["importance"]>0]["feature"]
+        # gfeatures = [self.feature_groups[key][0] for key in groups
+        #              if key in self.feature_groups]
 
         # remove all group features
         fi_df = fi_df[~fi_df["feature"].str.startswith("group")]
-        # extract list of nonzero features
-        feat_lst = fi_df[fi_df["importance"] != 0]["feature"].tolist()
+        feat_single = fi_df["feature"].tolist()
 
-        return list(set(feat_lst))
+        # Missing: add first elements of positive feature groups
+        # require: bag needs to have access to feature groups
+        selected_features = list(set(feat_single))
+
+        return selected_features
 
     def get_feature_importances(self, fi_methods=None):
         """Extract feature importances of all models in bag."""
@@ -310,16 +322,23 @@ class Bag:
             fi_pool = list()
             for training in self.trainings:
                 fi_pool.append(training.feature_importances[method_str])
-            # calculate mean and count feature importances
             fi = pd.concat(fi_pool, axis=0)
-            self.feature_importances[method_str + "_mean"] = (
+
+            # calculate mean feature importances
+            fi_mean = (
                 fi[["feature", "importance"]]
                 .groupby(by="feature")
                 .sum()
                 .div(len(self.trainings))  # not all features in each fi-table
+            )
+            fi_mean = (
+                fi_mean[fi_mean["importance"] != 0]
                 .sort_values(by="importance", ascending=False)
                 .reset_index()
             )
+            self.feature_importances[method_str + "_mean"] = fi_mean
+
+            # calculate count feature importances
             self.feature_importances[method_str + "_count"] = (
                 fi[fi["importance"] != 0][["feature", "importance"]]
                 .groupby(by="feature")

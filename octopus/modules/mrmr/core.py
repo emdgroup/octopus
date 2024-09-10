@@ -36,9 +36,10 @@ from octopus.modules.utils import rdc
 # https://github.com/smazzanti/mrmr
 
 # TOBEDONE:
-# (1) relevance-type "permutation", importance_type="permutation" ?
-# (1) add mutual information to relevance methods
-# (2) saving results? any plots?
+# (1) Is there a way to consider groups?
+# (2) relevance-type "permutation", importance_type="permutation" ?
+# (3) add mutual information to relevance methods
+# (4) saving results? any plots?
 
 
 @define
@@ -157,12 +158,16 @@ class MrmrCore:
             # (a) get feature importances
             # (b) only use feaures with positive importances
             re_df = self.feature_importances[self.feature_importance_key]
-            print("Number of features in provided fi table: ", len(re_df))
+            # reduce fi table to feature_columns (previous selected_features),
+            # feature_columns do not contain any groups
+            re_df = re_df[re_df["feature"].isin(self.feature_columns)]
+            print(
+                f"Number of features in fi table "
+                f"(based on previous selected features, no groups): {len(re_df)}"
+            )
+            # only keep positive importances
             re_df = re_df[re_df["importance"] > 0].reset_index()
             print("Number features with positive importance: ", len(re_df))
-            # remove all group features
-            re_df = re_df[~re_df["feature"].str.startswith("group")]
-            print("Number of non-group features with positive importance: ", len(re_df))
         elif self.relevance_type == "f-statistics":
             re_df = pd.DataFrame(columns=["feature", "importance"])
             re_df["feature"] = self.feature_columns

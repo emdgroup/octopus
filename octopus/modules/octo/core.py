@@ -41,9 +41,11 @@ for line in [319, 330, 338]:
 # - check that openblas settings are correct and suggest solutions
 
 # TOBEDONE OCTOFULL
-# - (0) Octo: get_selected_features, take first item of pos group!
-#       How to get access to feature_groups in bag?
-#       Same applies to MRMR, consider groups
+# - (0) logisticregression model -- feature importance via coeff
+#       + scaling needed
+# - (0) MRMR as part of Octo optimization
+# - (0) Octo selected_features based on "ensel"
+# - (0) Parallelize pfi calculation in training!!
 # - (0) Optuna trials should be >> than optuna_start_trials
 # - (0) RFE - better test results than octo (datasplit difference?)
 # - (0) ensemble or pooling, some metrics (ACC) require int, others not (MSE)

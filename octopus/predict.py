@@ -43,9 +43,7 @@ class OctoPredict:
     sequence_item_id: int = field(default=-1, validator=[validators.instance_of(int)])
     """Sequence item id."""
 
-    model_name: str = field(
-        default=Factory("best"), validator=[validators.instance_of(str)]
-    )
+    results_key: str = field(default="best", validator=[validators.instance_of(str)])
     """Sequence item id."""
 
     experiments: dict = field(init=False, validator=[validators.instance_of(dict)])
@@ -96,16 +94,16 @@ class OctoPredict:
                 )
                 # load experiment
                 experiment = OctoExperiment.from_pickle(path_exp)
-                # check if model_name exists
-                if self.model_name not in experiment.results:
+                # check if results_key exists
+                if self.results_key not in experiment.results:
                     raise ValueError(
-                        f"Specified model name not found: {self.model_name}. "
-                        f"Available model names: {list(experiment.results.keys())}"
+                        f"Specified results key not found: {self.results_key}. "
+                        f"Available results keys: {list(experiment.results.keys())}"
                     )
 
                 experiments[experiment_id] = {
                     "id": experiment_id,
-                    "model": experiment.results[self.model_name].model,
+                    "model": experiment.results[self.results_key].model,
                     "data_traindev": experiment.data_traindev,
                     "data_test": experiment.data_test,
                     "feature_columns": experiment.feature_columns,

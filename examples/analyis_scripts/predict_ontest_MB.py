@@ -13,7 +13,7 @@ from octopus.experiment import OctoExperiment
 
 # %%
 # setup
-path_study = Path("./studies/MBOS6_mb_OMORO_xgb_mb")
+path_study = Path("./studies/MBOS6_mb_OMORO_fixed_xgb_mb")
 
 # %% [markdown]
 # ## Study Information
@@ -48,7 +48,7 @@ print()
 sequence_item_id = 2
 
 # check availalbe results_keys in cell output below
-results_key = "best"
+results_key = "ensel"
 
 # create study-predict object
 seq_item = OctoPredict(study_path=path_study, sequence_item_id=sequence_item_id)
@@ -77,7 +77,7 @@ if path_exp_pkl.exists():
 # - pdf plots are saved in the results directory of the sequence item
 
 # calculate pfi for one experiment
-# seq_item.calculate_fi_test(fi_type="group_permutation", n_repeat=120, experiment_id=4)
+# seq_item.calculate_fi_test(fi_type="group_permutation", n_repeat=5, experiment_id=4)
 
 
 # calculate pfi for all available experiments
@@ -107,5 +107,54 @@ seq_item.calculate_fi_test(fi_type="shap", shap_type="kernel")
 # results dict
 print("Results keys:")
 display(list(seq_item.results.keys()))
+
+# %% [markdown]
+# ## Analyse test feature importance over all outer folds
+
+# %%
+pfi0 = seq_item.results["fi_table_grouppermutation_exp0"]
+pfi1 = seq_item.results["fi_table_grouppermutation_exp1"]
+pfi2 = seq_item.results["fi_table_grouppermutation_exp2"]
+pfi3 = seq_item.results["fi_table_grouppermutation_exp3"]
+pfi4 = seq_item.results["fi_table_grouppermutation_exp4"]
+
+# %%
+import matplotlib.pyplot as plt
+
+
+def plot_pfi(df):
+    """Create plot for permutation fi and save to file."""
+    # Calculate error bars
+    lower_error = df["importance"] - df["ci_low_95"]
+    upper_error = df["ci_high_95"] - df["importance"]
+    error = [lower_error.values, upper_error.values]
+
+    plt.figure(figsize=(8.27, 11.69))  # portrait orientation (A4)
+    _ = plt.barh(
+        df["feature"],
+        df["importance"],
+        xerr=error,
+        capsize=5,
+        color="royalblue",
+        # edgecolor="black",
+    )
+
+    # Adding labels and title
+    plt.ylabel("Feature")
+    plt.xlabel("Importance")
+    plt.title("Feature Importance with Confidence Intervals")
+    plt.grid(True, axis="x")
+
+    # Adjust layout to make room for the plot
+    plt.tight_layout()
+    plt.show()
+    plt.close()
+
+
+# %% [markdown]
+#
+
+# %%
+plot_pfi(pfi4)
 
 # %%

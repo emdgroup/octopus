@@ -301,7 +301,7 @@ class Bag:
         print("Nuber of single features: ", len(feat_single))
         print("Nuber of features from groups: ", len(feat_additional))
 
-        return feat_all
+        return sorted(feat_all, key=lambda x: (len(x), sorted(x)))
 
     def get_feature_importances(self, fi_methods=None):
         """Extract feature importances of all models in bag."""

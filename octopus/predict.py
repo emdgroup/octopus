@@ -54,11 +54,6 @@ class OctoPredict:
     )
     """Results."""
 
-    feature_group_dict: dict = field(
-        default=Factory(dict), validator=[validators.instance_of(dict)]
-    )
-    """Feature groups dictionary."""
-
     @property
     def config(self) -> dict:
         """Study configuration."""
@@ -454,8 +449,10 @@ class OctoPredict:
         model = experiment["model"]
         feature_groups = experiment["feature_group_dict"]
 
+        print("Number of feature groups found and included: ", len(feature_groups))
+
         # initialize feature_groups_dict
-        experiment["feature_group_dict"] = dict()
+        # experiment["feature_group_dict"] = dict()
 
         # support prediction on new data as well as test data
         if data is None:  # new data

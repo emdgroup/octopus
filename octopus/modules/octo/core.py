@@ -276,7 +276,8 @@ class OctoCore:
             row_column=self.experiment.row_column,
             target_assignments=self.experiment.target_assignments,
         )
-        ensemble_paths_dict = ensel.optimized_ensemble
+        ensemble_paths_dict = ensel.start_ensemble
+        # ensemble_paths_dict = ensel.optimized_ensemble
         self._create_ensemble_bag(ensemble_paths_dict)
 
     def _create_ensemble_bag(self, ensemble_paths_dict):

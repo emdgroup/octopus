@@ -241,7 +241,10 @@ class SfsCore:
 
         sfs.fit(self.x_traindev, self.y_traindev.squeeze(axis=1))
         n_optimal_features = len(sfs.k_feature_idx_)
-        self.experiment.selected_features = list(sfs.k_feature_names_)
+        selected_features = list(sfs.k_feature_names_)
+        self.experiment.selected_features = sorted(
+            selected_features, key=lambda x: (len(x), sorted(x))
+        )
 
         print("SFS completed")
         # print(sfs.subsets_)

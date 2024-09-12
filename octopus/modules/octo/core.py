@@ -41,6 +41,8 @@ for line in [319, 330, 338]:
 # - check that openblas settings are correct and suggest solutions
 
 # TOBEDONE OCTOFULL
+# - (0) simplement equence branching by spedifying in every module where the input
+#       data comes from.
 # - (0) logisticregression model -- feature importance via coeff
 #       + scaling needed
 # - (0) MRMR as part of Octo optimization

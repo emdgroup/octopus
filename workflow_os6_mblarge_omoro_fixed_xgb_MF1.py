@@ -52,11 +52,12 @@ data.columns = data.columns.astype(str)
 # features dict
 feat_inventory = {
     # "rad": "./datasets_local/20240906A_rad_trmt.csv",
-    "mb": "./datasets_local/20240906A_mb_trmt_3noise.csv",
-    "clhe": "./datasets_local/20240906A_clhe_trmt.csv",
+    # "mb": "./datasets_local/20240906A_mb_trmt_3noise.csv",
+    # "clhe": "./datasets_local/20240906A_clhe_trmt.csv",
     # "rad_mb": "./datasets_local/20240906A_rad_mb_trmt_3noise.csv",
     # "rad_clhe": "./datasets_local/20240906A_rad_clhe_trmt.csv",
-    "mb_clhe": "./datasets_local/20240906A_mb+clhe_trmt_3noise.csv",
+    # "mb_clhe": "./datasets_local/20240906A_mb+clhe_trmt_3noise.csv",
+    "mb_clhe": "./datasets_local/20240913A_mb+clhe_trmt_3noise_MF.csv",
     # "rad_mb_clhe": "./datasets_local/20240906A_rad_mb_clhe_trmt_3noise.csv",
 }
 
@@ -114,7 +115,7 @@ for key, feature_file in feat_inventory.items():
     # we use one sequence with the `RandomForestClassifier` model.
 
     config_study = ConfigStudy(
-        name=f"MBOS{int(timepoint)}_mb_2xOMORO_V2_fixed_xgb_{dataset_key}",
+        name=f"MBOS{int(timepoint)}_mb_OMORO_fixed_xgb_MF1_{dataset_key}",
         ml_type="classification",
         target_metric="AUCROC",
         metrics=["AUCROC", "ACCBAL", "ACC", "LOGLOSS"],
@@ -143,9 +144,9 @@ for key, feature_file in feat_inventory.items():
             #     correlation_type="spearmanr",
             #     filter_type="f_statistics",  # "mutual_info"
             # ),
-            # Step0: octo
+            # Step1: octo
             Octo(
-                description="step_0_octo",
+                description="step_1_octo",
                 # loading of existing results
                 load_sequence_item=False,
                 # datasplit
@@ -178,41 +179,6 @@ for key, feature_file in feat_inventory.items():
                 ensemble_selection=True,
                 ensel_n_save_trials=75,
             ),
-            # Step1: octo
-            Octo(
-                description="step_1_octo",
-                # loading of existing results
-                load_sequence_item=False,
-                # datasplit
-                n_folds_inner=5,
-                # model selection
-                models=[
-                    # "TabPFNClassifier",
-                    # "ExtraTreesClassifier",
-                    # "RandomForestClassifier",
-                    # "CatBoostClassifier",
-                    "XGBClassifier",
-                ],
-                model_seed=0,
-                n_jobs=1,
-                dim_red_methods=[""],
-                max_outl=0,
-                fi_methods_bestbag=["permutation"],
-                # parallelization
-                inner_parallelization=True,
-                n_workers=5,
-                # HPO
-                optuna_seed=0,
-                n_optuna_startup_trials=10,
-                resume_optimization=False,
-                global_hyperparameter=True,
-                n_trials=700,
-                max_features=40,
-                penalty_factor=1.0,
-                # ensemble selection
-                ensemble_selection=True,
-                ensel_n_save_trials=75,
-            ),
             # Step2: MRMR
             Mrmr(
                 description="step2_mrmr",
@@ -221,7 +187,7 @@ for key, feature_file in feat_inventory.items():
                 # model_name
                 model_name="best",
                 # number of features selected by MRMR
-                n_features=50,
+                n_features=40,
                 # what correlation type should be used
                 correlation_type="rdc",  # "rdc"
                 # relevance type
@@ -259,7 +225,7 @@ for key, feature_file in feat_inventory.items():
                 n_optuna_startup_trials=10,
                 resume_optimization=False,
                 global_hyperparameter=True,
-                n_trials=400,
+                n_trials=100,
                 max_features=40,
                 penalty_factor=1.0,
                 # ensemble selection
@@ -303,7 +269,7 @@ for key, feature_file in feat_inventory.items():
                 n_optuna_startup_trials=10,
                 resume_optimization=False,
                 global_hyperparameter=True,
-                n_trials=400,
+                n_trials=100,
                 max_features=40,
                 penalty_factor=1.0,
                 # ensemble selection

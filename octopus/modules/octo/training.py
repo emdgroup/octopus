@@ -12,7 +12,7 @@ from sklearn.ensemble import IsolationForest
 from sklearn.inspection import permutation_importance
 from sklearn.preprocessing import MaxAbsScaler
 
-from octopus.models.models_inventory import model_inventory
+from octopus.models.machine_learning.core import model_inventory
 from octopus.modules.utils import get_performance_score
 
 scorer_string_inventory = {
@@ -231,8 +231,12 @@ class Training:
 
         # (4) Model training
         # define ML-model
-        self.model = model_inventory[self.ml_model_type]["model"](
-            **self.ml_model_params
+        # self.model = model_inventory[self.ml_model_type]["model"](
+        #     **self.ml_model_params
+        # )
+
+        self.model = model_inventory.get_model_instance(
+            self.ml_model_type, self.ml_model_params
         )
 
         if len(self.target_assignments) == 1:

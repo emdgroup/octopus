@@ -2,8 +2,9 @@
 
 import heapq
 
-from octopus.models.parameters import parameters_inventory
-from octopus.models.utils import create_trialparams_from_config
+# from octopus.models.parameters import parameters_inventory
+# from octopus.models.utils import create_trialparams_from_config
+from octopus.models.machine_learning.core import model_inventory
 from octopus.modules.octo.bag import Bag
 from octopus.modules.octo.training import Training
 from octopus.modules.utils import optuna_direction
@@ -15,13 +16,7 @@ class ObjectiveOptuna:
     A single solution for global and individual HP optimizations.
     """
 
-    def __init__(
-        self,
-        experiment,
-        data_splits,
-        study_name,
-        top_trials,
-    ):
+    def __init__(self, experiment, data_splits, study_name, top_trials):
         self.experiment = experiment
         self.data_splits = data_splits
         self.study_name = study_name
@@ -80,27 +75,36 @@ class ObjectiveOptuna:
         # get hyper parameter space for selected model
 
         # take user parameters
-        if ml_model_type in self.hyper_parameters.keys():
-            hyper_parameter_space = self.hyper_parameters[ml_model_type]
+        # if ml_model_type in self.hyper_parameters.keys():
+        #     hyper_parameter_space = self.hyper_parameters[ml_model_type]
 
         # take default parameters
-        else:
-            hyper_parameter_space = parameters_inventory[ml_model_type]["default"]
+        # else:
 
-        model_params = create_trialparams_from_config(
-            trial, hyper_parameter_space, ml_model_type
+        # hyper_parameter_space = parameters_inventory[ml_model_type]["default"]
+
+        # model_params = create_trialparams_from_config(
+        #     trial, hyper_parameter_space, ml_model_type
+        # )
+
+        # # overwrite model parameters specified by global settings
+        # fixed_global_parameters = {
+        #     "n_jobs": self.ml_jobs,
+        #     "model_seed": self.ml_seed,
+        # }
+        # translate = parameters_inventory[ml_model_type]["translate"]
+        # for key, value in fixed_global_parameters.items():
+        #     if translate[key] != "NA":  # NA=ignore
+        #         model_params[translate[key]] = value
+
+        model_params = model_inventory.create_optuna_parameters(
+            trial,
+            ml_model_type,
+            {
+                "n_jobs": self.ml_jobs,
+                "model_seed": self.ml_seed,
+            },
         )
-
-        # overwrite model parameters specified by global settings
-        fixed_global_parameters = {
-            "n_jobs": self.ml_jobs,
-            "model_seed": self.ml_seed,
-        }
-        translate = parameters_inventory[ml_model_type]["translate"]
-        for key, value in fixed_global_parameters.items():
-            if translate[key] != "NA":  # NA=ignore
-                model_params[translate[key]] = value
-
         config_training = {
             "dim_reduction": dim_reduction,
             "outl_reduction": num_outl,

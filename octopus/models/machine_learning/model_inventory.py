@@ -5,7 +5,7 @@ from typing import Any, Dict, List
 import optuna
 from attrs import define, field
 
-from .config import ModelConfig
+from octopus.models.machine_learning.config import ModelConfig
 
 
 @define

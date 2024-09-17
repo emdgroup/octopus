@@ -28,7 +28,7 @@ def get_regression_models():
         ModelConfig(
             name="RandomForestRegressor",
             model_class=RandomForestRegressor,
-            ml_type="classification",
+            ml_type="regression",
             feature_method="internal",
             hyperparameters=[
                 Hyperparameter(type="int", name="max_depth", low=2, high=32),

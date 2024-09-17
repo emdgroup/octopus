@@ -37,7 +37,9 @@ class ModelConfig:
     name: str
     model_class: Type
     feature_method: str
-    ml_type: str = field(validator=validators.in_(["regression", "classification"]))
+    ml_type: str = field(
+        validator=validators.in_(["regression", "classification", "timetoevent"])
+    )
     hyperparameters: List[Hyperparameter] = field(validator=validate_hyperparameters)
     translate: Dict[str, str] = field(factory=dict)
     n_repeats: None | int = field(factory=lambda: None)

@@ -75,25 +75,45 @@ class ModelInventory:
     def create_optuna_parameters(
         self,
         trial: optuna.trial.Trial,
-        model_name: str,
+        model_item: ModelConfig,
         hyperparameters: List,
-        translate: dict,
-        fixed_global_parameters: Dict[str, Any],
+        n_jobs: int,
+        model_seed: int,
     ) -> Dict[str, Any]:
         """Create optuna parameters."""
         params = {}
         for hp in hyperparameters:
             parameter_name = hp.name
-            unique_name = f"{hp.name}_{model_name}"
+            unique_name = f"{hp.name}_{model_item.name}"
 
             if hp.type == "int":
-                params[parameter_name] = trial.suggest_int(
-                    name=unique_name, low=hp.low, high=hp.high, log=hp.log
-                )
+                if hp.step is not None:
+                    params[parameter_name] = trial.suggest_int(
+                        name=unique_name, low=hp.low, high=hp.high, step=hp.step
+                    )
+                elif hp.log is not None:
+                    params[parameter_name] = trial.suggest_int(
+                        name=unique_name, low=hp.low, high=hp.high, log=hp.log
+                    )
+                else:
+                    params[parameter_name] = trial.suggest_int(
+                        name=unique_name, low=hp.low, high=hp.high
+                    )
+
             elif hp.type == "float":
-                params[parameter_name] = trial.suggest_float(
-                    name=unique_name, low=hp.low, high=hp.high, log=hp.log
-                )
+                if hp.step is not None:
+                    params[parameter_name] = trial.suggest_float(
+                        name=unique_name, low=hp.low, high=hp.high, step=hp.step
+                    )
+                elif hp.log is not None:
+                    params[parameter_name] = trial.suggest_float(
+                        name=unique_name, low=hp.low, high=hp.high, log=hp.log
+                    )
+                else:
+                    params[parameter_name] = trial.suggest_float(
+                        name=unique_name, low=hp.low, high=hp.high
+                    )
+
             elif hp.type == "categorical":
                 params[parameter_name] = trial.suggest_categorical(
                     name=unique_name, choices=hp.choices
@@ -103,9 +123,9 @@ class ModelInventory:
             else:
                 raise ValueError(f"HP type '{hp.type}' not supported")
 
-        # Overwrite model parameters specified by global settings
-        for key, value in fixed_global_parameters.items():
-            if translate.get(key) != "NA":
-                params[translate[key]] = value
+        if model_item.n_jobs is not None:
+            params[model_item.n_jobs] = n_jobs
+        if model_item.model_seed is not None:
+            params[model_item.model_seed] = model_seed
 
         return params

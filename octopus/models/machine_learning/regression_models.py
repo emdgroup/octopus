@@ -37,10 +37,8 @@ def get_regression_models():
                 Hyperparameter(type="int", name="n_estimators", low=100, high=500),
                 Hyperparameter(type="float", name="max_features", low=0.1, high=1),
             ],
-            translate={
-                "n_jobs": "n_jobs",
-                "model_seed": "random_state",
-            },
+            n_jobs="n_jobs",
+            model_seed="random_state",
         ),
         ModelConfig(
             name="XGBRegressor",
@@ -58,10 +56,8 @@ def get_regression_models():
                 Hyperparameter(type="fixed", name="validate_parameters", value=True),
                 Hyperparameter(type="float", name="lambda", low=1e-8, high=1, log=True),
             ],
-            translate={
-                "n_jobs": "n_jobs",
-                "model_seed": "random_state",
-            },
+            n_jobs="n_jobs",
+            model_seed="random_state",
         ),
         ModelConfig(
             name="ExtraTreesRegressor",
@@ -79,10 +75,8 @@ def get_regression_models():
                 Hyperparameter(type="fixed", name="validate_parameters", value=True),
                 Hyperparameter(type="float", name="lambda", low=1e-8, high=1, log=True),
             ],
-            translate={
-                "n_jobs": "n_jobs",
-                "model_seed": "random_state",
-            },
+            n_jobs="n_jobs",
+            model_seed="random_state",
         ),
         ModelConfig(
             name="RidgeRegressor",
@@ -98,10 +92,8 @@ def get_regression_models():
                 ),
                 Hyperparameter(type="fixed", name="solver", value="svd"),
             ],
-            translate={
-                "n_jobs": "NA",
-                "model_seed": "random_state",
-            },
+            n_jobs=None,
+            model_seed="random_state",
         ),
         ModelConfig(
             name="ElasticNetRegressor",
@@ -120,10 +112,8 @@ def get_regression_models():
                 Hyperparameter(type="fixed", name="max_iter", value=4000),
                 Hyperparameter(type="fixed", name="selection", value="random"),
             ],
-            translate={
-                "n_jobs": "NA",
-                "model_seed": "random_state",
-            },
+            n_jobs=None,
+            model_seed="random_state",
         ),
         ModelConfig(
             name="ARDRegressor",
@@ -150,10 +140,8 @@ def get_regression_models():
                 Hyperparameter(type="float", name="tol", low=1e-5, high=1e-1, log=True),
                 Hyperparameter(type="fixed", name="fit_intercept", value=True),
             ],
-            translate={
-                "n_jobs": "NA",
-                "model_seed": "NA",
-            },
+            n_jobs=None,
+            model_seed=None,
         ),
         ModelConfig(
             name="GradientBoostingRegressor",
@@ -171,10 +159,8 @@ def get_regression_models():
                 Hyperparameter(type="float", name="max_features", low=0.1, high=1),
                 Hyperparameter(type="fixed", name="loss", value="squared_error"),
             ],
-            translate={
-                "n_jobs": "NA",
-                "model_seed": "random_state",
-            },
+            n_jobs=None,
+            model_seed="random_state",
         ),
         ModelConfig(
             name="SvrRegressor",
@@ -191,10 +177,8 @@ def get_regression_models():
                 ),
                 Hyperparameter(type="float", name="tol", low=1e-5, high=1e-1, log=True),
             ],
-            translate={
-                "n_jobs": "NA",
-                "model_seed": "NA",
-            },
+            n_jobs=None,
+            model_seed=None,
         ),
         ModelConfig(
             name="CatBoostRegressor",
@@ -213,10 +197,8 @@ def get_regression_models():
                 Hyperparameter(type="fixed", name="allow_writing_files", value=False),
                 Hyperparameter(type="fixed", name="verbose", value=250),
             ],
-            translate={
-                "n_jobs": "thread_count",
-                "model_seed": "random_state",
-            },
+            n_jobs="thread_count",
+            model_seed="random_state",
         ),
         ModelConfig(
             name="GaussianProcessRegressor",
@@ -239,9 +221,7 @@ def get_regression_models():
                     type="int", name="n_restarts_optimizer", low=0, high=10, log=False
                 ),
             ],
-            translate={
-                "n_jobs": "NA",
-                "model_seed": "random_state",
-            },
+            n_jobs=None,
+            model_seed="random_state",
         ),
     ]

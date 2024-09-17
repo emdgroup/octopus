@@ -32,6 +32,8 @@ def validate_hyperparameters(instance):
                 raise ValueError("step must be greater than 0.")
         if instance.choices:
             raise ValueError("choices should not be provided for int or float types.")
+        if instance.step is not None and instance.log is True:
+            raise ValueError("Both step and log cannot be selected at the same time.")
 
     # Validate categorical type
     elif instance.type == "categorical":

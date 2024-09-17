@@ -43,10 +43,8 @@ def get_classification_models():
                 Hyperparameter(type="fixed", name="criterion", value="entropy"),
                 Hyperparameter(type="fixed", name="bootstrap", value=True),
             ],
-            translate={
-                "n_jobs": "n_jobs",
-                "model_seed": "random_state",
-            },
+            n_jobs="n_jobs",
+            model_seed="random_state",
         ),
         ModelConfig(
             name="RandomForestClassifier",
@@ -65,10 +63,8 @@ def get_classification_models():
                     type="categorical", name="class_weight", choices=[None, "balanced"]
                 ),
             ],
-            translate={
-                "n_jobs": "n_jobs",
-                "model_seed": "random_state",
-            },
+            n_jobs="n_jobs",
+            model_seed="random_state",
         ),
         ModelConfig(
             name="XGBClassifier",
@@ -85,10 +81,8 @@ def get_classification_models():
                 Hyperparameter(type="int", name="max_depth", low=3, high=9, step=2),
                 Hyperparameter(type="fixed", name="validate_parameters", value=True),
             ],
-            translate={
-                "n_jobs": "n_jobs",
-                "model_seed": "random_state",
-            },
+            n_jobs="n_jobs",
+            model_seed="random_state",
         ),
         ModelConfig(
             name="GradientBoostingClassifier",
@@ -106,10 +100,8 @@ def get_classification_models():
                 Hyperparameter(type="float", name="max_features", low=0.1, high=1),
                 Hyperparameter(type="fixed", name="loss", value="squared_error"),
             ],
-            translate={
-                "n_jobs": "n_jobs",
-                "model_seed": "random_state",
-            },
+            n_jobs="n_jobs",
+            model_seed="random_state",
         ),
         ModelConfig(
             name="CatBoostClassifier",
@@ -133,10 +125,8 @@ def get_classification_models():
                 Hyperparameter(type="fixed", name="allow_writing_files", value=False),
                 Hyperparameter(type="fixed", name="verbose", value=250),
             ],
-            translate={
-                "n_jobs": "thread_count",
-                "model_seed": "random_state",
-            },
+            n_jobs="thread_count",
+            model_seed="random_state",
         ),
         ModelConfig(
             name="TabPFNClassifier",
@@ -150,10 +140,8 @@ def get_classification_models():
                 ),
                 Hyperparameter(type="fixed", name="subsample_features", value=False),
             ],
-            translate={
-                "n_jobs": "NA",
-                "model_seed": "seed",
-            },
+            n_jobs=None,
+            model_seed="seed",
         ),
         ModelConfig(
             name="LogisticRegressionClassifier",
@@ -176,9 +164,7 @@ def get_classification_models():
                 ),
                 Hyperparameter(type="fixed", name="solver", value="lbfgs"),
             ],
-            translate={
-                "n_jobs": "n_jobs",
-                "model_seed": "random_state",
-            },
+            n_jobs="n_jobs",
+            model_seed="random_state",
         ),
     ]

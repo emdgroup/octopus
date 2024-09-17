@@ -1,32 +1,34 @@
 """Machine learning models config."""
 
-from typing import Dict, List, Type
+from typing import List, Type
 
-from attrs import Attribute, define, field, validators
+from attrs import define, field, validators
 
 from octopus.models.machine_learning.hyperparameter import Hyperparameter
 
 
 def validate_hyperparameters(
-    instance: "ModelConfig",
-    attribute: "Attribute",
-    value: List[Hyperparameter],
+    instance: "ModelConfig", attribute: str, value: List[Hyperparameter]
 ) -> None:
-    """Validate that hyperparameter names do not conflict with translated names.
+    """Validate hyperparameters.
+
+    Make sure that the hyperparameters do not contain names
+    that match the instance's n_jobs or model_seed.
 
     Args:
-        instance: The instance of BaseModelConfig.
-        attribute: The attribute being validated.
-        value: The list of Hyperparameter instances.
+        instance: The instance of ModelConfig being validated.
+        attribute: The name of the attribute being validated.
+        value: The list of hyperparameters to validate.
 
     Raises:
-        ValueError: If a hyperparameter name conflicts with a translated name.
+        ValueError: If any hyperparameter's name matches n_jobs or model_seed.
     """
-    translated_names = set(instance.translate.values())
-    for hp in value:
-        if hp.name in translated_names:
+    forbidden_names = {instance.n_jobs, instance.model_seed}
+
+    for hyperparameter in value:
+        if hyperparameter.name in forbidden_names:
             raise ValueError(
-                f"Hyperparameter name '{hp.name}' conflicts with a translated name."
+                f"""Hyperparameter '{hyperparameter.name}' is not allowed in 'hyperparameters'."""  # noqa: E501
             )
 
 
@@ -41,5 +43,6 @@ class ModelConfig:
         validator=validators.in_(["regression", "classification", "timetoevent"])
     )
     hyperparameters: List[Hyperparameter] = field(validator=validate_hyperparameters)
-    translate: Dict[str, str] = field(factory=dict)
     n_repeats: None | int = field(factory=lambda: None)
+    n_jobs: None | str = field(factory=lambda: "n_jobs")
+    model_seed: None | str = field(factory=lambda: "model_seed")

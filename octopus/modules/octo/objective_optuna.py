@@ -78,17 +78,14 @@ class ObjectiveOptuna:
         if ml_model_type in self.hyper_parameters.keys():
             hyperparameters = self.hyper_parameters[ml_model_type]
         else:
-            model_item.hyperparameters
+            hyperparameters = model_item.hyperparameters
 
         model_params = model_inventory.create_optuna_parameters(
             trial,
-            ml_model_type,
+            model_item,
             hyperparameters,
-            model_item.translate,
-            {
-                "n_jobs": self.ml_jobs,
-                "model_seed": self.ml_seed,
-            },
+            n_jobs=self.ml_jobs,
+            model_seed=self.ml_seed,
         )
 
         config_training = {

@@ -31,9 +31,7 @@ def get_time_to_event_models():
                     type="int", name="n_estimators", low=100, high=500, log=False
                 ),
             ],
-            translate={
-                "n_jobs": "n_jobs",
-                "model_seed": "random_state",
-            },
+            n_jobs="n_jobs",
+            model_seed="random_state",
         ),
     ]

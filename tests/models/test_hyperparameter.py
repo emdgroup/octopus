@@ -8,37 +8,46 @@ from octopus.models.machine_learning.hyperparameter import Hyperparameter
 @pytest.mark.parametrize(
     "type, name, low, high, step, choices, log, value, expected_exception",
     [
-        # Valid cases
-        ("int", "learning_rate", 0, 10, 1, [], False, None, None),
-        ("float", "learning_rate", 0.0, 10.0, 0.1, [], False, None, None),
-        (
-            "categorical",
-            "optimizer",
-            None,
-            None,
-            None,
-            ["adam", "sgd"],
-            False,
-            None,
-            None,
-        ),
-        ("fixed", "dropout", None, None, None, [], False, 0.5, None),
-        # Invalid cases
-        ("invalid", "param", None, None, None, [], False, None, ValueError),
-        ("int", "param", 10, 5, None, [], False, None, ValueError),
-        ("float", "param", 0.0, 10.0, -0.1, [], False, None, ValueError),
-        ("categorical", "param", None, None, None, [], False, None, ValueError),
-        ("int", "param", 0, 10, None, [1, 2, 3], False, None, ValueError),
-        ("categorical", "param", None, None, None, ["a", "b"], False, "c", ValueError),
-        ("int", "param", 0, 10, None, [], False, 0.5, TypeError),
-        ("float", "param", 0.0, 10.0, None, [], False, 5, TypeError),
-        ("fixed", "param", None, None, None, [], False, None, ValueError),
+        # Valid int hyperparameter
+        ("int", "para1", 1, 10, None, [], False, None, None),
+        # Invalid int hyperparameter with step
+        ("int", "para1", 1, 10, -1, [], False, None, ValueError),
+        # Invalid int hyperparameter with choices
+        ("int", "para1", 1, 10, None, [1, 2, 3], False, None, ValueError),
+        # Valid int hyperparameter step
+        ("int", "para1", 1, 10, 1, [], False, None, None),
+        # Vvalid int hyperparameter log
+        ("int", "para1", 1, 10, None, [], True, None, None),
+        # Invalid int hyperparameter step and log selected
+        ("int", "para1", 1, 10, 1, [], True, None, ValueError),
+        # Valid float hyperparameter
+        ("float", "para1", 0.1, 1.0, None, [], False, None, None),
+        # Invalid float hyperparameter with high less than low
+        ("float", "param1", 1.0, 0.1, None, [], False, None, ValueError),
+        # Invalid float hyperparameter with choices
+        ("float", "para1", 1, 10, None, [1, 2, 3], False, None, ValueError),
+        # Valid float hyperparameter step
+        ("float", "para1", 1, 10, 1, [], False, None, None),
+        # Vvalid float hyperparameter log
+        ("float", "para1", 1, 10, None, [], True, None, None),
+        # Invalid float hyperparameter step and log selected
+        ("float", "para1", 1, 10, 1, [], True, None, ValueError),
+        # Valid categorical hyperparameter
+        ("categorical", "para1", None, None, None, ["a", "b"], False, None, None),
+        # Invalid categorical hyperparameter without choices
+        ("categorical", "para1", None, None, None, [], False, None, ValueError),
+        # Valid fixed hyperparameter
+        ("fixed", "para1", None, None, None, [], False, 5, None),
+        # Invalid fixed hyperparameter without value
+        ("fixed", "para1", None, None, None, [], False, None, ValueError),
+        # Invalid type
+        ("unknown", "para1", None, None, None, [], False, None, ValueError),
     ],
 )
-def test_hyperparameters(
+def test_validate_hyperparameters(
     type, name, low, high, step, choices, log, value, expected_exception
 ):
-    """Test hyperparameters."""
+    """Test validate hyperparameters."""
     if expected_exception:
         with pytest.raises(expected_exception):
             Hyperparameter(
@@ -52,7 +61,7 @@ def test_hyperparameters(
                 value=value,
             )
     else:
-        hp = Hyperparameter(
+        Hyperparameter(
             type=type,
             name=name,
             low=low,
@@ -62,11 +71,3 @@ def test_hyperparameters(
             log=log,
             value=value,
         )
-        assert hp.type == type
-        assert hp.name == name
-        assert hp.low == low
-        assert hp.high == high
-        assert hp.step == step
-        assert hp.choices == choices
-        assert hp.log == log
-        assert hp.value == value

@@ -76,15 +76,13 @@ class ModelInventory:
         self,
         trial: optuna.trial.Trial,
         model_name: str,
+        hyperparameters: List,
+        translate: dict,
         fixed_global_parameters: Dict[str, Any],
     ) -> Dict[str, Any]:
         """Create optuna parameters."""
-        model_config = self.get_model_by_name(model_name)
-        if not model_config:
-            raise ValueError(f"Model '{model_name}' not found in the inventory.")
-
         params = {}
-        for hp in model_config.hyperparameters:
+        for hp in hyperparameters:
             parameter_name = hp.name
             unique_name = f"{hp.name}_{model_name}"
 
@@ -106,9 +104,8 @@ class ModelInventory:
                 raise ValueError(f"HP type '{hp.type}' not supported")
 
         # Overwrite model parameters specified by global settings
-        translate = model_config.translate
         for key, value in fixed_global_parameters.items():
-            if translate.get(key) != "NA":  # NA=ignore
+            if translate.get(key) != "NA":
                 params[translate[key]] = value
 
         return params

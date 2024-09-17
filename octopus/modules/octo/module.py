@@ -124,7 +124,7 @@ class Octo(BaseSequenceItem):
     )
     """Number of Optuna trials."""
 
-    hyper_parameters: dict = field(
+    hyperparameters: dict = field(
         validator=[validators.instance_of(dict)], default=Factory(dict)
     )
     """Bring own hyperparameter space."""

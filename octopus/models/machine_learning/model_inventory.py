@@ -6,6 +6,7 @@ import optuna
 from attrs import define, field
 
 from octopus.models.machine_learning.config import ModelConfig
+from octopus.models.machine_learning.hyperparameter import Hyperparameter
 
 
 @define
@@ -76,7 +77,7 @@ class ModelInventory:
         self,
         trial: optuna.trial.Trial,
         model_item: ModelConfig,
-        hyperparameters: List,
+        hyperparameters: List[Hyperparameter],
         n_jobs: int,
         model_seed: int,
     ) -> Dict[str, Any]:

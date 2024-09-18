@@ -103,15 +103,3 @@ def test_get_models_by_type(model_inventory: ModelInventory) -> None:
     models = model_inventory.get_models_by_type("regression")
     assert len(models) == 1
     assert models[0].ml_type == "regression"
-
-
-# def test_create_optuna_parameters_model_not_found(
-#     model_inventory: ModelInventory,
-# ) -> None:
-#     """Test error when creating Optuna parameters for a non-existent model."""
-#     trial = Mock()
-#     fixed_global_parameters = {}
-#     with pytest.raises(ValueError):
-#         model_inventory.create_optuna_parameters(
-#             trial, "nonexistent_model", fixed_global_parameters
-#         )

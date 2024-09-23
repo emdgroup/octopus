@@ -28,7 +28,7 @@ print("Working directory: ", os.getcwd())
 
 # %%
 # how to evaluate
-# referenc: MBOS6_mb_OMORO_fixed_xgb_mb_clhe, Octo-MrmR-Octo(ensel)=final result
+# reference: MBOS6_mb_OMORO_fixed_xgb_mb_clhe, Octo-MrmR-Octo(ensel)=final result
 
 # %%
 # path_study = Path("./studies/MBOS6_mbclhe_5steps_mb")
@@ -160,7 +160,6 @@ sorted(df_sel_feat.iloc[0]["Selected_features"])
 
 # %%
 for num_sequence, item in enumerate(sequence_items):
-
     print(f"\033[1mSequence item: {num_sequence}({item.module})\033[0m")
 
     df_seq = df[df["Sequence"] == num_sequence]
@@ -191,12 +190,12 @@ for num_sequence, item in enumerate(sequence_items):
             ]:  # Check if the column contains numeric values
                 mean_values[column] = result_df[column].mean()  # Calculate mean
             else:
-                mean_values[column] = (
-                    ""  # Assign an empty string for non-numeric columns
-                )
+                mean_values[
+                    column
+                ] = ""  # Assign an empty string for non-numeric columns
         # Append the mean values as a new row
         result_df.loc["Mean"] = mean_values
-        display(result_df)
+        print(result_df)
 
 # %%
 print("done")

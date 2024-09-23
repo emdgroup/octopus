@@ -1,10 +1,10 @@
 # %%
 """Script to show optuna results."""
 
-import pandas as pd
 from pathlib import Path
-import pandas as pd
+
 import optuna
+import pandas as pd
 
 pd.set_option("display.max_rows", None)
 pd.set_option("display.max_columns", None)
@@ -29,14 +29,13 @@ study = optuna.create_study(
 # df = study.trials_dataframe(attrs=("number", "value","user_attrs",  "params", "state"))
 df = study.trials_dataframe()
 
-display(df.shape)
+print(df.shape)
 # df.head(20)
 
 # %%
 if len(df["value"].unique()) != 1:
-
     ## list failed experiments
-    display(df[df["state"] == "FAIL"])
+    print(df[df["state"] == "FAIL"])
 
     # number of trials
     print("Number of completed trials: ", len(df))
@@ -45,7 +44,7 @@ if len(df["value"].unique()) != 1:
     print(df.loc[df["value"].idxmin()])
 
     # show 10 best trials
-    display(df.sort_values(by="value", ascending=True).head(10))
+    print(df.sort_values(by="value", ascending=True).head(10))
 
     fig = optuna.visualization.plot_optimization_history(study)
     fig.show()

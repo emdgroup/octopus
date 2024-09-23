@@ -41,7 +41,8 @@ class Sfs(BaseSequenceItem):
     # that scored highest in cross-validation.
 
     # fixed_features: tuple (default: None)
-    # If not None, the feature indices provided as a tuple will be regarded as fixed by the feature selector
+    # If not None, the feature indices provided as a tuple will be regarded as fixed by
+    # the feature selector
 
     # feature_groups : list or None (default: None)
     # Optional argument for treating certain features as a group.

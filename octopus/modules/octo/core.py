@@ -121,7 +121,6 @@ for line in [319, 330, 338]:
 #   importance may not work anyways
 # - add scaling, as a HP?
 # - include dimensionality reduction
-# - include outlier elimination
 
 # TOBEDONE FEATURE_IMPORTANCE
 # - (1) grouped permutation importance, see predict class
@@ -130,11 +129,9 @@ for line in [319, 330, 338]:
 # - check alibi package
 # - separate fi code from training class
 # - group identification (experiment.py) - add hirarchical clustering
-# - create new module that filters out correlated variables
 # - crate new module that replaces groups with PCA 1st component
 # - https://arxiv.org/pdf/2312.10858
 # - see alibi package, ALE, https://github.com/SeldonIO/alibi/tree/master
-# - add kernel shape fi
 
 
 @define

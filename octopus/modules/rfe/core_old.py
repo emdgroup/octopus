@@ -1,23 +1,19 @@
-"""SFS Core (sequential feature selection)."""
+"""Rfe core."""
 
 import copy
 import json
 import shutil
-import warnings
 from pathlib import Path
 
 import pandas as pd
 from attrs import define, field, validators
-from mlxtend.feature_selection import SequentialFeatureSelector as SFS
+from sklearn.feature_selection import RFECV
 from sklearn.model_selection import GridSearchCV, StratifiedKFold
 
 from octopus.experiment import OctoExperiment
 from octopus.models.models_inventory import model_inventory
 from octopus.modules.utils import get_performance_score
 from octopus.results import ModuleResults
-
-# Ignore all Warnings
-warnings.filterwarnings("ignore")
 
 scorer_string_inventory = {
     "AUCROC": "roc_auc",
@@ -39,6 +35,21 @@ supported_models = {
     "XGBClassifier",
     "XGBRegressor",
 }
+
+# for quick result
+# param_grid = {
+#    'iterations': [100, 200],
+#    'depth': [4, 6],
+#    'learning_rate': [0.01, 0.1],
+#    'l2_leaf_reg': [1, 3]
+# }
+
+
+def get_feature_importances(estimator):
+    """Set feature importance based on mode."""
+    if hasattr(estimator, "best_estimator_"):
+        return estimator.best_estimator_.feature_importances_
+    return estimator.feature_importances_
 
 
 def get_param_grid(model_type):
@@ -73,18 +84,36 @@ def get_param_grid(model_type):
 
 
 # TOBEDONE/IDEAS:
-# - (2) add scores to results
-# - it would be nice to stop after a certain feature reduction, then
-#   relearn the model parameters and the start again. k_features parameter!
-# - k_features = "parsemonious", check this out
-# - put scorer_string_inventory in central place
-# - try verbose = 1, useful?
-# - use cv object, stratifiedKfold
+# - Notes:
+#   + For RFE it is important to have uncorrelated features (ROC, MRMR module)
+#   + Advantage RFE over SFS - fewer retrainings, less overfitting
+#   + Disadvantage RFE over SFS - need to rely on feature importances
+# - General topics:
+#   + (0) add scores to results
+#   + (1) put scorer_string_inventory in central place
+# - Question:  RFE - better test results than octo (datasplit difference?)
+# - Next Steps (Improvements)
+#   + separate second RFE module!
+#   + better datasplit (stratification + groups)
+#   + based on bag (inherits datasplit + feature importances)?
+#   + model retraining after n removals
+#   + find best model using stats test, smallest number of features with
+#     no significant difference to max performance!!
+#   + replace gridsearch with optuna or randomsearch
+#   + Performance: permutation fi on dev! requires ROC, MRMR
+#   + PFI: use large number of repeats, adjustable
+#   + automatically remove not used features (fi == 0)
+#   + Write own RFE code to have more options
+#   + intelligent feature removal considering groups
+#   + Efficiency option: new approach on how many features to eliminate.
+#     See autogluon issue. Add random features (3-5) and remove all features below worst
+#     random feature. See autogluon
+#   + mode2: only one training per reduction and not for every experiment??
 
 
 @define
-class SfsCore:
-    """SFS Module."""
+class RfeCore:
+    """RFE Module."""
 
     experiment: OctoExperiment = field(
         validator=[validators.instance_of(OctoExperiment)]
@@ -113,11 +142,6 @@ class SfsCore:
         ]
 
     @property
-    def data_test(self) -> pd.DataFrame:
-        """data_test."""
-        return self.experiment.data_test
-
-    @property
     def x_test(self) -> pd.DataFrame:
         """x_test."""
         return self.experiment.data_test[self.experiment.feature_columns]
@@ -126,6 +150,11 @@ class SfsCore:
     def y_test(self) -> pd.DataFrame:
         """y_test."""
         return self.experiment.data_test[self.experiment.target_assignments.values()]
+
+    @property
+    def data_test(self) -> pd.DataFrame:
+        """data_test."""
+        return self.experiment.data_test
 
     @property
     def target_assignments(self) -> dict:
@@ -143,6 +172,11 @@ class SfsCore:
         return self.experiment.ml_config
 
     @property
+    def feature_columns(self) -> pd.DataFrame:
+        """Feature Columns."""
+        return self.experiment.feature_columns
+
+    @property
     def stratification_column(self) -> list:
         """Stratification Column."""
         return self.experiment.stratification_column
@@ -157,7 +191,7 @@ class SfsCore:
             directory.mkdir(parents=True, exist_ok=True)
 
     def run_experiment(self):
-        """Run SFS module on experiment."""
+        """Run RFE module on experiment."""
         # run experiment and return updated experiment object
 
         # Configuration, define default model
@@ -209,50 +243,55 @@ class SfsCore:
         print(f"Dev start performance: {best_cv_score:.3f}")
         print(f"Best params: {best_params}")
 
-        print(f"Number of features before SFS: {self.x_traindev.shape[1]}")
-
-        # Select type of SFS
-        if self.config.sfs_type == "forward":
-            forward = True
-            floating = False
-        elif self.config.sfs_type == "backward":
-            forward = False
-            floating = False
-        elif self.config.sfs_type == "floating_forward":
-            forward = True
-            floating = True
-        elif self.config.sfs_type == "floating_backward":
-            forward = False
-            floating = True
+        # Mode selection
+        if self.config.mode == "Mode1":
+            # RFE with the trained model
+            estimator = best_model
+        elif self.config.mode == "Mode2":
+            # RFE with hyperparameter optimization at each step
+            estimator = grid_search
         else:
-            raise ValueError(f"Unsupported SFS type: {self.config.sfs_type}")
+            raise ValueError(f"Unsupported Mode: {self.config.mode}")
 
-        sfs = SFS(
-            estimator=best_model,
-            k_features="best",
-            forward=forward,
-            floating=floating,
+        print(f"Number of features before RFE: {self.x_traindev.shape[1]}")
+
+        rfecv = RFECV(
+            estimator=estimator,
+            step=self.config.step,
+            min_features_to_select=self.config.min_features_to_select,
             cv=cv,
             scoring=scoring_type,
-            verbose=1,
+            verbose=0,
             n_jobs=1,
+            importance_getter=get_feature_importances,
         )
 
-        sfs.fit(self.x_traindev, self.y_traindev.squeeze(axis=1))
-        n_optimal_features = len(sfs.k_feature_idx_)
-        self.experiment.selected_features = list(sfs.k_feature_names_)
+        rfecv.fit(self.x_traindev, self.y_traindev.squeeze(axis=1))
+        optimal_features = rfecv.n_features_
+        selected_features = [
+            self.feature_columns[i]
+            for i in range(len(rfecv.support_))
+            if rfecv.support_[i]
+        ]
+        self.experiment.selected_features = sorted(
+            selected_features, key=lambda x: (len(x), sorted(x))
+        )
 
-        print("SFS completed")
-        # print(sfs.subsets_)
-        print(f"Optimal number of features: {n_optimal_features}")
+        print("RFE completed")
+        # print(f"CV Results: {rfecv.cv_results_}")
+        print(f"Optimal number of features: {optimal_features}")
         print(f"Selected features: {self.experiment.selected_features}")
-        print(f"Dev set performance: {sfs.k_score_:.3f}")
+        dev_score_cv = rfecv.cv_results_["mean_test_score"].max()
+        print(f"Dev set performance: {dev_score_cv:.3f}")
 
         # Report performance on test set
-        best_estimator = copy.deepcopy(best_model)
-        x_traindev_sfs = sfs.transform(self.x_traindev)
-        # refit on selected features
-        best_estimator.fit(x_traindev_sfs, self.y_traindev.squeeze(axis=1))
+        test_score_cv = rfecv.score(self.x_test, self.y_test)
+        print(f"Test set (cv) performance: {test_score_cv:.3f}")
+
+        # retrain best model on x_traindev
+        best_estimator = copy.deepcopy(estimator)
+        x_traindev_rfe = self.x_traindev[self.experiment.selected_features]
+        best_estimator.fit(x_traindev_rfe, self.y_traindev.squeeze(axis=1))
         test_score_refit = get_performance_score(
             best_estimator,
             self.data_test,
@@ -263,10 +302,10 @@ class SfsCore:
         print(f"Test set (refit) performance: {test_score_refit:.3f}")
 
         # gridsearch + retrain best model on x_traindev
-        grid_search.fit(x_traindev_sfs, self.y_traindev.squeeze(axis=1))
+        grid_search.fit(x_traindev_rfe, self.y_traindev.squeeze(axis=1))
         best_gs_parameters = grid_search.best_params_
         best_gs_estimator = grid_search.best_estimator_
-        best_gs_estimator.fit(x_traindev_sfs, self.y_traindev.squeeze(axis=1))  # refit
+        best_gs_estimator.fit(x_traindev_rfe, self.y_traindev.squeeze(axis=1))  # refit
         test_score_gsrefit = get_performance_score(
             best_gs_estimator,
             self.data_test,
@@ -286,14 +325,15 @@ class SfsCore:
         # print(fi_df)
 
         # scores
-        scores = {}
-        scores["dev_avg"] = sfs.k_score_
+        scores = dict()
+        scores["dev_avg"] = rfecv.cv_results_["mean_test_score"].max()
+        scores["test_avg"] = test_score_cv
         scores["test_refit"] = test_score_refit
         scores["test_gsrefit"] = test_score_gsrefit
 
         # save results to experiment
-        self.experiment.results["Sfs"] = ModuleResults(
-            id="SFS",
+        self.experiment.results["Rfe"] = ModuleResults(
+            id="rfe",
             model=best_gs_estimator,
             scores=scores,
             feature_importances={
@@ -306,9 +346,10 @@ class SfsCore:
         results = {
             "Dev score start": best_cv_score,
             "best_params": best_gs_parameters,
-            "optimal_features": int(n_optimal_features),
+            "optimal_features": int(optimal_features),
             "selected_features": self.experiment.selected_features,
-            "Dev set performance": sfs.k_score_,
+            "Dev set performance": dev_score_cv,
+            "Test set (cv) performance": test_score_cv,
             "Test set (refit) performance": test_score_refit,
             "Test set (gs+refit) performance": test_score_gsrefit,
         }

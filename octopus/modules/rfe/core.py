@@ -285,12 +285,13 @@ class RfeCore:
         print(f"Dev set performance: {dev_score_cv:.3f}")
 
         # Report performance on test set
-        test_score_cv = rfecv.score(self.x_test, self.y_test)
-        print(f"Test set (cv) performance: {test_score_cv:.3f}")
+        # test_score_cv = rfecv.score(self.x_test, self.y_test)
+        # print(f"Test set (cv) performance: {test_score_cv:.3f}")
 
         # retrain best model on x_traindev
         best_estimator = copy.deepcopy(estimator)
         x_traindev_rfe = self.x_traindev[self.experiment.selected_features]
+        # refit on selected features
         best_estimator.fit(x_traindev_rfe, self.y_traindev.squeeze(axis=1))
         test_score_refit = get_performance_score(
             best_estimator,
@@ -325,9 +326,9 @@ class RfeCore:
         # print(fi_df)
 
         # scores
-        scores = dict()
+        scores = {}
         scores["dev_avg"] = rfecv.cv_results_["mean_test_score"].max()
-        scores["test_avg"] = test_score_cv
+        # scores["test_avg"] = test_score_cv
         scores["test_refit"] = test_score_refit
         scores["test_gsrefit"] = test_score_gsrefit
 
@@ -349,7 +350,7 @@ class RfeCore:
             "optimal_features": int(optimal_features),
             "selected_features": self.experiment.selected_features,
             "Dev set performance": dev_score_cv,
-            "Test set (cv) performance": test_score_cv,
+            # "Test set (cv) performance": test_score_cv,
             "Test set (refit) performance": test_score_refit,
             "Test set (gs+refit) performance": test_score_gsrefit,
         }

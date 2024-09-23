@@ -116,38 +116,39 @@ class ResultsDataProcessor:
         for file in list(experiment_files):
             exp = OctoData.from_pickle(file)
             default_target_column = exp.target_assignments["default"]
-            for split in exp.results["best"].predictions:
-                for dataset in exp.results["best"].predictions[split]:
-                    # get predictions
-                    df_temp = exp.results["best"].predictions[split][dataset]
-                    df_temp["experiment_id"] = exp.experiment_id
-                    df_temp["sequence_id"] = exp.sequence_item_id
-                    df_temp["split_id"] = split
-                    df_temp["dataset"] = dataset
-                    df_predictions = pd.concat([df_predictions, df_temp])
+            if exp.results:
+                for split in exp.results["best"].predictions:
+                    for dataset in exp.results["best"].predictions[split]:
+                        # get predictions
+                        df_temp = exp.results["best"].predictions[split][dataset]
+                        df_temp["experiment_id"] = exp.experiment_id
+                        df_temp["sequence_id"] = exp.sequence_item_id
+                        df_temp["split_id"] = split
+                        df_temp["dataset"] = dataset
+                        df_predictions = pd.concat([df_predictions, df_temp])
 
-                    # calculate scores
-                    for metric, value in metrics_inventory.items():
-                        if value.get("ml_type") == exp.ml_type:
-                            prediction = exp.results["best"].predictions[split][
-                                dataset
-                            ]["prediction"]
-                            if exp.ml_type == "classification":
-                                prediction = prediction.astype(int)
-                            dict_socre_temp = {
-                                "experiment_id": exp.experiment_id,
-                                "sequence_id": exp.sequence_item_id,
-                                "split": split,
-                                "testset": dataset,
-                                "metric": metric,
-                                "score": value["method"](
-                                    exp.results["best"].predictions[split][dataset][
-                                        default_target_column
-                                    ],
-                                    prediction,
-                                ),
-                            }
-                            dict_scores.append(dict_socre_temp)
+                        # calculate scores
+                        for metric, value in metrics_inventory.items():
+                            if value.get("ml_type") == exp.ml_type:
+                                prediction = exp.results["best"].predictions[split][
+                                    dataset
+                                ]["prediction"]
+                                if exp.ml_type == "classification":
+                                    prediction = prediction.astype(int)
+                                dict_socre_temp = {
+                                    "experiment_id": exp.experiment_id,
+                                    "sequence_id": exp.sequence_item_id,
+                                    "split": split,
+                                    "testset": dataset,
+                                    "metric": metric,
+                                    "score": value["method"](
+                                        exp.results["best"].predictions[split][dataset][
+                                            default_target_column
+                                        ],
+                                        prediction,
+                                    ),
+                                }
+                                dict_scores.append(dict_socre_temp)
 
         df_predictions = df_predictions.reset_index(drop=True)
         df_scores = (
@@ -256,19 +257,20 @@ class ResultsDataProcessor:
         df_feature_importances = pd.DataFrame()
         for file in list(experiment_files):
             exp = OctoData.from_pickle(file)
-            for split in exp.results["best"].feature_importances:
-                if split != "test":
-                    for dataset in exp.results["best"].feature_importances[split]:
-                        df_temp = exp.results["best"].feature_importances[split][
-                            dataset
-                        ]
-                        df_temp["experiment_id"] = exp.experiment_id
-                        df_temp["sequence_id"] = exp.sequence_item_id
-                        df_temp["split_id"] = split
-                        df_temp["dataset"] = dataset
-                        if not df_temp.empty:
-                            df_feature_importances = pd.concat(
-                                [df_feature_importances, df_temp]
-                            )
+            if exp.results:
+                for split in exp.results["best"].feature_importances:
+                    if split != "test":
+                        for dataset in exp.results["best"].feature_importances[split]:
+                            df_temp = exp.results["best"].feature_importances[split][
+                                dataset
+                            ]
+                            df_temp["experiment_id"] = exp.experiment_id
+                            df_temp["sequence_id"] = exp.sequence_item_id
+                            df_temp["split_id"] = split
+                            df_temp["dataset"] = dataset
+                            if not df_temp.empty:
+                                df_feature_importances = pd.concat(
+                                    [df_feature_importances, df_temp]
+                                )
 
         return df_feature_importances.reset_index(drop=True)

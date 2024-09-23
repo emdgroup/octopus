@@ -6,10 +6,11 @@ import shutil
 import warnings
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 from attrs import define, field, validators
 from mlxtend.feature_selection import SequentialFeatureSelector as SFS
-from sklearn.model_selection import GridSearchCV, StratifiedKFold
+from sklearn.model_selection import GridSearchCV, StratifiedKFold, cross_val_score
 
 from octopus.experiment import OctoExperiment
 from octopus.models.models_inventory import model_inventory
@@ -240,7 +241,10 @@ class SfsCore:
 
         sfs.fit(self.x_traindev, self.y_traindev.squeeze(axis=1))
         n_optimal_features = len(sfs.k_feature_idx_)
-        self.experiment.selected_features = list(sfs.k_feature_names_)
+        selected_features = list(sfs.k_feature_names_)
+        self.experiment.selected_features = sorted(
+            selected_features, key=lambda x: (len(x), sorted(x))
+        )
 
         print("SFS completed")
         # print(sfs.subsets_)
@@ -251,7 +255,15 @@ class SfsCore:
         # Report performance on test set
         best_estimator = copy.deepcopy(best_model)
         x_traindev_sfs = sfs.transform(self.x_traindev)
-        # refit on selected features
+        x_test_sfs = sfs.transform(self.x_test)
+
+        cv_score = cross_val_score(
+            best_model, x_test_sfs, self.y_test, scoring=scoring_type, cv=cv
+        )
+        test_score_cv = np.mean(cv_score)
+        print(f"Test set (cv) performance : {test_score_cv:.3f}")
+
+        # retrain best model on x_traindev
         best_estimator.fit(x_traindev_sfs, self.y_traindev.squeeze(axis=1))
         test_score_refit = get_performance_score(
             best_estimator,
@@ -286,8 +298,9 @@ class SfsCore:
         # print(fi_df)
 
         # scores
-        scores = {}
+        scores = dict()
         scores["dev_avg"] = sfs.k_score_
+        scores["test_avg"] = test_score_cv
         scores["test_refit"] = test_score_refit
         scores["test_gsrefit"] = test_score_gsrefit
 
@@ -309,6 +322,7 @@ class SfsCore:
             "optimal_features": int(n_optimal_features),
             "selected_features": self.experiment.selected_features,
             "Dev set performance": sfs.k_score_,
+            "Test set (cv) performance": test_score_cv,
             "Test set (refit) performance": test_score_refit,
             "Test set (gs+refit) performance": test_score_gsrefit,
         }

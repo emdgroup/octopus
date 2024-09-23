@@ -84,6 +84,7 @@ class OctoExperiment:
             np.nan_to_num(self.data_traindev[self.feature_columns].values)
         )
         pos_corr_matrix = np.abs(pos_corr_matrix)
+
         # (B) RDC correlation matrix
         # pos_corr_matrix = np.abs(
         #    rdc_correlation_matrix(self.data_traindev[self.feature_columns])

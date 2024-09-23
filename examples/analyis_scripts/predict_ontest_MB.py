@@ -4,9 +4,11 @@
 # %%
 from pathlib import Path
 
-from octopus.predict import OctoPredict
+import matplotlib.pyplot as plt
+
 from octopus.config.core import OctoConfig
 from octopus.experiment import OctoExperiment
+from octopus.predict import OctoPredict
 
 # %% [markdown]
 # ## Select Study
@@ -47,7 +49,7 @@ print()
 # Select sequence item
 sequence_item_id = 2
 
-# check availalbe results_keys in cell output below
+# check available results_keys in cell output below
 results_key = "ensel"
 
 # create study-predict object
@@ -106,7 +108,7 @@ seq_item.calculate_fi_test(fi_type="shap", shap_type="kernel")
 # %%
 # results dict
 print("Results keys:")
-display(list(seq_item.results.keys()))
+print(list(seq_item.results.keys()))
 
 # %% [markdown]
 # ## Analyse test feature importance over all outer folds
@@ -119,7 +121,6 @@ pfi3 = seq_item.results["fi_table_grouppermutation_exp3"]
 pfi4 = seq_item.results["fi_table_grouppermutation_exp4"]
 
 # %%
-import matplotlib.pyplot as plt
 
 
 def plot_pfi(df):

@@ -14,11 +14,19 @@ class ObjectiveOptuna:
     A single solution for global and individual HP optimizations.
     """
 
-    def __init__(self, experiment, data_splits, study_name, top_trials):
+    def __init__(
+        self,
+        experiment,
+        data_splits,
+        study_name,
+        top_trials,
+        mrmr_features,
+    ):
         self.experiment = experiment
         self.data_splits = data_splits
         self.study_name = study_name
         self.top_trials = top_trials
+        self.mrmr_features = mrmr_features
         # saving trials
         self.ensel = self.experiment.ml_config.ensemble_selection
         self.n_save_trials = self.experiment.ml_config.ensel_n_save_trials
@@ -70,6 +78,16 @@ class ObjectiveOptuna:
         else:
             num_outl = 0
 
+        # (4) selected mrmr features
+        if self.mrmr_features:
+            feat_id = trial.suggest_categorical(
+                name="n_mrmr_features", choices=list(self.mrmr_features.keys())
+            )
+            feature_columns = self.mrmr_features[feat_id]
+        else:
+            feature_columns = self.experiment.feature_columns
+
+        # get hyper parameter space for selected model
         # get hyperparameters for selected model
         model_item = ModelInventory().get_model_by_name(ml_model_type)
 
@@ -89,6 +107,7 @@ class ObjectiveOptuna:
         config_training = {
             "dim_reduction": dim_reduction,
             "outl_reduction": num_outl,
+            "n_input_features": len(feature_columns),
             "ml_model_type": ml_model_type,
             "ml_model_params": model_params,
         }
@@ -101,7 +120,7 @@ class ObjectiveOptuna:
                     training_id=self.experiment.id + "_" + str(key),
                     ml_type=self.experiment.ml_type,
                     target_assignments=self.experiment.target_assignments,
-                    feature_columns=self.experiment.feature_columns,
+                    feature_columns=feature_columns,
                     row_column=self.experiment.row_column,
                     data_train=split["train"],  # inner datasplit, train
                     data_dev=split["test"],  # inner datasplit, dev

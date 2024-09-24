@@ -2,7 +2,7 @@
 
 import pytest
 
-from octopus.models.machine_learning.hyperparameter import Hyperparameter
+from octopus.models.hyperparameter import Hyperparameter
 
 
 @pytest.mark.parametrize(

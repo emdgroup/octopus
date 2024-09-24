@@ -7,9 +7,9 @@ from typing import Any, Dict, Optional
 
 import pytest
 
-from octopus.models.machine_learning.config import ModelConfig
-from octopus.models.machine_learning.core import ModelInventory
-from octopus.models.machine_learning.hyperparameter import Hyperparameter
+from octopus.models.config import ModelConfig
+from octopus.models.hyperparameter import Hyperparameter
+from octopus.models.inventory import ModelInventory
 
 
 # Mock ModelConfig class
@@ -45,12 +45,6 @@ def model_inventory(model_config: ModelConfig) -> ModelInventory:
     inventory = ModelInventory()
     inventory.add_model(model_config)
     return inventory
-
-
-def test_add_model(model_inventory: ModelInventory, model_config: ModelConfig) -> None:
-    """Test adding a model to the inventory."""
-    assert len(model_inventory.models) == 1
-    assert model_inventory.models[0] == model_config
 
 
 @pytest.mark.parametrize(
@@ -98,8 +92,17 @@ def test_get_model_instance(
         assert model_instance.params == params
 
 
-def test_get_models_by_type(model_inventory: ModelInventory) -> None:
+@pytest.mark.parametrize(
+    "ml_type",
+    [
+        ("regression"),
+        ("classification"),
+        ("timetoevent"),
+    ],
+)
+def test_inventory_initialization(model_inventory: ModelInventory, ml_type) -> None:
     """Test filtering models by type."""
-    models = model_inventory.get_models_by_type("regression")
-    assert len(models) == 1
-    assert models[0].ml_type == "regression"
+    models = model_inventory.get_models_by_type(ml_type)
+    assert len(models) > 0
+    for model in models:
+        assert model.ml_type == ml_type

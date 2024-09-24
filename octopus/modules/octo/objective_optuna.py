@@ -2,9 +2,7 @@
 
 import heapq
 
-# from octopus.models.parameters import parameters_inventory
-# from octopus.models.utils import create_trialparams_from_config
-from octopus.models.machine_learning.core import model_inventory
+from octopus.models.inventory import ModelInventory
 from octopus.modules.octo.bag import Bag
 from octopus.modules.octo.training import Training
 from octopus.modules.utils import optuna_direction
@@ -73,14 +71,14 @@ class ObjectiveOptuna:
             num_outl = 0
 
         # get hyperparameters for selected model
-        model_item = model_inventory.get_model_by_name(ml_model_type)
+        model_item = ModelInventory().get_model_by_name(ml_model_type)
 
         if ml_model_type in self.hyper_parameters.keys():
             hyperparameters = self.hyper_parameters[ml_model_type]
         else:
             hyperparameters = model_item.hyperparameters
 
-        model_params = model_inventory.create_optuna_parameters(
+        model_params = ModelInventory().create_trial_parameters(
             trial,
             model_item,
             hyperparameters,

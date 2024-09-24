@@ -2,7 +2,6 @@
 
 # missing: test_create_optuna_parameters
 
-
 from typing import Any, Dict, Optional
 
 import pytest

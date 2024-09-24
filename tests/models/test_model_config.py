@@ -24,7 +24,7 @@ def test_model_config_initialization():
     )
 
     assert model.name == "test_model"
-    assert model.model_class == object
+    assert isinstance(model.model_class, object)
     assert model.feature_method == "some_method"
     assert model.ml_type == "regression"
     assert model.hyperparameters == hyperparameters

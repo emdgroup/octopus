@@ -37,3 +37,11 @@ class Rfe(BaseSequenceItem):
 
     mode: str = field(validator=[validators.in_(["Mode1", "Mode2"])], default="Mode1")
     """Mode used by RFE."""
+
+    # scoring: str, callable or None, default=None
+    # A string (see model evaluation documentation) or a scorer callable object /
+    # function with signature scorer(estimator, X, y).
+
+    # importance_getter: str or callable, default=’auto’
+    # If ‘auto’, uses the feature importance either through a coef_ or
+    # feature_importances_ attributes of estimator.

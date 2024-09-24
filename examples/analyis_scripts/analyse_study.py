@@ -1,5 +1,8 @@
-"""Analyse study."""
+# %%
+# Andreas Wurl, 2024.09.08
+# Analyse Study
 
+# %%
 import os
 import re
 import socket
@@ -24,6 +27,10 @@ print("Working directory: ", os.getcwd())
 # ## Settings
 
 # %%
+# how to evaluate
+# reference: MBOS6_mb_OMORO_fixed_xgb_mb_clhe, Octo-MrmR-Octo(ensel)=final result
+
+# %%
 # path_study = Path("./studies/MBOS6_mbclhe_5steps_mb")
 # path_study = Path("./studies/MBOS6_sfs_xtree_all") #0.79/0.808
 # path_study = Path("./studies/MBOS6_sfs_xgb_all")
@@ -32,8 +39,19 @@ print("Working directory: ", os.getcwd())
 # path_study = Path("./studies/MBOS6_mbclhe_5steps_ROC08_mb")
 # path_study = Path("./studies/MBOS6_mb_5steps_ROC085_MRMR50mb")
 # path_study = Path("./studies/MBOS6_mb_5steps_NoROC_MRMR50mb")
-# path_study = Path("./studies/MBOS6_mb_OctoOctoMrmrRfeOcto_xgb_mb")
-path_study = Path("./studies/MBOS6_mb_OctoMrmrOctoRfeOcto_xgb_mb")
+# path_study = Path("./studies/MBOS6_radmbclhe_4steps_mb") #small dataset MBOS6_mb(small)_OctoOctoRfeOcto_xgb_mb
+# path_study = Path("./studies/MBOS6_mb(small)_OctoOctoRfeOcto_xgb_mb")
+# path_study = Path("./studies/MBOS6_mb(small)_OctoMrmrOctoRfeOcto_xtree_new_strat_mb")
+# path_study = Path("./studies/MBOS12_mb(small)_OctoMrmrOctoRfeOcto_xgb_mb")
+# path_study = Path("./studies/MBOS6_mb_OMORO_xgb_mb_clhe")
+# path_study = Path("./studies/MBOS6_mb_oomoro_v2_xgb_mb")
+# path_study = Path("./studies/MBOS6_mb_OMORO_fixed_xgb_mb_clhe")
+# path_study = Path("./studies/MBOS9_mb_OMORO_fixed_xgb_mb_clhe")
+# path_study = Path("./studies/MBOS6_mb_test1_romo_xgb_mb")
+# path_study = Path("./studies/MBOS6_mb_test2_romo_all_mb")
+# path_study = Path("./studies/MBOS6_mb_romoro_xt_mb")
+path_study = Path("./studies/MBOS6_mb_OMORO_fixed_xgb_mb")  # recommended
+# path_study = Path("./studies/MBOS6_mb_OMORO_xgb_mb")
 
 
 # %% [markdown]
@@ -58,6 +76,8 @@ for cnt, item in enumerate(sequence_items):
 print()
 print("Octo sequence items:", octo_seq_lst)
 
+print("Config sequence:", config.sequence.sequence_items)
+
 # %% [markdown]
 # ## Read Scores
 
@@ -66,7 +86,15 @@ print("Octo sequence items:", octo_seq_lst)
 path_experiments = [f for f in path_study.glob("experiment*") if f.is_dir()]
 # results df
 df = pd.DataFrame(
-    columns=["Experiment", "Sequence", "Sequene_name", "Results_key", "Scores_dict"]
+    columns=[
+        "Experiment",
+        "Sequence",
+        "Sequene_name",
+        "Results_key",
+        "Scores_dict",
+        "n_features",
+        "Selected_features",
+    ]
 )
 
 
@@ -97,21 +125,38 @@ for path_exp in path_experiments:
             exp = OctoExperiment.from_pickle(path_exp_pkl)
             # iterate through keys
             for key in exp.results.keys():
+                sel_features = exp.results[key].selected_features
                 df.loc[len(df)] = [
                     exp_num,
                     seq_num,
                     seq_name,
                     str(key),
                     exp.results[key].scores,
+                    len(sel_features),
+                    sel_features,
                 ]
 
+
+# %%
+sel_feat = df.iloc[1]["Selected_features"]
+print("number of selected features: ", len(sel_feat))
 
 # %%
 df
 
 
+# %%
+# table with selected features
+df_sel_feat = df[~df["Results_key"].isin(["ensel"])][
+    ["Experiment", "Sequence", "Results_key", "n_features", "Selected_features"]
+]
+df_sel_feat
+
 # %% [markdown]
 #
+
+# %%
+sorted(df_sel_feat.iloc[0]["Selected_features"])
 
 # %%
 for num_sequence, item in enumerate(sequence_items):
@@ -145,9 +190,9 @@ for num_sequence, item in enumerate(sequence_items):
             ]:  # Check if the column contains numeric values
                 mean_values[column] = result_df[column].mean()  # Calculate mean
             else:
-                mean_values[
-                    column
-                ] = ""  # Assign an empty string for non-numeric columns
+                mean_values[column] = (
+                    ""  # Assign an empty string for non-numeric columns
+                )
         # Append the mean values as a new row
         result_df.loc["Mean"] = mean_values
         print(result_df)

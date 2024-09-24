@@ -221,7 +221,9 @@ class RocCore:
         print("Number of features after correlation removal:", len(remaining_features))
 
         # save features selected by ROC
-        self.experiment.selected_features = remaining_features
+        self.experiment.selected_features = sorted(
+            remaining_features, key=lambda x: (len(x), sorted(x))
+        )
 
         print("ROC completed")
 

@@ -40,6 +40,7 @@ class EnSel:
         default=pd.DataFrame(),
         validator=[validators.instance_of(pd.DataFrame)],
     )
+    start_ensemble: dict = field(init=False, validator=[validators.instance_of(dict)])
     optimized_ensemble: dict = field(
         init=False, validator=[validators.instance_of(dict)]
     )
@@ -61,6 +62,7 @@ class EnSel:
     def __attrs_post_init__(self):
         # initialization here due to "Python immutable default"
         self.bags = dict()
+        self.start_ensemble = dict()
         self.optimized_ensemble = dict()
         # get a trials existing in path_trials
         self._collect_trials()
@@ -179,7 +181,7 @@ class EnSel:
 
     def _ensemble_optimization(self):
         """Ensembling optimization with replacement."""
-        # we start with an best N models exammple derived from self.scan_table,
+        # we start with an best N models example derived from self.scan_table,
         # assuming that is sorted correctly
         if self.direction == "maximize":
             start_n = int(self.scan_table[self.score_type].idxmax()) + 1
@@ -246,6 +248,9 @@ class EnSel:
                 best_performance,
                 copy.deepcopy(bags_ensemble),
             ]
+
+        # store start bargs from ensemble scan
+        self.start_ensemble = dict(Counter(start_bags))
 
         # store optimization results
         self.optimized_ensemble = dict(Counter(results_df.iloc[-1]["bags_lst"]))

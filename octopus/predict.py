@@ -43,9 +43,7 @@ class OctoPredict:
     sequence_item_id: int = field(default=-1, validator=[validators.instance_of(int)])
     """Sequence item id."""
 
-    model_name: str = field(
-        default=Factory("best"), validator=[validators.instance_of(str)]
-    )
+    results_key: str = field(default="best", validator=[validators.instance_of(str)])
     """Sequence item id."""
 
     experiments: dict = field(init=False, validator=[validators.instance_of(dict)])
@@ -55,11 +53,6 @@ class OctoPredict:
         default=Factory(dict), validator=[validators.instance_of(dict)]
     )
     """Results."""
-
-    feature_group_dict: dict = field(
-        default=Factory(dict), validator=[validators.instance_of(dict)]
-    )
-    """Feature groups dictionary."""
 
     @property
     def config(self) -> dict:
@@ -96,16 +89,16 @@ class OctoPredict:
                 )
                 # load experiment
                 experiment = OctoExperiment.from_pickle(path_exp)
-                # check if model_name exists
-                if self.model_name not in experiment.results:
+                # check if results_key exists
+                if self.results_key not in experiment.results:
                     raise ValueError(
-                        f"Specified model name not found: {self.model_name}. "
-                        f"Available model names: {list(experiment.results.keys())}"
+                        f"Specified results key not found: {self.results_key}. "
+                        f"Available results keys: {list(experiment.results.keys())}"
                     )
 
                 experiments[experiment_id] = {
                     "id": experiment_id,
-                    "model": experiment.results[self.model_name].model,
+                    "model": experiment.results[self.results_key].model,
                     "data_traindev": experiment.data_traindev,
                     "data_test": experiment.data_test,
                     "feature_columns": experiment.feature_columns,
@@ -456,8 +449,10 @@ class OctoPredict:
         model = experiment["model"]
         feature_groups = experiment["feature_group_dict"]
 
+        print("Number of feature groups found and included: ", len(feature_groups))
+
         # initialize feature_groups_dict
-        experiment["feature_group_dict"] = dict()
+        # experiment["feature_group_dict"] = dict()
 
         # support prediction on new data as well as test data
         if data is None:  # new data

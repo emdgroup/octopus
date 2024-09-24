@@ -472,7 +472,7 @@ class EfsCore:
 
     def _ensemble_optimization(self):
         """Ensembling optimization with replacement."""
-        # we start with an best N models exammple derived from self.scan_table,
+        # we start with an best N models example derived from self.scan_table,
         # assuming that is sorted correctly
         if self.direction == "maximize":
             best_performance = self.scan_table["performance"].max()

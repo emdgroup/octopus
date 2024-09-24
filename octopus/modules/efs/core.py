@@ -19,7 +19,7 @@ from sklearn.model_selection import (
 
 from octopus.experiment import OctoExperiment
 from octopus.metrics import metrics_inventory
-from octopus.models.models_inventory import model_inventory
+from octopus.models.inventory import ModelInventory
 from octopus.modules.utils import optuna_direction
 from octopus.results import ModuleResults
 
@@ -274,7 +274,7 @@ class EfsCore:
         print("Model used:", model_type)
 
         # set up model and scoring type
-        model = model_inventory[model_type]["model"](random_state=42)
+        model = ModelInventory().get_model_instance(model_type, {"random_state": 42})
         scoring_type = scorer_string_inventory[self.target_metric]
 
         # needs general improvements (consider groups and stratification column)

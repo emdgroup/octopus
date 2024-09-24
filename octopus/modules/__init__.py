@@ -5,7 +5,8 @@ from typing import Dict, Type
 
 from .boruta.core import BorutaCore
 from .boruta.module import Boruta
-from .efs.core import EfsCore
+
+# from .efs.core import EfsCore
 from .efs.module import Efs
 
 # Import the core classes from their respective modules
@@ -33,6 +34,6 @@ modules_inventory: ModulesInventoryType = {
     "rfe": RfeCore,
     "roc": RocCore,
     "sfs": SfsCore,
-    "efs": EfsCore,
+    # "efs": EfsCore,
     "boruta": BorutaCore,
 }

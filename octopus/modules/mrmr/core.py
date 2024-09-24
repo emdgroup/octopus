@@ -166,26 +166,16 @@ class MrmrCore:
             re_df = re_df[re_df["importance"] > 0].reset_index()
             print("Number features with positive importance: ", len(re_df))
         elif self.relevance_type == "f-statistics":
-            re_df = pd.DataFrame(columns=["feature", "importance"])
-            re_df["feature"] = self.feature_columns
-
-            if self.ml_type == "classification":
-                values, _ = f_classif(
-                    self.x_traindev, self.y_traindev.to_numpy().ravel()
-                )
-            elif self.ml_type == "regression":
-                values, _ = f_regression(
-                    self.x_traindev, self.y_traindev.to_numpy().ravel()
-                )
-            else:
-                raise ValueError(f"ML-type {self.ml_type} not supported.")
-            re_df["importance"] = values
+            re_df = relevance_fstats(
+                self.x_traindev, self.y_traindev, self.feature_columns, self.ml_type
+            )
         else:
             raise ValueError(f"Relevance type  {self.relevance_type} not supported.")
 
         # calculate MRMR features
-        selected_mrmr_features = self._maxrminr(
-            re_df,
+        selected_mrmr_features = maxrminr(
+            features=self.x_traindev,
+            fi_df=re_df,
             n_features=self.n_features,
             correlation_type=self.correlation_type,
         )
@@ -198,107 +188,132 @@ class MrmrCore:
 
         return self.experiment
 
-    def _maxrminr(self, fi_df, n_features=30, correlation_type="pearson"):
-        """MRMR function.
 
-        Computes maximum relevant and minimum redundant features.
-        FI_df: data frame with feature importances
-        correlation_type: 'pearson', 'rdc'
-        n_features: number of features to be extracted
-        """
-        FLOOR = 0.001
+# shared functions
+def relevance_fstats(
+    features: pd.DataFrame,
+    target: pd.DataFrame,
+    feature_columns: list,
+    ml_type: str,
+) -> pd.DataFrame:
+    """Calculate f-statistics based relevance."""
+    df = pd.DataFrame(columns=["feature", "importance"])
+    df["feature"] = feature_columns
+    features = features[feature_columns]
+    target = target.to_numpy().ravel()
 
-        # extract features from feature importance table
-        fi_features = fi_df["feature"].tolist()
+    if ml_type == "classification":
+        values, _ = f_classif(features, target)
+    elif ml_type == "regression":
+        values, _ = f_regression(features, target)
+    else:
+        raise ValueError(f"ML-type {ml_type} not supported.")
+    df["importance"] = values
+    return df
 
-        # number of features requested by MRMR compatible with fi table
-        n_features = min(n_features, len(fi_features))
 
-        # feature dataframe
-        features_df = self.data_traindev[fi_features].copy()
+def maxrminr(
+    features: pd.DataFrame,
+    fi_df: pd.DataFrame,
+    n_features: int = 30,
+    correlation_type: str = "pearson",
+) -> list:
+    """MRMR function.
 
-        # start MRMR
-        f_df = fi_df.copy(deep=True)
+    Computes maximum relevant and minimum redundant features.
+    FI_df: data frame with feature importances
+    correlation_type: 'pearson', 'rdc'
+    n_features: number of features to be extracted
+    """
+    FLOOR = 0.001
 
-        # initialize correlation matrices
-        corr = pd.DataFrame(
-            0.00001, index=features_df.columns, columns=features_df.columns
-        )
+    # extract features from feature importance table
+    fi_features = fi_df["feature"].tolist()
 
-        # initialize list of selected features and list of excluded features
-        selected = []
-        not_selected = features_df.columns.tolist()
+    # number of features requested by MRMR compatible with fi table
+    n_features = min(n_features, len(fi_features))
 
-        # repeat n_features times:
-        # compute FCQ score for all the features that are currently excluded,
-        # then find the best one, add it to selected, and remove it from not_selected
-        for i in range(n_features):
-            # setup score dataframe
-            score_df = f_df[f_df["feature"].isin(not_selected)].copy()
+    # feature dataframe
+    features_df = features[fi_features].copy()
 
-            # compute (absolute) correlations between the last selected feature and
-            # all the (currently) excluded features
-            if i > 0:
-                last_selected = selected[-1]
+    # start MRMR
+    f_df = fi_df.copy(deep=True)
 
-                if correlation_type == "pearson":
-                    # calculate correlation (pearson)
-                    corr.loc[not_selected, last_selected] = (
-                        features_df[not_selected]
-                        .corrwith(features_df[last_selected])
-                        .fillna(FLOOR)
-                        .abs()
-                        .clip(FLOOR)
-                    )
-                elif correlation_type == "rdc":
-                    # calculate  RDC correlation
-                    # corr_rdc.loc[not_selected, last_selected] =
-                    for ns in not_selected:
-                        corr.loc[ns, last_selected] = np.clip(
-                            rdc(
-                                features_df[ns].to_numpy(),
-                                features_df[last_selected].to_numpy(),
-                            ),
-                            FLOOR,
-                            None,
-                        )
-                elif correlation_type == "spearmanr":
-                    # Calculate correlation (Spearman)
-                    for col in not_selected:
-                        corr_value, _ = spearmanr(
-                            features_df[col], features_df[last_selected]
-                        )
-                        corr_value = max(
-                            abs(corr_value), FLOOR
-                        )  # Ensure non-negative correlation with a floor value
-                        corr.loc[col, last_selected] = corr_value
-                else:
-                    raise ValueError(
-                        f"Correlation type {correlation_type} not supported."
-                    )
-                # add "corr" column to score_df
-                score_df["corr"] = (
-                    corr.loc[not_selected, selected]
-                    .mean(axis=1)
+    # initialize correlation matrices
+    corr = pd.DataFrame(0.00001, index=features_df.columns, columns=features_df.columns)
+
+    # initialize list of selected features and list of excluded features
+    selected = []
+    not_selected = features_df.columns.tolist()
+
+    # repeat n_features times:
+    # compute FCQ score for all the features that are currently excluded,
+    # then find the best one, add it to selected, and remove it from not_selected
+    for i in range(n_features):
+        # setup score dataframe
+        score_df = f_df[f_df["feature"].isin(not_selected)].copy()
+
+        # compute (absolute) correlations between the last selected feature and
+        # all the (currently) excluded features
+        if i > 0:
+            last_selected = selected[-1]
+
+            if correlation_type == "pearson":
+                # calculate correlation (pearson)
+                corr.loc[not_selected, last_selected] = (
+                    features_df[not_selected]
+                    .corrwith(features_df[last_selected])
                     .fillna(FLOOR)
-                    .replace(1.0, float("Inf"))
-                ).to_numpy()
-
+                    .abs()
+                    .clip(FLOOR)
+                )
+            elif correlation_type == "rdc":
+                # calculate  RDC correlation
+                # corr_rdc.loc[not_selected, last_selected] =
+                for ns in not_selected:
+                    corr.loc[ns, last_selected] = np.clip(
+                        rdc(
+                            features_df[ns].to_numpy(),
+                            features_df[last_selected].to_numpy(),
+                        ),
+                        FLOOR,
+                        None,
+                    )
+            elif correlation_type == "spearmanr":
+                # Calculate correlation (Spearman)
+                for col in not_selected:
+                    corr_value, _ = spearmanr(
+                        features_df[col], features_df[last_selected]
+                    )
+                    corr_value = max(
+                        abs(corr_value), FLOOR
+                    )  # Ensure non-negative correlation with a floor value
+                    corr.loc[col, last_selected] = corr_value
             else:
-                # the selection of the first feature is only based on feature importance
-                score_df["corr"] = 1
+                raise ValueError(f"Correlation type {correlation_type} not supported.")
+            # add "corr" column to score_df
+            score_df["corr"] = (
+                corr.loc[not_selected, selected]
+                .mean(axis=1)
+                .fillna(FLOOR)
+                .replace(1.0, float("Inf"))
+            ).to_numpy()
 
-            # compute FCQ score for all the (currently) excluded features
-            # (this is Formula 2)
-            score_df["score"] = score_df["importance"] / score_df["corr"]
+        else:
+            # the selection of the first feature is only based on feature importance
+            score_df["corr"] = 1
 
-            # find best feature, add it to selected and remove it from not_selected
-            # Find the index of the row with the highest score
-            best = score_df.loc[score_df["score"].idxmax(), "feature"]
-            # print("best", best)
+        # compute FCQ score for all the (currently) excluded features
+        # (this is Formula 2)
+        score_df["score"] = score_df["importance"] / score_df["corr"]
 
-            # best_row = score_df.loc[score_df['score'].argmax()]
-            selected.append(best)
-            not_selected.remove(best)
+        # find best feature, add it to selected and remove it from not_selected
+        # Find the index of the row with the highest score
+        best = score_df.loc[score_df["score"].idxmax(), "feature"]
+        # print("best", best)
 
-        return selected
+        # best_row = score_df.loc[score_df['score'].argmax()]
+        selected.append(best)
+        not_selected.remove(best)
+
+    return selected

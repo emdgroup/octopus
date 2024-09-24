@@ -6,13 +6,13 @@ from sklearn.ensemble import (
     GradientBoostingRegressor,
     RandomForestRegressor,
 )
-from sklearn.gaussian_process import GaussianProcessRegressor
 from sklearn.linear_model import ARDRegression, ElasticNet, Ridge
 from sklearn.svm import SVR
 from xgboost import XGBRegressor
 
-from octopus.models.machine_learning.config import ModelConfig
-from octopus.models.machine_learning.hyperparameter import Hyperparameter
+from octopus.models.config import ModelConfig
+from octopus.models.hyperparameter import Hyperparameter
+from octopus.models.wrapper_models.GaussianProcessRegressor import GPRegressorWrapper
 
 
 def get_regression_models():
@@ -202,10 +202,19 @@ def get_regression_models():
         ),
         ModelConfig(
             name="GaussianProcessRegressor",
-            model_class=GaussianProcessRegressor,
+            model_class=GPRegressorWrapper,
             ml_type="regression",
-            feature_method="internal",
+            feature_method="permutation",
+            n_repeats=2,
             hyperparameters=[
+                Hyperparameter(
+                    type="categorical",
+                    name="kernel",
+                    choices=["RBF", "Matern", "RationalQuadratic", "ExpSineSquared"],
+                ),
+                Hyperparameter(
+                    type="float", name="alpha", low=1e-10, high=1e-1, log=True
+                ),
                 Hyperparameter(
                     type="float", name="alpha", low=1e-10, high=1e-1, log=True
                 ),

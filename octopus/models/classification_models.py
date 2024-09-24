@@ -10,8 +10,8 @@ from sklearn.linear_model import LogisticRegression
 from tabpfn import TabPFNClassifier
 from xgboost import XGBClassifier
 
-from octopus.models.machine_learning.config import ModelConfig
-from octopus.models.machine_learning.hyperparameter import Hyperparameter
+from octopus.models.config import ModelConfig
+from octopus.models.hyperparameter import Hyperparameter
 
 
 def get_classification_models():

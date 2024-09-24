@@ -4,7 +4,7 @@ from typing import List, Type
 
 from attrs import define, field, validators
 
-from octopus.models.machine_learning.hyperparameter import Hyperparameter
+from octopus.models.hyperparameter import Hyperparameter
 
 
 def validate_hyperparameters(

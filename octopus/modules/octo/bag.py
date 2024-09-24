@@ -296,7 +296,12 @@ class Bag:
                         feat_additional.append(best_feature)
 
         # Add the additional features to feat_single and remove duplicates
-        return list(set(feat_single + feat_additional))
+        feat_all = list(set(feat_single + feat_additional))
+        print("Number of selected features: ", len(feat_all))
+        print("Number of single features: ", len(feat_single))
+        print("Number of features from groups: ", len(feat_additional))
+
+        return sorted(feat_all, key=lambda x: (len(x), sorted(x)))
 
     def get_feature_importances(self, fi_methods=None):
         """Extract feature importances of all models in bag."""
@@ -322,9 +327,9 @@ class Bag:
 
         # save feature importances for every training in bag
         for training in self.trainings:
-            self.feature_importances[
-                training.training_id
-            ] = training.feature_importances
+            self.feature_importances[training.training_id] = (
+                training.feature_importances
+            )
 
         # summary feature importances for all trainings (mean + count)
         # internal, permutation_dev, shap_dev only

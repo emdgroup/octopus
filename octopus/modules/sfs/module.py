@@ -33,3 +33,16 @@ class Sfs(BaseSequenceItem):
         default="backward",
     )
     """Sfs type used."""
+
+    # k_features: int or tuple or str (default: 1)
+    # Number of features to select, where k_features < the full feature set.
+    # New in 0.4.2: A tuple containing a min and max value can be provided,
+    # and the SFS will consider return any feature combination between min and max
+    # that scored highest in cross-validation.
+
+    # fixed_features: tuple (default: None)
+    # If not None, the feature indices provided as a tuple will be regarded as fixed by
+    # the feature selector
+
+    # feature_groups : list or None (default: None)
+    # Optional argument for treating certain features as a group.

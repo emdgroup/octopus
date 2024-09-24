@@ -2,8 +2,7 @@
 
 import heapq
 
-from octopus.models.parameters import parameters_inventory
-from octopus.models.utils import create_trialparams_from_config
+from octopus.models.inventory import ModelInventory
 from octopus.modules.octo.bag import Bag
 from octopus.modules.octo.training import Training
 from octopus.modules.utils import optuna_direction
@@ -15,13 +14,7 @@ class ObjectiveOptuna:
     A single solution for global and individual HP optimizations.
     """
 
-    def __init__(
-        self,
-        experiment,
-        data_splits,
-        study_name,
-        top_trials,
-    ):
+    def __init__(self, experiment, data_splits, study_name, top_trials):
         self.experiment = experiment
         self.data_splits = data_splits
         self.study_name = study_name
@@ -35,7 +28,7 @@ class ObjectiveOptuna:
         self.max_outl = self.experiment.ml_config.max_outl
         self.max_features = self.experiment.ml_config.max_features
         self.penalty_factor = self.experiment.ml_config.penalty_factor
-        self.hyper_parameters = self.experiment.ml_config.hyper_parameters
+        self.hyper_parameters = self.experiment.ml_config.hyperparameters
         # fixed parameters
         self.ml_seed = self.experiment.ml_config.model_seed
         self.ml_jobs = self.experiment.ml_config.n_jobs
@@ -77,29 +70,21 @@ class ObjectiveOptuna:
         else:
             num_outl = 0
 
-        # get hyper parameter space for selected model
+        # get hyperparameters for selected model
+        model_item = ModelInventory().get_model_by_name(ml_model_type)
 
-        # take user parameters
         if ml_model_type in self.hyper_parameters.keys():
-            hyper_parameter_space = self.hyper_parameters[ml_model_type]
-
-        # take default parameters
+            hyperparameters = self.hyper_parameters[ml_model_type]
         else:
-            hyper_parameter_space = parameters_inventory[ml_model_type]["default"]
+            hyperparameters = model_item.hyperparameters
 
-        model_params = create_trialparams_from_config(
-            trial, hyper_parameter_space, ml_model_type
+        model_params = ModelInventory().create_trial_parameters(
+            trial,
+            model_item,
+            hyperparameters,
+            n_jobs=self.ml_jobs,
+            model_seed=self.ml_seed,
         )
-
-        # overwrite model parameters specified by global settings
-        fixed_global_parameters = {
-            "n_jobs": self.ml_jobs,
-            "model_seed": self.ml_seed,
-        }
-        translate = parameters_inventory[ml_model_type]["translate"]
-        for key, value in fixed_global_parameters.items():
-            if translate[key] != "NA":  # NA=ignore
-                model_params[translate[key]] = value
 
         config_training = {
             "dim_reduction": dim_reduction,

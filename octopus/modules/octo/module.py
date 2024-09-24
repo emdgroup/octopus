@@ -132,17 +132,22 @@ class Octo(BaseSequenceItem):
     max_features: int = field(
         validator=[validators.instance_of(int)], default=Factory(lambda: 0)
     )
-    """Maximum features."""
+    """Maximum features to constrain hyperparameter optimization."""
 
     penalty_factor: float = field(
         validator=[validators.instance_of(float)], default=Factory(lambda: 1.0)
     )
     """Factor to penalyse optuna target related to feature constraint."""
 
+    mrmr_feature_numbers: list = field(
+        validator=[validators.instance_of(list)], default=Factory(list)
+    )
+    """List of feature numbers to be investigated by mrmr."""
+
     resume_optimization: bool = field(
         validator=[validators.instance_of(bool)], default=Factory(lambda: False)
     )
-    """Resume HPO, use existing optuna.db, don't delete optuna.de"""
+    """Resume HPO, use existing optuna.db, don't delete optuna.db"""
 
     def __attrs_post_init__(self):
         # set default of n_workers to n_folds_inner

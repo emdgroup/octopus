@@ -13,7 +13,7 @@ from boruta import BorutaPy
 from sklearn.model_selection import GridSearchCV, StratifiedKFold, cross_val_score
 
 from octopus.experiment import OctoExperiment
-from octopus.models.models_inventory import model_inventory
+from octopus.models.inventory import ModelInventory
 from octopus.modules.utils import get_performance_score
 from octopus.results import ModuleResults
 
@@ -168,7 +168,9 @@ class BorutaCore:
         print("Model used:", model_type)
 
         # set up model and scoring type
-        model = model_inventory[model_type]["model"](random_state=42, verbose=False)
+        model = ModelInventory().get_model_instance(
+            model_type, {"random_state": 42, "verbose": False}
+        )
         scoring_type = scorer_string_inventory[self.target_metric]
 
         stratification_column = self.experiment.stratification_column

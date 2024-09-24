@@ -190,9 +190,9 @@ for num_sequence, item in enumerate(sequence_items):
             ]:  # Check if the column contains numeric values
                 mean_values[column] = result_df[column].mean()  # Calculate mean
             else:
-                mean_values[
-                    column
-                ] = ""  # Assign an empty string for non-numeric columns
+                mean_values[column] = (
+                    ""  # Assign an empty string for non-numeric columns
+                )
         # Append the mean values as a new row
         result_df.loc["Mean"] = mean_values
         print(result_df)

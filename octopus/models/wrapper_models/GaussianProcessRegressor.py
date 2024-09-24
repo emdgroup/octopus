@@ -4,13 +4,7 @@ from typing import Any, Dict, Optional, Union
 
 from sklearn.base import BaseEstimator, RegressorMixin
 from sklearn.gaussian_process import GaussianProcessRegressor
-from sklearn.gaussian_process.kernels import (
-    RBF,
-    ExpSineSquared,
-    Kernel,
-    Matern,
-    RationalQuadratic,
-)
+from sklearn.gaussian_process.kernels import RBF, Kernel, Matern, RationalQuadratic
 from sklearn.utils.validation import check_array, check_is_fitted, check_X_y
 
 
@@ -93,8 +87,6 @@ class GPRegressorWrapper(BaseEstimator, RegressorMixin):
             return Matern()
         elif kernel_str == "RationalQuadratic":
             return RationalQuadratic()
-        elif kernel_str == "ExpSineSquared":
-            return ExpSineSquared()
         else:
             raise ValueError(f"Unknown kernel: {kernel_str}")
 

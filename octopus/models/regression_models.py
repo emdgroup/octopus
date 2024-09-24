@@ -210,7 +210,7 @@ def get_regression_models():
                 Hyperparameter(
                     type="categorical",
                     name="kernel",
-                    choices=["RBF", "Matern", "RationalQuadratic", "ExpSineSquared"],
+                    choices=["RBF", "Matern", "RationalQuadratic"],
                 ),
                 Hyperparameter(
                     type="float", name="alpha", low=1e-10, high=1e-1, log=True

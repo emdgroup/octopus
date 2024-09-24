@@ -3,19 +3,19 @@
 
 repos:
 - repo: https://github.com/pycqa/flake8
-  rev: 7.0.0
+  rev: 7.1.1
   hooks:
     - id: flake8
       additional_dependencies: [pydoclint]  
       args: [--select=DOC, --config=pydoclint.toml]
 - repo: https://github.com/astral-sh/ruff-pre-commit
-  rev: v0.1.6
+  rev: v0.6.7
   hooks:
   - id: ruff
     name: "ruff"
   - id: ruff-format
 - repo: https://github.com/crate-ci/typos
-  rev: v1.16.23
+  rev: v1.24.6
   hooks:
     - id: typos
       args: [--config=typos.toml]

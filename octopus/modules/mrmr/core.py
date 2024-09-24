@@ -4,10 +4,7 @@ import numpy as np
 import pandas as pd
 from attrs import define, field, validators
 from scipy.stats import spearmanr
-from sklearn.feature_selection import (
-    f_classif,
-    f_regression,
-)
+from sklearn.feature_selection import f_classif, f_regression
 
 from octopus.experiment import OctoExperiment
 from octopus.modules.utils import rdc
@@ -215,8 +212,7 @@ class MrmrCore:
         fi_features = fi_df["feature"].tolist()
 
         # number of features requested by MRMR compatible with fi table
-        if n_features > len(fi_features):
-            n_features = len(fi_features)
+        n_features = min(n_features, len(fi_features))
 
         # feature dataframe
         features_df = self.data_traindev[fi_features].copy()

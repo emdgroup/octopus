@@ -1,4 +1,4 @@
-""""Objective function for optuna optimization."""
+"""Objective function for optuna optimization."""
 
 import heapq
 
@@ -176,8 +176,7 @@ class ObjectiveOptuna:
         if self.max_features > 0:
             diff_nfeatures = n_features_mean - self.max_features
             # only consider if n_features_mean > max_features
-            if diff_nfeatures < 0:
-                diff_nfeatures = 0
+            diff_nfeatures = max(diff_nfeatures, 0)
             n_features = len(self.experiment.feature_columns)
             optuna_target = (
                 optuna_target + self.penalty_factor * diff_nfeatures / n_features

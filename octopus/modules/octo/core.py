@@ -8,11 +8,12 @@ import warnings
 from pathlib import Path
 
 import optuna
-from attrs import define, field, validators
+from attrs import Factory, define, field, validators
 from joblib import Parallel, delayed
 from optuna.samplers._tpe.sampler import ExperimentalWarning
 
 from octopus.experiment import OctoExperiment
+from octopus.modules.mrmr.core import maxrminr, relevance_fstats
 from octopus.modules.octo.bag import Bag
 from octopus.modules.octo.enssel import EnSel
 from octopus.modules.octo.objective_optuna import ObjectiveOptuna
@@ -129,7 +130,7 @@ for line in [319, 330, 338]:
 # - check alibi package
 # - separate fi code from training class
 # - group identification (experiment.py) - add hirarchical clustering
-# - crate new module that replaces groups with PCA 1st component
+# - create new module that replaces groups with PCA 1st component
 # - https://arxiv.org/pdf/2312.10858
 # - see alibi package, ALE, https://github.com/SeldonIO/alibi/tree/master
 
@@ -170,11 +171,21 @@ class OctoCore:
         validator=[validators.instance_of(OctoExperiment)]
     )
     # model = field(default=None)
-    data_splits: dict = field(init=False, validator=[validators.instance_of(dict)])
+    data_splits: dict = field(
+        default=Factory(dict), validator=[validators.instance_of(dict)]
+    )
 
-    paths_optuna_db: dict = field(init=False, validator=[validators.instance_of(dict)])
+    paths_optuna_db: dict = field(
+        default=Factory(dict), validator=[validators.instance_of(dict)]
+    )
 
-    top_trials: list = field(init=False, validator=[validators.instance_of(list)])
+    top_trials: list = field(
+        default=Factory(list), validator=[validators.instance_of(list)]
+    )
+
+    mrmr_features: dict = field(
+        default=Factory(dict), validator=[validators.instance_of(dict)]
+    )
 
     @property
     def path_module(self) -> Path:
@@ -197,10 +208,6 @@ class OctoCore:
         return self.path_module.joinpath("results")
 
     def __attrs_post_init__(self):
-        # initialization here due to "Python immutable default"
-        self.paths_optuna_db = dict()
-        self.top_trials = []
-
         # create datasplit during init
         self.data_splits = DataSplit(
             dataset=self.experiment.data_traindev,
@@ -223,6 +230,46 @@ class OctoCore:
         # check if there is a mismatch between configured resources
         # and resources assigned to the experiment
         self._check_resources()
+
+        # Create MRMR feature lists
+        self._create_mrmr_features()
+
+    def _create_mrmr_features(self):
+        """Calculate feature lists for all provided features numbers."""
+        # remove duplicates and cap max number
+        feature_numbers = list(set(self.experiment.ml_config.mrmr_feature_numbers))
+        feature_numbers = [
+            x
+            for x in feature_numbers
+            if isinstance(x, int) and x <= len(self.experiment.feature_columns)
+        ]
+        # return if no mrmr features are requested
+        if not feature_numbers:
+            return
+
+        # prepare inputs
+        feature_columns = self.experiment.feature_columns
+        features = self.experiment.data_traindev[feature_columns]
+        target = self.experiment.data_traindev[
+            self.experiment.target_assignments.values()
+        ]
+
+        # create relevance information
+        re_df = relevance_fstats(
+            features=features,
+            target=target,
+            feature_columns=feature_columns,
+            ml_type=self.experiment.ml_type,
+        )
+
+        # calculate MRMR features
+        for n_features in feature_numbers:
+            self.mrmr_features[n_features] = maxrminr(
+                features=features,
+                fi_df=re_df,
+                n_features=n_features,
+                correlation_type="spearmanr",
+            )
 
     def _check_resources(self):
         """Check resources, assigned vs requested."""
@@ -445,8 +492,8 @@ class OctoCore:
         print("Number of selected features:", len(self.experiment.selected_features))
         if len(self.experiment.selected_features) == 0:
             print(
-                "Warning: No feature importance method specified, "
-                "or specified method is not applicable to model."
+                "Warning: All feature importances values are zero. Therefore, no "
+                "features could be selected. This hints at a model related problem."
             )
 
     def _run_globalhp_optimization(self):
@@ -541,6 +588,7 @@ class OctoCore:
             data_splits=splits,
             study_name=study_name,
             top_trials=self.top_trials,
+            mrmr_features=self.mrmr_features,
         )
 
         # multivariate sampler with group option

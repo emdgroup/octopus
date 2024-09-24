@@ -12,7 +12,7 @@ from sklearn.ensemble import IsolationForest
 from sklearn.inspection import permutation_importance
 from sklearn.preprocessing import MaxAbsScaler
 
-from octopus.models.models_inventory import model_inventory
+from octopus.models.inventory import ModelInventory
 from octopus.modules.utils import get_performance_score
 
 scorer_string_inventory = {
@@ -231,8 +231,12 @@ class Training:
 
         # (4) Model training
         # define ML-model
-        self.model = model_inventory[self.ml_model_type]["model"](
-            **self.ml_model_params
+        # self.model = model_inventory[self.ml_model_type]["model"](
+        #     **self.ml_model_params
+        # )
+
+        self.model = ModelInventory().get_model_instance(
+            self.ml_model_type, self.ml_model_params
         )
 
         if len(self.target_assignments) == 1:
@@ -302,7 +306,7 @@ class Training:
 
     def _calculate_features_used(self):
         """Calculate used features, method based on model type."""
-        feature_method = model_inventory[self.ml_model_type]["feature_method"]
+        feature_method = ModelInventory().get_feature_method(self.ml_model_type)
 
         if feature_method == "internal":
             self.calculate_fi_internal()

@@ -42,6 +42,8 @@ for line in [319, 330, 338]:
 # - check that openblas settings are correct and suggest solutions
 
 # TOBEDONE OCTOFULL
+# - (0) ensel, hillclimb or optimization as return
+# - (0) predict: feature Importance, only on necessary features - selected features
 # - (0) simplement equence branching by spedifying in every module where the input
 #       data comes from.
 # - (0) logisticregression model -- feature importance via coeff
@@ -154,6 +156,7 @@ class OctoCore:
         paths_optuna_db (dict): Stores file paths to Optuna databases
             for each experiment.
         top_trials (list): Keeps track of the best performing trials.
+        mrmr_features (dict): Stores feature lists created by MRMR.
 
     Raises:
         ValueError: Thrown when encountering invalid operations or unsupported
@@ -236,6 +239,7 @@ class OctoCore:
 
     def _create_mrmr_features(self):
         """Calculate feature lists for all provided features numbers."""
+        print("Calculating MRMR feature sets....")
         # remove duplicates and cap max number
         feature_numbers = list(set(self.experiment.ml_config.mrmr_feature_numbers))
         feature_numbers = [
@@ -262,14 +266,17 @@ class OctoCore:
             ml_type=self.experiment.ml_type,
         )
 
-        # calculate MRMR features
-        for n_features in feature_numbers:
-            self.mrmr_features[n_features] = maxrminr(
-                features=features,
-                fi_df=re_df,
-                n_features=n_features,
-                correlation_type="spearmanr",
-            )
+        # calculate MRMR features for all feature_numbers
+        self.mrmr_features = maxrminr(
+            features=features,
+            fi_df=re_df,
+            n_features_lst=feature_numbers,
+            correlation_type="spearmanr",
+        )
+        # add original features
+        self.mrmr_features[len(self.experiment.feature_columns)] = (
+            self.experiment.feature_columns
+        )
 
     def _check_resources(self):
         """Check resources, assigned vs requested."""

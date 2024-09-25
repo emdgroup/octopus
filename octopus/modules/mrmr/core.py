@@ -173,12 +173,14 @@ class MrmrCore:
             raise ValueError(f"Relevance type  {self.relevance_type} not supported.")
 
         # calculate MRMR features
-        selected_mrmr_features = maxrminr(
+        mrmr_dict = maxrminr(
             features=self.x_traindev,
             fi_df=re_df,
-            n_features=self.n_features,
+            n_features_lst=[self.n_features],
             correlation_type=self.correlation_type,
         )
+        # get value of first and only item
+        selected_mrmr_features = list(mrmr_dict.values())[0]
 
         # save features selected by mrmr
         self.experiment.selected_features = sorted(
@@ -215,7 +217,7 @@ def relevance_fstats(
 def maxrminr(
     features: pd.DataFrame,
     fi_df: pd.DataFrame,
-    n_features: int = 30,
+    n_features_lst: list,
     correlation_type: str = "pearson",
 ) -> list:
     """MRMR function.
@@ -226,12 +228,17 @@ def maxrminr(
     n_features: number of features to be extracted
     """
     FLOOR = 0.001
+    # results dictionary
+    results = dict()
 
     # extract features from feature importance table
     fi_features = fi_df["feature"].tolist()
 
-    # number of features requested by MRMR compatible with fi table
-    n_features = min(n_features, len(fi_features))
+    # make sure that elements in n_features_lst <= len(fi_features)
+    n_features_lst = [
+        x for x in n_features_lst if x <= min(max(n_features_lst), len(fi_features))
+    ]
+    max_n_features = max(n_features_lst)
 
     # feature dataframe
     features_df = features[fi_features].copy()
@@ -249,13 +256,13 @@ def maxrminr(
     # repeat n_features times:
     # compute FCQ score for all the features that are currently excluded,
     # then find the best one, add it to selected, and remove it from not_selected
-    for i in range(n_features):
+    for i in range(1, max_n_features + 1):
         # setup score dataframe
         score_df = f_df[f_df["feature"].isin(not_selected)].copy()
 
         # compute (absolute) correlations between the last selected feature and
         # all the (currently) excluded features
-        if i > 0:
+        if i > 1:
             last_selected = selected[-1]
 
             if correlation_type == "pearson":
@@ -316,4 +323,8 @@ def maxrminr(
         selected.append(best)
         not_selected.remove(best)
 
-    return selected
+        # save requested solutions to results dict
+        if i in n_features_lst:
+            results[i] = selected.copy()
+
+    return results

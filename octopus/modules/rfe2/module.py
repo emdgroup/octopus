@@ -1,0 +1,21 @@
+"""Rfe2 module."""
+
+from attrs import define, field, validators
+
+from octopus.modules.octo.module import Octo
+
+
+@define
+class Rfe2(Octo):
+    """Rf2 sequence config."""
+
+    module: str = field(default="rfe2")
+    """Models for ML."""
+
+    step: int = field(validator=[validators.instance_of(int)], default=1)
+    """Number of features to remove at each iteration."""
+
+    min_features_to_select: int = field(
+        validator=[validators.instance_of(int)], default=1
+    )
+    """Minimum number of features to be selected."""

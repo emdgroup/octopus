@@ -247,8 +247,12 @@ class OctoCore:
             for x in feature_numbers
             if isinstance(x, int) and x <= len(self.experiment.feature_columns)
         ]
-        # return if no mrmr features are requested
+        # if no mrmr features are requested, only add original features
         if not feature_numbers:
+            # add original features
+            self.mrmr_features[len(self.experiment.feature_columns)] = (
+                self.experiment.feature_columns
+            )
             return
 
         # prepare inputs
@@ -444,7 +448,7 @@ class OctoCore:
                 target_assignments=self.experiment.target_assignments,
                 parallel_execution=self.experiment.ml_config.inner_parallelization,
                 num_workers=self.experiment.ml_config.n_workers,
-                target_metric=self.experiment.config.target_metric,
+                target_metric=self.experiment.configs.study.target_metric,
                 row_column=self.experiment.row_column,
             )
             # save best bag
@@ -647,7 +651,11 @@ class OctoCore:
         }
         print("Best parameters:", user_attrs["config_training"])
         print("Performance Info:", performance_info)
-        print("Optimization completed")
+
+        print("Create best bag.....")
+        # get input features
+        n_input_features = user_attrs["config_training"]["n_input_features"]
+        best_bag_feature_columns = self.mrmr_features[n_input_features]
 
         # create best bag from optuna info
         best_trainings = list()
@@ -657,7 +665,7 @@ class OctoCore:
                     training_id=self.experiment.id + "_" + str(key),
                     ml_type=self.experiment.ml_type,
                     target_assignments=self.experiment.target_assignments,
-                    feature_columns=self.experiment.feature_columns,
+                    feature_columns=best_bag_feature_columns,
                     row_column=self.experiment.row_column,
                     data_train=split["train"],  # inner datasplit, train
                     data_dev=split["test"],  # inner datasplit, dev
@@ -688,5 +696,9 @@ class OctoCore:
                 f"{study_name}_trial{study.best_trial.number}_bag.pkl"
             )
         )
+
+        # print best_bag scores for verification
+        best_bag_scores = best_bag.get_scores()
+        print("Best bag performance", best_bag_scores)
 
         return True

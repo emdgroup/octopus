@@ -135,8 +135,7 @@ class OctoData:
                     ).index.min(),
                     axis=1,
                 )
-            )
-            .reset_index(drop=True)
+            ).reset_index(drop=True)
         )
         logging.info(" - Added `group_feaures` and `group_sample_features`")
 

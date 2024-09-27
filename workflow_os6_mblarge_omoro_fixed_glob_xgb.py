@@ -52,11 +52,11 @@ data.columns = data.columns.astype(str)
 # features dict
 feat_inventory = {
     # "rad": "./datasets_local/20240906A_rad_trmt.csv",
-    "mb": "./datasets_local/20240906A_mb_trmt_3noise.csv",
-    # "clhe": "./datasets_local/20240906A_clhe_trmt.csv",
+    # "mb": "./datasets_local/20240906A_mb_trmt_3noise.csv",
+    "clhe": "./datasets_local/20240906A_clhe_trmt.csv",
     # "rad_mb": "./datasets_local/20240906A_rad_mb_trmt_3noise.csv",
     # "rad_clhe": "./datasets_local/20240906A_rad_clhe_trmt.csv",
-    # "mb_clhe": "./datasets_local/20240906A_mb+clhe_trmt_3noise.csv",
+    "mb_clhe": "./datasets_local/20240906A_mb+clhe_trmt_3noise.csv",
     # "rad_mb_clhe": "./datasets_local/20240906A_rad_mb_clhe_trmt_3noise.csv",
 }
 
@@ -114,7 +114,7 @@ for key, feature_file in feat_inventory.items():
     # we use one sequence with the `RandomForestClassifier` model.
 
     config_study = ConfigStudy(
-        name=f"MBOS{int(timepoint)}_mb_OMORO_indiv_fixed_xgb_{dataset_key}",
+        name=f"MBOS{int(timepoint)}_mb_OMORO_glob_fixed_xgb_{dataset_key}",
         ml_type="classification",
         target_metric="AUCROC",
         metrics=["AUCROC", "ACCBAL", "ACC", "LOGLOSS"],
@@ -170,7 +170,7 @@ for key, feature_file in feat_inventory.items():
                 optuna_seed=0,
                 n_optuna_startup_trials=10,
                 resume_optimization=False,
-                global_hyperparameter=False,
+                global_hyperparameter=True,
                 n_trials=700,
                 max_features=70,
                 penalty_factor=1.0,
@@ -223,7 +223,7 @@ for key, feature_file in feat_inventory.items():
                 optuna_seed=0,
                 n_optuna_startup_trials=10,
                 resume_optimization=False,
-                global_hyperparameter=False,
+                global_hyperparameter=True,
                 n_trials=100,
                 max_features=40,
                 penalty_factor=1.0,
@@ -267,7 +267,7 @@ for key, feature_file in feat_inventory.items():
                 optuna_seed=0,
                 n_optuna_startup_trials=10,
                 resume_optimization=False,
-                global_hyperparameter=False,
+                global_hyperparameter=True,
                 n_trials=100,
                 max_features=40,
                 penalty_factor=1.0,

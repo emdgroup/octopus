@@ -10,7 +10,7 @@ import pandas as pd
 
 from octopus import OctoData, OctoML
 from octopus.config import ConfigManager, ConfigSequence, ConfigStudy
-from octopus.modules import Mrmr, Octo, Rfe
+from octopus.modules import Octo
 
 print("Notebook kernel is running on server:", socket.gethostname())
 print("Conda environment on server:", os.environ["CONDA_DEFAULT_ENV"])
@@ -114,7 +114,7 @@ for key, feature_file in feat_inventory.items():
     # we use one sequence with the `RandomForestClassifier` model.
 
     config_study = ConfigStudy(
-        name=f"MBOS{int(timepoint)}_mb_OMORO_indiv_fixed_xgb_{dataset_key}",
+        name=f"MBOS{int(timepoint)}_mb_OMRMR_xgb_{dataset_key}",
         ml_type="classification",
         target_metric="AUCROC",
         metrics=["AUCROC", "ACCBAL", "ACC", "LOGLOSS"],
@@ -129,7 +129,7 @@ for key, feature_file in feat_inventory.items():
         # outer loop parallelization
         outer_parallelization=True,
         # only process first outer loop experiment, for quick testing
-        # run_single_experiment_num=1,
+        run_single_experiment_num=1,
     )
 
     config_sequence = ConfigSequence(
@@ -170,110 +170,15 @@ for key, feature_file in feat_inventory.items():
                 optuna_seed=0,
                 n_optuna_startup_trials=10,
                 resume_optimization=False,
-                global_hyperparameter=False,
-                n_trials=700,
+                global_hyperparameter=True,
+                n_trials=40,
                 max_features=70,
                 penalty_factor=1.0,
                 # ensemble selection
-                ensemble_selection=True,
-                ensel_n_save_trials=75,
-            ),
-            # Step2: MRMR
-            Mrmr(
-                description="step2_mrmr",
-                # loading of existing results
-                load_sequence_item=False,
-                # model_name
-                model_name="best",
-                # number of features selected by MRMR
-                n_features=40,
-                # what correlation type should be used
-                correlation_type="rdc",  # "rdc"
-                # relevance type
-                relevance_type="f-statistics",
-                # feature importance type (mean/count)
-                feature_importance_type="count",
-                # feature importance method (permuation/shap/internal)
-                feature_importance_method="permutation",
-            ),
-            # Step3: octo
-            Octo(
-                description="step_3_octo",
-                # loading of existing results
-                load_sequence_item=False,
-                # datasplit
-                n_folds_inner=5,
-                # model selection
-                models=[
-                    # "TabPFNClassifier",
-                    # "ExtraTreesClassifier",
-                    # "RandomForestClassifier",
-                    # "CatBoostClassifier",
-                    "XGBClassifier",
-                ],
-                model_seed=0,
-                n_jobs=1,
-                dim_red_methods=[""],
-                max_outl=0,
-                fi_methods_bestbag=["permutation"],
-                # parallelization
-                inner_parallelization=True,
-                n_workers=5,
-                # HPO
-                optuna_seed=0,
-                n_optuna_startup_trials=10,
-                resume_optimization=False,
-                global_hyperparameter=False,
-                n_trials=100,
-                max_features=40,
-                penalty_factor=1.0,
-                # ensemble selection
-                ensemble_selection=True,
-                ensel_n_save_trials=75,
-            ),
-            # Step4: rfe
-            Rfe(
-                description="rfe",
-                # loading of existing results
-                load_sequence_item=False,
-                model="RandomForestClassifier",
-                cv=5,
-                mode="Mode1",
-            ),
-            # Step5: octo
-            Octo(
-                description="step_5_octo",
-                # loading of existing results
-                load_sequence_item=False,
-                # datasplit
-                n_folds_inner=5,
-                # model selection
-                models=[
-                    # "TabPFNClassifier",
-                    # "ExtraTreesClassifier",
-                    # "RandomForestClassifier",
-                    # "CatBoostClassifier",
-                    "XGBClassifier",
-                ],
-                model_seed=0,
-                n_jobs=1,
-                dim_red_methods=[""],
-                max_outl=0,
-                fi_methods_bestbag=["permutation"],
-                # parallelization
-                inner_parallelization=True,
-                n_workers=5,
-                # HPO
-                optuna_seed=0,
-                n_optuna_startup_trials=10,
-                resume_optimization=False,
-                global_hyperparameter=False,
-                n_trials=100,
-                max_features=40,
-                penalty_factor=1.0,
-                # ensemble selection
-                ensemble_selection=True,
-                ensel_n_save_trials=75,
+                # ensemble_selection=True,
+                # ensel_n_save_trials=75,
+                # mrmr in octo
+                # mrmr_feature_numbers=[]
             ),
         ]
     )

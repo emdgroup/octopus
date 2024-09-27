@@ -20,7 +20,7 @@ from octopus.modules.octo.core import OctoCore
 #   -- persimonial
 #   -- best model
 # - model retraining after n removal, or start use module several times
-# - autogluon: add 3-5 random feature and remove alle feature below the lowest random
+# - autogluon: add 3-5 random feature and remove all feature below the lowest random
 # - rewrite using iheritance from OctoCore, overwrite run_experiment
 
 

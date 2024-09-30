@@ -19,3 +19,12 @@ class Rfe2(Octo):
         validator=[validators.instance_of(int)], default=1
     )
     """Minimum number of features to be selected."""
+
+    fi_method_rfe: str = field(
+        validator=[validators.in_(["permutation", "shap"])], default="permutation"
+    )
+    """Featur importance method for RFE."""
+
+    def __attrs_post_init__(self):
+        # overwrite fi_mehods_bestbag
+        self.fi_methods_bestbag = [self.fi_method_rfe]

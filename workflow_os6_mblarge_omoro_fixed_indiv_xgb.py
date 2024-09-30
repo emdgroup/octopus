@@ -52,11 +52,11 @@ data.columns = data.columns.astype(str)
 # features dict
 feat_inventory = {
     # "rad": "./datasets_local/20240906A_rad_trmt.csv",
-    "mb": "./datasets_local/20240906A_mb_trmt_3noise.csv",
-    # "clhe": "./datasets_local/20240906A_clhe_trmt.csv",
+    # "mb": "./datasets_local/20240906A_mb_trmt_3noise.csv",
+    "clhe": "./datasets_local/20240906A_clhe_trmt.csv",
     # "rad_mb": "./datasets_local/20240906A_rad_mb_trmt_3noise.csv",
     # "rad_clhe": "./datasets_local/20240906A_rad_clhe_trmt.csv",
-    # "mb_clhe": "./datasets_local/20240906A_mb+clhe_trmt_3noise.csv",
+    "mb_clhe": "./datasets_local/20240906A_mb+clhe_trmt_3noise.csv",
     # "rad_mb_clhe": "./datasets_local/20240906A_rad_mb_clhe_trmt_3noise.csv",
 }
 

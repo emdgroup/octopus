@@ -1,24 +1,14 @@
+"""Check for long strings."""
+
 import pandas as pd
 
 
 def check_string_out_of_bounds(
     df: pd.DataFrame, length_threshold_factor=2
 ) -> dict[list]:
-    """
-    Find strings that are significantly longer than the average string length.
-
-    Parameters:
-    df: The input DataFrame.
-    length_threshold_factor: The factor by which a string's
-    length must exceed the average length to be considered long (default is 2).
-
-    Returns:
-    dict: A dictionary where each key is a column name and the value is
-    a list of long strings.
-    """
+    """Find strings that are significantly longer than the average string length."""
 
     long_string = {}
-    df
     for column in df.columns:
         if df[column].dtype == object or df[column].dtype.name == "category":
             try:
@@ -37,9 +27,9 @@ def check_string_out_of_bounds(
                     for value in column_values
                     if len(value) > length_threshold_factor * avg_length
                 ]
-
-                long_string[column] = long_strings
+                if long_strings:
+                    long_string[column] = long_strings
             except:
-                long_string[column] = None
+                pass
 
     return long_string

@@ -6,15 +6,21 @@ from attrs import define, field, validators
 
 from .checks import (
     check_column_dtypes,
-    check_conflicting_labels,
-    check_correlation,
+    check_duplicated_features,
+    check_duplicated_rows,
+    check_feature_feature_correlation,
+    check_identical_features,
+    check_infinity_values,
     check_missing_values,
     check_mixed_data_types,
+    check_outlier_detection,
     check_single_value,
     check_string_mismatch,
     check_string_out_of_bounds,
+    check_unique_column_names,
+    check_unique_row_id_values,
 )
-from .report import Report
+from .report import DataHealthReport
 
 
 @define
@@ -30,122 +36,156 @@ class DataHealthChecker:
     target_columns: list = field(validator=[validators.instance_of(list)])
     """List of target columns in the dataset."""
 
+    row_id: str = field(
+        default=None, validator=validators.optional(validators.instance_of(str))
+    )
+    """Row identifier."""
+
+    sample_id: str = field(
+        default=None, validator=validators.optional(validators.instance_of(str))
+    )
+    """Row identifier."""
+
+    def __attrs_post_init__(self):
+        self._check_columns_exist()
+
     def generate_report(
         self,
         column_dtypes=True,
-        conflicting_labels=True,
+        idendical_features=True,
         mixed_data_types=True,
-        constant_value=True,
+        single_value=True,
         missing_values=True,
         str_missmatch=True,
         str_out_of_bounds=True,
-        correlation=True,
+        feature_feature_correlation=True,
+        unique_column_names=True,
+        unique_row_id_values=True,
+        outlier_detection=True,
+        duplicated_features=True,
+        duplicated_rows=True,
+        infinity_values=True,
     ):
-        report = Report()
+        report = DataHealthReport()
 
+        # Adding multiple column info
         if column_dtypes:
-            dytpe_results = check_column_dtypes(self.data)
-            for col, dtype in dytpe_results.items():
-                report.add_column_info(col, {"dtype": dtype})
+            res_dtype = check_column_dtypes(self.data)
+            report.add_multiple(
+                "columns",
+                {c: {"object/categorical dtype": v} for c, v in res_dtype.items()},
+            )
 
-        if constant_value:
-            single_value_results = check_single_value(self.data)
-            for col, is_constant in single_value_results.items():
-                report.add_column_info(col, {"constant_values": is_constant})
+        if single_value:
+            res_single = check_single_value(self.data)
+            report.add_multiple(
+                "columns", {c: {"single_values": v} for c, v in res_single.items()}
+            )
 
-        if conflicting_labels:
-            conflicting_labels_results = check_conflicting_labels(self.data)
-            for col, is_constant in conflicting_labels_results.items():
-                report.add_column_info(col, {"conflicting_labels": is_constant})
+        if idendical_features:
+            res_ident = check_identical_features(self.data, self.feature_columns)
+            report.add_multiple(
+                "columns",
+                {c: {"identical_features": v} for c, v in res_ident.items()},
+            )
 
         if mixed_data_types:
-            mixed_data_types_results = check_mixed_data_types(self.data)
-            for col, is_constant in mixed_data_types_results.items():
-                report.add_column_info(col, {"mixed data types": is_constant})
+            res_mixed = check_mixed_data_types(self.data)
+            report.add_multiple(
+                "columns", {c: {"mixed data types": v} for c, v in res_mixed.items()}
+            )
 
         if missing_values:
-            missing_values_share_result = check_missing_values(self.data)
-            for col, missing_share in missing_values_share_result.items():
-                report.add_column_info(col, {"missing_values_share": missing_share})
+            res_miss = check_missing_values(self.data)
+            report.add_multiple(
+                "columns", {c: {"missing values share": v} for c, v in res_miss.items()}
+            )
+
+        if infinity_values:
+            res_inf = check_infinity_values(self.data)
+            report.add_multiple(
+                "columns", {c: {"infinity values share": v} for c, v in res_inf.items()}
+            )
 
         if str_missmatch:
-            str_missmatch_result = check_string_mismatch(self.data)
-            for col, missing_share in str_missmatch_result.items():
-                report.add_column_info(col, {"string_missmatch": missing_share})
+            res_missmatch = check_string_mismatch(self.data)
+            report.add_multiple(
+                "columns",
+                {c: {"string missmatch": v} for c, v in res_missmatch.items()},
+            )
 
         if str_out_of_bounds:
-            str_of_of_bounds_result = check_string_out_of_bounds(self.data)
-            for col, missing_share in str_of_of_bounds_result.items():
-                report.add_column_info(col, {"string_out_of_bounds": missing_share})
-        if correlation:
-            correlation_results = check_correlation(self.data)
-            for col, correlation in correlation_results.items():
-                report.add_column_info(col, {"high_correlation": correlation})
+            res_str_bounds = check_string_out_of_bounds(self.data)
+            report.add_multiple(
+                "columns",
+                {c: {"string out of bounds": v} for c, v in res_str_bounds.items()},
+            )
+
+        if feature_feature_correlation:
+            res_feat_cor = check_feature_feature_correlation(
+                self.data, self.feature_columns
+            )
+            report.add_multiple(
+                "columns",
+                {c: {"high feature correlation": v} for c, v in res_feat_cor.items()},
+            )
+
+        if unique_column_names:
+            res_unique_col = check_unique_column_names(
+                self.feature_columns, self.target_columns, self.row_id
+            )
+            report.add_multiple(
+                "columns",
+                {c: {"unique colume name": v} for c, v in res_unique_col.items()},
+            )
+
+        if unique_row_id_values:
+            if self.row_id is not None:
+                res_row_id = check_unique_row_id_values(self.data, self.row_id)
+                report.add_multiple(
+                    "columns", {c: {"unique row id": v} for c, v in res_row_id.items()}
+                )
+
+        if duplicated_features:
+            res_dup_features, res_dup_features_samples = check_duplicated_features(
+                self.data, self.feature_columns, self.sample_id
+            )
+            if res_dup_features not in (None, False):
+                report.add("rows", "duplicated_features", res_dup_features)
+            if res_dup_features_samples not in (None, False):
+                report.add(
+                    "rows", "duplicated_features_samples", res_dup_features_samples
+                )
+
+        if duplicated_rows:
+            res_dup_rows = check_duplicated_rows(self.data)
+            if res_dup_rows is not None:
+                report.add("rows", "duplicated_rows", res_dup_rows)
+
+        if outlier_detection:
+            res_outliers = check_outlier_detection(self.data)
+            if not res_outliers.empty:
+                report.add("outliers", "scores", res_outliers.to_dict("records"))
+
         return report
+
+    def _check_columns_exist(self):
+        relevant_columns = self.feature_columns + self.target_columns
+        if self.row_id is not None:
+            relevant_columns.append(self.row_id)
+        missing_columns = [
+            col for col in relevant_columns if col not in self.data.columns
+        ]
+
+        if missing_columns:
+            raise ValueError(
+                f"The following columns are missing in the DataFrame: {', '.join(missing_columns)}"
+            )
 
     # def perform_checks(self):
     #     """Perform all quality checks."""
     #     report = []
     #     warning = []
-
-    #     # # Check unique row id
-    #     if unique_row_id := self.unique_rowid_values():
-    #         report.append(unique_row_id)
-
-    #     # Check unique features
-    #     if unique_features := self.unique_column(
-    #         self.octo_data.feature_columns, "features"
-    #     ):
-    #         report.append(unique_features)
-
-    #     # Check unique targets
-    #     if unique_targets := self.unique_column(
-    #         self.octo_data.target_columns, "features"
-    #     ):
-    #         report.append(unique_targets)
-
-    #     # check if features or targets overlap
-    #     if overlap_feat_targ := self.overlap_columns(
-    #         self.octo_data.feature_columns,
-    #         self.octo_data.target_columns,
-    #         "features",
-    #         "targets",
-    #     ):
-    #         report.append(overlap_feat_targ)
-
-    #     # check if features or sample_id overlap
-    #     if overlap_feat_sample := self.overlap_columns(
-    #         self.octo_data.feature_columns,
-    #         [self.octo_data.sample_id],
-    #         "features",
-    #         "sample_id",
-    #     ):
-    #         report.append(overlap_feat_sample)
-
-    #     # # check if targets or sample_id overlap
-    #     if overlap_targ_sample := self.overlap_columns(
-    #         self.octo_data.target_columns,
-    #         [self.octo_data.sample_id],
-    #         "targets",
-    #         "sample_id",
-    #     ):
-    #         report.append(overlap_targ_sample)
-
-    #     # missing columns in dataframe
-    #     # is is not working anyway, because octodata can not be created
-    #     if missing_columns := self.missing_columns():
-    #         report.append(missing_columns)
-
-    #     # check for duplicates in features and sample
-    #     if datasplit_required := self.duplicates_features_samples():
-    #         if datasplit_required[0]:
-    #             report.append(datasplit_required[0])
-    #         if datasplit_required[1]:
-    #             warning.append(datasplit_required[1])
-
-    #     # check values for Infs and NaN
-    #     if nan := self.not_allowed_values([np.nan], "NaN"):
-    #         report.append(nan)
 
     #     if infs := self.not_allowed_values([np.inf, -np.inf], "Inf"):
     #         report.append(infs)
@@ -165,90 +205,6 @@ class DataHealthChecker:
     #         report.append(dtype_stratifictaion)
 
     #     return report, warning
-
-    # def _relevant_columns(self) -> set:
-    #     """Get relevant columns for checks."""
-    #     return (
-    #         set(self.octo_data.feature_columns)
-    #         .union(set(self.octo_data.target_columns))
-    #         .union({self.octo_data.sample_id, self.octo_data.row_id})
-    #         .union(set(self.octo_data.stratification_column))
-    #     )
-
-    # def unique_rowid_values(self) -> str | None:
-    #     """Check if values of row_id are unique."""
-    #     if not self.octo_data.data[self.octo_data.row_id].is_unique:
-    #         return "Row_ID is not unique"
-    #     return None
-
-    # def unique_column(self, columns: List[str], column_type: str | None) -> None:
-    #     """Add non-unique columns check to the report."""
-    #     non_unique_columns = list({item for item in columns if columns.count(item) > 1})
-    #     if non_unique_columns:
-    #         return (
-    #             f"The following {column_type} are not unique: "
-    #             f"{', '.join(non_unique_columns)}"
-    #         )
-    #     return None
-
-    # def overlap_columns(
-    #     self,
-    #     list1: List[str],
-    #     list2: List[str],
-    #     name1: str,
-    #     name2: str,
-    # ) -> None:
-    #     """Add overlap check between feature and target columns to the report."""
-    #     overlapping_columns = set(list1).intersection(list2)
-    #     if overlapping_columns:
-    #         return (
-    #             f"Columns shared between {name1} and {name2}: "
-    #             f"{', '.join(overlapping_columns)}"
-    #         )
-    #     return None
-
-    # def missing_columns(self) -> str | None:
-    #     """Adding missing columns in dataframe to the report."""
-    #     missing_columns = list(
-    #         self._relevant_columns() - set(self.octo_data.data.columns)
-    #     )
-    #     if missing_columns:
-    #         return f"Missing columns in dataset: {', '.join(missing_columns)}"
-    #     return None
-
-    # def duplicates_features_samples(self):
-    #     """Check for duplicates (rows) in all features."""
-    #     duplicated_features = (
-    #         self.octo_data.data[self.octo_data.feature_columns].duplicated().any()
-    #     )
-    #     duplicated_features_and_sample = (
-    #         self.octo_data.data[
-    #             list(self.octo_data.feature_columns) + [self.octo_data.sample_id]
-    #         ]
-    #         .duplicated()
-    #         .any()
-    #     )
-    #     if duplicated_features and not duplicated_features_and_sample:
-    #         if self.octo_data.datasplit_type == "sample":
-    #             return (
-    #                 "Duplicates in features require datasplit type "
-    #                 "`group_features` or `group_sample_and_features`.",
-    #                 "Duplicates (rows) in features",
-    #             )
-    #         return (None, "Duplicates (rows) in features")
-
-    #     if duplicated_features_and_sample:
-    #         if self.octo_data.datasplit_type != "group_sample_and_features":
-    #             return (
-    #                 "Duplicates in features and sample require datasplit "
-    #                 "type `group_sample_and_features`.",
-    #                 "Duplicates (rows) in features and sample",
-    #             )
-    #         return (
-    #             None,
-    #             "Duplicates (rows) in features and sample",
-    #         )
-    #     return None
 
     # def not_allowed_values(self, values: List, name: str) -> str | None:
     #     """Check if all relevant columns are free of Infs."""

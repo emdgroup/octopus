@@ -1,16 +1,10 @@
+"""Check mixed data types."""
+
 import pandas as pd
 
 
 def check_mixed_data_types(df: pd.DataFrame) -> dict[str, bool]:
-    """Check for columns with mixed data types in a DataFrame.
-
-    Args:
-        df: The DataFrame to check for mixed data types.
-
-    Returns:
-        A dictionary with column names as keys and a
-        boolean indicating if the column has mixed data types.
-    """
+    """Check for columns with mixed data types."""
     mixed_data_types = {}
 
     for column in df.columns:
@@ -18,6 +12,7 @@ def check_mixed_data_types(df: pd.DataFrame) -> dict[str, bool]:
         unique_types = set(df[column].map(type))
 
         # Check if there is more than one unique data type
-        mixed_data_types[column] = len(unique_types) > 1
+        if len(unique_types) > 1:
+            mixed_data_types[column] = True
 
     return mixed_data_types

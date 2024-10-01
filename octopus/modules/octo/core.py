@@ -402,7 +402,9 @@ class OctoCore:
         # calculate feature importances of best bag
         # fi_methods = self.experiment.ml_config.fi_methods_bestbag
         fi_methods = []  # disable calculation of pfi for ensel_bag
-        ensel_bag_fi = ensel_bag.get_feature_importances(fi_methods)
+        ensel_bag_fi = ensel_bag.calculate_feature_importances(
+            fi_methods, partitions=["dev"]
+        )
 
         # calculate selected features
         selected_features = ensel_bag.get_selected_features(fi_methods)
@@ -482,7 +484,9 @@ class OctoCore:
 
         # calculate feature importances of best bag
         fi_methods = self.experiment.ml_config.fi_methods_bestbag
-        best_bag_fi = best_bag.get_feature_importances(fi_methods)
+        best_bag_fi = best_bag.calculate_feature_importances(
+            fi_methods, partitions=["dev"]
+        )
 
         # calculate selected features
         selected_features = best_bag.get_selected_features(fi_methods)

@@ -1,27 +1,26 @@
-"""RFE2 core function."""
+"""RFE2."""
 
 import copy
 
-from attrs import define
+import numpy as np
+import pandas as pd
+from attrs import Factory, define, field, validators
 
 from octopus.modules.octo.bag import Bag
 from octopus.modules.octo.core import OctoCore
+from octopus.results import ModuleResults
 
-# RF2 TOBEDONE:
-#  - train bag in standard octo way
-#  - give bag and hyperparameters to rfe-process
-#  - (start) train bag und standard hyperparameters
-#  - calculate group_pfi and shap
+# TOBEDONE
+# - fix selected features = empty list ?????
 # - remove least important feature
 #   -- automatically remove not used features
 #   -- deal with group features, needs to be intelligent
 #   -- deal with negative feature importances
-#   -- consider count information
-# - record performance
-# - go back to start and repeat
-# - select the model, different approaches
-#   -- persimonial
-#   -- best model
+#   -- consider count information (included in feature/mean)
+# - pfi: consider groups, consider counts
+# - do we need the step input?
+# - jason output in results, see rfe
+# - how to override/disable OcoCore inputs hat are not needed?
 # - model retraining after n removal, or start use module several times
 # - autogluon: add 3-5 random feature and remove all feature below the lowest random
 
@@ -30,6 +29,14 @@ from octopus.modules.octo.core import OctoCore
 class Rfe2Core(OctoCore):
     """Rfe2 Core."""
 
+    # Optional attribute (with default value)
+    results: pd.DataFrame = field(
+        init=False,
+        default=Factory(pd.DataFrame),
+        validator=[validators.instance_of(pd.DataFrame)],
+    )
+    """RFE results dataframe."""
+
     @property
     def config(self) -> dict:
         """Module configuration."""
@@ -37,7 +44,7 @@ class Rfe2Core(OctoCore):
 
     @property
     def feature_groups(self) -> dict:
-        """Feaure groups."""
+        """Feature groups."""
         return self.experiment.feature_groups
 
     @property
@@ -47,13 +54,35 @@ class Rfe2Core(OctoCore):
 
     @property
     def step(self) -> int:
-        """Number of feature to be removed in RFE step."""
+        """Number of features to be removed in RFE step."""
         return self.config.step
 
     @property
     def min_features_to_select(self) -> int:
         """Minimum number of features to select."""
-        return self.config.smin_features_to_select
+        return self.config.min_features_to_select
+
+    @property
+    def selection_method(self) -> str:
+        """Method for selection final solution (best/parsimonious)."""
+        return self.config.selection_method
+
+    def __attrs_post_init__(self):
+        # run OctoCore post_init() to create directory, etc...
+        super().__attrs_post_init__()
+
+        # Initialize results DataFrame
+        self.results = pd.DataFrame(
+            columns=[
+                "step",
+                "performance_mean",
+                "performance_sem",
+                "n_features",
+                "features",
+                "feature_importances",
+                "model",
+            ]
+        )
 
     def run_experiment(self):
         """Run experiment."""
@@ -62,66 +91,159 @@ class Rfe2Core(OctoCore):
         # create best bag
         self._create_best_bag()
         bag_results = copy.deepcopy(self.experiment.results["best"])
-        bag_model = bag_results.model
+        bag = bag_results.model
         bag_scores = bag_results.scores
-        # model should be found here: self.experiment.results["best"]
+        bag_selected_features = bag_results.selected_features
 
-        # show config
-        print("config:", self.config)
+        # record baseline performance
+        step = 0
+        dev_lst = bag_scores["dev_lst"]
+        self.results.loc[len(self.results)] = {
+            "step": step,
+            "performance_mean": bag_scores["dev_avg"],
+            "performance_sem": np.std(dev_lst, ddof=1) / len(dev_lst),  # no np.sqrt
+            "n_features": len(bag_selected_features),
+            "features": bag_selected_features,
+            "feature_importances": self._get_fi(bag),
+            "model": copy.deepcopy(bag),
+        }
+
+        self._print_step_information()
 
         # (2) run RFE iterations
         while True:
-            # get new features
-            new_features = self.get_new_features(bag_results)
-            # calculate score + store score
+            step = step + 1
+            # calculate new features
+            new_features = self._calculate_new_features(bag)
 
             if len(new_features) < self.min_features_to_select:
                 break
 
+            # retrain bag and calculate feature importances
+            bag = self._retrain_and_calc_fi(bag, new_features)
+
+            # get scores
+            bag_scores = bag.get_scores()
+
+            # record performance
+            dev_lst = bag_scores["dev_lst"]
+            self.results.loc[len(self.results)] = {
+                "step": step,
+                "performance_mean": bag_scores["dev_avg"],
+                "performance_sem": np.std(dev_lst, ddof=1) / len(dev_lst),  # no np.sqrt
+                "n_features": len(new_features),
+                "features": new_features,
+                "feature_importances": self._get_fi(bag),
+                "model": copy.deepcopy(bag),
+            }
+
+            # print step results
+            self._print_step_information()
+
         # (3) analyze results and select best model
         #    - create and save results object
+        if self.selection_method == "best":
+            selected_row = self.results.loc[self.results["performance_mean"].idxmax()]
+        elif self.selection_method == "parsimonious":
+            # best performance mean and sem
+            best_performance_mean = self.results["performance_mean"].max()
+            best_performance_sem = self.results.loc[
+                self.results["performance_mean"] == best_performance_mean,
+                "performance_sem",
+            ].values[0]
+            # define threshold for accepting solution with less features
+            threshold = best_performance_mean - best_performance_sem
+            filtered_df = self.results[self.results["performance_mean"] >= threshold]
+            if not filtered_df.empty:
+                selected_row = filtered_df.loc[filtered_df["n_features"].idxmin()]
+            else:
+                # take best value if no solution with less features can be found
+                selected_row = self.results.loc[
+                    self.results["performance_mean"].idxmax()
+                ]
+
+        print("Selected solution:", selected_row)
+
+        # save results to experiment
+        best_model = selected_row["model"]
+        self.experiment.results["Rfe2"] = ModuleResults(
+            id="rfe2",
+            model=best_model,
+            scores=best_model.get_scores(),
+            feature_importances={
+                "dev": selected_row["feature_importances"],
+            },
+            selected_features=best_model.get_selected_features(),
+        )
+
+        print("RFE solution:")
+        print(
+            f"Step: {selected_row['step']}, n_features: {selected_row['n_features']}"
+            f", Perf_mean: {selected_row['performance_mean']:.4f}"
+            f", Perf_sem: {selected_row['performance_sem']:.4f}"
+        )
+        print("Selected feautures:", best_model.get_selected_features())
+        print("Selected feautures:", selected_row["features"])
 
         return self.experiment
 
-    def get_new_features(self, bag: Bag) -> list:
-        """Calculate new features, rfe step."""
+    def _print_step_information(self):
+        """Print step performance."""
+        last_row = self.results.iloc[-1]
+        print(
+            f"Step: {last_row['step']}, n_features: {last_row['n_features']}"
+            f", Perf_mean: {last_row['performance_mean']:.4f}"
+            f", Perf_sem: {last_row['performance_sem']:.4f}"
+        )
+
+    def _retrain_and_calc_fi(self, bag: Bag, new_features: list) -> Bag:
+        """Retrain bag using new feature set and calculate feature importances."""
+        bag = copy.deepcopy(bag)
+
+        # update feature_columns and feature groups
+        feature_groups = self.experiment.calculate_feature_groups(new_features)
+        for training in bag.trainings:
+            training.feature_columns = new_features
+            training.feature_groups = feature_groups
+
+        # update feature groups??
+
+        # retrain bag
+        bag.fit()
+
+        # calculate feature importances
+        bag.calculate_feature_importances([self.fi_method], partitions=["dev"])
+
+        return bag
+
+    def _get_fi(self, bag: Bag) -> pd.DataFrame:
+        """Get relevant feature importances."""
         if self.fi_method == "permutation":
             fi_df = bag.feature_importances["permutation_dev_mean"]
         elif self.fi_method == "shap":
             fi_df = bag.feature_importances["shap_dev_mean"]
 
+        return fi_df
+
+    def _calculate_new_features(self, bag: Bag) -> list:
+        """Perfrom RFE step and calculate new features."""
+        bag = copy.deepcopy(bag)
+
+        fi_df = self._get_fi(bag)
+
         # only keep nonzero features
         fi_df = fi_df[fi_df["importance"] != 0]
 
-        # calculate absolute values
-        fi_df["importance_abs"] = fi_df["importance"].abs()
-
-        # store group features
-        groups_df = fi_df[fi_df["feature"].str.startswith("group")].copy()
-
         # remove all group features -> single features
         fi_df = fi_df[~fi_df["feature"].str.startswith("group")]
-        feat_single = fi_df["feature"].tolist()
 
-        # For each feature group with positive importance (only),
-        # check if any feature is in feat_single. In not, add the
-        # one with the largest feature importance
-        groups = groups_df[groups_df["importance"] > 0]["feature"].tolist()
-        feat_additional = []
-        for key in groups:
-            features = self.feature_groups.get(key, [])
-            if not any(feature in feat_single for feature in features):
-                if features:  # Ensure the list is not empty
-                    # Find the feature with the highest importance in fi_df
-                    feature_importances = fi_df[fi_df["feature"].isin(features)]
-                    if not feature_importances.empty:
-                        best_feature = feature_importances.loc[
-                            feature_importances["importance"].idxmax(), "feature"
-                        ]
-                        feat_additional.append(best_feature)
+        # calculate absolute values
+        fi_df["importance_abs"] = fi_df["importance"].abs()
+        fi_df = fi_df.sort_values(by="importance_abs", ascending=False)
 
-        # Add the additional features to feat_single and remove duplicates
-        feat_all = list(set(feat_single + feat_additional))
-        print("Number of selected features: ", len(feat_all))
+        # drop the row with the lowest value in the 'importance_abs' column
+        fi_df_reduced = fi_df.drop(index=fi_df["importance_abs"].idxmin())
 
-        return sorted(feat_all, key=lambda x: (len(x), sorted(x)))
+        feat_new = fi_df_reduced["feature"]
+
+        return sorted(feat_new, key=lambda x: (len(x), sorted(x)))

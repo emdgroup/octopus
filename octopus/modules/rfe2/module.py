@@ -12,8 +12,8 @@ class Rfe2(Octo):
     module: str = field(default="rfe2")
     """Models for ML."""
 
-    step: int = field(validator=[validators.instance_of(int)], default=1)
-    """Number of features to remove at each iteration."""
+    # step: int = field(validator=[validators.instance_of(int)], default=1)
+    # """Number of features to remove at each iteration."""
 
     min_features_to_select: int = field(
         validator=[validators.instance_of(int)], default=1
@@ -24,6 +24,11 @@ class Rfe2(Octo):
         validator=[validators.in_(["permutation", "shap"])], default="permutation"
     )
     """Featur importance method for RFE."""
+
+    selection_method: str = field(
+        validator=[validators.in_(["best", "parsimonious"])], default="best"
+    )
+    """Method to selecte best solution. Parimonious: smallest solutions within sem."""
 
     def __attrs_post_init__(self):
         # overwrite fi_mehods_bestbag

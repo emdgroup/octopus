@@ -70,30 +70,36 @@ class OctoExperiment:
 
     def __attrs_post_init__(self):
         # self.feature_groups = dict()
-        self.calculate_feature_groups()
+        self.feature_groups = self.calculate_feature_groups(self.feature_columns)
 
-    def calculate_feature_groups(self) -> None:
+    def calculate_feature_groups(self, feature_columns) -> dict:
         """Calculate Feature Groups."""
         # looking for groups arising from different thresholds
         auto_group_thresholds = [0.7, 0.8, 0.9]
         auto_groups = list()
         print("Calculating feature groups.")
+
+        # Check the number of features
+        if len(feature_columns) <= 2:
+            print("Not enough features to calculate correlations for feature groups.")
+            return {}
+
         # correlation matrix
         # (A) spearmamr correlation matrix
         pos_corr_matrix, _ = scipy.stats.spearmanr(
-            np.nan_to_num(self.data_traindev[self.feature_columns].values)
+            np.nan_to_num(self.data_traindev[feature_columns].values)
         )
         pos_corr_matrix = np.abs(pos_corr_matrix)
 
         # (B) RDC correlation matrix
         # pos_corr_matrix = np.abs(
-        #    rdc_correlation_matrix(self.data_traindev[self.feature_columns])
+        #    rdc_correlation_matrix(self.data_traindev[feature_columns])
         # )
         # get groups depending on threshold
         for threshold in auto_group_thresholds:
             g = nx.Graph()
-            for i in range(len(self.feature_columns)):
-                for j in range(i + 1, len(self.feature_columns)):
+            for i in range(len(feature_columns)):
+                for j in range(i + 1, len(feature_columns)):
                     if pos_corr_matrix[i, j] > threshold:
                         g.add_edge(i, j)
             # Get connected components and sort them to ensure determinism
@@ -106,9 +112,7 @@ class OctoExperiment:
             # Create groups of feature columns
             groups = []
             for sg in subgraphs:
-                groups.append(
-                    [self.feature_columns[node] for node in sorted(sg.nodes())]
-                )
+                groups.append([feature_columns[node] for node in sorted(sg.nodes())])
             auto_groups.extend([sorted(g) for g in groups])
 
         # find unique groups
@@ -119,7 +123,7 @@ class OctoExperiment:
             groups_dict[f"group{i}"] = group
 
         print("Feature Groups:", groups_dict)
-        self.feature_groups = groups_dict
+        return groups_dict
 
     def extract_fi_from_results(self):
         """Extract features importances from results."""

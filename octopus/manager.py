@@ -144,7 +144,9 @@ class OctoManager:
                     experiment.prior_feature_importances = prior_feature_importances
 
                 # update feature groups as feature_columns may have changed
-                experiment.calculate_feature_groups()
+                experiment.feature_groups = experiment.calculate_feature_groups(
+                    experiment.feature_columns
+                )
 
                 # get desired module and intitialze with experiment
                 if experiment.ml_module in modules_inventory:

@@ -11,18 +11,18 @@ from octopus.modules.octo.core import OctoCore
 from octopus.results import ModuleResults
 
 # TOBEDONE
-# - fix selected features = empty list ?????
 # - remove least important feature
-#   -- automatically remove not used features
 #   -- deal with group features, needs to be intelligent
-#   -- deal with negative feature importances
-#   -- consider count information (included in feature/mean)
+#   -- deal with negative feature importances (pfi)
+#   -- consider count information (maybe not, included in feature/mean)
 # - pfi: consider groups, consider counts
 # - do we need the step input?
 # - jason output in results, see rfe
 # - how to override/disable OcoCore inputs hat are not needed?
 # - model retraining after n removal, or start use module several times
 # - autogluon: add 3-5 random feature and remove all feature below the lowest random
+# - disable feature groups prints
+# - output from get_selected_features
 
 
 @define
@@ -173,7 +173,9 @@ class Rfe2Core(OctoCore):
             feature_importances={
                 "dev": selected_row["feature_importances"],
             },
-            selected_features=best_model.get_selected_features(),
+            selected_features=best_model.get_selected_features(
+                fi_methods=[self.fi_method]
+            ),
         )
 
         print("RFE solution:")
@@ -182,7 +184,10 @@ class Rfe2Core(OctoCore):
             f", Perf_mean: {selected_row['performance_mean']:.4f}"
             f", Perf_sem: {selected_row['performance_sem']:.4f}"
         )
-        print("Selected feautures:", best_model.get_selected_features())
+        print(
+            "Selected feautures:",
+            best_model.get_selected_features(fi_methods=[self.fi_method]),
+        )
         print("Selected feautures:", selected_row["features"])
 
         return self.experiment

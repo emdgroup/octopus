@@ -122,7 +122,7 @@ config_sequence = ConfigSequence(
             ensel_n_save_trials=50,
             # RFE parameters
             fi_method_rfe="permutation",
-            selection_method="parsimonious",
+            # selection_method="parsimonious",
         ),
     ]
 )

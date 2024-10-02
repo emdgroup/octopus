@@ -42,6 +42,8 @@ for line in [319, 330, 338]:
 # - check that openblas settings are correct and suggest solutions
 
 # TOBEDONE OCTOFULL
+# - (0) ensel, hillclimb or optimization as return
+# - (0) predict: feature Importance, only on necessary features - selected features
 # - (0) simplement equence branching by spedifying in every module where the input
 #       data comes from.
 # - (0) logisticregression model -- feature importance via coeff
@@ -154,6 +156,7 @@ class OctoCore:
         paths_optuna_db (dict): Stores file paths to Optuna databases
             for each experiment.
         top_trials (list): Keeps track of the best performing trials.
+        mrmr_features (dict): Stores feature lists created by MRMR.
 
     Raises:
         ValueError: Thrown when encountering invalid operations or unsupported
@@ -236,6 +239,7 @@ class OctoCore:
 
     def _create_mrmr_features(self):
         """Calculate feature lists for all provided features numbers."""
+        print("Calculating MRMR feature sets....")
         # remove duplicates and cap max number
         feature_numbers = list(set(self.experiment.ml_config.mrmr_feature_numbers))
         feature_numbers = [
@@ -243,8 +247,12 @@ class OctoCore:
             for x in feature_numbers
             if isinstance(x, int) and x <= len(self.experiment.feature_columns)
         ]
-        # return if no mrmr features are requested
+        # if no mrmr features are requested, only add original features
         if not feature_numbers:
+            # add original features
+            self.mrmr_features[len(self.experiment.feature_columns)] = (
+                self.experiment.feature_columns
+            )
             return
 
         # prepare inputs
@@ -262,14 +270,17 @@ class OctoCore:
             ml_type=self.experiment.ml_type,
         )
 
-        # calculate MRMR features
-        for n_features in feature_numbers:
-            self.mrmr_features[n_features] = maxrminr(
-                features=features,
-                fi_df=re_df,
-                n_features=n_features,
-                correlation_type="spearmanr",
-            )
+        # calculate MRMR features for all feature_numbers
+        self.mrmr_features = maxrminr(
+            features=features,
+            fi_df=re_df,
+            n_features_lst=feature_numbers,
+            correlation_type="spearmanr",
+        )
+        # add original features
+        self.mrmr_features[len(self.experiment.feature_columns)] = (
+            self.experiment.feature_columns
+        )
 
     def _check_resources(self):
         """Check resources, assigned vs requested."""
@@ -391,7 +402,9 @@ class OctoCore:
         # calculate feature importances of best bag
         # fi_methods = self.experiment.ml_config.fi_methods_bestbag
         fi_methods = []  # disable calculation of pfi for ensel_bag
-        ensel_bag_fi = ensel_bag.get_feature_importances(fi_methods)
+        ensel_bag_fi = ensel_bag.calculate_feature_importances(
+            fi_methods, partitions=["dev"]
+        )
 
         # calculate selected features
         selected_features = ensel_bag.get_selected_features(fi_methods)
@@ -437,7 +450,7 @@ class OctoCore:
                 target_assignments=self.experiment.target_assignments,
                 parallel_execution=self.experiment.ml_config.inner_parallelization,
                 num_workers=self.experiment.ml_config.n_workers,
-                target_metric=self.experiment.config.target_metric,
+                target_metric=self.experiment.configs.study.target_metric,
                 row_column=self.experiment.row_column,
             )
             # save best bag
@@ -471,7 +484,9 @@ class OctoCore:
 
         # calculate feature importances of best bag
         fi_methods = self.experiment.ml_config.fi_methods_bestbag
-        best_bag_fi = best_bag.get_feature_importances(fi_methods)
+        best_bag_fi = best_bag.calculate_feature_importances(
+            fi_methods, partitions=["dev"]
+        )
 
         # calculate selected features
         selected_features = best_bag.get_selected_features(fi_methods)
@@ -640,7 +655,11 @@ class OctoCore:
         }
         print("Best parameters:", user_attrs["config_training"])
         print("Performance Info:", performance_info)
-        print("Optimization completed")
+
+        print("Create best bag.....")
+        # get input features
+        n_input_features = user_attrs["config_training"]["n_input_features"]
+        best_bag_feature_columns = self.mrmr_features[n_input_features]
 
         # create best bag from optuna info
         best_trainings = list()
@@ -650,7 +669,7 @@ class OctoCore:
                     training_id=self.experiment.id + "_" + str(key),
                     ml_type=self.experiment.ml_type,
                     target_assignments=self.experiment.target_assignments,
-                    feature_columns=self.experiment.feature_columns,
+                    feature_columns=best_bag_feature_columns,
                     row_column=self.experiment.row_column,
                     data_train=split["train"],  # inner datasplit, train
                     data_dev=split["test"],  # inner datasplit, dev
@@ -681,5 +700,9 @@ class OctoCore:
                 f"{study_name}_trial{study.best_trial.number}_bag.pkl"
             )
         )
+
+        # print best_bag scores for verification
+        best_bag_scores = best_bag.get_scores()
+        print("Best bag performance", best_bag_scores)
 
         return True

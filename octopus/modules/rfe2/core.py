@@ -13,16 +13,19 @@ from octopus.results import ModuleResults
 # TOBEDONE
 # - remove least important feature
 #   -- deal with group features, needs to be intelligent
-#   -- deal with negative feature importances (pfi)
-#   -- consider count information (maybe not, included in feature/mean)
-# - pfi: consider groups, consider counts
 # - do we need the step input?
 # - jason output in results, see rfe
 # - how to override/disable OcoCore inputs hat are not needed?
 # - model retraining after n removal, or start use module several times
 # - autogluon: add 3-5 random feature and remove all feature below the lowest random
-# - disable feature groups prints
-# - output from get_selected_features
+# - show removed zero features
+# - pfi, set number of repeats to improve quality of pfi
+# - collect fi_df for all steps for deeper undersanding
+# - set abs_on_fi default to False
+# - Explore RFE2
+#   -- retraining after n eliminations, several modules
+#   -- abs() or not
+#   -- use shap
 
 
 @define
@@ -66,6 +69,11 @@ class Rfe2Core(OctoCore):
     def selection_method(self) -> str:
         """Method for selection final solution (best/parsimonious)."""
         return self.config.selection_method
+
+    @property
+    def abs_on_fi(self) -> bool:
+        """Convert all feature importances to positive values (abs())."""
+        return self.config.abs_on_fi
 
     def __attrs_post_init__(self):
         # run OctoCore post_init() to create directory, etc...
@@ -162,8 +170,6 @@ class Rfe2Core(OctoCore):
                     self.results["performance_mean"].idxmax()
                 ]
 
-        print("Selected solution:", selected_row)
-
         # save results to experiment
         best_model = selected_row["model"]
         self.experiment.results["Rfe2"] = ModuleResults(
@@ -184,11 +190,7 @@ class Rfe2Core(OctoCore):
             f", Perf_mean: {selected_row['performance_mean']:.4f}"
             f", Perf_sem: {selected_row['performance_sem']:.4f}"
         )
-        print(
-            "Selected feautures:",
-            best_model.get_selected_features(fi_methods=[self.fi_method]),
-        )
-        print("Selected feautures:", selected_row["features"])
+        print("Selected features:", selected_row["features"])
 
         return self.experiment
 
@@ -231,7 +233,7 @@ class Rfe2Core(OctoCore):
         return fi_df
 
     def _calculate_new_features(self, bag: Bag) -> list:
-        """Perfrom RFE step and calculate new features."""
+        """Perform RFE step and calculate new features."""
         bag = copy.deepcopy(bag)
 
         fi_df = self._get_fi(bag)
@@ -239,16 +241,51 @@ class Rfe2Core(OctoCore):
         # only keep nonzero features
         fi_df = fi_df[fi_df["importance"] != 0]
 
-        # remove all group features -> single features
-        fi_df = fi_df[~fi_df["feature"].str.startswith("group")]
-
         # calculate absolute values
         fi_df["importance_abs"] = fi_df["importance"].abs()
         fi_df = fi_df.sort_values(by="importance_abs", ascending=False)
 
-        # drop the row with the lowest value in the 'importance_abs' column
-        fi_df_reduced = fi_df.drop(index=fi_df["importance_abs"].idxmin())
+        # get group features in fi_df
+        groups_df = fi_df[fi_df["feature"].str.startswith("group")].copy()
+        group_features = groups_df["feature"]
 
-        feat_new = fi_df_reduced["feature"]
+        # mark group features as protected
+        fi_df["protected"] = False
+        for group_feature in group_features:
+            # Get all features belonging to that group
+            group_members = bag.feature_groups[group_feature]
+            # Mark "protected" as True for all features found in those groups
+            fi_df.loc[fi_df["feature"].isin(group_members), "protected"] = True
 
-        return sorted(feat_new, key=lambda x: (len(x), sorted(x)))
+        # define column for feature elimination
+        if self.abs_on_fi:
+            selection_column = "importance_abs"
+        else:
+            selection_column = "importance"  # negative values may exist
+
+        # only consider non-proteced features
+        fi_avail_df = fi_df[~fi_df["protected"]]
+
+        # get the feature with the lowest value in the selection column
+        lowest_feature = fi_avail_df.loc[
+            fi_avail_df[selection_column].idxmin(), "feature"
+        ]
+
+        # get all feature to be removed, including group members
+        if lowest_feature in bag.feature_groups.keys():
+            drop_features = bag.feature_groups[lowest_feature]
+            drop_features.append(lowest_feature)
+        else:
+            drop_features = [lowest_feature]
+
+        # remove drop features in fi_df
+        fi_df = fi_df[~fi_df["feature"].isin(drop_features)]
+
+        # remove all group features -> single features
+        fi_df = fi_df[~fi_df["feature"].str.startswith("group")]
+
+        print("Features removed in this step:", drop_features)
+        print("Number of removed features:", len(drop_features))
+        print("Number of remaining features:", len(fi_df))
+
+        return sorted(fi_df["feature"], key=lambda x: (len(x), sorted(x)))

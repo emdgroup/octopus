@@ -129,7 +129,7 @@ for key, feature_file in feat_inventory.items():
         # outer loop parallelization
         outer_parallelization=True,
         # only process first outer loop experiment, for quick testing
-        # run_single_experiment_num=1,
+        run_single_experiment_num=1,
     )
 
     config_sequence = ConfigSequence(
@@ -171,33 +171,14 @@ for key, feature_file in feat_inventory.items():
                 n_optuna_startup_trials=10,
                 resume_optimization=False,
                 global_hyperparameter=True,
-                n_trials=700,
+                n_trials=40,
                 max_features=70,
                 penalty_factor=1.0,
                 # ensemble selection
                 # ensemble_selection=True,
                 # ensel_n_save_trials=75,
                 # mrmr in octo
-                mrmr_feature_numbers=[
-                    5,
-                    10,
-                    15,
-                    20,
-                    25,
-                    30,
-                    35,
-                    40,
-                    45,
-                    50,
-                    55,
-                    60,
-                    70,
-                    80,
-                    90,
-                    100,
-                    150,
-                    300,
-                ],
+                # mrmr_feature_numbers=[]
             ),
         ]
     )

@@ -92,7 +92,7 @@ config_manager = ConfigManager(
     # outer loop parallelization
     outer_parallelization=True,
     # only process first outer loop experiment, for quick testing
-    run_single_experiment_num=1,
+    run_single_experiment_num=0,
 )
 
 config_sequence = ConfigSequence(
@@ -115,8 +115,8 @@ config_sequence = ConfigSequence(
             inner_parallelization=True,
             n_workers=5,
             # HPO
-            global_hyperparameter=True,
-            n_trials=10,
+            global_hyperparameter=False,
+            n_trials=30,
             # ensemble selection
             ensemble_selection=False,
             ensel_n_save_trials=50,

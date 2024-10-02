@@ -122,7 +122,7 @@ class OctoExperiment:
         for i, group in enumerate(auto_groups_unique):
             groups_dict[f"group{i}"] = group
 
-        print("Feature Groups:", groups_dict)
+        # print("Feature Groups:", groups_dict)
         return groups_dict
 
     def extract_fi_from_results(self):

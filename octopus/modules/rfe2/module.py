@@ -23,13 +23,16 @@ class Rfe2(Octo):
     fi_method_rfe: str = field(
         validator=[validators.in_(["permutation", "shap"])], default="permutation"
     )
-    """Featur importance method for RFE."""
+    """Feature importance method for RFE."""
 
     selection_method: str = field(
         validator=[validators.in_(["best", "parsimonious"])], default="best"
     )
-    """Method to selecte best solution. Parimonious: smallest solutions within sem."""
+    """Method to select best solution. Parimonious: smallest solutions within sem."""
+
+    abs_on_fi: bool = field(validator=[validators.instance_of(bool)], default=False)
+    """Convert negative feature importances to positive (abs())."""
 
     def __attrs_post_init__(self):
-        # overwrite fi_mehods_bestbag
+        # overwrite fi_methods_bestbag
         self.fi_methods_bestbag = [self.fi_method_rfe]

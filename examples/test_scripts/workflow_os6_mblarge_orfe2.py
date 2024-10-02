@@ -10,7 +10,7 @@ import pandas as pd
 
 from octopus import OctoData, OctoML
 from octopus.config import ConfigManager, ConfigSequence, ConfigStudy
-from octopus.modules import Octo
+from octopus.modules import Octo, Rfe2
 
 print("Notebook kernel is running on server:", socket.gethostname())
 print("Conda environment on server:", os.environ["CONDA_DEFAULT_ENV"])
@@ -114,7 +114,7 @@ for key, feature_file in feat_inventory.items():
     # we use one sequence with the `RandomForestClassifier` model.
 
     config_study = ConfigStudy(
-        name=f"MBOS{int(timepoint)}_mb_OMRMR_xgb_{dataset_key}",
+        name=f"MBOS{int(timepoint)}_mb_ORFE2_xgb_{dataset_key}",
         ml_type="classification",
         target_metric="AUCROC",
         metrics=["AUCROC", "ACCBAL", "ACC", "LOGLOSS"],
@@ -129,7 +129,7 @@ for key, feature_file in feat_inventory.items():
         # outer loop parallelization
         outer_parallelization=True,
         # only process first outer loop experiment, for quick testing
-        run_single_experiment_num=1,
+        # run_single_experiment_num=1,
     )
 
     config_sequence = ConfigSequence(
@@ -161,7 +161,7 @@ for key, feature_file in feat_inventory.items():
                 model_seed=0,
                 n_jobs=1,
                 dim_red_methods=[""],
-                max_outl=0,
+                max_outl=3,
                 fi_methods_bestbag=["permutation"],
                 # parallelization
                 inner_parallelization=True,
@@ -171,7 +171,7 @@ for key, feature_file in feat_inventory.items():
                 n_optuna_startup_trials=10,
                 resume_optimization=False,
                 global_hyperparameter=True,
-                n_trials=40,
+                n_trials=700,
                 max_features=70,
                 penalty_factor=1.0,
                 # ensemble selection
@@ -179,6 +179,42 @@ for key, feature_file in feat_inventory.items():
                 # ensel_n_save_trials=75,
                 # mrmr in octo
                 # mrmr_feature_numbers=[]
+            ),
+            # Step2, RFE2
+            Rfe2(
+                description="step_2_rfe2",
+                # loading of existing results
+                load_sequence_item=False,
+                # datasplit
+                n_folds_inner=5,
+                # model selection
+                models=[
+                    # "TabPFNClassifier",
+                    # "ExtraTreesClassifier",
+                    # "RandomForestClassifier",
+                    # "CatBoostClassifier",
+                    "XGBClassifier",
+                ],
+                model_seed=0,
+                n_jobs=1,
+                dim_red_methods=[""],
+                max_outl=3,
+                fi_methods_bestbag=["permutation"],
+                # parallelization
+                inner_parallelization=True,
+                n_workers=5,
+                # HPO
+                optuna_seed=0,
+                n_optuna_startup_trials=10,
+                resume_optimization=False,
+                global_hyperparameter=True,
+                n_trials=100,
+                max_features=70,
+                penalty_factor=1.0,
+                # RFE parameters
+                fi_method_rfe="permutation",
+                abs_on_fi=False,
+                # selection_method="parsimonious",
             ),
         ]
     )

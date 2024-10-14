@@ -12,7 +12,7 @@ from octopus.dashboard.library.data_processor import (
     EDADataProcessor,
     ResultsDataProcessor,
 )
-from octopus.data import OctoData
+from octopus.data.config import OctoData
 
 dash._dash_renderer._set_react_version("18.2.0")
 

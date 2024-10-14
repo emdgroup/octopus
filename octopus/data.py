@@ -84,6 +84,9 @@ class OctoData:
 
     def __attrs_post_init__(self):
         logging.info("Automated data preparation:")
+        # sort features
+        self._sort_features()
+
         # add group features
         self._add_group_features()
 
@@ -101,6 +104,14 @@ class OctoData:
             self.quality_check()
         else:
             logging.warning("Quality check is skipped.")
+
+    def _sort_features(self):
+        """Sort list of feature columns to enforce deterministic behaviour."""
+        # enfore str items
+        feature_columns_str = [str(item) for item in self.feature_columns]
+        # sort list items
+        self.feature_columns = sorted(feature_columns_str, key=lambda x: (len(x), x))
+        logging.info(" - Features sorted")
 
     def _add_group_features(self):
         """Initialize the preparation of the DataFrame by adding group feature columns.
@@ -135,8 +146,7 @@ class OctoData:
                     ).index.min(),
                     axis=1,
                 )
-            )
-            .reset_index(drop=True)
+            ).reset_index(drop=True)
         )
         logging.info(" - Added `group_feaures` and `group_sample_features`")
 

@@ -97,7 +97,7 @@ class Octo(BaseSequenceItem):
     optuna_seed: int = field(
         validator=[validators.instance_of(int)], default=Factory(lambda: 0)
     )
-    """Seed for Optuna TPESampler, default=no seed"""
+    """Seed for Optuna TPESampler, default=0"""
 
     n_optuna_startup_trials: int = field(
         validator=[validators.instance_of(int)], default=Factory(lambda: 10)

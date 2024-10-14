@@ -12,7 +12,6 @@ import pandas as pd
 
 from octopus import OctoData, OctoML
 from octopus.config import ConfigManager, ConfigSequence, ConfigStudy
-from octopus.data.health_checks import DataHealthChecker
 from octopus.modules import Octo
 
 ### Load and Preprocess Data

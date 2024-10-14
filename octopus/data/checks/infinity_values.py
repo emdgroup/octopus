@@ -9,16 +9,7 @@ DEFAULT_INFINITY_VALUES = {"inf", "infinity", "∞"}
 def check_infinity_values(
     df: pd.DataFrame, infinity_values: set[str] = None
 ) -> dict[str, float]:
-    """
-    Check for infinity values in a DataFrame.
-
-    Parameters:
-    df (pd.DataFrame): The DataFrame to check for infinity values.
-    infinity_values (set[str], optional): Custom set of string infinity values to consider. Defaults to DEFAULT_INFINITY_VALUES.
-
-    Returns:
-    dict[str, float]: A dictionary with column names as keys and the proportion of infinity values as values.
-    """
+    """Check for infinity values in a DataFrame."""
     if infinity_values is None:
         infinity_values = DEFAULT_INFINITY_VALUES
 

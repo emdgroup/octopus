@@ -1,3 +1,5 @@
+"""Data Health Report."""
+
 import json
 from typing import Any, Union
 
@@ -7,11 +9,14 @@ from attrs import asdict, define, field
 
 @define
 class DataHealthReport:
+    """Data Health Report."""
+
     columns: dict[str, dict] = field(factory=dict)
     rows: dict[str, Any] = field(factory=dict)
     outliers: dict[str, Any] = field(factory=dict)
 
     def add(self, category: str, key: str, value: Union[dict, Any, list]):
+        """Add single item to report."""
         if category == "columns":
             if key in self.columns:
                 self.columns[key].update(value)
@@ -23,47 +28,12 @@ class DataHealthReport:
             self.outliers[key] = value
 
     def add_multiple(self, category: str, items: dict[str, Any]):
+        """Add multiple items to report."""
         for key, value in items.items():
             self.add(category, key, value)
 
-    def get(self, category: str, key: str) -> Union[dict, Any, list]:
-        if category == "columns":
-            return self.columns.get(key, {})
-        elif category == "rows":
-            return self.rows.get(key)
-        elif category == "outliers":
-            return self.outliers.get(key, [])
-
-    def create_issues(self) -> pd.DataFrame:
-        data = []
-        for column, attributes in self.columns.items():
-            if "missing values share" in attributes:
-                missing_share = attributes["missing values share"]
-                if missing_share > 0.1:
-                    data.append(
-                        {
-                            "Column": column,
-                            "Type": "Error",
-                            "Details": "High percentage of missing values.",
-                            "Recommendation": f"""Missing {missing_share:.2%} of values. 
-                                        Usually, imputation does not make sense with so many missing values. 
-                                        Please consider deleting this column.""",
-                        }
-                    )
-                elif missing_share > 0:
-                    data.append(
-                        {
-                            "Column": column,
-                            "Type": "Warning",
-                            "Details": "Some data is missing.",
-                            "Recommendation": f"""Missing {missing_share:.2%} of values.
-                                    You can either delete this column or continue with imputation in the next step.""",
-                        }
-                    )
-        df = pd.DataFrame(data, columns=["Column", "Type", "Details", "Recommendation"])
-        return df
-
     def create_df(self):
+        """Create report as DataFrame."""
         df_report = (
             pd.DataFrame(self.columns)
             .T.reset_index()
@@ -73,6 +43,7 @@ class DataHealthReport:
         return df_report
 
     def generate_recommendations(self):
+        """Generate recommendation for better data quality."""
         recommendations = {
             "Remove columns with high missing value": any(
                 value.get("missing values share", 0) >= 0.1
@@ -101,10 +72,12 @@ class DataHealthReport:
         return recommendations
 
     def to_json(self) -> str:
+        """Save as json file."""
         return json.dumps(asdict(self), indent=4)
 
     @staticmethod
     def from_json(json_str: str) -> "DataHealthReport":
+        """Load from json."""
         data = json.loads(json_str)
         return DataHealthReport(
             columns=data.get("columns", {}),

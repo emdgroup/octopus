@@ -35,7 +35,6 @@ data_df = (
     )
     .loc[0:100, :]
 )
-
 ### Create OctoData Object
 
 # We define the data, target columns, feature columns, sample ID to identify groups,

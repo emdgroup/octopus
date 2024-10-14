@@ -1,10 +1,11 @@
+"""Check string mismatch."""
+
 import pandas as pd
 from fuzzywuzzy import fuzz
 
 
 def check_string_mismatch(df: pd.DataFrame, threshold: int = 80) -> dict:
     """Find similar strings within each column of a DataFrame."""
-
     string_mismatch = {}
 
     for column in df.columns:
@@ -22,7 +23,8 @@ def check_string_mismatch(df: pd.DataFrame, threshold: int = 80) -> dict:
 
                     for value in column_values:
                         if value not in processed:
-                            # Find all similar strings to the current value, excluding identical strings
+                            # Find all similar strings to the current value,
+                            # excluding identical strings
                             similar = [
                                 other
                                 for other in column_values
@@ -36,7 +38,7 @@ def check_string_mismatch(df: pd.DataFrame, threshold: int = 80) -> dict:
                                 processed.add(value)
                     if similar_groups:
                         string_mismatch[column] = similar_groups
-            except:
+            except:  # noqa: E722
                 pass
 
     return string_mismatch

@@ -7,7 +7,7 @@ import pandas as pd
 
 from octopus import OctoData, OctoML
 from octopus.config import ConfigManager, ConfigSequence, ConfigStudy
-from octopus.modules import Octo
+from octopus.modules import Rfe2
 
 # Conda and Host information
 print("Notebook kernel is running on server:", socket.gethostname())
@@ -77,7 +77,7 @@ octo_data = OctoData(
 # we use one sequence with the `RandomForestClassifier` model.
 
 config_study = ConfigStudy(
-    name="Titanic",
+    name="TitanicRfe2",
     ml_type="classification",
     target_metric="AUCROC",
     metrics=["AUCROC", "ACCBAL", "ACC", "LOGLOSS"],
@@ -92,14 +92,14 @@ config_manager = ConfigManager(
     # outer loop parallelization
     outer_parallelization=True,
     # only process first outer loop experiment, for quick testing
-    run_single_experiment_num=0,
+    run_single_experiment_num=1,
 )
 
 config_sequence = ConfigSequence(
     [
-        # Step1: octo
-        Octo(
-            description="step_1_octo",
+        # Step1: rfe2
+        Rfe2(
+            description="RFE2",
             n_folds_inner=5,
             # model selection
             models=[
@@ -115,15 +115,15 @@ config_sequence = ConfigSequence(
             inner_parallelization=True,
             n_workers=5,
             # HPO
-            global_hyperparameter=False,
-            n_trials=30,
+            global_hyperparameter=True,
+            n_trials=3,
             # ensemble selection
             ensemble_selection=False,
             ensel_n_save_trials=50,
-            # mrmr
-            # mrmr_feature_numbers=[1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+            # RFE parameters
+            fi_method_rfe="permutation",
+            # selection_method="parsimonious",
         ),
-        # Step2: ....
     ]
 )
 

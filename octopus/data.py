@@ -107,7 +107,7 @@ class OctoData:
 
     def _sort_features(self):
         """Sort list of feature columns to enforce deterministic behaviour."""
-        # enfore str items
+        # enforce str items
         feature_columns_str = [str(item) for item in self.feature_columns]
         # sort list items
         self.feature_columns = sorted(feature_columns_str, key=lambda x: (len(x), x))
@@ -146,7 +146,8 @@ class OctoData:
                     ).index.min(),
                     axis=1,
                 )
-            ).reset_index(drop=True)
+            )
+            .reset_index(drop=True)
         )
         logging.info(" - Added `group_feaures` and `group_sample_features`")
 

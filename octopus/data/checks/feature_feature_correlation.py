@@ -1,3 +1,5 @@
+"""Check feature feature correlation."""
+
 import pandas as pd
 
 
@@ -6,18 +8,7 @@ def check_feature_feature_correlation(
     feature_columns: list,
     threshold=0.8,
 ):
-    """
-    Find columns in the DataFrame that are highly correlated with other columns.
-
-    Parameters:
-    df: The input DataFrame.
-    feature_columns: feature_columns
-    threshold: The correlation threshold (default is 0.8).
-
-    Returns:
-    dict: A dictionary where each key is a column name and
-    the value is a dictionary of column names with their correlation values.
-    """
+    """Find columns in the DataFrame that are highly correlated."""
     # Filter only numeric columns
     corr_matrix = df[feature_columns].select_dtypes(include=[float, int]).corr()
 

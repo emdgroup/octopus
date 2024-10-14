@@ -1,3 +1,5 @@
+"""Check for duplicated rows."""
+
 import pandas as pd
 
 

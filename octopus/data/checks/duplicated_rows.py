@@ -4,7 +4,7 @@ import pandas as pd
 
 
 def check_duplicated_rows(data: pd.DataFrame) -> pd.DataFrame:
-    """Identifies all duplicated rows."""
+    """Check all duplicated rows."""
     duplicated_mask = data.duplicated()
     duplicated_rows = data[duplicated_mask]
     if duplicated_rows.empty:

@@ -1,34 +1,30 @@
-import attrs
+"""Data Cleaner."""
+
 import numpy as np
 import pandas as pd
+from attrs import define, field
 from sklearn.impute import KNNImputer, SimpleImputer
 
-
-@attrs.define
-class DataHealthReport:
-    columns: dict
-    rows: dict = attrs.field(factory=dict)
-    outliers: dict = attrs.field(factory=dict)
+from .report import DataHealthReport
 
 
-@attrs.define
+@define
 class DataCleaner:
+    """Data Cleaner."""
+
     df: pd.DataFrame
     report: DataHealthReport
-    feature_columns: list = attrs.field(factory=list)
-    cleaning_report: dict = attrs.field(factory=dict)
+    feature_columns: list = field(factory=list)
+    cleaning_report: dict = field(factory=dict)
 
     def update_feature_columns(self):
-        """
-        Update the feature columns based on the current DataFrame columns.
-        """
+        """Update the feature columns based on the current DataFrame columns."""
         self.feature_columns = [
             col for col in self.df.columns if col in self.feature_columns
         ]
 
     def remove_single_value_columns(self):
-        """
-        Remove columns that contain only a single unique value based on the report.
+        """Remove columns that contain only a single unique value.
 
         Returns:
         pd.DataFrame: The cleaned DataFrame.
@@ -44,17 +40,7 @@ class DataCleaner:
         return self.df
 
     def remove_high_missing_data_columns(self, threshold=0.1):
-        """
-        Remove columns with a high percentage of missing data based on the report.
-
-        Parameters:
-        threshold (float): The threshold for missing data. Columns with a
-                           percentage of missing data higher than this will be removed.
-                           Default is 0.5 (50%).
-
-        Returns:
-        pd.DataFrame: The cleaned DataFrame.
-        """
+        """Remove columns with a high percentage of missing data."""
         removed_columns = []
         for column, details in self.report.columns.items():
             if (
@@ -69,17 +55,7 @@ class DataCleaner:
         return self.df
 
     def remove_high_infinity_data_columns(self, threshold=0.1):
-        """
-        Remove columns with high infinity values
-
-        Parameters:
-        threshold (float): The threshold for missing data. Columns with a
-                           percentage of missing data higher than this will be removed.
-                           Default is 0.5 (50%).
-
-        Returns:
-        pd.DataFrame: The cleaned DataFrame.
-        """
+        """Remove columns with high infinity values."""
         removed_columns = []
         for column, details in self.report.columns.items():
             if (
@@ -94,8 +70,7 @@ class DataCleaner:
         return self.df
 
     def remove_identical_features(self):
-        """
-        Remove identical features with different labels. Keep only one column.
+        """Remove identical features with different labels and keep only one column.
 
         Returns:
         pd.DataFrame: The cleaned DataFrame.
@@ -113,13 +88,11 @@ class DataCleaner:
         return self.df
 
     def one_hot_encode_categorical_features(self):
-        """
-        One-hot encode categorical features based on the report.
+        """One-hot encode categorical features based on the report.
 
         Returns:
         pd.DataFrame: The DataFrame with categorical features one-hot encoded.
         """
-
         categorical_columns = []
         for column, details in self.report.columns.items():
             if (
@@ -138,16 +111,7 @@ class DataCleaner:
     def impute_missing_data(
         self, imputer_type: str = "simple", threshold: float = 0.1, **imputer_params
     ):
-        """
-        Impute missing data in columns with low missing values using the specified imputer.
-
-        Parameters:
-        imputer_type (str): The type of imputer to use ('simple' or 'knn'). Default is 'simple'.
-        **imputer_params: Additional parameters to pass to the imputer.
-
-        Returns:
-        pd.DataFrame: The DataFrame with missing data imputed.
-        """
+        """Impute missing data in columns with low missing values."""
         # Filter the feature columns to include only those present in the DataFrame
         feature_columns = [
             col for col in self.feature_columns if col in self.df.columns
@@ -210,26 +174,12 @@ class DataCleaner:
         one_hot_encode=True,
         remove_identical_features=True,
     ):
-        """
+        """Clean data.
+
         Clean the DataFrame by removing columns with a single unique value, columns
-        with a high percentage of missing data, and/or one-hot encoding categorical features
-        based on user selection and the report.
-
-        Parameters:
-        remove_single_value (bool): Whether to remove columns with a single unique value.
-                                    Default is True.
-        remove_high_missing (bool): Whether to remove columns with a high percentage of missing data.
-                                    Default is True.
-        missing_data_threshold (float): The threshold for missing data. Columns with a
-                                        percentage of missing data higher than this will be removed.
-                                        Default is 0.5 (50%).
-        one_hot_encode (bool): Whether to one-hot encode categorical features.
-                               Default is True.
-
-        Returns:
-        pd.DataFrame: The cleaned DataFrame.
+        with a high percentage of missing data, and/or one-hot encoding categorical
+        features based on user selection and the report.
         """
-
         self.cleaning_report = {}  # Reset the report for each cleaning operation
         if remove_single_value:
             self.remove_single_value_columns()
@@ -249,8 +199,7 @@ class DataCleaner:
         return self.df, self.feature_columns
 
     def get_cleaning_report(self):
-        """
-        Get a report of the cleaning operations performed.
+        """Get a report of the cleaning operations performed.
 
         Returns:
         dict: A dictionary containing details of the cleaning operations performed.

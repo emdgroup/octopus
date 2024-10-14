@@ -1,6 +1,5 @@
-from typing import List
+"""Data Health Check."""
 
-import numpy as pd
 import pandas as pd
 from attrs import define, field, validators
 
@@ -67,7 +66,7 @@ class DataHealthChecker:
         mixed_data_types=True,
         single_value=True,
         missing_values=True,
-        str_missmatch=True,
+        str_mismatch=True,
         str_out_of_bounds=True,
         feature_feature_correlation=True,
         unique_column_names=True,
@@ -77,6 +76,7 @@ class DataHealthChecker:
         duplicated_rows=True,
         infinity_values=True,
     ):
+        """Generate data health report."""
         report = DataHealthReport()
 
         # Adding multiple column info
@@ -119,11 +119,11 @@ class DataHealthChecker:
                 "columns", {c: {"infinity values share": v} for c, v in res_inf.items()}
             )
 
-        if str_missmatch:
-            res_missmatch = check_string_mismatch(self.data)
+        if str_mismatch:
+            res_mismatch = check_string_mismatch(self.data)
             report.add_multiple(
                 "columns",
-                {c: {"string missmatch": v} for c, v in res_missmatch.items()},
+                {c: {"string mismatch": v} for c, v in res_mismatch.items()},
             )
 
         if str_out_of_bounds:
@@ -194,6 +194,7 @@ class DataHealthChecker:
         return report
 
     def _check_columns_exist(self):
+        """Check if all relevant columns exists."""
         relevant_columns = self.feature_columns + self.target_columns
         if self.row_id is not None:
             relevant_columns.append(self.row_id)
@@ -203,5 +204,5 @@ class DataHealthChecker:
 
         if missing_columns:
             raise ValueError(
-                f"The following columns are missing in the DataFrame: {', '.join(missing_columns)}"
+                f"The following columns are missing in the DataFrame: {', '.join(missing_columns)}"  # noqa: E501
             )

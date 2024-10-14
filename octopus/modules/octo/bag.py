@@ -303,11 +303,13 @@ class Bag:
 
         return sorted(feat_all, key=lambda x: (len(x), sorted(x)))
 
-    def get_feature_importances(self, fi_methods=None):
+    def calculate_feature_importances(self, fi_methods=None, partitions=None):
         """Extract feature importances of all models in bag."""
         # we always extract internal feature importances, if available
         if fi_methods is None:
             fi_methods = []
+        if partitions is None:
+            partitions = ["dev", "test"]
 
         self._calculate_fi(fi_type="internal")
 
@@ -315,11 +317,11 @@ class Bag:
             if method == "internal":
                 pass  # already done
             elif method == "shap":
-                self._calculate_fi(fi_type="shap", partition="dev")
-                self._calculate_fi(fi_type="shap", partition="test")
+                for partition in partitions:
+                    self._calculate_fi(fi_type="shap", partition=partition)
             elif method == "permutation":
-                self._calculate_fi(fi_type="permutation", partition="dev")
-                self._calculate_fi(fi_type="permutation", partition="test")
+                for partition in partitions:
+                    self._calculate_fi(fi_type="permutation", partition=partition)
             elif method == "lofo":
                 self._calculate_fi(fi_type="lofo")
             else:

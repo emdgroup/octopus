@@ -86,6 +86,9 @@ class OctoData:
         # create new column for row_id
         self._create_row_id()
 
+        # sort features
+        self._sort_features()
+
         # set target assignment
         self._set_target_assignments()
 
@@ -194,21 +197,15 @@ class OctoData:
                 % (num_original_features - num_new_features)
             )
 
-    # def quality_check(self):
-    #     """Quality check on OctoData."""
-    #     checker = QualityChecker(self)
-    #     report, warning = checker.perform_checks()
+    def _sort_features(self):
+        """Sort feature columns deterministically by length and lexicographically.
 
-    #     if warning:
-    #         logging.warning("Quality Check Warnings:")
-    #         for item in warning:
-    #             logging.warning(f" - {item}")
-
-    #     if report:
-    #         logging.error("Quality Check Failures:")
-    #         for item in report:
-    #             logging.error(f" - {item}")
-    #         raise ValueError("Octo data quality check failed")
+        This ensures that the results are always the same, preventing minor differences.
+        """
+        self.feature_columns = sorted(
+            map(str, self.feature_columns), key=lambda x: (len(x), x)
+        )
+        logging.info(" - Sorted features.")
 
     def save(self, path):
         """Save data to a human readable form, for long term storage."""

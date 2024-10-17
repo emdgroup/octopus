@@ -13,7 +13,7 @@ import shap
 from attrs import Factory, define, field, validators
 from matplotlib.backends.backend_pdf import PdfPages
 
-from octopus.data import OctoData
+from octopus import OctoData
 from octopus.experiment import OctoExperiment
 from octopus.modules.utils import get_performance_score
 
@@ -450,9 +450,6 @@ class OctoPredict:
         feature_groups = experiment["feature_group_dict"]
 
         print("Number of feature groups found and included: ", len(feature_groups))
-
-        # initialize feature_groups_dict
-        # experiment["feature_group_dict"] = dict()
 
         # support prediction on new data as well as test data
         if data is None:  # new data

@@ -73,7 +73,7 @@ octo_data = OctoData(
 config_study = ConfigStudy(
     name="basic_regression_example",
     ml_type="regression",
-    target_metric="R2",
+    target_metric="MSE",
 )
 
 config_manager = ConfigManager(outer_parallelization=False, run_single_experiment_num=0)
@@ -83,7 +83,7 @@ config_sequence = ConfigSequence(
         Octo(
             description="step_1",
             models=["RandomForestRegressor", "XGBRegressor"],
-            n_trials=3,
+            n_trials=50,
         ),
     ]
 )

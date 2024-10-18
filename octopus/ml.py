@@ -175,7 +175,8 @@ class OctoML:
         If there are no missing values in both datasets, returns them unchanged.
         If there are missing values in either dataset:
             - Fits an imputation model on the training data and transforms it.
-            - Transforms the test data using the model fitted on training data.
+            - Transforms the test data using the model fitted on training data
+            if it contains missing values.
 
         Parameters:
         - train_df: pd.DataFrame
@@ -190,25 +191,29 @@ class OctoML:
             Imputed training dataset.
         - imputed_test_df: pd.DataFrame
             Imputed test dataset.
+        - kernel: mf.ImputationKernel
+            Imputation kernel
         """
         # Check for missing values in the specified feature columns
         train_has_missing = train_df[feature_columns].isna().any().any()
         test_has_missing = test_df[feature_columns].isna().any().any()
 
+        print("Missing value in train:", train_has_missing)
+        print("Missing value in test:", test_has_missing)
+
         if not train_has_missing and not test_has_missing:
             # No missing values in both datasets; return them unchanged
-            return train_df, test_df
+            return train_df, test_df, None
         else:
             # Set parameters for imputation
             print("Imputing datasets...")
-            num_datasets = 1  # Number of imputed datasets to generate
             num_iterations = 10  # Number of MICE iterations
 
             # Fit the imputation model on the training data
             kernel = mf.ImputationKernel(
                 train_df[feature_columns],
-                datasets=num_datasets,
-                save_all_iterations=True,
+                variable_schema=feature_columns,  # train on all columns
+                save_all_iterations_data=True,
                 random_state=42,  # For reproducibility
             )
 
@@ -218,21 +223,27 @@ class OctoML:
             # Transform the training data
             imputed_train_features = kernel.complete_data(dataset=0)
 
-            # Impute the test data using the model fitted on training data
-            imputed_test = kernel.impute_new_data(
-                test_df[feature_columns], datasets=num_datasets
-            )
-
-            imputed_test_features = imputed_test.complete_data(dataset=0)
-
             # Replace the original feature columns with the imputed values
             imputed_train_df = train_df.copy()
             imputed_train_df[feature_columns] = imputed_train_features[feature_columns]
 
-            imputed_test_df = test_df.copy()
-            imputed_test_df[feature_columns] = imputed_test_features[feature_columns]
+            if test_has_missing:
+                # Impute the test data using the model fitted on training data
+                imputed_test = kernel.impute_new_data(
+                    test_df[feature_columns], datasets=[0]  # Use dataset index 0
+                )
+                imputed_test_features = imputed_test.complete_data(dataset=0)
 
-            return imputed_train_df, imputed_test_df
+                # Replace the original feature columns with the imputed values
+                imputed_test_df = test_df.copy()
+                imputed_test_df[feature_columns] = imputed_test_features[
+                    feature_columns
+                ]
+            else:
+                # No missing values in test dataset; use it as is
+                imputed_test_df = test_df.copy()
+
+            return imputed_train_df, imputed_test_df, kernel
 
     def _create_experiments(
         self, path_study: Path, data_splits: dict, datasplit_col: str
@@ -249,7 +260,7 @@ class OctoML:
             path_study.joinpath(path_experiment).mkdir(parents=True, exist_ok=True)
             # impute datasets
             feature_columns = self.data.feature_columns
-            traindev_df, test_df = self._impute_dataset(
+            traindev_df, test_df, kernel = self._impute_dataset(
                 value["train"], value["test"], feature_columns
             )
 
@@ -267,6 +278,7 @@ class OctoML:
                     target_assignments=self.data.target_assignments,
                     data_traindev=traindev_df,
                     data_test=test_df,
+                    imputation_kernel=kernel,
                 )
             )
 

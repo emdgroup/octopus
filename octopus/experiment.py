@@ -58,6 +58,8 @@ class OctoExperiment:
         default=Factory(dict), validator=[validators.instance_of(dict)]
     )
 
+    imputation_kernel = field(default=None)
+
     @property
     def path_study(self) -> Path:
         """Path study."""

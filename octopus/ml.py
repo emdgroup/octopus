@@ -170,30 +170,7 @@ class OctoML:
     def _impute_dataset(
         self, train_df: pd.DataFrame, test_df: pd.DataFrame, feature_columns: list
     ):
-        """Impute training and test datasets using mice-forest.
-
-        If there are no missing values in both datasets, returns them unchanged.
-        If there are missing values in either dataset:
-            - Fits an imputation model on the training data and transforms it.
-            - Transforms the test data using the model fitted on training data
-            if it contains missing values.
-
-        Parameters:
-        - train_df: pd.DataFrame
-            Training dataset.
-        - test_df: pd.DataFrame
-            Test dataset.
-        - feature_columns: list
-            List of feature column names to consider for imputation.
-
-        Returns:
-        - imputed_train_df: pd.DataFrame
-            Imputed training dataset.
-        - imputed_test_df: pd.DataFrame
-            Imputed test dataset.
-        - kernel: mf.ImputationKernel
-            Imputation kernel
-        """
+        """Impute training and test datasets using mice-forest."""
         # Check for missing values in the specified feature columns
         train_has_missing = train_df[feature_columns].isna().any().any()
         test_has_missing = test_df[feature_columns].isna().any().any()
@@ -230,7 +207,8 @@ class OctoML:
             if test_has_missing:
                 # Impute the test data using the model fitted on training data
                 imputed_test = kernel.impute_new_data(
-                    test_df[feature_columns], datasets=[0]  # Use dataset index 0
+                    test_df[feature_columns],
+                    datasets=[0],  # Use dataset index 0
                 )
                 imputed_test_features = imputed_test.complete_data(dataset=0)
 

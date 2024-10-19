@@ -268,7 +268,6 @@ dependencies:
   - matplotlib-base=3.8.4=py312he5832f3_0
   - matplotlib-inline=0.1.6=pyhd8ed1ab_0
   - mdurl=0.1.2=pyhd8ed1ab_0
-  - miceforest=5.6.2=pyhd8ed1ab_0
   - mistune=3.0.2=pyhd8ed1ab_0
   - mkl=2023.2.0=h84fe81f_50496
   - mkl-devel=2023.2.0=ha770c72_50496
@@ -458,5 +457,6 @@ dependencies:
   - zlib=1.2.13=hd590300_5
   - zstd=1.5.5=hfc55251_0
   - pip:
+      - miceforest==6.0.3
       - tabpfn==0.1.10
 prefix: /home/ec2-user/mambaforge/envs/octo312

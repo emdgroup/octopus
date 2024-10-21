@@ -1,11 +1,12 @@
 """Init."""
 
-from .column_type import check_column_dtypes
+from .dtype import check_columns_dtype
 from .duplicated_features import check_duplicated_features
 from .duplicated_rows import check_duplicated_rows
 from .feature_feature_correlation import check_feature_feature_correlation
 from .identical_features import check_identical_features
 from .infinity_values import check_infinity_values
+from .int_col_with_few_uniques import check_int_col_with_few_uniques
 from .missing_values import check_missing_values
 from .mixed_data_types import check_mixed_data_types
 from .outlier_detection import check_outlier_detection
@@ -30,4 +31,6 @@ __all__ = [
     "check_string_out_of_bounds",
     "check_unique_column_names",
     "check_unique_row_id_values",
+    "check_int_col_with_few_uniques",
+    "check_columns_dtype",
 ]

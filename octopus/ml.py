@@ -1,5 +1,6 @@
 """OctoML module."""
 
+import logging
 import shutil
 import sys
 from pathlib import Path
@@ -11,8 +12,11 @@ from octopus import OctoData
 from octopus.config import ConfigManager, ConfigSequence, ConfigStudy
 from octopus.config.core import OctoConfig
 from octopus.experiment import OctoExperiment
+from octopus.logger import configure_logging
 from octopus.manager import OctoManager
 from octopus.utils import DataSplit
+
+configure_logging()
 
 
 @define
@@ -42,6 +46,9 @@ class OctoML:
     manager: OctoManager = field(init=False, default=None)
 
     def __attrs_post_init__(self):
+        # check data for critical issues
+        self._check_for_critical_data_issues()
+
         # initialization here due to "Python immutable default"
         self.experiments = []
         self.configs = OctoConfig(
@@ -91,6 +98,76 @@ class OctoML:
 
         # create experiments from the datasplit
         self._create_experiments(path_study, data_splits, datasplit_col)
+
+    def _check_for_critical_data_issues(self):
+        targets = self.data.target_columns
+        features = self.data.feature_columns
+        stratification = self.data.stratification_column
+
+        report_cols = self.data.report.columns
+        report_cols_feat_tar = {
+            key: val
+            for key, val in report_cols.items()
+            if key in targets or key in features
+        }
+        report_cols_strat = {
+            key: val for key, val in report_cols.items() if key in stratification
+        }
+        error_messages = []
+
+        # Check for NaNs
+        for col in report_cols:
+            missing_share = report_cols[col].get("missing values share", None)
+            if col in targets:
+                if missing_share is not None and missing_share > 0:
+                    error_messages.append("NaN values detected in target columns.")
+            if col in self.data.stratification_column:
+                if missing_share is not None and missing_share > 0:
+                    error_messages.append(
+                        "NaN values detected in stratification column."
+                    )
+            if col == self.data.row_id:
+                if missing_share is not None and missing_share > 0:
+                    error_messages.append("NaN values detected in row_id.")
+            if col == self.data.sample_id:
+                if missing_share is not None and missing_share > 0:
+                    logging.error("NaN values detected in sample_id.")
+
+            if col in features:
+                if missing_share is not None and missing_share > 0.2:
+                    error_messages.append(
+                        "Columns with high missing share detected in feature columns."
+                    )
+                    break
+
+        # Check for object type columns
+        if any(val.get("iuf dtype'", True) for val in report_cols_feat_tar.values()):
+            error_messages.append(
+                "Feature and target columns must be of type integer, uint, or float."
+            )
+
+        # Check for object type columns
+        if any(val.get("iu dtype'", True) for val in report_cols_strat.values()):
+            error_messages.append(
+                "Stratification columns must be of type integer or uint."
+            )
+
+        # Check for infinity values
+        if any(val.get("infinity values share", 0) > 0 for val in report_cols.values()):
+            error_messages.append("Inf values in dataset")
+
+        # Check unique row id
+        if report_cols[self.data.row_id].get("unique row id", None) is not None:
+            error_messages.append("Values in the Row ID must be unique.")
+
+        # Log all errors and raise an exception if any errors were detected
+        if error_messages:
+            for message in error_messages:
+                logging.error(message)
+            raise Exception(
+                """Critical data issues detected. Please review the log
+                and the data health report for details."""
+            )
 
     def _handle_existing_study_path(self, path_study: Path) -> None:
         """Handle the existing study path.

@@ -4,19 +4,17 @@ import pandas as pd
 from fuzzywuzzy import fuzz
 
 
-def check_string_mismatch(df: pd.DataFrame, threshold: int = 80) -> dict:
+def check_string_mismatch(df: pd.DataFrame, threshold: int = 95) -> dict:
     """Find similar strings within each column of a DataFrame."""
     string_mismatch = {}
 
     for column in df.columns:
         if df[column].dtype == object or df[column].dtype.name == "category":
             try:
-                column_values = (
-                    df[column].dropna().tolist()
-                )  # Drop NaN values and convert to list
+                column_values = df[column].dropna().tolist()
 
                 # Check if the column has more than one unique value
-                if len(set(column_values)) > 1:
+                if len(set(column_values)) > 2:
                     # Initialize a list to keep track of processed strings
                     processed = set()
                     similar_groups = []

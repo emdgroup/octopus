@@ -11,6 +11,7 @@ from attrs import Factory, define, field, validators
 from octopus.logger import configure_logging
 
 from .health_checks import DataHealthChecker
+from .report import DataHealthReport
 
 configure_logging()
 # tobedone:
@@ -33,10 +34,7 @@ class OctoData:
     only one target is allowed. For time-to-event, two targets need to be provided.
     """
 
-    sample_id: str | None = field()
-    """Identifier for sample instances."""
-
-    datasplit_type: str | None = field(
+    datasplit_type: str = field(
         validator=[
             validators.in_(
                 [None, "sample", "group_features", "group_sample_and_features"]
@@ -46,8 +44,12 @@ class OctoData:
     """Type of datasplit. Allowed are `sample`, `group_features`
     and `group_sample_and_features`."""
 
+    sample_id: str = field(validator=validators.instance_of(str))
+    """Identifier for sample instances."""
+
     row_id: str = field(
-        default=Factory(lambda: ""), validator=[validators.instance_of(str)]
+        default=Factory(lambda: None),
+        validator=validators.optional(validators.instance_of(str)),
     )
     """Unique row identifier."""
 
@@ -61,8 +63,9 @@ class OctoData:
     )
     """List of columns used for stratification."""
 
-    data_quality_check: bool = field(
-        default=Factory(lambda: True), validator=[validators.instance_of(bool)]
+    report: DataHealthReport = field(
+        default=None,
+        validator=validators.optional(validators.instance_of(DataHealthReport)),
     )
     """Enable data quality check."""
 
@@ -80,11 +83,15 @@ class OctoData:
 
     def __attrs_post_init__(self):
         logging.info("Automated data preparation:")
-        # add group features
-        self._add_group_features()
+
+        # validate input
+        self._validate_unique_columns()
 
         # create new column for row_id
         self._create_row_id()
+
+        # add group features
+        self._add_group_features()
 
         # sort features
         self._sort_features()
@@ -92,24 +99,59 @@ class OctoData:
         # set target assignment
         self._set_target_assignments()
 
+        self.report = DataHealthChecker(
+            data=self.data,
+            feature_columns=self.feature_columns,
+            target_columns=self.target_columns,
+            row_id=self.row_id,
+            sample_id=self.sample_id,
+            stratification_column=self.stratification_column,
+        ).generate_report(outlier_detection=False)
+
         # remove features with only a single value
         self._remove_singlevalue_features()
 
-        # quality check
-        if self.data_quality_check:
-            report = DataHealthChecker(
-                data=self.data,
-                feature_columns=self.feature_columns,
-                target_columns=self.target_columns,
-                row_id=self.row_id,
-                sample_id=self.sample_id,
-            ).generate_report()
+    def _validate_unique_columns(self):
+        # Gather all columns that should be unique
+        columns_all = (
+            self.feature_columns
+            + self.target_columns
+            + [self.sample_id]
+            + self.stratification_column
+        )
 
-            if report:
-                print(report)
+        columns_check_duplicated = (
+            self.feature_columns + self.target_columns + [self.sample_id]
+        )
 
-        else:
-            logging.warning("Quality check is skipped.")
+        if self.row_id:
+            columns_all.append(self.row_id)
+            columns_check_duplicated.append(self.row_id)
+
+        if self.stratification_column:
+            columns_all.extend(self.stratification_column)
+
+        # Check for duplicated columns
+        duplicates = set(
+            [
+                col
+                for col in columns_check_duplicated
+                if columns_check_duplicated.count(col) > 1
+            ]
+        )
+
+        if duplicates:
+            raise ValueError(
+                f"Columns selected more than once: {', '.join(duplicates)}"
+            )
+
+        # Check if all columns exist in the DataFrame
+        missing_columns = [col for col in columns_all if col not in self.data.columns]
+
+        if missing_columns:
+            raise ValueError(
+                f"Columns not found in the DataFrame: {', '.join(missing_columns)}"
+            )
 
     def _add_group_features(self):
         """Initialize the preparation of the DataFrame by adding group feature columns.
@@ -147,7 +189,7 @@ class OctoData:
             )
             .reset_index(drop=True)
         )
-        logging.info(" - Added `group_feaures` and `group_sample_features`")
+        logging.info("Added `group_feaures` and `group_sample_features`")
 
     def _create_row_id(self):
         """Assign a unique row identifier to each entry in the DataFrame.
@@ -159,7 +201,7 @@ class OctoData:
             self.data["row_id"] = self.data.index
             self.row_id = "row_id"
 
-            logging.info(" - Added `row_id`")
+            logging.info("Added `row_id`")
 
     def _set_target_assignments(self):
         """Set default target assignments or validates provided ones.
@@ -193,7 +235,7 @@ class OctoData:
 
         if num_original_features > num_new_features:
             logging.info(
-                " - Features removed due to single unique values: %s"
+                "Features removed due to single unique values: %s"
                 % (num_original_features - num_new_features)
             )
 
@@ -205,7 +247,7 @@ class OctoData:
         self.feature_columns = sorted(
             map(str, self.feature_columns), key=lambda x: (len(x), x)
         )
-        logging.info(" - Sorted features.")
+        logging.info("Sorted features.")
 
     def save(self, path):
         """Save data to a human readable form, for long term storage."""

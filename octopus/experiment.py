@@ -60,7 +60,7 @@ class OctoExperiment:
         default=Factory(dict), validator=[validators.instance_of(dict)]
     )
 
-    imputation_kernel = Optional[ImputationKernel] = field(
+    imputation_kernel: Optional[ImputationKernel] = field(
         default=None,
         validator=validators.optional(validators.instance_of(ImputationKernel)),
     )

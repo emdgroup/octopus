@@ -169,7 +169,7 @@ class OctoML:
 
     def _impute_dataset(
         self, train_df: pd.DataFrame, test_df: pd.DataFrame, feature_columns: list
-    ):
+    ) -> tuple[pd.DataFrame, pd.DataFrame, mf.ImputationKernel]:
         """Impute training and test datasets using mice-forest."""
         # Check for missing values in the specified feature columns
         train_has_missing = train_df[feature_columns].isna().any().any()

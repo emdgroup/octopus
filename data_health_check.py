@@ -126,6 +126,21 @@ class DataFrameGenerator:
             inf_indices = rng.choice(self.df.index, size=num_inf, replace=False)
             self.df.loc[inf_indices, col_name] = np.inf
 
+    def add_fixed_unique_values_column(self, column_name="few_unique", num_unique=3):
+        """
+        Add a column with a specified number of unique values.
+
+        Parameters:
+        - column_name (str): Name of the new column.
+        - num_unique (int): Number of unique values to include in the column.
+        """
+        # Create a list of unique values
+        unique_values = [i for i in range(num_unique)]
+        # Repeat these values to fill the column
+        repeated_values = unique_values * (len(self.df) // num_unique + 1)
+        # Assign to the DataFrame, trimming to the correct length
+        self.df[column_name] = repeated_values[: len(self.df)]
+
     def get_dataframe(self):
         """Return the generated DataFrame.
 
@@ -135,30 +150,45 @@ class DataFrameGenerator:
         return self.df.copy()
 
 
-# Example usage
-generator = DataFrameGenerator(random_state=42)
-generator.add_nan_to_features()
-generator.add_nan_to_target(num_nan=10)
-generator.add_id_column(unique=False, include_nans=True)
-generator.add_id_column(
+# Error example
+generator_errors = DataFrameGenerator(random_state=42)
+generator_errors.add_nan_to_features()
+generator_errors.add_nan_to_target(num_nan=10)
+generator_errors.add_id_column(unique=False, include_nans=True)
+generator_errors.add_id_column(
     column_name="sample_id", prefix="Sample", unique=True, include_nans=True
 )
-generator.add_id_column(
+generator_errors.add_id_column(
     column_name="stratification",
     prefix="Strat_",
     unique=True,
     include_nans=True,
 )
-generator.add_constant_column()
-generator.add_decimal_columns()
-generator.add_inf_columns()
+generator_errors.add_constant_column()
+generator_errors.add_decimal_columns()
+generator_errors.add_inf_columns()
 
-df = generator.get_dataframe()
+df_error = generator_errors.get_dataframe()
+
+# warninig example
+generator_warnings = DataFrameGenerator(random_state=42)
+generator_warnings.add_fixed_unique_values_column()
+generator_warnings.add_id_column(unique=True, include_nans=False)
+generator_warnings.add_id_column(
+    column_name="sample_id", prefix="Sample", unique=True, include_nans=False
+)
+generator_warnings.add_id_column(
+    column_name="stratification",
+    prefix=None,
+    unique=True,
+    include_nans=False,
+)
+df_warnings = generator_warnings.get_dataframe()
 
 octo_data = OctoData(
-    data=df,
+    data=df_warnings,
     target_columns=["target"],
-    feature_columns=df.columns.drop("target")
+    feature_columns=df_warnings.columns.drop("target")
     .drop("id")
     .drop("sample_id")
     .drop("stratification")
@@ -174,6 +204,7 @@ config_study = ConfigStudy(
     ml_type="classification",
     target_metric="AUCROC",
     silently_overwrite_study=True,
+    ignore_data_health_warning=True,
 )
 
 config_manager = ConfigManager(outer_parallelization=True)

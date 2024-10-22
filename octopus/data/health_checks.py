@@ -56,15 +56,17 @@ class DataHealthChecker:
     """List of columns used for stratification."""
 
     def __attrs_post_init__(self):
-        if self.feature_columns is not None or self.target_columns is not None:
-            self._check_columns_exist()
-            self.data = self.data[
-                self.feature_columns
-                + self.target_columns
-                + [self.row_id]
-                + [self.sample_id]
-                + self.stratification_column
-            ]
+        # Create a list of all potential columns
+        potential_columns = (
+            self.feature_columns
+            + self.target_columns
+            + [self.row_id]
+            + [self.sample_id]
+            + self.stratification_column
+        )
+        relevant_columns = [col for col in potential_columns if col is not None]
+        self._check_columns_exist(relevant_columns)
+        self.data = self.data[relevant_columns]
 
     def generate_report(
         self,
@@ -212,7 +214,10 @@ class DataHealthChecker:
                 report.add("outliers", "scores", res_outliers.to_dict("records"))
 
         if few_int_values:
-            res_few_unique_int_values = check_int_col_with_few_uniques(self.data)
+            res_few_unique_int_values = check_int_col_with_few_uniques(
+                self.data, self.feature_columns
+            )
+            print(res_few_unique_int_values)
             if res_few_unique_int_values is not None:
                 report.add_multiple(
                     "columns",
@@ -223,11 +228,8 @@ class DataHealthChecker:
                 )
         return report
 
-    def _check_columns_exist(self):
+    def _check_columns_exist(self, relevant_columns):
         """Check if all relevant columns exists."""
-        relevant_columns = self.feature_columns + self.target_columns
-        if self.row_id is not None:
-            relevant_columns.append(self.row_id)
         missing_columns = [
             col for col in relevant_columns if col not in self.data.columns
         ]

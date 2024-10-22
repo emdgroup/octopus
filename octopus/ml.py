@@ -114,6 +114,7 @@ class OctoML:
             key: val for key, val in report_cols.items() if key in stratification
         }
         error_messages = []
+        warning_messages = []
 
         # Check for NaNs
         for col in report_cols:
@@ -131,7 +132,7 @@ class OctoML:
                     error_messages.append("NaN values detected in row_id.")
             if col == self.data.sample_id:
                 if missing_share is not None and missing_share > 0:
-                    logging.error("NaN values detected in sample_id.")
+                    error_messages.append("NaN values detected in sample_id.")
 
             if col in features:
                 if missing_share is not None and missing_share > 0.2:
@@ -141,13 +142,16 @@ class OctoML:
                     break
 
         # Check for object type columns
-        if any(val.get("iuf dtype'", True) for val in report_cols_feat_tar.values()):
+        if any(
+            val.get("iuf dtype", None) is not None
+            for val in report_cols_feat_tar.values()
+        ):
             error_messages.append(
                 "Feature and target columns must be of type integer, uint, or float."
             )
 
         # Check for object type columns
-        if any(val.get("iu dtype'", True) for val in report_cols_strat.values()):
+        if any(val.get("iu dtype", None) for val in report_cols_strat.values()):
             error_messages.append(
                 "Stratification columns must be of type integer or uint."
             )
@@ -157,17 +161,48 @@ class OctoML:
             error_messages.append("Inf values in dataset")
 
         # Check unique row id
-        if report_cols[self.data.row_id].get("unique row id", None) is not None:
+        if (
+            self.data.row_id in report_cols
+            and report_cols[self.data.row_id].get("unique row id", None) is not None
+        ):
             error_messages.append("Values in the Row ID must be unique.")
 
-        # Log all errors and raise an exception if any errors were detected
+        # Check few integer values
+        if any(
+            val.get("unique_int_values'", None) is not None
+            for val in report_cols_feat_tar.values()
+        ):
+            warning_messages.append(
+                "Some columns have few unique interger values. Consider using dummy enconding."
+            )
+
+        # Log all warning and errors
+        if warning_messages:
+            for message in warning_messages:
+                logging.warning(message)
+
         if error_messages:
             for message in error_messages:
                 logging.error(message)
+
+        # raise Exception
+        if error_messages:
             raise Exception(
-                """Critical data issues detected. Please review the log
-                and the data health report for details."""
+                """
+                Critical data issues detected. 
+                Check the log and data health report for details.
+                """
             )
+
+        if warning_messages:
+            if not self.config_study.ignore_data_health_warning:
+                raise Exception(
+                    """"
+                    Data issues detected. 
+                    Check the log and data health report for details.
+                    To proceed, set `ignore_data_health_warning` to True in `ConfigStudy`.
+            """
+                )
 
     def _handle_existing_study_path(self, path_study: Path) -> None:
         """Handle the existing study path.
@@ -236,13 +271,22 @@ class OctoML:
                 ]
             )
         )
+        print(relevant_cols)
         stratification_col = "".join(self.data.stratification_column)
         if stratification_col != "":
             relevant_cols.append(stratification_col)
             # keep columns unique, if target columns eqals stratification column
             relevant_cols = list(set(relevant_cols))
 
-        return self.data.data[relevant_cols]
+        potential_columns = (
+            self.data.feature_columns
+            + self.data.target_columns
+            + [self.data.row_id]
+            + [self.data.sample_id]
+            + self.data.stratification_column
+        )
+        relevant_columns = [col for col in potential_columns if col is not None]
+        return self.data.data[relevant_columns]
 
     def _create_experiments(
         self, path_study: Path, data_splits: dict, datasplit_col: str

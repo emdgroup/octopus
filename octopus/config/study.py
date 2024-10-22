@@ -104,3 +104,8 @@ class ConfigStudy:
     )
     """A list of metrics to be calculated.
     Defaults to target_metric value."""
+
+    ignore_data_health_warning: bool = field(
+        default=Factory(lambda: False), validator=[validators.instance_of(bool)]
+    )
+    """Ignore data health checks warning and run machine learning workflow."""

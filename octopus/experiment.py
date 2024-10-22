@@ -25,13 +25,17 @@ class OctoExperiment:
     datasplit_column: str = field(validator=[validators.instance_of(str)])
     row_column: str = field(validator=[validators.instance_of(str)])
     feature_columns: list = field(validator=[validators.instance_of(list)])
-    stratification_column: str = field(validator=[validators.instance_of(str)])
+
     target_assignments: dict = field(validator=[validators.instance_of(dict)])
     data_traindev: pd.DataFrame = field(
         validator=[validators.instance_of(pd.DataFrame)]
     )
     data_test: pd.DataFrame = field(validator=[validators.instance_of(pd.DataFrame)])
 
+    stratification_column: str = field(
+        default=Factory(lambda: None),
+        validator=validators.optional(validators.instance_of(str)),
+    )
     ml_module: str = field(
         init=False, default="", validator=[validators.instance_of(str)]
     )

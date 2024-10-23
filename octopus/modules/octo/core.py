@@ -42,6 +42,7 @@ for line in [319, 330, 338]:
 # - check that openblas settings are correct and suggest solutions
 
 # TOBEDONE OCTOFULL
+# - (0) mrmr: fix max problem (n_feature > actual number of features)
 # - (0) ensel, hillclimb or optimization as return
 # - (0) predict: feature Importance, only on necessary features - selected features
 # - (0) simplement equence branching by spedifying in every module where the input

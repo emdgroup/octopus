@@ -234,6 +234,9 @@ def maxrminr(
     # extract features from feature importance table
     fi_features = fi_df["feature"].tolist()
 
+    # add len(fi_features) to n_features_lst
+    n_features_lst.append(len(fi_features))
+
     # make sure that elements in n_features_lst <= len(fi_features)
     n_features_lst = [
         x for x in n_features_lst if x <= min(max(n_features_lst), len(fi_features))

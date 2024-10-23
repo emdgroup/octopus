@@ -93,7 +93,7 @@ class OctoML:
             datasplit_col=datasplit_col,
             seed=self.configs.study.datasplit_seed_outer,
             num_folds=self.configs.study.n_folds_outer,
-            stratification_col="".join(self.data.stratification_column),
+            stratification_col=self.data.stratification_column,
         ).get_datasplits()
 
         # create experiments from the datasplit
@@ -110,8 +110,8 @@ class OctoML:
             for key, val in report_cols.items()
             if key in targets or key in features
         }
-        report_cols_strat = {
-            key: val for key, val in report_cols.items() if key in stratification
+        report_col_stratification = {
+            key: val for key, val in report_cols.items() if key == stratification
         }
         error_messages = []
         warning_messages = []
@@ -122,7 +122,7 @@ class OctoML:
             if col in targets:
                 if missing_share is not None and missing_share > 0:
                     error_messages.append("NaN values detected in target columns.")
-            if col in self.data.stratification_column:
+            if col == self.data.stratification_column:
                 if missing_share is not None and missing_share > 0:
                     error_messages.append(
                         "NaN values detected in stratification column."
@@ -151,7 +151,7 @@ class OctoML:
             )
 
         # Check for object type columns
-        if any(val.get("iu dtype", None) for val in report_cols_strat.values()):
+        if any(val.get("iu dtype", None) for val in report_col_stratification.values()):
             error_messages.append(
                 "Stratification columns must be of type integer or uint."
             )
@@ -173,7 +173,8 @@ class OctoML:
             for val in report_cols_feat_tar.values()
         ):
             warning_messages.append(
-                "Some columns have few unique interger values. Consider using dummy enconding."
+                """Some columns have few unique integer values.
+                Consider using dummy encoding."""
             )
 
         # Log all warning and errors
@@ -189,7 +190,7 @@ class OctoML:
         if error_messages:
             raise Exception(
                 """
-                Critical data issues detected. 
+                Critical data issues detected.
                 Check the log and data health report for details.
                 """
             )
@@ -198,10 +199,10 @@ class OctoML:
             if not self.config_study.ignore_data_health_warning:
                 raise Exception(
                     """"
-                    Data issues detected. 
-                    Check the log and data health report for details.
-                    To proceed, set `ignore_data_health_warning` to True in `ConfigStudy`.
-            """
+                Data issues detected.
+                Check the log and data health report for details.
+                To proceed, set `ignore_data_health_warning` to True in `ConfigStudy`.
+                """
                 )
 
     def _handle_existing_study_path(self, path_study: Path) -> None:
@@ -271,10 +272,8 @@ class OctoML:
                 ]
             )
         )
-        print(relevant_cols)
-        stratification_col = "".join(self.data.stratification_column)
-        if stratification_col != "":
-            relevant_cols.append(stratification_col)
+        if self.data.stratification_column:
+            relevant_cols.append(self.data.stratification_column)
             # keep columns unique, if target columns eqals stratification column
             relevant_cols = list(set(relevant_cols))
 
@@ -283,7 +282,7 @@ class OctoML:
             + self.data.target_columns
             + [self.data.row_id]
             + [self.data.sample_id]
-            + self.data.stratification_column
+            + [self.data.stratification_column]
         )
         relevant_columns = [col for col in potential_columns if col is not None]
         return self.data.data[relevant_columns]
@@ -311,7 +310,7 @@ class OctoML:
                     datasplit_column=datasplit_col,
                     row_column=self.data.row_id,
                     feature_columns=self.data.feature_columns,
-                    stratification_column="".join(self.data.stratification_column),
+                    stratification_column=self.data.stratification_column,
                     target_assignments=self.data.target_assignments,
                     data_traindev=value["train"],
                     data_test=value["test"],

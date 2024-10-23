@@ -62,7 +62,7 @@ class DataHealthChecker:
             + self.target_columns
             + [self.row_id]
             + [self.sample_id]
-            + self.stratification_column
+            + [self.stratification_column]
         )
         relevant_columns = [col for col in potential_columns if col is not None]
         self._check_columns_exist(relevant_columns)
@@ -217,7 +217,6 @@ class DataHealthChecker:
             res_few_unique_int_values = check_int_col_with_few_uniques(
                 self.data, self.feature_columns
             )
-            print(res_few_unique_int_values)
             if res_few_unique_int_values is not None:
                 report.add_multiple(
                     "columns",

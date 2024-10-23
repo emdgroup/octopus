@@ -3,12 +3,14 @@
 import gzip
 import pickle
 from pathlib import Path
+from typing import Optional
 
 import networkx as nx
 import numpy as np
 import pandas as pd
 import scipy.stats
 from attrs import Factory, define, field, validators
+from miceforest import ImputationKernel
 
 from octopus.config.core import OctoConfig
 
@@ -56,6 +58,11 @@ class OctoExperiment:
 
     results: dict = field(
         default=Factory(dict), validator=[validators.instance_of(dict)]
+    )
+
+    imputation_kernel: Optional[ImputationKernel] = field(
+        default=None,
+        validator=validators.optional(validators.instance_of(ImputationKernel)),
     )
 
     @property

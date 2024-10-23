@@ -4,6 +4,7 @@ import shutil
 import sys
 from pathlib import Path
 
+import miceforest as mf
 import pandas as pd
 from attrs import define, field, validators
 
@@ -72,7 +73,6 @@ class OctoML:
         data_clean_df = self._get_dataset_with_relevant_columns()
 
         # get datasplit column
-        # this could be done in octodata already
         datasplit_col = (
             self.data.sample_id
             if self.data.datasplit_type == "sample"
@@ -167,6 +167,62 @@ class OctoML:
 
         return self.data.data[relevant_cols]
 
+    def _impute_dataset(
+        self, train_df: pd.DataFrame, test_df: pd.DataFrame, feature_columns: list
+    ) -> tuple[pd.DataFrame, pd.DataFrame, mf.ImputationKernel]:
+        """Impute training and test datasets using mice-forest."""
+        # Check for missing values in the specified feature columns
+        train_has_missing = train_df[feature_columns].isna().any().any()
+        test_has_missing = test_df[feature_columns].isna().any().any()
+
+        print("Missing value in train:", train_has_missing)
+        print("Missing value in test:", test_has_missing)
+
+        if not train_has_missing and not test_has_missing:
+            # No missing values in both datasets; return them unchanged
+            return train_df, test_df, None
+        else:
+            # Set parameters for imputation
+            print("Imputing datasets...")
+            num_iterations = 10  # Number of MICE iterations
+
+            # Fit the imputation model on the training data
+            kernel = mf.ImputationKernel(
+                train_df[feature_columns],
+                variable_schema=feature_columns,  # train on all columns
+                save_all_iterations_data=True,
+                random_state=42,  # For reproducibility
+            )
+
+            # Run the MICE algorithm for the specified number of iterations
+            kernel.mice(num_iterations)
+
+            # Transform the training data
+            imputed_train_features = kernel.complete_data(dataset=0)
+
+            # Replace the original feature columns with the imputed values
+            imputed_train_df = train_df.copy()
+            imputed_train_df[feature_columns] = imputed_train_features[feature_columns]
+
+            if test_has_missing:
+                # Impute the test data using the model fitted on training data
+                imputed_test = kernel.impute_new_data(
+                    test_df[feature_columns],
+                    datasets=[0],  # Use dataset index 0
+                )
+                imputed_test_features = imputed_test.complete_data(dataset=0)
+
+                # Replace the original feature columns with the imputed values
+                imputed_test_df = test_df.copy()
+                imputed_test_df[feature_columns] = imputed_test_features[
+                    feature_columns
+                ]
+            else:
+                # No missing values in test dataset; use it as is
+                imputed_test_df = test_df.copy()
+
+            return imputed_train_df, imputed_test_df, kernel
+
     def _create_experiments(
         self, path_study: Path, data_splits: dict, datasplit_col: str
     ) -> None:
@@ -180,6 +236,12 @@ class OctoML:
         for key, value in data_splits.items():
             path_experiment = Path(f"experiment{key}")
             path_study.joinpath(path_experiment).mkdir(parents=True, exist_ok=True)
+            # impute datasets
+            feature_columns = self.data.feature_columns
+            traindev_df, test_df, kernel = self._impute_dataset(
+                value["train"], value["test"], feature_columns
+            )
+
             self.experiments.append(
                 OctoExperiment(
                     id=str(key),
@@ -189,11 +251,12 @@ class OctoML:
                     configs=self.configs,
                     datasplit_column=datasplit_col,
                     row_column=self.data.row_id,
-                    feature_columns=self.data.feature_columns,
+                    feature_columns=feature_columns,
                     stratification_column="".join(self.data.stratification_column),
                     target_assignments=self.data.target_assignments,
-                    data_traindev=value["train"],
-                    data_test=value["test"],
+                    data_traindev=traindev_df,
+                    data_test=test_df,
+                    imputation_kernel=kernel,
                 )
             )
 

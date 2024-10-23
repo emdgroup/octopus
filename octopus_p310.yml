@@ -105,6 +105,7 @@ dependencies:
   - fribidi=1.0.10=h36c2ea0_0
   - fs=2.4.16=pyhd8ed1ab_0
   - fsspec=2024.6.1=pyhff2d567_0
+  - fuzzywuzzy=0.18.0=pyhd8ed1ab_0
   - gdk-pixbuf=2.42.10=h829c605_4
   - gettext=0.22.5=h59595ed_2
   - gettext-tools=0.22.5=h59595ed_2
@@ -160,6 +161,7 @@ dependencies:
   - lcms2=2.16=hb7c19ff_0
   - ld_impl_linux-64=2.40=h41732ed_0
   - lerc=4.0.0=h27087fc_0
+  - levenshtein=0.26.0=py310hf71b8c6_2
   - libabseil=20240116.2=cxx17_h59595ed_0
   - libarrow=16.1.0=h56e7afd_13_cpu
   - libarrow-acero=16.1.0=he02047a_13_cpu
@@ -217,6 +219,7 @@ dependencies:
   - libsodium=1.0.18=h36c2ea0_1
   - libsqlite=3.44.2=h2797004_0
   - libssh2=1.11.0=h0841786_0
+  - libstdcxx=14.1.0=hc0a3c3a_1
   - libstdcxx-ng=13.2.0=h7e041cc_3
   - libthrift=0.19.0=hb90f79a_1
   - libtiff=4.6.0=ha9c0a0a_2
@@ -241,7 +244,6 @@ dependencies:
   - matplotlib-base=3.8.2=py310h62c0568_0
   - matplotlib-inline=0.1.6=pyhd8ed1ab_0
   - mdurl=0.1.2=pyhd8ed1ab_0
-  - miceforest=5.6.2=pyhd8ed1ab_0
   - mistune=3.0.2=pyhd8ed1ab_0
   - mlxtend=0.23.1=pyhd8ed1ab_0
   - mpc=1.3.1=hfe3b2da_0
@@ -309,6 +311,7 @@ dependencies:
   - pydeck=0.8.0=pyhd8ed1ab_0
   - pygments=2.17.2=pyhd8ed1ab_0
   - pyjwt=2.8.0=pyhd8ed1ab_1
+  - pynomaly=0.3.3=pyhd8ed1ab_0
   - pyparsing=3.1.1=pyhd8ed1ab_0
   - pysocks=1.7.1=pyha2e5f31_6
   - python=3.10.13=hd12c33a_1_cpython
@@ -317,7 +320,9 @@ dependencies:
   - python-fastjsonschema=2.19.1=pyhd8ed1ab_0
   - python-graphviz=0.20.3=pyh717bed2_0
   - python-json-logger=2.0.7=pyhd8ed1ab_0
+  - python-levenshtein=0.26.0=pyhd8ed1ab_0
   - python-tzdata=2023.4=pyhd8ed1ab_0
+  - python-utils=3.8.2=pyhd8ed1ab_0
   - python_abi=3.10=4_cp310
   - pytorch=2.3.1=cpu_generic_py310ha4c588e_0
   - pytorch-mutex=1.0=cpu
@@ -326,6 +331,7 @@ dependencies:
   - pyyaml=6.0.1=py310h2372a71_1
   - pyzmq=25.1.2=py310h795f18f_0
   - qdldl-python=0.1.5.post2=py310hcc13569_1
+  - rapidfuzz=3.10.0=py310hf71b8c6_0
   - rdma-core=52.0=he02047a_0
   - re2=2023.09.01=h7f4b329_2
   - readline=8.2=h8228510_1
@@ -417,5 +423,6 @@ dependencies:
   - zlib=1.3.1=h4ab18f5_1
   - zstd=1.5.6=ha6fb4c9_0
   - pip:
+      - miceforest==6.0.3
       - tabpfn==0.1.10
 prefix: /home/ec2-user/mambaforge/envs/octo

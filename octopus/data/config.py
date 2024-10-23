@@ -3,7 +3,7 @@
 import gzip
 import logging
 import pickle
-from typing import List
+from typing import Optional
 
 import pandas as pd
 from attrs import Factory, define, field, validators
@@ -47,7 +47,7 @@ class OctoData:
     sample_id: str = field(validator=validators.instance_of(str))
     """Identifier for sample instances."""
 
-    row_id: str = field(
+    row_id: Optional[str] = field(
         default=Factory(lambda: None),
         validator=validators.optional(validators.instance_of(str)),
     )
@@ -58,8 +58,9 @@ class OctoData:
     )
     """Mapping of target assignments."""
 
-    stratification_column: list = field(
-        default=Factory(list), validator=[validators.instance_of(list)]
+    stratification_column: Optional[str] = field(
+        default=Factory(lambda: None),
+        validator=validators.optional(validators.instance_of(str)),
     )
     """List of columns used for stratification."""
 
@@ -69,23 +70,24 @@ class OctoData:
     )
     """Enable data quality check."""
 
-    # not needed anymore
-    @property
-    def targets(self) -> List:
-        """Targets columns."""
-        return self.target_columns
+    # # not needed anymore
+    # @property
+    # def targets(self) -> List:
+    #     """Targets columns."""
+    #     return self.target_columns
 
-    # not needed anymore
-    @property
-    def features(self) -> List:
-        """List of features."""
-        return self.feature_columns
+    # # not needed anymore
+    # @property
+    # def features(self) -> List:
+    #     """List of features."""
+    #     return self.feature_columns
 
     def __attrs_post_init__(self):
         logging.info("Automated data preparation:")
 
         # validate input
-        self._validate_unique_columns()
+        self._check_columns_exist()
+        self._check_for_duplicate_columns()
 
         # create new column for row_id
         self._create_row_id()
@@ -111,47 +113,39 @@ class OctoData:
         # remove features with only a single value
         self._remove_singlevalue_features()
 
-    def _validate_unique_columns(self):
-        # Gather all columns that should be unique
-        columns_all = (
-            self.feature_columns
-            + self.target_columns
-            + [self.sample_id]
-            + self.stratification_column
-        )
+    def _check_columns_exist(self):
+        """Validate that all columns exists in the dataframe."""
+        # Combine all necessary columns
+        columns = set(self.feature_columns + self.target_columns)
 
-        columns_check_duplicated = (
-            self.feature_columns + self.target_columns + [self.sample_id]
-        )
+        # Add optional columns if they exist
+        optional_columns = [self.row_id, self.stratification_column]
+        columns.update(filter(None, optional_columns))
 
-        if self.row_id:
-            columns_all.append(self.row_id)
-            columns_check_duplicated.append(self.row_id)
+        # Identify missing columns
+        missing_columns = columns - set(self.data.columns)
 
-        if self.stratification_column:
-            columns_all.extend(self.stratification_column)
-
-        # Check for duplicated columns
-        duplicates = set(
-            [
-                col
-                for col in columns_check_duplicated
-                if columns_check_duplicated.count(col) > 1
-            ]
-        )
-
-        if duplicates:
-            raise ValueError(
-                f"Columns selected more than once: {', '.join(duplicates)}"
-            )
-
-        # Check if all columns exist in the DataFrame
-        missing_columns = [col for col in columns_all if col not in self.data.columns]
-
+        # Raise error if any columns are missing
         if missing_columns:
-            raise ValueError(
-                f"Columns not found in the DataFrame: {', '.join(missing_columns)}"
-            )
+            missing_str = ", ".join(missing_columns)
+            raise ValueError(f"Columns not found in the DataFrame: {missing_str}")
+
+    def _check_for_duplicate_columns(self):
+        """Validate that there are no duplicate columns."""
+        # Combine all necessary columns
+        columns = self.feature_columns + self.target_columns
+
+        # Add optional column if it exists
+        if self.row_id:
+            columns.append(self.row_id)
+
+        # Identify duplicates using set operations
+        duplicates = {col for col in columns if columns.count(col) > 1}
+
+        # Raise error if any duplicates are found
+        if duplicates:
+            duplicate_str = ", ".join(duplicates)
+            raise ValueError(f"Columns selected more than once: {duplicate_str}")
 
     def _add_group_features(self):
         """Initialize the preparation of the DataFrame by adding group feature columns.
@@ -174,7 +168,9 @@ class OctoData:
         self.data = (
             self.data
             # Create group with the same features
-            .assign(group_features=lambda df_: df_.groupby(self.features).ngroup())
+            .assign(
+                group_features=lambda df_: df_.groupby(self.feature_columns).ngroup()
+            )
             # Create group with the same features and/or the same sample_id
             .assign(
                 group_sample_and_features=lambda df_: df_.apply(
@@ -197,7 +193,10 @@ class OctoData:
         If no `row_id` is provided, this method adds a `row_id` column using
         the DataFrame index.
         """
-        if self.row_id == "":
+        if not self.row_id:
+            if "row_id" in self.data.columns:
+                raise Exception("""`row_id` is not allowed as column name.""")
+
             self.data["row_id"] = self.data.index
             self.row_id = "row_id"
 
@@ -213,7 +212,7 @@ class OctoData:
         Raises a ValueError if assignments are incorrect or missing.
         """
         if (len(self.target_columns) == 1) & (not self.target_assignments):
-            self.target_assignments["default"] = self.targets[0]
+            self.target_assignments["default"] = self.target_columns[0]
         elif len(self.target_columns) > 1:
             if len(self.target_columns) != len(self.target_assignments):
                 raise ValueError("Please provide correct target assignments")

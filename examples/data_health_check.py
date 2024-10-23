@@ -127,13 +127,7 @@ class DataFrameGenerator:
             self.df.loc[inf_indices, col_name] = np.inf
 
     def add_fixed_unique_values_column(self, column_name="few_unique", num_unique=3):
-        """
-        Add a column with a specified number of unique values.
-
-        Parameters:
-        - column_name (str): Name of the new column.
-        - num_unique (int): Number of unique values to include in the column.
-        """
+        """Add a column with a specified number of unique values."""
         # Create a list of unique values
         unique_values = [i for i in range(num_unique)]
         # Repeat these values to fill the column
@@ -170,7 +164,7 @@ generator_errors.add_inf_columns()
 
 df_error = generator_errors.get_dataframe()
 
-# warninig example
+# warning example
 generator_warnings = DataFrameGenerator(random_state=42)
 generator_warnings.add_fixed_unique_values_column()
 generator_warnings.add_id_column(unique=True, include_nans=False)

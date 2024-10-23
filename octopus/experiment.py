@@ -3,6 +3,7 @@
 import gzip
 import pickle
 from pathlib import Path
+from typing import Optional
 
 import networkx as nx
 import numpy as np
@@ -32,7 +33,7 @@ class OctoExperiment:
     )
     data_test: pd.DataFrame = field(validator=[validators.instance_of(pd.DataFrame)])
 
-    stratification_column: str = field(
+    stratification_column: Optional[str] = field(
         default=Factory(lambda: None),
         validator=validators.optional(validators.instance_of(str)),
     )

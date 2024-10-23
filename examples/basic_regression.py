@@ -74,6 +74,7 @@ config_study = ConfigStudy(
     name="basic_regression_example",
     ml_type="regression",
     target_metric="R2",
+    silently_overwrite_study=True,
 )
 
 config_manager = ConfigManager(outer_parallelization=False, run_single_experiment_num=0)
@@ -104,5 +105,7 @@ octo_ml.create_outer_experiments()
 octo_ml.run_outer_experiments()
 
 # This completes the basic example for using Octopus regression
-# with the Calfifornia housing dataset. The workflow involves loading and preprocessing
-# the data, creating necessary configurations, and executing the machine learning pipeline.
+# with the Calfifornia housing dataset.
+# The workflow involves loading and preprocessing
+# the data, creating necessary configurations, and
+# executing the machine learning pipeline.

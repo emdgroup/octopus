@@ -48,7 +48,7 @@ class OctoML:
 
     def __attrs_post_init__(self):
         # check data for critical issues
-        self._check_for_critical_data_issues()
+        self._check_for_data_issues()
 
         # initialization here due to "Python immutable default"
         self.experiments = []
@@ -77,8 +77,8 @@ class OctoML:
         self._save_files(path_study)
 
         # get clean dataset only with relevant columns for ML
-        data_clean_df = self._get_dataset_with_relevant_columns()
-
+        # data_clean_df = self._get_dataset_with_relevant_columns()
+        data_clean_df = self.data.data[self.data.relevant_columns]
         # get datasplit column
         datasplit_col = (
             self.data.sample_id
@@ -99,7 +99,7 @@ class OctoML:
         # create experiments from the datasplit
         self._create_experiments(path_study, data_splits, datasplit_col)
 
-    def _check_for_critical_data_issues(self):
+    def _check_for_data_issues(self):
         targets = self.data.target_columns
         features = self.data.feature_columns
         stratification = self.data.stratification_column
@@ -115,7 +115,7 @@ class OctoML:
         }
         error_messages = []
         warning_messages = []
-
+        print(self.data.report)
         # Check for NaNs
         for col in report_cols:
             missing_share = report_cols[col].get("missing values share", None)
@@ -177,6 +177,19 @@ class OctoML:
                 Consider using dummy encoding."""
             )
 
+        # feature-feature corrlation
+        if any(
+            any(
+                key in val
+                for key in [
+                    "high feature correlation (pearson)",
+                    "high feature correlation (spearman)",
+                ]
+            )
+            for val in report_cols_feat_tar.values()
+        ):
+            warning_messages.append("""Some features are highly correlated.""")
+
         # Log all warning and errors
         if warning_messages:
             for message in warning_messages:
@@ -188,6 +201,7 @@ class OctoML:
 
         # raise Exception
         if error_messages:
+            print(self.data.report)
             raise Exception(
                 """
                 Critical data issues detected.
@@ -196,6 +210,7 @@ class OctoML:
             )
 
         if warning_messages:
+            print(self.data.report)
             if not self.config_study.ignore_data_health_warning:
                 raise Exception(
                     """"
@@ -254,38 +269,40 @@ class OctoML:
         # self.config.to_json(config_path / "config.json")
         self.configs.to_pickle(config_path / "config.pkl")
 
-    def _get_dataset_with_relevant_columns(self) -> pd.DataFrame:
-        """Get the dataset only with relevant columns for the ML.
+    # def _get_dataset_with_relevant_columns(self) -> pd.DataFrame:
+    #     """Get the dataset only with relevant columns for the ML.
 
-        Returns:
-        DataFrame: DataFrame with the relevant columns.
-        """
-        relevant_cols = list(
-            set(
-                self.data.feature_columns
-                + self.data.target_columns
-                + [
-                    self.data.sample_id,
-                    self.data.row_id,
-                    "group_features",
-                    "group_sample_and_features",
-                ]
-            )
-        )
-        if self.data.stratification_column:
-            relevant_cols.append(self.data.stratification_column)
-            # keep columns unique, if target columns eqals stratification column
-            relevant_cols = list(set(relevant_cols))
+    #     Returns:
+    #     DataFrame: DataFrame with the relevant columns.
+    #     """
+    #     relevant_cols = list(
+    #         set(
+    #             self.data.feature_columns
+    #             + self.data.target_columns
+    #             + [
+    #                 self.data.sample_id,
+    #                 self.data.row_id,
+    #                 "group_features",
+    #                 "group_sample_and_features",
+    #             ]
+    #         )
+    #     )
+    #     if self.data.stratification_column:
+    #         relevant_cols.append(self.data.stratification_column)
+    #         # keep columns unique, if target columns eqals stratification column
+    #         relevant_cols = list(set(relevant_cols))
 
-        potential_columns = (
-            self.data.feature_columns
-            + self.data.target_columns
-            + [self.data.row_id]
-            + [self.data.sample_id]
-            + [self.data.stratification_column]
-        )
-        relevant_columns = [col for col in potential_columns if col is not None]
-        return self.data.data[relevant_columns]
+    #     potential_columns = (
+    #         self.data.feature_columns
+    #         + self.data.target_columns
+    #         + [self.data.row_id]
+    #         + [self.data.sample_id]
+    #         + [self.data.stratification_column]
+    #     )
+    #     relevant_columns = list(
+    #         set([col for col in potential_columns if col is not None])
+    #     )
+    #     return self.data.data[relevant_columns]
 
     def _impute_dataset(
         self, train_df: pd.DataFrame, test_df: pd.DataFrame, feature_columns: list

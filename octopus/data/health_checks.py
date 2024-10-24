@@ -1,7 +1,9 @@
 """Data Health Check."""
 
+from typing import Optional
+
 import pandas as pd
-from attrs import define, field, validators
+from attrs import Factory, define, field, validators
 
 from .checks import (
     check_columns_dtype,
@@ -46,12 +48,14 @@ class DataHealthChecker:
     """Row identifier."""
 
     sample_id: str = field(
-        default=None, validator=validators.optional(validators.instance_of(str))
+        default=Factory(lambda: None),
+        validator=validators.optional(validators.instance_of(str)),
     )
     """Row identifier."""
 
-    stratification_column: list = field(
-        default=None, validator=validators.optional(validators.instance_of(list))
+    stratification_column: Optional[str] = field(
+        default=Factory(lambda: None),
+        validator=validators.optional(validators.instance_of(str)),
     )
     """List of columns used for stratification."""
 
@@ -64,7 +68,9 @@ class DataHealthChecker:
             + [self.sample_id]
             + [self.stratification_column]
         )
-        relevant_columns = [col for col in potential_columns if col is not None]
+        relevant_columns = list(
+            set(col for col in potential_columns if col is not None)
+        )
         self._check_columns_exist(relevant_columns)
         self.data = self.data[relevant_columns]
 
@@ -93,7 +99,7 @@ class DataHealthChecker:
         if stratification_dtype:
             if self.stratification_column is not None:
                 res_stratification_dtype = check_columns_dtype(
-                    self.data, self.stratification_column, "iu"
+                    self.data, [self.stratification_column], "iu"
                 )
                 report.add_multiple(
                     "columns",
@@ -157,14 +163,25 @@ class DataHealthChecker:
 
         if feature_feature_correlation:
             if self.feature_columns is not None:
-                res_feat_cor = check_feature_feature_correlation(
-                    self.data, self.feature_columns
+                res_feat_cor_pearson = check_feature_feature_correlation(
+                    self.data, self.feature_columns, method="pearson"
                 )
                 report.add_multiple(
                     "columns",
                     {
-                        c: {"high feature correlation": v}
-                        for c, v in res_feat_cor.items()
+                        c: {"high feature correlation (pearson)": v}
+                        for c, v in res_feat_cor_pearson.items()
+                    },
+                )
+
+                res_feat_cor_spearman = check_feature_feature_correlation(
+                    self.data, self.feature_columns, method="spearman"
+                )
+                report.add_multiple(
+                    "columns",
+                    {
+                        c: {"high feature correlation (spearman)": v}
+                        for c, v in res_feat_cor_spearman.items()
                     },
                 )
 

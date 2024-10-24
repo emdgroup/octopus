@@ -43,6 +43,9 @@ data_df = (
     .pipe(pd.get_dummies, columns=["embarked", "sex"], drop_first=True, dtype=int)
 )
 
+print(data_df["survived"].dtype)
+
+
 ### Create OctoData Object
 
 # We define the data, target columns, feature columns, sample ID to identify groups,
@@ -64,7 +67,7 @@ octo_data = OctoData(
     ],
     sample_id="name",
     datasplit_type="group_sample_and_features",
-    stratification_column=["survived"],
+    stratification_column="survived",
 )
 
 ### Create Configuration

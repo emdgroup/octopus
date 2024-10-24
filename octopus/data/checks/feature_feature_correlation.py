@@ -6,11 +6,14 @@ import pandas as pd
 def check_feature_feature_correlation(
     df: pd.DataFrame,
     feature_columns: list,
+    method: str = "pearson",
     threshold=0.8,
 ):
     """Find columns in the DataFrame that are highly correlated."""
     # Filter only numeric columns
-    corr_matrix = df[feature_columns].select_dtypes(include=[float, int]).corr()
+    corr_matrix = (
+        df[feature_columns].select_dtypes(include=[float, int]).corr(method=method)
+    )
 
     # Dictionary to store the columns with high correlation
     highly_correlated = {col: {} for col in corr_matrix.columns}

@@ -190,7 +190,7 @@ octo_data = OctoData(
     row_id="id",
     sample_id="sample_id",
     datasplit_type="group_sample_and_features",
-    stratification_column=["stratification"],
+    stratification_column="target",
 )
 
 config_study = ConfigStudy(
@@ -198,7 +198,7 @@ config_study = ConfigStudy(
     ml_type="classification",
     target_metric="AUCROC",
     silently_overwrite_study=True,
-    ignore_data_health_warning=True,
+    ignore_data_health_warning=False,
 )
 
 config_manager = ConfigManager(outer_parallelization=True)

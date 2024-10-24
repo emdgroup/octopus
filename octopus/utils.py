@@ -34,6 +34,7 @@ class DataSplit:
     def __attrs_post_init__(self):
         # reset index
         self.dataset.reset_index(drop=True, inplace=True)
+        print(self.dataset)
 
     def get_datasplits(self):
         """Get datasplits."""

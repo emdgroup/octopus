@@ -70,37 +70,46 @@ class OctoData:
     )
     """Enable data quality check."""
 
-    # # not needed anymore
-    # @property
-    # def targets(self) -> List:
-    #     """Targets columns."""
-    #     return self.target_columns
+    @property
+    def relevant_columns(self) -> list:
+        """Relevant columns."""
+        # Combine all necessary columns
+        relevant_columns = set(
+            self.feature_columns + self.target_columns + [self.sample_id]
+        )
 
-    # # not needed anymore
-    # @property
-    # def features(self) -> List:
-    #     """List of features."""
-    #     return self.feature_columns
+        # Add optional columns if they exist
+        optional_columns = [
+            self.row_id,
+            self.stratification_column,
+            "group_features",
+            "group_sample_and_features",
+        ]
+        relevant_columns.update(filter(None, optional_columns))
+        relevant_columns = [col for col in relevant_columns if col in self.data.columns]
+
+        return list(set(relevant_columns))
 
     def __attrs_post_init__(self):
         logging.info("Automated data preparation:")
 
         # validate input
         self._check_columns_exist()
-        self._check_for_duplicate_columns()
+        self._check_for_duplicates()
+        self._check_stratification_column()
+        self._check_target_assignments()
+        self._check_number_of_targets()
 
-        # create new column for row_id
+        # prepare dataframe
+        self._sort_features()
+        self._set_target_assignments()
+        self._remove_singlevalue_features()
+        self._remove_singlevalue_features()
+        self._transform_bool_to_int()
         self._create_row_id()
-
-        # add group features
         self._add_group_features()
 
-        # sort features
-        self._sort_features()
-
-        # set target assignment
-        self._set_target_assignments()
-
+        # data health check
         self.report = DataHealthChecker(
             data=self.data,
             feature_columns=self.feature_columns,
@@ -110,42 +119,67 @@ class OctoData:
             stratification_column=self.stratification_column,
         ).generate_report(outlier_detection=False)
 
-        # remove features with only a single value
-        self._remove_singlevalue_features()
-
     def _check_columns_exist(self):
         """Validate that all columns exists in the dataframe."""
-        # Combine all necessary columns
-        columns = set(self.feature_columns + self.target_columns)
-
-        # Add optional columns if they exist
-        optional_columns = [self.row_id, self.stratification_column]
-        columns.update(filter(None, optional_columns))
-
         # Identify missing columns
-        missing_columns = columns - set(self.data.columns)
+        missing_columns = [
+            col for col in self.relevant_columns if col not in self.data.columns
+        ]
 
         # Raise error if any columns are missing
         if missing_columns:
             missing_str = ", ".join(missing_columns)
             raise ValueError(f"Columns not found in the DataFrame: {missing_str}")
 
-    def _check_for_duplicate_columns(self):
-        """Validate that there are no duplicate columns."""
-        # Combine all necessary columns
-        columns = self.feature_columns + self.target_columns
+    def _check_for_duplicates(self):
+        # Combine all columns to check for duplicates
+        columns_to_check = self.feature_columns + self.target_columns + [self.sample_id]
 
-        # Add optional column if it exists
         if self.row_id:
-            columns.append(self.row_id)
+            columns_to_check.append(self.row_id)
 
-        # Identify duplicates using set operations
-        duplicates = {col for col in columns if columns.count(col) > 1}
+        # Check for duplicates
+        duplicates = set(
+            [col for col in columns_to_check if columns_to_check.count(col) > 1]
+        )
 
-        # Raise error if any duplicates are found
         if duplicates:
-            duplicate_str = ", ".join(duplicates)
-            raise ValueError(f"Columns selected more than once: {duplicate_str}")
+            duplicates_str = ", ".join(duplicates)
+            raise ValueError(f"Duplicate columns found: {duplicates_str}")
+
+    def _check_stratification_column(self):
+        """Check if stratification_column is the same as row_id or sample_id."""
+        if self.stratification_column:
+            if self.stratification_column in [self.sample_id, self.row_id]:
+                raise ValueError(
+                    "Stratification column cannot be the same as sample_id or row_id"
+                )
+
+    def _check_target_assignments(self):
+        """Check if target_assignments values are unique and within target_columns."""
+        assignment_values = list(self.target_assignments.values())
+
+        # Check if all values are in target_columns
+        invalid_values = [
+            val for val in assignment_values if val not in self.target_columns
+        ]
+        if invalid_values:
+            invalid_str = ", ".join(invalid_values)
+            raise ValueError(f"Invalid target assignments found: {invalid_str}")
+
+        # Check for duplicates in assignment values
+        if len(assignment_values) != len(set(assignment_values)):
+            raise ValueError("Duplicate values found in target assignments")
+
+    def _check_number_of_targets(self):
+        """Check number of targets."""
+        if len(self.target_columns) > 2:
+            raise ValueError("More than two targets are not allowed")
+        if len(self.target_columns) == 2 and not self.target_assignments:
+            raise ValueError(
+                "Target assignments are required when two targets are selected."
+                "This is only for ml_type = 'timetoevent'."
+            )
 
     def _add_group_features(self):
         """Initialize the preparation of the DataFrame by adding group feature columns.
@@ -247,6 +281,12 @@ class OctoData:
             map(str, self.feature_columns), key=lambda x: (len(x), x)
         )
         logging.info("Sorted features.")
+
+    def _transform_bool_to_int(self):
+        # Convert all boolean columns to integer
+        bool_cols = self.data.select_dtypes(include="bool").columns
+        self.data[bool_cols] = self.data[bool_cols].astype(int)
+        logging.info("Transformed bool columns to int columns.")
 
     def save(self, path):
         """Save data to a human readable form, for long term storage."""

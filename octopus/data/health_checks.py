@@ -84,7 +84,7 @@ class DataHealthChecker:
         missing_values=True,
         str_mismatch=True,
         str_out_of_bounds=True,
-        feature_feature_correlation=True,
+        feature_feature_correlation=False,
         unique_column_names=True,
         unique_row_id_values=True,
         outlier_detection=True,

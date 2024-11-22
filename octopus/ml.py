@@ -283,43 +283,65 @@ class OctoML:
         self, train_df: pd.DataFrame, test_df: pd.DataFrame, feature_columns: list
     ) -> tuple[pd.DataFrame, pd.DataFrame, mf.ImputationKernel]:
         """Impute training and test datasets using mice-forest."""
-        # Check for missing values in the specified feature columns
-        train_has_missing = train_df[feature_columns].isna().any().any()
-        test_has_missing = test_df[feature_columns].isna().any().any()
+        # Identify variables with missing values in train and test datasets
+        vars_with_missing_in_train = train_df[feature_columns].isna().any()
+        vars_with_missing_in_test = test_df[feature_columns].isna().any()
 
-        print("Missing value in train:", train_has_missing)
-        print("Missing value in test:", test_has_missing)
+        # Get lists of columns with missing values
+        vars_with_missing_in_train = vars_with_missing_in_train[
+            vars_with_missing_in_train
+        ].index.tolist()
+        vars_with_missing_in_test = vars_with_missing_in_test[
+            vars_with_missing_in_test
+        ].index.tolist()
 
-        if not train_has_missing and not test_has_missing:
+        # Combine lists to get all columns with missing values in either dataset
+        vars_with_missing = list(
+            set(vars_with_missing_in_train + vars_with_missing_in_test)
+        )
+
+        if not vars_with_missing:
             # No missing values in both datasets; return them unchanged
             return train_df, test_df, None
         else:
-            # Set parameters for imputation
+            # Need to impute variables in vars_with_missing
             print("Imputing datasets...")
             num_iterations = 10  # Number of MICE iterations
 
-            # Fit the imputation model on the training data
+            # Prepare the dataset for imputation
+            train_data = train_df[feature_columns].copy()
+
+            # Create the variable schema, excluding the variable itself
+            # from its predictors
+            variable_schema = {
+                var: [col for col in feature_columns if col != var]
+                for var in vars_with_missing
+            }
+
+            # Initialize the imputation kernel
             kernel = mf.ImputationKernel(
-                train_df[feature_columns],
-                variable_schema=feature_columns,  # train on all columns
-                save_all_iterations_data=True,
-                random_state=42,  # For reproducibility
+                train_data,
+                random_state=42,
+                variable_schema=variable_schema,
             )
 
             # Run the MICE algorithm for the specified number of iterations
             kernel.mice(num_iterations)
 
-            # Transform the training data
+            # Extract the imputed training data
             imputed_train_features = kernel.complete_data(dataset=0)
 
             # Replace the original feature columns with the imputed values
             imputed_train_df = train_df.copy()
             imputed_train_df[feature_columns] = imputed_train_features[feature_columns]
 
-            if test_has_missing:
+            # Check if the test dataset has missing values in the feature columns
+            if vars_with_missing_in_test:
                 # Impute the test data using the model fitted on training data
+                test_data = test_df[feature_columns].copy()
+
                 imputed_test = kernel.impute_new_data(
-                    test_df[feature_columns],
+                    test_data,
                     datasets=[0],  # Use dataset index 0
                 )
                 imputed_test_features = imputed_test.complete_data(dataset=0)

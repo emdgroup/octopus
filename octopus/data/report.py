@@ -32,15 +32,46 @@ class DataHealthReport:
         for key, value in items.items():
             self.add(category, key, value)
 
-    def create_df(self):
-        """Create report as DataFrame."""
-        df_report = (
-            pd.DataFrame(self.columns)
-            .T.reset_index()
-            .rename(columns={"index": "Column"})
-            .sort_values("Column")
-        )
-        return df_report
+    def create_df(self) -> pd.DataFrame:
+        """Create report as a DataFrame with columns: type, id, parameter, value."""
+        # List to collect DataFrames
+        dfs = []
+
+        # Define the attributes to process and their corresponding types
+        attributes = {"columns": "column", "rows": "row", "outliers": "outlier"}
+
+        # Process each attribute in self
+        for attr_name, type_name in attributes.items():
+            data_dict = getattr(self, attr_name)
+            if data_dict:
+                records = []
+                for id_, param_dict in data_dict.items():
+                    # Ensure param_dict is a dictionary
+                    if not isinstance(param_dict, dict):
+                        param_data = {"value": param_dict}
+                    else:
+                        param_data = param_dict
+                    for param_name, value in param_data.items():
+                        records.append(
+                            {
+                                "type": type_name,
+                                "id": id_,
+                                "parameter": param_name,
+                                "value": value,
+                            }
+                        )
+                df = pd.DataFrame(records)
+                dfs.append(df)
+
+        # Combine all DataFrames
+        if dfs:
+            df_combined = pd.concat(dfs, ignore_index=True)
+        else:
+            # If all data_dicts are empty, return an empty DataFrame
+            # with the desired columns
+            df_combined = pd.DataFrame(columns=["type", "id", "parameter", "value"])
+
+        return df_combined
 
     def generate_recommendations(self):
         """Generate recommendation for better data quality."""

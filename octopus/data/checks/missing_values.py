@@ -21,11 +21,16 @@ def check_missing_values(df: pd.DataFrame) -> dict[str, float]:
     )
 
     # Check for missing values
-    missing_value_share = df.isnull().mean()
+    missing_value_share_col = df.isnull().mean(axis=0)
+    missing_value_share_row = df.isnull().mean(axis=1)
 
     # Create a dictionary for columns with missing values
-    missing_value_dict = {
-        col: share for col, share in missing_value_share.items() if share > 0
+    missing_value_dict_col = {
+        col: share for col, share in missing_value_share_col.items() if share > 0
+    }
+    # Create a dictionary for rows with missing values
+    missing_value_dict_row = {
+        idx: share for idx, share in missing_value_share_row.items() if share > 0
     }
 
-    return missing_value_dict
+    return missing_value_dict_col, missing_value_dict_row

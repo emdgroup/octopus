@@ -3,8 +3,10 @@
 import gzip
 import logging
 import pickle
+import re
 from typing import Optional
 
+import numpy as np
 import pandas as pd
 from attrs import Factory, define, field, validators
 
@@ -94,11 +96,13 @@ class OctoData:
         logging.info("Automated data preparation:")
 
         # validate input
+        self._check_column_names()
         self._check_columns_exist()
         self._check_for_duplicates()
         self._check_stratification_column()
         self._check_target_assignments()
         self._check_number_of_targets()
+        self._check_column_dtypes()
 
         # prepare dataframe
         self._sort_features()
@@ -106,6 +110,7 @@ class OctoData:
         self._remove_singlevalue_features()
         self._transform_bool_to_int()
         self._create_row_id()
+        self._categorical_encoding()
         self._add_group_features()
 
         # data health check
@@ -117,6 +122,103 @@ class OctoData:
             sample_id=self.sample_id,
             stratification_column=self.stratification_column,
         ).generate_report(outlier_detection=False)
+
+    def _check_column_names(self):
+        """Search for disallowed characters in column names."""
+        # Define the pattern for disallowed characters
+        # This requirement comes from miceforest/lightGBM.
+        disallowed_chars_pattern = re.compile(r'[",:$$ \ $${}]')
+        # Find columns with disallowed characters
+        problematic_columns = [
+            col for col in self.relevant_columns if disallowed_chars_pattern.search(col)
+        ]
+        # Raise an error if any problematic columns are found
+        if problematic_columns:
+            raise ValueError(
+                f"The following columns contain disallowed characters:"
+                f" {', '.join(problematic_columns)}.\n"
+                f'Disallowed characters are: ", : , [ , ] , {{ , }}.'
+            )
+
+    def _categorical_encoding(self):
+        """Process categorical columns."""
+        # Identify categorical columns in self.relevant_columns
+        categorical_columns = [
+            col
+            for col in self.relevant_columns
+            if self.data[col].dtype.name == "category"
+        ]
+        # Split into ordinal and non-ordinal (nominal) categorical columns
+        ordinal_columns = [
+            col for col in categorical_columns if self.data[col].cat.ordered
+        ]
+        nominal_columns = [
+            col for col in categorical_columns if not self.data[col].cat.ordered
+        ]
+        # Process non-ordinal categorical columns
+        if nominal_columns:
+            # (1) Count unique values and check for columns with more than 15 categories
+            columns_with_many_categories = [
+                col for col in nominal_columns if self.data[col].nunique() > 15
+            ]
+            if columns_with_many_categories:
+                raise ValueError(
+                    f"The following nominal categorical columns have more"
+                    f" than 15 unique categories: "
+                    f"{', '.join(columns_with_many_categories)}"
+                )
+
+            # (2) Perform dummy encoding
+            dummies = pd.get_dummies(
+                self.data[nominal_columns],
+                prefix=nominal_columns,
+                drop_first=True,  # remove first to avoid redundant information
+            )
+
+            # Drop original nominal columns from relevant_columns
+            # we keep the nominal columns in the data
+            self.relevant_columns = [
+                col for col in self.relevant_columns if col not in nominal_columns
+            ]
+
+            # Add dummy columns to data
+            self.data = pd.concat([self.data, dummies], axis=1)
+
+            # Update relevant_columns with new dummy column names
+            self.relevant_columns.extend(dummies.columns.tolist())
+
+        # Process ordinal categorical columns
+        if ordinal_columns:
+            # Collect columns where categories are not integers
+            problematic_columns = []
+            for col in ordinal_columns:
+                # Get the categories and check if they are all integers
+                categories = self.data[col].cat.categories
+                if not all(isinstance(cat, (int, np.integer)) for cat in categories):
+                    problematic_columns.append(col)
+
+            # Raise ValueError if there are problematic columns
+            if problematic_columns:
+                raise ValueError(
+                    f"The following ordinal categorical columns have"
+                    f" non-integer categories: "
+                    f"{', '.join(problematic_columns)}"
+                )
+
+    def _check_column_dtypes(self):
+        """Validate that all relevant columns have correct dtypes."""
+        acceptable_dtypes = ["int64", "float64", "bool", "category"]
+        non_matching_columns = []
+
+        # Check each relevant column's dtype
+        for column in self.relevant_columns:
+            if self.data[column].dtype not in acceptable_dtypes:
+                non_matching_columns.append(column)
+
+        # Raise error if any columns are missing
+        if non_matching_columns:
+            non_matching_str = ", ".join(non_matching_columns)
+            raise ValueError(f"Columns with wrong dtypes: {non_matching_str}")
 
     def _check_columns_exist(self):
         """Validate that all columns exists in the dataframe."""
@@ -215,7 +317,8 @@ class OctoData:
                     ).index.min(),
                     axis=1,
                 )
-            ).reset_index(drop=True)
+            )
+            .reset_index(drop=True)
         )
         logging.info("Added `group_feaures` and `group_sample_features`")
 
@@ -266,8 +369,8 @@ class OctoData:
 
         if num_original_features > num_new_features:
             logging.info(
-                "Features removed due to single unique values: %s"
-                % (num_original_features - num_new_features)
+                "Features removed due to single unique values: %s",
+                {num_original_features - num_new_features},
             )
 
     def _sort_features(self):

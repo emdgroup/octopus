@@ -136,9 +136,14 @@ class DataHealthChecker:
             )
 
         if missing_values:
-            res_miss = check_missing_values(self.data)
+            res_miss_col, res_miss_row = check_missing_values(self.data)
             report.add_multiple(
-                "columns", {c: {"missing values share": v} for c, v in res_miss.items()}
+                "columns",
+                {c: {"missing values share": v} for c, v in res_miss_col.items()},
+            )
+            report.add_multiple(
+                "rows",
+                {c: {"missing values share": v} for c, v in res_miss_row.items()},
             )
 
         if infinity_values:
@@ -252,5 +257,6 @@ class DataHealthChecker:
 
         if missing_columns:
             raise ValueError(
-                f"The following columns are missing in the DataFrame: {', '.join(missing_columns)}"  # noqa: E501
+                f"The following columns are missing in the DataFrame:"
+                f" {', '.join(missing_columns)}"  # noqa: E501
             )

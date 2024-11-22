@@ -10,7 +10,7 @@ from pathlib import Path
 import optuna
 from attrs import Factory, define, field, validators
 from joblib import Parallel, delayed
-from optuna.samplers._tpe.sampler import ExperimentalWarning
+from optuna._experimental import ExperimentalWarning
 
 from octopus.experiment import OctoExperiment
 from octopus.modules.mrmr.core import maxrminr, relevance_fstats

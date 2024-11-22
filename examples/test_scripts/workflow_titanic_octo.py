@@ -61,7 +61,7 @@ octo_data = OctoData(
     ],
     sample_id="name",
     datasplit_type="group_sample_and_features",
-    stratification_column=["survived"],
+    stratification_column="survived",
 )
 
 ### Create Configuration

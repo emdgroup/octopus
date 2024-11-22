@@ -47,9 +47,6 @@ class OctoML:
     manager: OctoManager = field(init=False, default=None)
 
     def __attrs_post_init__(self):
-        # check data for critical issues
-        self._check_for_data_issues()
-
         # initialization here due to "Python immutable default"
         self.experiments = []
         self.configs = OctoConfig(
@@ -76,6 +73,12 @@ class OctoML:
         # Save data and config files
         self._save_files(path_study)
 
+        # save data report
+        self._save_data_report(path_study)
+
+        # check data for critical issues
+        self._check_for_data_issues()
+
         # get clean dataset only with relevant columns for ML
         # data_clean_df = self._get_dataset_with_relevant_columns()
         data_clean_df = self.data.data[self.data.relevant_columns]
@@ -98,6 +101,13 @@ class OctoML:
 
         # create experiments from the datasplit
         self._create_experiments(path_study, data_splits, datasplit_col)
+
+    def _save_data_report(self, path_study: Path) -> None:
+        """Save data report."""
+        report = self.data.report
+        print("Report")
+        report_df = report.create_df()
+        report_df.to_csv(path_study.joinpath("data", "data_health_report.csv"))
 
     def _check_for_data_issues(self):
         targets = self.data.target_columns
@@ -268,97 +278,6 @@ class OctoML:
         # Uncomment if JSON is needed
         # self.config.to_json(config_path / "config.json")
         self.configs.to_pickle(config_path / "config.pkl")
-
-    # def _get_dataset_with_relevant_columns(self) -> pd.DataFrame:
-    #     """Get the dataset only with relevant columns for the ML.
-
-    #     Returns:
-    #     DataFrame: DataFrame with the relevant columns.
-    #     """
-    #     relevant_cols = list(
-    #         set(
-    #             self.data.feature_columns
-    #             + self.data.target_columns
-    #             + [
-    #                 self.data.sample_id,
-    #                 self.data.row_id,
-    #                 "group_features",
-    #                 "group_sample_and_features",
-    #             ]
-    #         )
-    #     )
-    #     if self.data.stratification_column:
-    #         relevant_cols.append(self.data.stratification_column)
-    #         # keep columns unique, if target columns eqals stratification column
-    #         relevant_cols = list(set(relevant_cols))
-
-    #     potential_columns = (
-    #         self.data.feature_columns
-    #         + self.data.target_columns
-    #         + [self.data.row_id]
-    #         + [self.data.sample_id]
-    #         + [self.data.stratification_column]
-    #     )
-    #     relevant_columns = list(
-    #         set([col for col in potential_columns if col is not None])
-    #     )
-    #     return self.data.data[relevant_columns]
-
-    def _impute_dataset(
-        self, train_df: pd.DataFrame, test_df: pd.DataFrame, feature_columns: list
-    ) -> tuple[pd.DataFrame, pd.DataFrame, mf.ImputationKernel]:
-        """Impute training and test datasets using mice-forest."""
-        # Check for missing values in the specified feature columns
-        train_has_missing = train_df[feature_columns].isna().any().any()
-        test_has_missing = test_df[feature_columns].isna().any().any()
-
-        print("Missing value in train:", train_has_missing)
-        print("Missing value in test:", test_has_missing)
-
-        if not train_has_missing and not test_has_missing:
-            # No missing values in both datasets; return them unchanged
-            return train_df, test_df, None
-        else:
-            # Set parameters for imputation
-            print("Imputing datasets...")
-            num_iterations = 10  # Number of MICE iterations
-
-            # Fit the imputation model on the training data
-            kernel = mf.ImputationKernel(
-                train_df[feature_columns],
-                variable_schema=feature_columns,  # train on all columns
-                save_all_iterations_data=True,
-                random_state=42,  # For reproducibility
-            )
-
-            # Run the MICE algorithm for the specified number of iterations
-            kernel.mice(num_iterations)
-
-            # Transform the training data
-            imputed_train_features = kernel.complete_data(dataset=0)
-
-            # Replace the original feature columns with the imputed values
-            imputed_train_df = train_df.copy()
-            imputed_train_df[feature_columns] = imputed_train_features[feature_columns]
-
-            if test_has_missing:
-                # Impute the test data using the model fitted on training data
-                imputed_test = kernel.impute_new_data(
-                    test_df[feature_columns],
-                    datasets=[0],  # Use dataset index 0
-                )
-                imputed_test_features = imputed_test.complete_data(dataset=0)
-
-                # Replace the original feature columns with the imputed values
-                imputed_test_df = test_df.copy()
-                imputed_test_df[feature_columns] = imputed_test_features[
-                    feature_columns
-                ]
-            else:
-                # No missing values in test dataset; use it as is
-                imputed_test_df = test_df.copy()
-
-            return imputed_train_df, imputed_test_df, kernel
 
     def _impute_dataset(
         self, train_df: pd.DataFrame, test_df: pd.DataFrame, feature_columns: list

@@ -181,17 +181,20 @@ class Bag:
         for training in self.trainings:
             # averaging
             if self.target_metric in ["AUCROC", "LOGLOSS"]:
-                for part in storage.keys():
+                for part, values in storage.items():
                     target_col = list(self.target_assignments.values())[0]
-                    probabilities = training.predictions[part][1]  # binary only!!
+
+                    probabilities = training.predictions[part][
+                        1
+                    ]  # Assumes binary classification
                     target = training.predictions[part][target_col]
-                    storage[part].append(
-                        metrics_inventory[self.target_metric]["method"](
-                            target, probabilities
-                        )
-                    )
+
+                    metric_method = metrics_inventory[self.target_metric]["method"]
+                    metric_result = metric_method(target, probabilities)
+                    values.append(metric_result)
+
             elif self.target_metric in ["CI"]:
-                for part in storage.keys():
+                for part, storage_value in storage.items():
                     estimate = training.predictions[part]["prediction"]
                     event_time = training.predictions[part][
                         self.target_assignments["duration"]
@@ -202,20 +205,22 @@ class Bag:
                     ci, _, _, _, _ = metrics_inventory[self.target_metric]["method"](
                         event_indicator, event_time, estimate
                     )
-                    storage[part].append(float(ci))
+                    storage_value.append(float(ci))
+
             else:
-                for part in storage.keys():
+                for part, storage_value in storage.items():
                     target_col = list(self.target_assignments.values())[0]
                     predictions = training.predictions[part]["prediction"]
                     target = training.predictions[part][target_col]
-                    storage[part].append(
+                    storage_value.append(
                         metrics_inventory[self.target_metric]["method"](
                             target, predictions
                         )
                     )
+
             # pooling
-            for part in pool.keys():
-                pool[part].append(training.predictions[part])
+            for part, pool_value in pool.items():
+                pool_value.append(training.predictions[part])
 
         # calculate averaging scores
         scores["train_avg"] = mean(storage["train"])
@@ -225,9 +230,10 @@ class Bag:
         scores["test_avg"] = mean(storage["test"])
         scores["test_lst"] = storage["test"]
         # stack pooled data and groupby
-        for part in pool.keys():
-            pool[part] = pd.concat(pool[part], axis=0)
-            pool[part] = pool[part].groupby(by=self.row_column).mean()
+        for part, pool_value in pool.items():
+            concatenated = pd.concat(pool_value, axis=0)
+            pool[part] = concatenated.groupby(by=self.row_column).mean()
+
         # calculate pooling scores (soft and hard)
         add_pooling_scores(pool, scores, self.target_metric, self.target_assignments)
 

@@ -6,7 +6,6 @@ import pandas as pd
 from attrs import Factory, define, field, validators
 
 from .checks import (
-    check_columns_dtype,
     check_duplicated_features,
     check_duplicated_rows,
     check_feature_feature_correlation,
@@ -15,7 +14,6 @@ from .checks import (
     check_int_col_with_few_uniques,
     check_missing_values,
     check_mixed_data_types,
-    check_outlier_detection,
     check_single_value,
     check_string_mismatch,
     check_string_out_of_bounds,
@@ -77,8 +75,7 @@ class DataHealthChecker:
     def generate_report(
         self,
         stratification_dtype=True,
-        feature_target_dtype=True,
-        idendical_features=True,
+        identical_features=True,
         mixed_data_types=True,
         single_value=True,
         missing_values=True,
@@ -87,7 +84,6 @@ class DataHealthChecker:
         feature_feature_correlation=False,
         unique_column_names=True,
         unique_row_id_values=True,
-        outlier_detection=True,
         duplicated_features=True,
         duplicated_rows=True,
         infinity_values=True,
@@ -96,32 +92,13 @@ class DataHealthChecker:
         """Generate data health report."""
         report = DataHealthReport()
 
-        if stratification_dtype:
-            if self.stratification_column is not None:
-                res_stratification_dtype = check_columns_dtype(
-                    self.data, [self.stratification_column], "iu"
-                )
-                report.add_multiple(
-                    "columns",
-                    {c: {"iu dtype": v} for c, v in res_stratification_dtype.items()},
-                )
-
-        if feature_target_dtype:
-            res_feat_target_dtype = check_columns_dtype(
-                self.data, self.feature_columns + self.target_columns, "iuf"
-            )
-            report.add_multiple(
-                "columns",
-                {c: {"iuf dtype": v} for c, v in res_feat_target_dtype.items()},
-            )
-
         if single_value:
             res_single = check_single_value(self.data)
             report.add_multiple(
                 "columns", {c: {"single_values": v} for c, v in res_single.items()}
             )
 
-        if idendical_features:
+        if identical_features:
             if self.feature_columns is not None:
                 res_ident = check_identical_features(self.data, self.feature_columns)
                 report.add_multiple(
@@ -201,7 +178,7 @@ class DataHealthChecker:
                 )
                 report.add_multiple(
                     "columns",
-                    {c: {"unique colume name": v} for c, v in res_unique_col.items()},
+                    {c: {"unique column name": v} for c, v in res_unique_col.items()},
                 )
 
         if unique_row_id_values:
@@ -229,11 +206,6 @@ class DataHealthChecker:
             res_dup_rows = check_duplicated_rows(self.data)
             if res_dup_rows is not None:
                 report.add("rows", "duplicated_rows", res_dup_rows)
-
-        if outlier_detection:
-            res_outliers = check_outlier_detection(self.data)
-            if not res_outliers.empty:
-                report.add("outliers", "scores", res_outliers.to_dict("records"))
 
         if few_int_values:
             res_few_unique_int_values = check_int_col_with_few_uniques(

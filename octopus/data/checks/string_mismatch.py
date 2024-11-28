@@ -1,42 +1,59 @@
 """Check string mismatch."""
 
+import re
+from difflib import SequenceMatcher
+
 import pandas as pd
-from fuzzywuzzy import fuzz
 
 
-def check_string_mismatch(df: pd.DataFrame, threshold: int = 95) -> dict:
-    """Find similar strings within each column of a DataFrame."""
+def check_string_mismatch(df: pd.DataFrame) -> dict:
+    """Find unique groups of similar strings, ignoring numeric suffixes."""
     string_mismatch = {}
+
+    def remove_numbers(entry):
+        """Remove numbers from the end of a string."""
+        return re.sub(r"\d+$", "", entry)
+
+    def determine_threshold(length):
+        """Determine the similarity threshold based on the length of the string."""
+        if length <= 7:
+            return 0.8  # Lower threshold for shorter strings
+        elif 7 <= length <= 12:
+            return 0.85  # Medium threshold for medium-length strings
+        else:
+            return 0.9  # Higher threshold for longer strings
 
     for column in df.columns:
         if df[column].dtype == object or df[column].dtype.name == "category":
             try:
-                column_values = df[column].dropna().tolist()
+                # Remove numbers from the end of each entry
+                column_values = df[column].dropna().apply(remove_numbers).tolist()
 
                 # Check if the column has more than one unique value
                 if len(set(column_values)) > 2:
-                    # Initialize a list to keep track of processed strings
+                    # Initialize a set to keep track of processed strings
                     processed = set()
                     similar_groups = []
 
                     for value in column_values:
                         if value not in processed:
+                            threshold = determine_threshold(len(value))
                             # Find all similar strings to the current value,
                             # excluding identical strings
-                            similar = [
+                            similar = set(
                                 other
                                 for other in column_values
                                 if value != other
-                                and fuzz.ratio(value, other) >= threshold
-                            ]
+                                and SequenceMatcher(None, value, other).ratio()
+                                >= threshold
+                            )
                             if similar:
-                                similar.append(value)
-                                similar_groups.append(similar)
+                                similar.add(value)
+                                similar_groups.append(list(similar))
                                 processed.update(similar)
-                                processed.add(value)
                     if similar_groups:
                         string_mismatch[column] = similar_groups
-            except:  # noqa: E722
-                pass
+            except Exception as e:  # Catch and log exception if needed
+                print(f"An error occurred while processing column {column}: {e}")
 
     return string_mismatch

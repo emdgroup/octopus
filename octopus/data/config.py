@@ -110,7 +110,7 @@ class OctoData:
         self._remove_singlevalue_features()
         self._transform_bool_to_int()
         self._create_row_id()
-        self._categorical_encoding()
+
         self._add_group_features()
 
         # data health check
@@ -121,7 +121,11 @@ class OctoData:
             row_id=self.row_id,
             sample_id=self.sample_id,
             stratification_column=self.stratification_column,
-        ).generate_report(outlier_detection=False)
+        ).generate_report()
+        print(self.report)
+
+        # encode categorical columns
+        self._categorical_encoding()
 
     def _check_column_names(self):
         """Search for disallowed characters in column names."""
@@ -177,7 +181,7 @@ class OctoData:
 
             # Drop original nominal columns from relevant_columns
             # we keep the nominal columns in the data
-            self.relevant_columns = [
+            self.feature_columns = [
                 col for col in self.relevant_columns if col not in nominal_columns
             ]
 
@@ -185,7 +189,7 @@ class OctoData:
             self.data = pd.concat([self.data, dummies], axis=1)
 
             # Update relevant_columns with new dummy column names
-            self.relevant_columns.extend(dummies.columns.tolist())
+            self.feature_columns.extend(dummies.columns.tolist())
 
         # Process ordinal categorical columns
         if ordinal_columns:
@@ -211,7 +215,7 @@ class OctoData:
         non_matching_columns = []
 
         # Check each relevant column's dtype
-        for column in self.relevant_columns:
+        for column in self.feature_columns + self.target_columns:
             if self.data[column].dtype not in acceptable_dtypes:
                 non_matching_columns.append(column)
 

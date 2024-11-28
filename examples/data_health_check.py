@@ -1,5 +1,6 @@
 """Data health check example."""
 
+import random
 from decimal import Decimal
 
 import numpy as np
@@ -135,6 +136,26 @@ class DataFrameGenerator:
         # Assign to the DataFrame, trimming to the correct length
         self.df[column_name] = repeated_values[: len(self.df)]
 
+    def add_string_mismatch_column(
+        self, column_name="mismatch_col", base_string="sample", error_rate=0.1
+    ):
+        """Add a column with strings that contain random typos or mismatches, and convert it to categorical."""
+
+        def introduce_typo(s):
+            if random.random() < error_rate:
+                # Introduce a typo by swapping two adjacent characters
+                idx = random.randint(0, len(s) - 2)
+                return s[:idx] + s[idx + 1] + s[idx] + s[idx + 2 :]
+            return s
+
+        # Generate the column with potential typos
+        self.df[column_name] = [
+            introduce_typo(base_string) for _ in range(len(self.df))
+        ]
+
+        # Convert the column to categorical type
+        self.df[column_name] = self.df[column_name].astype("category")
+
     def get_dataframe(self):
         """Return the generated DataFrame.
 
@@ -177,6 +198,7 @@ generator_warnings.add_id_column(
     unique=True,
     include_nans=False,
 )
+generator_warnings.add_string_mismatch_column()
 df_warnings = generator_warnings.get_dataframe()
 
 octo_data = OctoData(

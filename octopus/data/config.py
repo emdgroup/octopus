@@ -122,7 +122,6 @@ class OctoData:
             sample_id=self.sample_id,
             stratification_column=self.stratification_column,
         ).generate_report()
-        print(self.report)
 
         # encode categorical columns
         self._categorical_encoding()
@@ -321,8 +320,7 @@ class OctoData:
                     ).index.min(),
                     axis=1,
                 )
-            )
-            .reset_index(drop=True)
+            ).reset_index(drop=True)
         )
         logging.info("Added `group_feaures` and `group_sample_features`")
 

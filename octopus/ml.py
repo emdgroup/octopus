@@ -125,7 +125,7 @@ class OctoML:
         }
         error_messages = []
         warning_messages = []
-        print(self.data.report)
+
         # Check for NaNs
         for col in report_cols:
             missing_share = report_cols[col].get("missing values share", None)
@@ -150,15 +150,6 @@ class OctoML:
                         "Columns with high missing share detected in feature columns."
                     )
                     break
-
-        # Check for object type columns
-        if any(
-            val.get("iuf dtype", None) is not None
-            for val in report_cols_feat_tar.values()
-        ):
-            error_messages.append(
-                "Feature and target columns must be of type integer, uint, or float."
-            )
 
         # Check for object type columns
         if any(val.get("iu dtype", None) for val in report_col_stratification.values()):
@@ -211,23 +202,25 @@ class OctoML:
 
         # raise Exception
         if error_messages:
-            print(self.data.report)
             raise Exception(
-                """
-                Critical data issues detected.
-                Check the log and data health report for details.
+                f"""
+                Critical data issues have been detected.
+                Please check the details in the following file: 
+                {Path(self.configs.study.path, self.configs.study.name)}/data/data_health_report.csv
                 """
             )
 
         if warning_messages:
-            print(self.data.report)
             if not self.config_study.ignore_data_health_warning:
                 raise Exception(
-                    """"
-                Data issues detected.
-                Check the log and data health report for details.
-                To proceed, set `ignore_data_health_warning` to True in `ConfigStudy`.
-                """
+                    f"""
+                Data issues have been detected.
+                Please check the details in the following file: 
+                {Path(self.configs.study.path, self.configs.study.name)}/data/data_health_report.csv
+
+                To proceed despite these warnings, set `ignore_data_health_warning` 
+                to True in `ConfigStudy`.
+            """
                 )
 
     def _handle_existing_study_path(self, path_study: Path) -> None:

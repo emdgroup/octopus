@@ -92,6 +92,13 @@ class ConfigStudy:
     )
     """The seed used for data splitting in outer cross-validation. Defaults to 0."""
 
+    imputation_method: str = field(
+        default="median",
+        validator=[
+            validators.in_(["median", "halfmin", "mice"]),
+        ],
+    )
+
     silently_overwrite_study: bool = field(
         default=Factory(lambda: False), validator=[validators.instance_of(bool)]
     )

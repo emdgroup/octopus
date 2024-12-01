@@ -5,13 +5,13 @@ import shutil
 import sys
 from pathlib import Path
 
-import miceforest as mf
 import pandas as pd
 from attrs import define, field, validators
 
 from octopus import OctoData
 from octopus.config import ConfigManager, ConfigSequence, ConfigStudy
 from octopus.config.core import OctoConfig
+from octopus.data.imputer import impute_mice, impute_simple
 from octopus.experiment import OctoExperiment
 from octopus.logger import configure_logging
 from octopus.manager import OctoManager
@@ -203,24 +203,22 @@ class OctoML:
         # raise Exception
         if error_messages:
             raise Exception(
-                f"""
-                Critical data issues have been detected.
-                Please check the details in the following file: 
-                {Path(self.configs.study.path, self.configs.study.name)}/data/data_health_report.csv
-                """
+                f"Critical data issues have been detected. "
+                f"Please check the details in the following file: "
+                f"{Path(self.configs.study.path, self.configs.study.name)}"
+                f"/data/data_health_report.csv"
             )
 
         if warning_messages:
             if not self.config_study.ignore_data_health_warning:
                 raise Exception(
-                    f"""
-                Data issues have been detected.
-                Please check the details in the following file: 
-                {Path(self.configs.study.path, self.configs.study.name)}/data/data_health_report.csv
-
-                To proceed despite these warnings, set `ignore_data_health_warning` 
-                to True in `ConfigStudy`.
-            """
+                    f"Data issues have been detected. "
+                    f"Please check the details in the following file: "
+                    f"{Path(self.configs.study.path, self.configs.study.name)}"
+                    f"/data/data_health_report.csv\n\n"
+                    f"To proceed despite these warnings"
+                    f", set `ignore_data_health_warning` "
+                    f"to True in `ConfigStudy`."
                 )
 
     def _handle_existing_study_path(self, path_study: Path) -> None:
@@ -274,81 +272,39 @@ class OctoML:
 
     def _impute_dataset(
         self, train_df: pd.DataFrame, test_df: pd.DataFrame, feature_columns: list
-    ) -> tuple[pd.DataFrame, pd.DataFrame, mf.ImputationKernel]:
-        """Impute training and test datasets using mice-forest."""
-        # Identify variables with missing values in train and test datasets
-        vars_with_missing_in_train = train_df[feature_columns].isna().any()
-        vars_with_missing_in_test = test_df[feature_columns].isna().any()
+    ) -> tuple[pd.DataFrame, pd.DataFrame]:
+        """Impute dataset if missing values are present.
 
-        # Get lists of columns with missing values
-        vars_with_missing_in_train = vars_with_missing_in_train[
-            vars_with_missing_in_train
-        ].index.tolist()
-        vars_with_missing_in_test = vars_with_missing_in_test[
-            vars_with_missing_in_test
-        ].index.tolist()
+        Parameters:
+            train_df (pd.DataFrame): The training dataset.
+            test_df (pd.DataFrame): The testing dataset.
+            feature_columns (list): List of feature column names to impute.
 
-        # Combine lists to get all columns with missing values in either dataset
-        vars_with_missing = list(
-            set(vars_with_missing_in_train + vars_with_missing_in_test)
-        )
+        Returns:
+            tuple: A tuple containing the imputed (or original) train and test datasets.
+        """
+        imputation_method = self.configs.study.imputation_method
 
-        if not vars_with_missing:
-            # No missing values in both datasets; return them unchanged
-            return train_df, test_df, None
+        # Check for missing values in the feature columns
+        missing_in_train = train_df[feature_columns].isna().any().any()
+        missing_in_test = test_df[feature_columns].isna().any().any()
+
+        if not missing_in_train and not missing_in_test:
+            # No missing values, return original datasets
+            return train_df, test_df
+
+        print("Imputing data .....")
+        # Perform imputation if missing values are present
+        if imputation_method == "mice":
+            imputed_train_df, imputed_test_df = impute_mice(
+                train_df, test_df, feature_columns
+            )
         else:
-            # Need to impute variables in vars_with_missing
-            print("Imputing datasets...")
-            num_iterations = 10  # Number of MICE iterations
-
-            # Prepare the dataset for imputation
-            train_data = train_df[feature_columns].copy()
-
-            # Create the variable schema, excluding the variable itself
-            # from its predictors
-            variable_schema = {
-                var: [col for col in feature_columns if col != var]
-                for var in vars_with_missing
-            }
-
-            # Initialize the imputation kernel
-            kernel = mf.ImputationKernel(
-                train_data,
-                random_state=42,
-                variable_schema=variable_schema,
+            imputed_train_df, imputed_test_df = impute_simple(
+                train_df, test_df, feature_columns, imputation_method
             )
 
-            # Run the MICE algorithm for the specified number of iterations
-            kernel.mice(num_iterations)
-
-            # Extract the imputed training data
-            imputed_train_features = kernel.complete_data(dataset=0)
-
-            # Replace the original feature columns with the imputed values
-            imputed_train_df = train_df.copy()
-            imputed_train_df[feature_columns] = imputed_train_features[feature_columns]
-
-            # Check if the test dataset has missing values in the feature columns
-            if vars_with_missing_in_test:
-                # Impute the test data using the model fitted on training data
-                test_data = test_df[feature_columns].copy()
-
-                imputed_test = kernel.impute_new_data(
-                    test_data,
-                    datasets=[0],  # Use dataset index 0
-                )
-                imputed_test_features = imputed_test.complete_data(dataset=0)
-
-                # Replace the original feature columns with the imputed values
-                imputed_test_df = test_df.copy()
-                imputed_test_df[feature_columns] = imputed_test_features[
-                    feature_columns
-                ]
-            else:
-                # No missing values in test dataset; use it as is
-                imputed_test_df = test_df.copy()
-
-            return imputed_train_df, imputed_test_df, kernel
+        return imputed_train_df, imputed_test_df
 
     def _create_experiments(
         self, path_study: Path, data_splits: dict, datasplit_col: str
@@ -365,7 +321,7 @@ class OctoML:
             path_study.joinpath(path_experiment).mkdir(parents=True, exist_ok=True)
             # impute datasets
             feature_columns = self.data.feature_columns
-            traindev_df, test_df, kernel = self._impute_dataset(
+            traindev_df, test_df = self._impute_dataset(
                 value["train"], value["test"], feature_columns
             )
 
@@ -383,7 +339,6 @@ class OctoML:
                     target_assignments=self.data.target_assignments,
                     data_traindev=traindev_df,
                     data_test=test_df,
-                    imputation_kernel=kernel,
                 )
             )
 

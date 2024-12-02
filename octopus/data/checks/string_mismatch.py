@@ -1,3 +1,5 @@
+"""Check string mismatch."""
+
 import re
 
 import pandas as pd

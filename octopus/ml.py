@@ -1,19 +1,23 @@
 """OctoML module."""
 
+import logging
 import shutil
 import sys
 from pathlib import Path
 
-import miceforest as mf
 import pandas as pd
 from attrs import define, field, validators
 
 from octopus import OctoData
 from octopus.config import ConfigManager, ConfigSequence, ConfigStudy
 from octopus.config.core import OctoConfig
+from octopus.data.imputer import impute_mice, impute_simple
 from octopus.experiment import OctoExperiment
+from octopus.logger import configure_logging
 from octopus.manager import OctoManager
 from octopus.utils import DataSplit
+
+configure_logging()
 
 
 @define
@@ -69,9 +73,15 @@ class OctoML:
         # Save data and config files
         self._save_files(path_study)
 
-        # get clean dataset only with relevant columns for ML
-        data_clean_df = self._get_dataset_with_relevant_columns()
+        # save data report
+        self._save_data_report(path_study)
 
+        # check data for critical issues
+        self._check_for_data_issues()
+
+        # get clean dataset only with relevant columns for ML
+        # data_clean_df = self._get_dataset_with_relevant_columns()
+        data_clean_df = self.data.data[self.data.relevant_columns]
         # get datasplit column
         datasplit_col = (
             self.data.sample_id
@@ -80,17 +90,135 @@ class OctoML:
         )
 
         # create datasplits for outer experiments
-        # why is the stratification col here a string and before a List
         data_splits = DataSplit(
             dataset=data_clean_df,
             datasplit_col=datasplit_col,
             seed=self.configs.study.datasplit_seed_outer,
             num_folds=self.configs.study.n_folds_outer,
-            stratification_col="".join(self.data.stratification_column),
+            stratification_col=self.data.stratification_column,
         ).get_datasplits()
 
         # create experiments from the datasplit
         self._create_experiments(path_study, data_splits, datasplit_col)
+
+    def _save_data_report(self, path_study: Path) -> None:
+        """Save data report."""
+        report = self.data.report
+        print("Report")
+        report_df = report.create_df()
+        report_df.to_csv(path_study.joinpath("data", "data_health_report.csv"))
+
+    def _check_for_data_issues(self):
+        targets = self.data.target_columns
+        features = self.data.feature_columns
+        stratification = self.data.stratification_column
+
+        report_cols = self.data.report.columns
+        report_cols_feat_tar = {
+            key: val
+            for key, val in report_cols.items()
+            if key in targets or key in features
+        }
+        report_col_stratification = {
+            key: val for key, val in report_cols.items() if key == stratification
+        }
+        error_messages = []
+        warning_messages = []
+
+        # Check for NaNs
+        for col in report_cols:
+            missing_share = report_cols[col].get("missing values share", None)
+            if col in targets:
+                if missing_share is not None and missing_share > 0:
+                    error_messages.append("NaN values detected in target columns.")
+            if col == self.data.stratification_column:
+                if missing_share is not None and missing_share > 0:
+                    error_messages.append(
+                        "NaN values detected in stratification column."
+                    )
+            if col == self.data.row_id:
+                if missing_share is not None and missing_share > 0:
+                    error_messages.append("NaN values detected in row_id.")
+            if col == self.data.sample_id:
+                if missing_share is not None and missing_share > 0:
+                    error_messages.append("NaN values detected in sample_id.")
+
+            if col in features:
+                if missing_share is not None and missing_share > 0.2:
+                    error_messages.append(
+                        "Columns with high missing share detected in feature columns."
+                    )
+                    break
+
+        # Check for object type columns
+        if any(val.get("iu dtype", None) for val in report_col_stratification.values()):
+            error_messages.append(
+                "Stratification columns must be of type integer or uint."
+            )
+
+        # Check for infinity values
+        if any(val.get("infinity values share", 0) > 0 for val in report_cols.values()):
+            error_messages.append("Inf values in dataset")
+
+        # Check unique row id
+        if (
+            self.data.row_id in report_cols
+            and report_cols[self.data.row_id].get("unique row id", None) is not None
+        ):
+            error_messages.append("Values in the Row ID must be unique.")
+
+        # Check few integer values
+        if any(
+            val.get("unique_int_values'", None) is not None
+            for val in report_cols_feat_tar.values()
+        ):
+            warning_messages.append(
+                """Some columns have few unique integer values.
+                Consider using dummy encoding."""
+            )
+
+        # feature-feature corrlation
+        if any(
+            any(
+                key in val
+                for key in [
+                    "high feature correlation (pearson)",
+                    "high feature correlation (spearman)",
+                ]
+            )
+            for val in report_cols_feat_tar.values()
+        ):
+            warning_messages.append("""Some features are highly correlated.""")
+
+        # Log all warning and errors
+        if warning_messages:
+            for message in warning_messages:
+                logging.warning(message)
+
+        if error_messages:
+            for message in error_messages:
+                logging.error(message)
+
+        # raise Exception
+        if error_messages:
+            raise Exception(
+                f"Critical data issues have been detected. "
+                f"Please check the details in the following file: "
+                f"{Path(self.configs.study.path, self.configs.study.name)}"
+                f"/data/data_health_report.csv"
+            )
+
+        if warning_messages:
+            if not self.config_study.ignore_data_health_warning:
+                raise Exception(
+                    f"Data issues have been detected. "
+                    f"Please check the details in the following file: "
+                    f"{Path(self.configs.study.path, self.configs.study.name)}"
+                    f"/data/data_health_report.csv\n\n"
+                    f"To proceed despite these warnings"
+                    f", set `ignore_data_health_warning` "
+                    f"to True in `ConfigStudy`."
+                )
 
     def _handle_existing_study_path(self, path_study: Path) -> None:
         """Handle the existing study path.
@@ -141,87 +269,49 @@ class OctoML:
         # self.config.to_json(config_path / "config.json")
         self.configs.to_pickle(config_path / "config.pkl")
 
-    def _get_dataset_with_relevant_columns(self) -> pd.DataFrame:
-        """Get the dataset only with relevant columns for the ML.
-
-        Returns:
-        DataFrame: DataFrame with the relevant columns.
-        """
-        relevant_cols = list(
-            set(
-                self.data.feature_columns
-                + self.data.target_columns
-                + [
-                    self.data.sample_id,
-                    self.data.row_id,
-                    "group_features",
-                    "group_sample_and_features",
-                ]
-            )
-        )
-        stratification_col = "".join(self.data.stratification_column)
-        if stratification_col != "":
-            relevant_cols.append(stratification_col)
-            # keep columns unique, if target columns eqals stratification column
-            relevant_cols = list(set(relevant_cols))
-
-        return self.data.data[relevant_cols]
-
     def _impute_dataset(
         self, train_df: pd.DataFrame, test_df: pd.DataFrame, feature_columns: list
-    ) -> tuple[pd.DataFrame, pd.DataFrame, mf.ImputationKernel]:
-        """Impute training and test datasets using mice-forest."""
-        # Check for missing values in the specified feature columns
-        train_has_missing = train_df[feature_columns].isna().any().any()
-        test_has_missing = test_df[feature_columns].isna().any().any()
+    ) -> tuple[pd.DataFrame, pd.DataFrame]:
+        """Impute dataset if missing values are present.
 
-        print("Missing value in train:", train_has_missing)
-        print("Missing value in test:", test_has_missing)
+        Parameters:
+            train_df: The training dataset.
+            test_df: The testing dataset.
+            feature_columns: List of feature column names to impute.
 
-        if not train_has_missing and not test_has_missing:
-            # No missing values in both datasets; return them unchanged
-            return train_df, test_df, None
+        Returns:
+            tuple: A tuple containing the imputed (or original) train and test datasets.
+        """
+        imputation_method = self.configs.study.imputation_method
+
+        # Check for missing values in the feature columns
+        missing_in_train = train_df[feature_columns].isna().any().any()
+        missing_in_test = test_df[feature_columns].isna().any().any()
+
+        if not missing_in_train and not missing_in_test:
+            # No missing values, return original datasets
+            return train_df, test_df
+
+        print("Imputing data .....")
+        # Perform imputation if missing values are present
+        if imputation_method == "mice":
+            imputed_train_df, imputed_test_df = impute_mice(
+                train_df, test_df, feature_columns
+            )
         else:
-            # Set parameters for imputation
-            print("Imputing datasets...")
-            num_iterations = 10  # Number of MICE iterations
-
-            # Fit the imputation model on the training data
-            kernel = mf.ImputationKernel(
-                train_df[feature_columns],
-                variable_schema=feature_columns,  # train on all columns
-                save_all_iterations_data=True,
-                random_state=42,  # For reproducibility
+            imputed_train_df, imputed_test_df = impute_simple(
+                train_df, test_df, feature_columns, imputation_method
             )
 
-            # Run the MICE algorithm for the specified number of iterations
-            kernel.mice(num_iterations)
+        # Assert that there are no NaNs in the imputed data
+        assert (
+            not imputed_train_df[feature_columns].isna().any().any()
+        ), "NaNs present in imputed train_df"
+        assert (
+            not imputed_test_df[feature_columns].isna().any().any()
+        ), "NaNs present in imputed test_df"
 
-            # Transform the training data
-            imputed_train_features = kernel.complete_data(dataset=0)
-
-            # Replace the original feature columns with the imputed values
-            imputed_train_df = train_df.copy()
-            imputed_train_df[feature_columns] = imputed_train_features[feature_columns]
-
-            if test_has_missing:
-                # Impute the test data using the model fitted on training data
-                imputed_test = kernel.impute_new_data(
-                    test_df[feature_columns],
-                    datasets=[0],  # Use dataset index 0
-                )
-                imputed_test_features = imputed_test.complete_data(dataset=0)
-
-                # Replace the original feature columns with the imputed values
-                imputed_test_df = test_df.copy()
-                imputed_test_df[feature_columns] = imputed_test_features[
-                    feature_columns
-                ]
-            else:
-                # No missing values in test dataset; use it as is
-                imputed_test_df = test_df.copy()
-
-            return imputed_train_df, imputed_test_df, kernel
+        return imputed_train_df, imputed_test_df
 
     def _create_experiments(
         self, path_study: Path, data_splits: dict, datasplit_col: str
@@ -238,7 +328,7 @@ class OctoML:
             path_study.joinpath(path_experiment).mkdir(parents=True, exist_ok=True)
             # impute datasets
             feature_columns = self.data.feature_columns
-            traindev_df, test_df, kernel = self._impute_dataset(
+            traindev_df, test_df = self._impute_dataset(
                 value["train"], value["test"], feature_columns
             )
 
@@ -251,12 +341,11 @@ class OctoML:
                     configs=self.configs,
                     datasplit_column=datasplit_col,
                     row_column=self.data.row_id,
-                    feature_columns=feature_columns,
-                    stratification_column="".join(self.data.stratification_column),
+                    feature_columns=self.data.feature_columns,
+                    stratification_column=self.data.stratification_column,
                     target_assignments=self.data.target_assignments,
                     data_traindev=traindev_df,
                     data_test=test_df,
-                    imputation_kernel=kernel,
                 )
             )
 

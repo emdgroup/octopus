@@ -61,7 +61,7 @@ octo_data = OctoData(
     ],
     sample_id="name",
     datasplit_type="group_sample_and_features",
-    stratification_column=["survived"],
+    stratification_column="survived",
 )
 
 ### Create Configuration
@@ -79,7 +79,7 @@ octo_data = OctoData(
 config_study = ConfigStudy(
     name="Titanic",
     ml_type="classification",
-    target_metric="AUCROC",
+    target_metric="ACCBAL",
     metrics=["AUCROC", "ACCBAL", "ACC", "LOGLOSS"],
     datasplit_seed_outer=1234,
     n_folds_outer=5,
@@ -104,8 +104,8 @@ config_sequence = ConfigSequence(
             # model selection
             models=[
                 # "TabPFNClassifier",
-                "ExtraTreesClassifier",
-                # "RandomForestClassifier",
+                # "ExtraTreesClassifier",
+                "RandomForestClassifier",
                 # "CatBoostClassifier",
                 # "XGBClassifier",
                 # "LogisticRegressionClassifier",

@@ -92,6 +92,13 @@ class ConfigStudy:
     )
     """The seed used for data splitting in outer cross-validation. Defaults to 0."""
 
+    imputation_method: str = field(
+        default="median",
+        validator=[
+            validators.in_(["median", "halfmin", "mice"]),
+        ],
+    )
+
     silently_overwrite_study: bool = field(
         default=Factory(lambda: False), validator=[validators.instance_of(bool)]
     )
@@ -104,3 +111,8 @@ class ConfigStudy:
     )
     """A list of metrics to be calculated.
     Defaults to target_metric value."""
+
+    ignore_data_health_warning: bool = field(
+        default=Factory(lambda: False), validator=[validators.instance_of(bool)]
+    )
+    """Ignore data health checks warning and run machine learning workflow."""

@@ -1,10 +1,11 @@
 """Utils."""
 
 import random
+from typing import Optional
 
 import numpy as np
 import pandas as pd
-from attrs import define, field, validators
+from attrs import Factory, define, field, validators
 from sklearn.model_selection import KFold, StratifiedKFold
 
 
@@ -25,11 +26,15 @@ class DataSplit:
     seed: int = field(validator=[validators.instance_of(int)])
     num_folds: int = field(validator=[validators.instance_of(int)])
     dataset: pd.DataFrame = field(validator=[validators.instance_of(pd.DataFrame)])
-    stratification_col: str = field(default="", validator=[validators.instance_of(str)])
+    stratification_col: Optional[str] = field(
+        default=Factory(lambda: None),
+        validator=validators.optional(validators.instance_of(str)),
+    )
 
     def __attrs_post_init__(self):
         # reset index
         self.dataset.reset_index(drop=True, inplace=True)
+        # print(self.dataset)
 
     def get_datasplits(self):
         """Get datasplits."""

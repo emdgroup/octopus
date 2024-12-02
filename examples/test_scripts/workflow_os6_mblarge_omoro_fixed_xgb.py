@@ -80,9 +80,7 @@ for key, feature_file in feat_inventory.items():
 
     target_column = [f"OS_DURATION_{int(timepoint)}MONTHS"]
     sample_column = "SUBJECT_ID"
-    stratification_column = [
-        f"STRAT_OS{int(timepoint)}_TRT_NUM"
-    ]  # "OS_DURATION_6MONTHS"
+    stratification_column = f"STRAT_OS{int(timepoint)}_TRT_NUM"  # "OS_DURATION_6MONTHS"
 
     # pre-process data
     print("Number of samples with target values:", len(data[target_column]))
@@ -123,6 +121,7 @@ for key, feature_file in feat_inventory.items():
         start_with_empty_study=True,
         path="./studies/",
         silently_overwrite_study=True,
+        ignore_data_health_warning=True,
     )
 
     config_manager = ConfigManager(

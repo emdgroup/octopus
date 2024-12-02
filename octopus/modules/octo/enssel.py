@@ -131,12 +131,13 @@ class EnSel:
             predictions.pop("ensemble", 0)
             # concatenate and averag dev and test predictions from inner models
             for pred in predictions.values():
-                for part in pool.keys():
-                    pool[part].append(pred[part])
+                for part, pool_value in pool.items():
+                    pool_value.append(pred[part])
+
         # average all predictions (inner models, bags)
-        for part in pool.keys():
+        for part, pool_value in pool.items():
             pool[part] = (
-                pd.concat(pool[part], axis=0).groupby(by=self.row_column).mean()
+                pd.concat(pool_value, axis=0).groupby(by=self.row_column).mean()
             )
 
         # calculate pooling scores (soft and hard)

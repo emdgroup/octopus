@@ -1,18 +1,19 @@
 """Data Health Check."""
 
+from typing import Optional
+
 import pandas as pd
-from attrs import define, field, validators
+from attrs import Factory, define, field, validators
 
 from .checks import (
-    check_column_dtypes,
     check_duplicated_features,
     check_duplicated_rows,
     check_feature_feature_correlation,
     check_identical_features,
     check_infinity_values,
+    check_int_col_with_few_uniques,
     check_missing_values,
     check_mixed_data_types,
-    check_outlier_detection,
     check_single_value,
     check_string_mismatch,
     check_string_out_of_bounds,
@@ -45,24 +46,36 @@ class DataHealthChecker:
     """Row identifier."""
 
     sample_id: str = field(
-        default=None, validator=validators.optional(validators.instance_of(str))
+        default=Factory(lambda: None),
+        validator=validators.optional(validators.instance_of(str)),
     )
     """Row identifier."""
 
+    stratification_column: Optional[str] = field(
+        default=Factory(lambda: None),
+        validator=validators.optional(validators.instance_of(str)),
+    )
+    """List of columns used for stratification."""
+
     def __attrs_post_init__(self):
-        if self.feature_columns is not None or self.target_columns is not None:
-            self._check_columns_exist()
-            self.data = self.data[
-                self.feature_columns
-                + self.target_columns
-                + [self.row_id]
-                + [self.sample_id]
-            ]
+        # Create a list of all potential columns
+        potential_columns = (
+            self.feature_columns
+            + self.target_columns
+            + [self.row_id]
+            + [self.sample_id]
+            + [self.stratification_column]
+        )
+        relevant_columns = list(
+            set(col for col in potential_columns if col is not None)
+        )
+        self._check_columns_exist(relevant_columns)
+        self.data = self.data[relevant_columns]
 
     def generate_report(
         self,
-        column_dtypes=True,
-        idendical_features=True,
+        stratification_dtype=True,
+        identical_features=True,
         mixed_data_types=True,
         single_value=True,
         missing_values=True,
@@ -71,21 +84,13 @@ class DataHealthChecker:
         feature_feature_correlation=True,
         unique_column_names=True,
         unique_row_id_values=True,
-        outlier_detection=True,
         duplicated_features=True,
         duplicated_rows=True,
         infinity_values=True,
+        few_int_values=True,
     ):
         """Generate data health report."""
         report = DataHealthReport()
-
-        # Adding multiple column info
-        if column_dtypes:
-            res_dtype = check_column_dtypes(self.data)
-            report.add_multiple(
-                "columns",
-                {c: {"object/categorical dtype": v} for c, v in res_dtype.items()},
-            )
 
         if single_value:
             res_single = check_single_value(self.data)
@@ -93,7 +98,7 @@ class DataHealthChecker:
                 "columns", {c: {"single_values": v} for c, v in res_single.items()}
             )
 
-        if idendical_features:
+        if identical_features:
             if self.feature_columns is not None:
                 res_ident = check_identical_features(self.data, self.feature_columns)
                 report.add_multiple(
@@ -108,9 +113,14 @@ class DataHealthChecker:
             )
 
         if missing_values:
-            res_miss = check_missing_values(self.data)
+            res_miss_col, res_miss_row = check_missing_values(self.data)
             report.add_multiple(
-                "columns", {c: {"missing values share": v} for c, v in res_miss.items()}
+                "columns",
+                {c: {"missing values share": v} for c, v in res_miss_col.items()},
+            )
+            report.add_multiple(
+                "rows",
+                {c: {"missing values share": v} for c, v in res_miss_row.items()},
             )
 
         if infinity_values:
@@ -135,14 +145,25 @@ class DataHealthChecker:
 
         if feature_feature_correlation:
             if self.feature_columns is not None:
-                res_feat_cor = check_feature_feature_correlation(
-                    self.data, self.feature_columns
+                res_feat_cor_pearson = check_feature_feature_correlation(
+                    self.data, self.feature_columns, method="pearson"
                 )
                 report.add_multiple(
                     "columns",
                     {
-                        c: {"high feature correlation": v}
-                        for c, v in res_feat_cor.items()
+                        c: {"high feature correlation (pearson)": v}
+                        for c, v in res_feat_cor_pearson.items()
+                    },
+                )
+
+                res_feat_cor_spearman = check_feature_feature_correlation(
+                    self.data, self.feature_columns, method="spearman"
+                )
+                report.add_multiple(
+                    "columns",
+                    {
+                        c: {"high feature correlation (spearman)": v}
+                        for c, v in res_feat_cor_spearman.items()
                     },
                 )
 
@@ -157,7 +178,7 @@ class DataHealthChecker:
                 )
                 report.add_multiple(
                     "columns",
-                    {c: {"unique colume name": v} for c, v in res_unique_col.items()},
+                    {c: {"unique column name": v} for c, v in res_unique_col.items()},
                 )
 
         if unique_row_id_values:
@@ -186,23 +207,28 @@ class DataHealthChecker:
             if res_dup_rows is not None:
                 report.add("rows", "duplicated_rows", res_dup_rows)
 
-        if outlier_detection:
-            res_outliers = check_outlier_detection(self.data)
-            if not res_outliers.empty:
-                report.add("outliers", "scores", res_outliers.to_dict("records"))
-
+        if few_int_values:
+            res_few_unique_int_values = check_int_col_with_few_uniques(
+                self.data, self.feature_columns
+            )
+            if res_few_unique_int_values is not None:
+                report.add_multiple(
+                    "columns",
+                    {
+                        c: {"unique_int_values": v}
+                        for c, v in res_few_unique_int_values.items()
+                    },
+                )
         return report
 
-    def _check_columns_exist(self):
+    def _check_columns_exist(self, relevant_columns):
         """Check if all relevant columns exists."""
-        relevant_columns = self.feature_columns + self.target_columns
-        if self.row_id is not None:
-            relevant_columns.append(self.row_id)
         missing_columns = [
             col for col in relevant_columns if col not in self.data.columns
         ]
 
         if missing_columns:
             raise ValueError(
-                f"The following columns are missing in the DataFrame: {', '.join(missing_columns)}"  # noqa: E501
+                f"The following columns are missing in the DataFrame:"
+                f" {', '.join(missing_columns)}"  # noqa: E501
             )

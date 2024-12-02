@@ -6,6 +6,7 @@ import socket
 # OPENBLASE config needs to be before pandas, autosk
 # os.environ["OPENBLAS_NUM_THREADS"] = "1"
 # os.environ["OMP_NUM_THREADS"] = "1"
+import numpy as np
 import pandas as pd
 
 from octopus import OctoData, OctoML
@@ -40,6 +41,11 @@ print("File path: ", file_path)
 data = pd.read_csv(file_path, index_col=0)
 data.columns = data.columns.astype(str)
 
+# adding a NaN to trigger imputation
+data.loc[20, "50"] = np.NaN
+data.loc[28, "50"] = np.NaN
+data.loc[31, "229"] = np.NaN
+
 ###############Select treatment arm
 # #data = (data[data["TREATMENT"] == "Pembrolizumab"]).copy()
 # #print("Number of samples (Pembro only): ", len(data))
@@ -53,10 +59,10 @@ data.columns = data.columns.astype(str)
 feat_inventory = {
     # "rad": "./datasets_local/20240906A_rad_trmt.csv",
     "mb": "./datasets_local/20240906A_mb_trmt_3noise.csv",
-    "clhe": "./datasets_local/20240906A_clhe_trmt.csv",
+    # "clhe": "./datasets_local/20240906A_clhe_trmt.csv",
     # "rad_mb": "./datasets_local/20240906A_rad_mb_trmt_3noise.csv",
     # "rad_clhe": "./datasets_local/20240906A_rad_clhe_trmt.csv",
-    "mb_clhe": "./datasets_local/20240906A_mb+clhe_trmt_3noise.csv",
+    # "mb_clhe": "./datasets_local/20240906A_mb+clhe_trmt_3noise.csv",
     # "rad_mb_clhe": "./datasets_local/20240906A_rad_mb_clhe_trmt_3noise.csv",
 }
 
@@ -80,9 +86,7 @@ for key, feature_file in feat_inventory.items():
 
     target_column = [f"OS_DURATION_{int(timepoint)}MONTHS"]
     sample_column = "SUBJECT_ID"
-    stratification_column = [
-        f"STRAT_OS{int(timepoint)}_TRT_NUM"
-    ]  # "OS_DURATION_6MONTHS"
+    stratification_column = f"STRAT_OS{int(timepoint)}_TRT_NUM"  # "OS_DURATION_6MONTHS"
 
     # pre-process data
     print("Number of samples with target values:", len(data[target_column]))
@@ -129,7 +133,7 @@ for key, feature_file in feat_inventory.items():
         # outer loop parallelization
         outer_parallelization=True,
         # only process first outer loop experiment, for quick testing
-        # run_single_experiment_num=1,
+        run_single_experiment_num=1,
     )
 
     config_sequence = ConfigSequence(

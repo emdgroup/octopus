@@ -104,5 +104,7 @@ octo_ml.create_outer_experiments()
 octo_ml.run_outer_experiments()
 
 # This completes the basic example for using Octopus regression
-# with the Calfifornia housing dataset. The workflow involves loading and preprocessing
-# the data, creating necessary configurations, and executing the machine learning pipeline.
+# with the Calfifornia housing dataset.
+# The workflow involves loading and preprocessing
+# the data, creating necessary configurations, and
+# executing the machine learning pipeline.

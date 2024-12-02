@@ -46,6 +46,8 @@ data_df = (
 
 # insert NaN
 data_df.loc[0, "age"] = np.NaN
+data_df.loc[19, "age"] = np.NaN
+data_df.loc[22, "fare"] = np.NaN
 
 ### Create OctoData Object
 
@@ -68,7 +70,7 @@ octo_data = OctoData(
     ],
     sample_id="name",
     datasplit_type="group_sample_and_features",
-    stratification_column=["survived"],
+    stratification_column="survived",
 )
 
 ### Create Configuration
@@ -86,9 +88,15 @@ config_study = ConfigStudy(
     name="basic_classification",
     ml_type="classification",
     target_metric="AUCROC",
+    imputation_method="mice",
 )
 
-config_manager = ConfigManager(outer_parallelization=True, run_single_experiment_num=0)
+config_manager = ConfigManager(
+    # outer loop parallelization
+    outer_parallelization=True,
+    # only process first outer loop experiment, for quick testing
+    run_single_experiment_num=0,
+)
 
 config_sequence = ConfigSequence(
     sequence_items=[

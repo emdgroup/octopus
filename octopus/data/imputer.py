@@ -1,6 +1,9 @@
 """Impute data."""
 
+from typing import Optional
+
 import miceforest as mf
+import numpy as np
 import pandas as pd
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.impute import SimpleImputer
@@ -10,15 +13,14 @@ class HalfMinImputer(BaseEstimator, TransformerMixin):
     """Impute missing values with half of the minimum value for each feature."""
 
     def __init__(self):
-        """Initialize the imputer."""
         self.half_min_ = None
 
-    def fit(self, x, _y=None):
+    def fit(self, x: np.array, _y: Optional[np.ndarray] = None) -> "HalfMinImputer":
         """Fit the imputer on x.
 
         Parameters:
-            X (array-like): The data to fit.
-            _y (ignored, optional): Not used, present for API consistency.
+            x: The data to fit.
+            _y: Not used, present for API consistency.
 
         Returns:
             self: Returns the instance itself.
@@ -27,11 +29,11 @@ class HalfMinImputer(BaseEstimator, TransformerMixin):
         self.half_min_ = 0.5 * x.min(skipna=True)
         return self
 
-    def transform(self, x):
+    def transform(self, x: np.array) -> pd.DataFrame:
         """Transform x using the fitted imputer.
 
         Parameters:
-            x (array-like): The data to transform.
+            x: The data to transform.
 
         Returns:
             pd.DataFrame: The transformed data with missing values imputed.
@@ -40,19 +42,27 @@ class HalfMinImputer(BaseEstimator, TransformerMixin):
         return x.fillna(self.half_min_)
 
 
-def impute_simple(train_df, test_df, feature_columns, imputation_method):
+def impute_simple(
+    train_df: pd.DataFrame,
+    test_df: pd.DataFrame,
+    feature_columns: list,
+    imputation_method: str,
+) -> tuple:
     """Impute missing values using a simple strategy.
 
     Impute missing values in train and test datasets based on the specified method.
 
     Parameters:
-        train_df (pd.DataFrame): Training dataset.
-        test_df (pd.DataFrame): Testing dataset.
-        feature_columns (list): List of feature column names to impute.
-        imputation_method (str): Imputation method ("median" or "halfmin").
+        train_df: Training dataset.
+        test_df: Testing dataset.
+        feature_columns: List of feature column names to impute.
+        imputation_method: Imputation method ("median" or "halfmin").
 
     Returns:
         tuple: A tuple containing the imputed training and testing datasets.
+
+    Raises:
+        ValueError: If an unknown imputation method is specified.
     """
     if imputation_method == "median":
         imputer = SimpleImputer(strategy="median")
@@ -92,9 +102,9 @@ def impute_mice(
     handling missing values across features.
 
     Parameters:
-        train_df (pd.DataFrame): Training dataset.
-        test_df (pd.DataFrame): Testing dataset.
-        feature_columns (list): List of feature column names to impute.
+        train_df: Training dataset.
+        test_df: Testing dataset.
+        feature_columns: List of feature column names to impute.
 
     Returns:
         tuple: A tuple containing the imputed training and testing datasets.

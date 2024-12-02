@@ -276,9 +276,9 @@ class OctoML:
         """Impute dataset if missing values are present.
 
         Parameters:
-            train_df (pd.DataFrame): The training dataset.
-            test_df (pd.DataFrame): The testing dataset.
-            feature_columns (list): List of feature column names to impute.
+            train_df: The training dataset.
+            test_df: The testing dataset.
+            feature_columns: List of feature column names to impute.
 
         Returns:
             tuple: A tuple containing the imputed (or original) train and test datasets.

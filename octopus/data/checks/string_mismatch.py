@@ -1,9 +1,7 @@
-"""Check string mismatch."""
-
 import re
-from difflib import SequenceMatcher
 
 import pandas as pd
+from rapidfuzz import fuzz
 
 
 def check_string_mismatch(df: pd.DataFrame) -> dict:
@@ -17,20 +15,20 @@ def check_string_mismatch(df: pd.DataFrame) -> dict:
     def determine_threshold(length):
         """Determine the similarity threshold based on the length of the string."""
         if length <= 7:
-            return 0.8  # Lower threshold for shorter strings
+            return 80  # Lower threshold for shorter strings
         elif 7 <= length <= 12:
-            return 0.85  # Medium threshold for medium-length strings
+            return 85  # Medium threshold for medium-length strings
         else:
-            return 0.9  # Higher threshold for longer strings
+            return 90  # Higher threshold for longer strings
 
     for column in df.columns:
         if df[column].dtype == object or df[column].dtype.name == "category":
             try:
                 # Remove numbers from the end of each entry
-                column_values = df[column].dropna().apply(remove_numbers).tolist()
+                column_values = df[column].dropna().apply(remove_numbers).unique()
 
                 # Check if the column has more than one unique value
-                if len(set(column_values)) > 2:
+                if len(column_values) > 2:
                     # Initialize a set to keep track of processed strings
                     processed = set()
                     similar_groups = []
@@ -44,8 +42,7 @@ def check_string_mismatch(df: pd.DataFrame) -> dict:
                                 other
                                 for other in column_values
                                 if value != other
-                                and SequenceMatcher(None, value, other).ratio()
-                                >= threshold
+                                and fuzz.ratio(value, other) >= threshold
                             )
                             if similar:
                                 similar.add(value)

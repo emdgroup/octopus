@@ -124,7 +124,9 @@ class OctoData:
         ).generate_report()
 
         # encode categorical columns
-        self._categorical_encoding()
+        self._categorical_feature_encoding()
+        self._categorical_stratification_encoding()
+        self._categorical_target_encoding()
 
     def _check_column_names(self):
         """Search for disallowed characters in column names."""
@@ -143,12 +145,51 @@ class OctoData:
                 f'Disallowed characters are: ", : , [ , ] , {{ , }}.'
             )
 
-    def _categorical_encoding(self):
-        """Process categorical columns."""
+    def _categorical_target_encoding(self):
+        """Convert categorical target columns to int if needed."""
+        new_target_columns = []
+
+        for column in self.target_columns:
+            if self.data[column].dtype.name == "category":
+                # Check if the categories are of integer type
+                if not pd.api.types.is_integer_dtype(self.data[column].cat.categories):
+                    # Create a new column with integer codes
+                    new_column = f"{column}_int"
+                    self.data[new_column] = self.data[column].cat.codes
+                    # Save new columns
+                    new_target_columns.append((column, new_column))
+
+        # Update target assignments
+        for original_column, new_column in new_target_columns:
+            for key in self.target_assignments:
+                # Replace the original column with the new column
+                if self.target_assignments[key] == original_column:
+                    self.target_assignments[key] = (
+                        new_column  # Directly replace the value
+                    )
+        # update target_columns
+        self.target_columns = list(self.target_assignments.values())
+
+    def _categorical_stratification_encoding(self):
+        """Convert categorical stratification columns to int if needed."""
+        if self.stratification_column:
+            # Check if stratification column is of type 'category'
+            column = self.stratification_column
+            if self.data[column].dtype.name == "category":
+                # Check if the categories are of integer type
+                if not pd.api.types.is_integer_dtype(self.data[column].cat.categories):
+                    # Create a new column with integer codes
+                    new_column = f"{column}_int"
+                    self.data[new_column] = self.data[column].cat.codes
+                    # Update self.stratification_columns with the new column name
+                    self.stratification_column = new_column
+
+    def _categorical_feature_encoding(self):
+        """Process categorical feature columns."""
         # Identify categorical columns in self.relevant_columns
         categorical_columns = [
             col
-            for col in self.relevant_columns
+            for col in self.feature_columns
             if self.data[col].dtype.name == "category"
         ]
         # Split into ordinal and non-ordinal (nominal) categorical columns
@@ -178,16 +219,16 @@ class OctoData:
                 drop_first=True,  # remove first to avoid redundant information
             )
 
-            # Drop original nominal columns from relevant_columns
+            # Drop original nominal columns from feature_columns
             # we keep the nominal columns in the data
             self.feature_columns = [
-                col for col in self.relevant_columns if col not in nominal_columns
+                col for col in self.feature_columns if col not in nominal_columns
             ]
 
             # Add dummy columns to data
             self.data = pd.concat([self.data, dummies], axis=1)
 
-            # Update relevant_columns with new dummy column names
+            # Update feature_columns with new dummy column names
             self.feature_columns.extend(dummies.columns.tolist())
 
         # Process ordinal categorical columns
@@ -210,15 +251,29 @@ class OctoData:
 
     def _check_column_dtypes(self):
         """Validate that all relevant columns have correct dtypes."""
-        acceptable_dtypes = ["int64", "float64", "bool", "category"]
         non_matching_columns = []
 
-        # Check each relevant column's dtype
-        for column in self.feature_columns + self.target_columns:
-            if self.data[column].dtype not in acceptable_dtypes:
-                non_matching_columns.append(column)
+        if self.stratification_column:
+            columns_to_check = (
+                self.feature_columns
+                + self.target_columns
+                + [self.stratification_column]
+            )
+        else:
+            columns_to_check = self.feature_columns + self.target_columns
 
-        # Raise error if any columns are missing
+        # Check each relevant column's dtype
+        for column in columns_to_check:
+            dtype = self.data[column].dtype
+            if not (
+                pd.api.types.is_integer_dtype(dtype)
+                or pd.api.types.is_float_dtype(dtype)
+                or pd.api.types.is_bool_dtype(dtype)
+                or pd.api.types.is_categorical_dtype(dtype)
+            ):
+                non_matching_columns.append(f"{column} ({dtype})")
+
+        # Raise error if any columns have wrong dtypes
         if non_matching_columns:
             non_matching_str = ", ".join(non_matching_columns)
             raise ValueError(f"Columns with wrong dtypes: {non_matching_str}")
@@ -320,8 +375,7 @@ class OctoData:
                     ).index.min(),
                     axis=1,
                 )
-            )
-            .reset_index(drop=True)
+            ).reset_index(drop=True)
         )
         logging.info("Added `group_feaures` and `group_sample_features`")
 

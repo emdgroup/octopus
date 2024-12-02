@@ -90,7 +90,6 @@ class OctoML:
         )
 
         # create datasplits for outer experiments
-        # why is the stratification col here a string and before a List
         data_splits = DataSplit(
             dataset=data_clean_df,
             datasplit_col=datasplit_col,
@@ -303,6 +302,14 @@ class OctoML:
             imputed_train_df, imputed_test_df = impute_simple(
                 train_df, test_df, feature_columns, imputation_method
             )
+
+        # Assert that there are no NaNs in the imputed data
+        assert (
+            not imputed_train_df[feature_columns].isna().any().any()
+        ), "NaNs present in imputed train_df"
+        assert (
+            not imputed_test_df[feature_columns].isna().any().any()
+        ), "NaNs present in imputed test_df"
 
         return imputed_train_df, imputed_test_df
 

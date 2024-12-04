@@ -18,6 +18,14 @@ def add_pooling_scores(pool, scores, target_metric, target_assignments):
             scores[part + "_pool_hard"] = metrics_inventory[target_metric]["method"](
                 target, predictions
             )
+    elif target_metric in ["ACC", "ACCBAL"]:
+        for part in pool.keys():
+            target_col = list(target_assignments.values())[0]
+            predictions = pool[part]["prediction"].astype(int)
+            target = pool[part][target_col]
+            scores[part + "_pool_hard"] = metrics_inventory[target_metric]["method"](
+                target, predictions
+            )
     elif target_metric in ["CI"]:
         for part in pool.keys():
             estimate = pool[part]["prediction"]
@@ -27,7 +35,7 @@ def add_pooling_scores(pool, scores, target_metric, target_assignments):
                 event_indicator, event_time, estimate
             )
             scores[part + "_pool_hard"] = float(ci)
-    else:
+    elif target_metric in ["R2", "MSE", "MAE"]:
         for part in pool.keys():
             target_col = list(target_assignments.values())[0]
             predictions = pool[part]["prediction"]
@@ -35,3 +43,5 @@ def add_pooling_scores(pool, scores, target_metric, target_assignments):
             scores[part + "_pool_hard"] = metrics_inventory[target_metric]["method"](
                 target, predictions
             )
+    else:
+        raise ValueError(f"Unsupported target metric: {target_metric}")

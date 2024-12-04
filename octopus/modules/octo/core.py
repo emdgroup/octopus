@@ -461,18 +461,21 @@ class OctoCore:
 
         # save performance values of best bag
         best_bag_scores = best_bag.get_scores()
+        target_metric = self.experiment.configs.study.target_metric
         # show and save test results
         print(
             f"Experiment: {self.experiment.id} "
-            f"{self.experiment.configs.study.target_metric} "
+            f"{target_metric} "
             f"(ensembled, hard vote):"  # noqa E501
             f"Dev {best_bag_scores['dev_pool_hard']:.3f}, "
             f"Test {best_bag_scores['test_pool_hard']:.3f}"
         )
-        if self.experiment.ml_type == "classification":
+        if (self.experiment.ml_type == "classification") and (
+            target_metric in ["AUCROC", "LOGLOSS"]
+        ):
             print(
                 f"Experiment: {self.experiment.id} "
-                f"{self.experiment.configs.study.target_metric} "
+                f"{target_metric} "
                 f"(ensembled, soft vote):"  # noqa E501
                 f"Dev {best_bag_scores['dev_pool_soft']:.3f}, "
                 f"Test {best_bag_scores['test_pool_soft']:.3f}"

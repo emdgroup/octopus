@@ -192,7 +192,16 @@ class Bag:
                     metric_method = metrics_inventory[self.target_metric]["method"]
                     metric_result = metric_method(target, probabilities)
                     values.append(metric_result)
-
+            elif self.target_metric in ["ACC", "ACCBAL"]:
+                for part, storage_value in storage.items():
+                    target_col = list(self.target_assignments.values())[0]
+                    predictions = training.predictions[part]["prediction"].astype(int)
+                    target = training.predictions[part][target_col]
+                    storage_value.append(
+                        metrics_inventory[self.target_metric]["method"](
+                            target, predictions
+                        )
+                    )
             elif self.target_metric in ["CI"]:
                 for part, storage_value in storage.items():
                     estimate = training.predictions[part]["prediction"]
@@ -207,7 +216,7 @@ class Bag:
                     )
                     storage_value.append(float(ci))
 
-            else:
+            elif self.target_metric in ["R2", "MSE", "MAE"]:
                 for part, storage_value in storage.items():
                     target_col = list(self.target_assignments.values())[0]
                     predictions = training.predictions[part]["prediction"]
@@ -217,6 +226,8 @@ class Bag:
                             target, predictions
                         )
                     )
+            else:
+                raise ValueError("Unsupported target metric: {self.target_metric}")
 
             # pooling
             for part, pool_value in pool.items():

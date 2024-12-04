@@ -11,6 +11,7 @@ import pandas as pd
 import scipy.stats
 import shap
 from attrs import Factory, define, field, validators
+from joblib import Parallel, delayed
 from matplotlib.backends.backend_pdf import PdfPages
 
 from octopus import OctoData
@@ -279,36 +280,46 @@ class OctoPredict:
         self,
         n_repeat: int = 10,
         fi_type: str = "group_permutation",
-        experiment_id: int = -1,
+        experiment_id: int = -1,  # Calculate for all experiments
         shap_type: str = "exact",
-    ) -> pd.DataFrame:
+    ) -> None:
         """Calculate feature importances on available test data."""
         if shap_type not in ["exact", "permutation", "kernel"]:
             raise ValueError("Specified shap_type not supported.")
 
         print("Calculating feature importances for every experiment/model.")
-        for _, experiment in self.experiments.items():
-            exp_id = experiment["id"]
-            if experiment_id in (-1, exp_id):
-                if fi_type == "permutation":
-                    results_df = self._get_fi_permutation(
-                        experiment, n_repeat, data=None
-                    )
-                    self.results[f"fi_table_permutation_exp{exp_id}"] = results_df
-                    self._plot_permutation_fi(exp_id, results_df)
-                if fi_type == "group_permutation":
-                    results_df = self._get_fi_group_permutation(
-                        experiment, n_repeat, data=None
-                    )
-                    self.results[f"fi_table_grouppermutation_exp{exp_id}"] = results_df
-                    self._plot_permutation_fi(exp_id, results_df)
-                elif fi_type == "shap":
-                    results_df = self._get_fi_shap(
-                        experiment, data=None, shap_type=shap_type
-                    )
-                    self.results[f"fi_table_shap_exp{exp_id}"] = results_df
-                else:
-                    raise ValueError("Feature Importance type not supported")
+
+        # Filter experiments based on experiment_id
+        experiments_to_process = [
+            exp for exp in self.experiments.values() if experiment_id in (-1, exp["id"])
+        ]
+
+        # Define a helper function for processing an experiment
+        def _process_experiment(exp):
+            exp_id = exp["id"]
+            if fi_type == "permutation":
+                results_df = self._get_fi_permutation(exp, n_repeat, data=None)
+                key = f"fi_table_permutation_exp{exp_id}"
+                self._plot_permutation_fi(exp_id, results_df)
+            elif fi_type == "group_permutation":
+                results_df = self._get_fi_group_permutation(exp, n_repeat, data=None)
+                key = f"fi_table_grouppermutation_exp{exp_id}"
+                self._plot_permutation_fi(exp_id, results_df)
+            elif fi_type == "shap":
+                results_df = self._get_fi_shap(exp, data=None, shap_type=shap_type)
+                key = f"fi_table_shap_exp{exp_id}"
+            else:
+                raise ValueError("Feature Importance type not supported")
+            return key, results_df
+
+        # Use joblib to parallelize the processing of experiments
+        results = Parallel(n_jobs=-1)(
+            delayed(_process_experiment)(exp) for exp in experiments_to_process
+        )
+
+        # Update shared resources in the main thread
+        for key, results_df in results:
+            self.results[key] = results_df
 
     def _plot_permutation_fi(self, experiment_id, df):
         """Create plot for permutation fi and save to file."""

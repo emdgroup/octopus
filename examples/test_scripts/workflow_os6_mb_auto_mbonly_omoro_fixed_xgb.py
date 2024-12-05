@@ -127,13 +127,14 @@ for key, feature_file in feat_inventory.items():
         start_with_empty_study=True,
         path="./studies/",
         silently_overwrite_study=True,
+        ignore_data_health_warning=True,
     )
 
     config_manager = ConfigManager(
         # outer loop parallelization
         outer_parallelization=True,
         # only process first outer loop experiment, for quick testing
-        run_single_experiment_num=1,
+        # run_single_experiment_num=1,
     )
 
     config_sequence = ConfigSequence(
@@ -175,7 +176,7 @@ for key, feature_file in feat_inventory.items():
                 n_optuna_startup_trials=10,
                 resume_optimization=False,
                 global_hyperparameter=True,
-                n_trials=700,
+                n_trials=5,
                 max_features=70,
                 penalty_factor=1.0,
                 # ensemble selection

@@ -144,7 +144,7 @@ class OctoML:
                     error_messages.append("NaN values detected in sample_id.")
 
             if col in features:
-                if missing_share is not None and missing_share > 0.2:
+                if missing_share is not None and missing_share > 0.25:  # original: 0.2
                     error_messages.append(
                         "Columns with high missing share detected in feature columns."
                     )

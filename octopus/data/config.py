@@ -96,7 +96,7 @@ class OctoData:
         logging.info("Automated data preparation:")
 
         # validate input
-        self._check_column_names()
+        # self._check_column_names() # turned off for MB/CLP use case
         self._check_columns_exist()
         self._check_for_duplicates()
         self._check_stratification_column()

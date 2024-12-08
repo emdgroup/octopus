@@ -180,7 +180,7 @@ class Bag:
 
         for training in self.trainings:
             # averaging
-            if self.target_metric in ["AUCROC", "LOGLOSS"]:
+            if self.target_metric in ["AUCROC", "LOGLOSS", "AUCPR", "NEGBRIERSCORE"]:
                 for part, values in storage.items():
                     target_col = list(self.target_assignments.values())[0]
 
@@ -192,7 +192,7 @@ class Bag:
                     metric_method = metrics_inventory[self.target_metric]["method"]
                     metric_result = metric_method(target, probabilities)
                     values.append(metric_result)
-            elif self.target_metric in ["ACC", "ACCBAL"]:
+            elif self.target_metric in ["ACC", "ACCBAL", "F1"]:
                 for part, storage_value in storage.items():
                     target_col = list(self.target_assignments.values())[0]
                     predictions = training.predictions[part]["prediction"].astype(int)

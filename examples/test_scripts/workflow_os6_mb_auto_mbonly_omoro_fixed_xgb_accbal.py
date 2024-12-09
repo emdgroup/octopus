@@ -112,9 +112,9 @@ for key, feature_file in feat_inventory.items():
     # we use one sequence with the `RandomForestClassifier` model.
 
     config_study = ConfigStudy(
-        name=f"MBOS{int(timepoint)}_mb_OMORO_fixed_xgb_{dataset_key}",
+        name=f"MBOS{int(timepoint)}_mb_OMORO_fixed_xgb_{dataset_key}_accbal",
         ml_type="classification",
-        target_metric="AUCROC",
+        target_metric="ACCBAL",
         metrics=["AUCROC", "ACCBAL", "ACC", "LOGLOSS"],
         datasplit_seed_outer=1234,
         n_folds_outer=5,

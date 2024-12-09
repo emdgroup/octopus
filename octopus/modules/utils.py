@@ -35,16 +35,23 @@ from octopus.metrics import metrics_inventory
 
 
 def get_performance(
-    model, data, feature_columns, target_metric, target_assignments
+    model, data, feature_columns, target_metric, target_assignments, threshold=0.5
 ) -> float:
     """Calculate model performance score on dataset for given metric."""
-    if target_metric in ["AUCROC", "LOGLOSS"]:
+    if target_metric in ["AUCROC", "LOGLOSS", "AUCPR", "NEGBRIERSCORE"]:
         target_col = list(target_assignments.values())[0]
         target = data[target_col]
         probabilities = model.predict_proba(data[feature_columns])[
             :, 1
         ]  # binary only!!
         performance = metrics_inventory[target_metric]["method"](target, probabilities)
+    elif target_metric in ["ACC", "ACCBAL", "F1"]:
+        # only soft voting implemented (averaging of prababilites)
+        target_col = list(target_assignments.values())[0]
+        target = data[target_col]
+        probabilities = model.predict_proba(data[feature_columns])[:, 1]  # binary
+        predictions = (probabilities >= threshold).astype(int)
+        performance = metrics_inventory[target_metric]["method"](target, predictions)
     elif target_metric in ["CI"]:
         estimate = model.predict(data[feature_columns])
         event_time = data[target_assignments["duration"]].astype(float)
@@ -52,11 +59,13 @@ def get_performance(
         performance, _, _, _, _ = metrics_inventory[target_metric]["method"](
             event_indicator, event_time, estimate
         )
-    else:
+    elif target_metric in ["R2", "MSE", "MAE"]:
         target_col = list(target_assignments.values())[0]
         target = data[target_col]
-        probabilities = model.predict(data[feature_columns])
-        performance = metrics_inventory[target_metric]["method"](target, probabilities)
+        predictions = model.predict(data[feature_columns])
+        performance = metrics_inventory[target_metric]["method"](target, predictions)
+    else:
+        raise ValueError(f"Unsupported target metric: {target_metric}")
 
     return performance
 
@@ -98,6 +107,9 @@ def optuna_direction(metric: str) -> str:
         "LOGLOSS": "minimize",
         "AUCROC": "maximize",
         "CI": "maximize",
+        "AUCPR": "maximize",
+        "F1": "maximize",
+        "NEGBRIERSCORE": "minimize",
     }
 
     if metric not in direction:

@@ -375,11 +375,12 @@ class OctoCore:
 
         # save performance values of best bag
         ensel_scores = ensel_bag.get_scores()
+        target_metric = self.experiment.configs.study.target_metric
         # show and save test results
         print("Ensemble selection performance")
         print(
             f"Experiment: {self.experiment.id} "
-            f"{self.experiment.configs.study.target_metric} "
+            f"{target_metric} "
             f"(ensembled, hard vote):"  # noqa E501
             f"Dev {ensel_scores['dev_pool_hard']:.3f}, "
             f"Test {ensel_scores['test_pool_hard']:.3f}"
@@ -387,7 +388,7 @@ class OctoCore:
         if self.experiment.ml_type == "classification":
             print(
                 f"Experiment: {self.experiment.id} "
-                f"{self.experiment.configs.study.target_metric} "
+                f"{target_metric} "
                 f"(ensembled, soft vote):"  # noqa E501
                 f"Dev {ensel_scores['dev_pool_soft']:.3f}, "
                 f"Test {ensel_scores['test_pool_soft']:.3f}"
@@ -470,9 +471,7 @@ class OctoCore:
             f"Dev {best_bag_scores['dev_pool_hard']:.3f}, "
             f"Test {best_bag_scores['test_pool_hard']:.3f}"
         )
-        if (self.experiment.ml_type == "classification") and (
-            target_metric in ["AUCROC", "LOGLOSS"]
-        ):
+        if self.experiment.ml_type == "classification":
             print(
                 f"Experiment: {self.experiment.id} "
                 f"{target_metric} "

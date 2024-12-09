@@ -79,7 +79,7 @@ octo_data = OctoData(
 config_study = ConfigStudy(
     name="Titanic",
     ml_type="classification",
-    target_metric="ACCBAL",
+    target_metric="NEGBRIERSCORE",
     metrics=["AUCROC", "ACCBAL", "ACC", "LOGLOSS"],
     datasplit_seed_outer=1234,
     n_folds_outer=5,
@@ -92,7 +92,7 @@ config_manager = ConfigManager(
     # outer loop parallelization
     outer_parallelization=True,
     # only process first outer loop experiment, for quick testing
-    run_single_experiment_num=0,
+    # run_single_experiment_num=0,
 )
 
 config_sequence = ConfigSequence(
@@ -115,10 +115,10 @@ config_sequence = ConfigSequence(
             inner_parallelization=True,
             n_workers=5,
             # HPO
-            global_hyperparameter=False,
+            global_hyperparameter=True,
             n_trials=30,
             # ensemble selection
-            ensemble_selection=False,
+            ensemble_selection=True,
             ensel_n_save_trials=50,
             # mrmr
             # mrmr_feature_numbers=[1, 2, 3, 4, 5, 6, 7, 8, 9, 10],

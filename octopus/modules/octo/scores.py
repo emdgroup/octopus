@@ -3,10 +3,10 @@
 from octopus.metrics import metrics_inventory
 
 
-def add_pooling_scores(pool, scores, target_metric, target_assignments):
+def add_pooling_scores(pool, scores, target_metric, target_assignments, threshold=0.5):
     """Add pooling scores to scores dict."""
     # calculate pooling scores (soft and hard)
-    if target_metric in ["AUCROC", "LOGLOSS"]:
+    if target_metric in ["AUCROC", "LOGLOSS", "AUCPR", "NEGBRIERSCORE"]:
         for part in pool.keys():
             target_col = list(target_assignments.values())[0]
             probabilities = pool[part][1]  # binary only!!
@@ -18,11 +18,15 @@ def add_pooling_scores(pool, scores, target_metric, target_assignments):
             scores[part + "_pool_hard"] = metrics_inventory[target_metric]["method"](
                 target, predictions
             )
-    elif target_metric in ["ACC", "ACCBAL"]:
+    elif target_metric in ["ACC", "ACCBAL", "F1"]:
         for part in pool.keys():
             target_col = list(target_assignments.values())[0]
-            predictions = pool[part]["prediction"].astype(int)
+            probabilities = (pool[part][1] >= threshold).astype(int)  # binary only!!
+            predictions = (pool[part]["prediction"] >= threshold).astype(int)
             target = pool[part][target_col]
+            scores[part + "_pool_soft"] = metrics_inventory[target_metric]["method"](
+                target, probabilities
+            )
             scores[part + "_pool_hard"] = metrics_inventory[target_metric]["method"](
                 target, predictions
             )

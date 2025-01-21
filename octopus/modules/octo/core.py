@@ -120,7 +120,7 @@ from octopus.utils import DataSplit
 # - (3) !!!! Average FIs differently -- see bag, no groupby.mean()
 # - check alibi package
 # - separate fi code from training class
-# - group identification (experiment.py) - add hirarchical clustering
+# - group identification (experiment.py) - add hierarchical clustering
 # - create new module that replaces groups with PCA 1st component
 # - https://arxiv.org/pdf/2312.10858
 # - see alibi package, ALE, https://github.com/SeldonIO/alibi/tree/master

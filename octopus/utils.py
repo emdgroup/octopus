@@ -23,7 +23,12 @@ class DataSplit:
     """
 
     datasplit_col: str = field(validator=[validators.instance_of(str)])
-    seed: int = field(validator=[validators.instance_of(int)])
+    seeds: list = field(
+        validator=validators.deep_iterable(
+            member_validator=validators.instance_of(int),
+            iterable_validator=validators.instance_of(list),
+        )
+    )
     num_folds: int = field(validator=[validators.instance_of(int)])
     dataset: pd.DataFrame = field(validator=[validators.instance_of(pd.DataFrame)])
     stratification_col: Optional[str] = field(
@@ -34,10 +39,26 @@ class DataSplit:
     def __attrs_post_init__(self):
         # reset index
         self.dataset.reset_index(drop=True, inplace=True)
-        # print(self.dataset)
 
     def get_datasplits(self):
-        """Get datasplits."""
+        """Get combined datasplits from a list of datasplit seeds."""
+        # Initialize a list to collect all values
+        combined_values = []
+
+        # Iterate over each seed and collect the values
+        for seed in self.seeds:
+            result = self._single_seed_datasplits(seed)
+            # Ensure consistent order by sorting the keys
+            for key in sorted(result.keys()):
+                combined_values.append(result[key])
+
+        # Create the combined_results dictionary with new indices
+        combined_datasplits = {i: value for i, value in enumerate(combined_values)}
+
+        return combined_datasplits
+
+    def _single_seed_datasplits(self, datasplit_seed):
+        """Get datasplits for single seed."""
         # set seeds for reproducibility
         random.seed(0)
         np.random.seed(0)
@@ -64,7 +85,7 @@ class DataSplit:
             kf = StratifiedKFold(
                 n_splits=self.num_folds,
                 shuffle=True,
-                random_state=self.seed,
+                random_state=datasplit_seed,
             )
 
             if dataset_unique[self.stratification_col].dtype.kind not in "iub":
@@ -78,7 +99,7 @@ class DataSplit:
             kf = KFold(
                 n_splits=self.num_folds,
                 shuffle=True,
-                random_state=self.seed,
+                random_state=datasplit_seed,
             )
             stratification_target = None
 

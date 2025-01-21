@@ -153,6 +153,7 @@ dmypy.json
 cython_debug/
 
 # custom
+AutogluonModels/
 studies/
 datasets_local/
 catboost_info/

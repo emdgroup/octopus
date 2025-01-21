@@ -3,12 +3,13 @@
 
 from typing import Dict, Type
 
+# Import the core classes from their respective modules
+from .autogluon.core import AGCore
+from .autogluon.module import AutoGluon
 from .boruta.core import BorutaCore
 from .boruta.module import Boruta
 from .efs.core import EfsCore
 from .efs.module import Efs
-
-# Import the core classes from their respective modules
 from .mrmr.core import MrmrCore
 from .mrmr.module import Mrmr
 from .octo.core import OctoCore
@@ -23,13 +24,14 @@ from .sfs.core import SfsCore
 from .sfs.module import Sfs
 
 # Define the __all__ variable to specify what is available to import from this package
-__all__ = ["Mrmr", "Octo", "Rfe", "Rfe2", "Roc", "Sfs", "Efs", "Boruta"]
+__all__ = ["AutoGluon", "Mrmr", "Octo", "Rfe", "Rfe2", "Roc", "Sfs", "Efs", "Boruta"]
 
 # Type for the modules inventory dictionary
 ModulesInventoryType = Dict[str, Type]
 
 # Inventory for all available modules
 modules_inventory: ModulesInventoryType = {
+    "ag": AGCore,
     "octo": OctoCore,
     "mrmr": MrmrCore,
     "rfe": RfeCore,

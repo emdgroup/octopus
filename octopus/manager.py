@@ -96,11 +96,13 @@ class OctoManager:
 
     def create_execute_mlmodules(self, base_experiment: OctoExperiment):
         """Create and execute ml modules."""
-        selected_features = []
-        prior_feature_importances = {}
-        for cnt, element in enumerate(self.configs.sequence.sequence_items):
+        # store path of saved experiments
+        exp_path_dict = dict()
+
+        for element in self.configs.sequence.sequence_items:
             print("------------------------------------------")
-            print("Step:", cnt)
+            print("Sequence item:", element.item_id)
+            print("Input item:", element.input_item_id)
             print("Module:", element.module)
             print("Description:", element.description)
             print("Load existing sequence item:", element.load_sequence_item)
@@ -111,10 +113,12 @@ class OctoManager:
                 experiment = copy.deepcopy(base_experiment)
                 experiment.ml_module = element.module
                 experiment.ml_config = element
-                experiment.id = experiment.id + "_" + str(cnt)
-                experiment.sequence_item_id = cnt
+                experiment.id = experiment.id + "_" + str(element.item_id)
+                experiment.sequence_item_id = element.item_id
+                experiment.input_item_id = element.input_item_id
                 experiment.path_sequence_item = Path(
-                    f"experiment{experiment.experiment_id}", f"sequence{cnt}"
+                    f"experiment{experiment.experiment_id}",
+                    f"sequence{element.item_id}",
                 )
 
                 # calculating number of CPUs available to every experiment
@@ -138,10 +142,15 @@ class OctoManager:
                     f"exp{experiment.experiment_id}_{experiment.sequence_item_id}.pkl"
                 )
 
-                # update features with selected features from previous run
-                if cnt > 0:
-                    experiment.feature_columns = selected_features
-                    experiment.prior_feature_importances = prior_feature_importances
+                # store save path
+                exp_path_dict[experiment.sequence_item_id] = path_save
+
+                # update from input item, not for item with base input
+                # properties updated, currently:
+                # - selected features
+                # - prior feature importances
+                if element.input_item_id > 0:
+                    self.update_from_input_item(experiment, exp_path_dict)
 
                 # update feature groups as feature_columns may have changed
                 experiment.feature_groups = experiment.calculate_feature_groups(
@@ -160,21 +169,18 @@ class OctoManager:
                 # run module and overwrite experiment
                 experiment = module.run_experiment()
 
-                # extract selected features and feature importances after running module
-                selected_features = experiment.selected_features
-                prior_feature_importances = experiment.extract_fi_from_results()
-
                 # save experiment after experiment has been completed
                 experiment.to_pickle(path_save)
 
             # existing sequence item (experiment) is loaded
             else:
                 path_study_sequence = base_experiment.path_study.joinpath(
-                    f"experiment{base_experiment.experiment_id}", f"sequence{cnt}"
+                    f"experiment{base_experiment.experiment_id}",
+                    f"sequence{element.item_id}",
                 )
 
                 path_load = path_study_sequence.joinpath(
-                    f"exp{base_experiment.experiment_id}_{cnt}.pkl"
+                    f"exp{base_experiment.experiment_id}_{element.item_id}.pkl"
                 )
 
                 if not path_load.exists():
@@ -183,6 +189,17 @@ class OctoManager:
                 experiment = OctoExperiment.from_pickle(path_load)
                 print("Step loaded from: ", path_load)
 
-                # extract selected features and feature importances from loaded module
-                selected_features = experiment.selected_features
-                prior_feature_importances = experiment.extract_fi_from_results()
+    def update_from_input_item(self, experiment, path_dict):
+        """Update experiment properties using input item."""
+        # get path to sequence input item
+        input_path = path_dict[experiment.input_item_id]
+
+        if not input_path.exists():
+            raise FileNotFoundError("Sequence item to be loaded does not exist")
+
+        input_experiment = OctoExperiment.from_pickle(input_path)
+
+        experiment.feature_columns = input_experiment.selected_features
+        experiment.prior_feature_importances = (
+            input_experiment.prior_feature_importances
+        )

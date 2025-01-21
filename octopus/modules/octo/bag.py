@@ -261,6 +261,8 @@ class Bag:
                 training.calculate_fi_group_permutation(partition=partition)
             elif fi_type == "lofo":
                 training.calculate_fi_lofo()
+            elif fi_type == "constant":
+                training.calculate_fi_constant()
             else:
                 raise ValueError("FI type not supported")
 
@@ -281,6 +283,8 @@ class Bag:
             fi_df = self.feature_importances["shap_dev_mean"]
         elif "internal" in fi_methods:
             fi_df = self.feature_importances["internal_mean"]
+        elif "constant" in fi_methods:
+            fi_df = self.feature_importances["constant_mean"]
         else:
             print("No features selected, return empty list")
             return []
@@ -341,6 +345,8 @@ class Bag:
                     self._calculate_fi(fi_type="permutation", partition=partition)
             elif method == "lofo":
                 self._calculate_fi(fi_type="lofo")
+            elif method == "constant":
+                self._calculate_fi(fi_type="constant")
             else:
                 raise ValueError(f"Feature importance method {method} not supported.")
 
@@ -356,6 +362,8 @@ class Bag:
         for method in fi_methods:
             if method == "internal":
                 method_str = "internal"
+            elif method == "constant":
+                method_str = "constant"
             else:
                 method_str = method + "_dev"
             fi_pool = list()

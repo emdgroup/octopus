@@ -18,7 +18,7 @@ from sklearn.metrics import (
 def auc_pr(y_true: Union[np.ndarray, list], y_score: Union[np.ndarray, list]) -> float:
     """Calculate the Area Under the Precision-Recall Curve (AUC-PR).
 
-    Parameters
+    Parameters:
     ----------
     y_true : Union[np.ndarray, list]
         True binary labels. Ground truth (correct) target values.
@@ -26,7 +26,7 @@ def auc_pr(y_true: Union[np.ndarray, list], y_score: Union[np.ndarray, list]) ->
     y_score : Union[np.ndarray, list]
         Estimated probabilities or decision function output.
         Target scores can either be probability estimates of the positive class,
-        confidence values, or non-thresholded measure of decisions.
+        confidence values, or non-thresholded measures of decisions.
 
     Returns:
     -------

@@ -319,10 +319,20 @@ class Training:
                 partition="dev", n_repeats=2
             )  # only 2 repeats!
             fi_df = self.feature_importances["permutation_dev"]
+        elif feature_method == "constant":
+            self.calculate_fi_constant()
+            fi_df = self.feature_importances["constant"]
         else:
             raise ValueError("feature method provided in model config not supported")
 
         return fi_df[fi_df["importance"] != 0]["feature"].tolist()
+
+    def calculate_fi_constant(self):
+        """Provide flat feature importance table."""
+        fi_df = pd.DataFrame()
+        fi_df["feature"] = self.feature_columns
+        fi_df["importance"] = 1
+        self.feature_importances["constant"] = fi_df
 
     def calculate_fi_internal(self):
         """Sklearn provided internal feature importance (based on train dataset)."""

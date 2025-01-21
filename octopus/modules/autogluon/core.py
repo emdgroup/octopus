@@ -1,28 +1,23 @@
 """Module: Autogluon Tabular."""
 
-try:
-    from autogluon.core.metrics import (
-        accuracy,
-        balanced_accuracy,
-        log_loss,
-        mean_absolute_error,
-        r2,
-        roc_auc,
-        root_mean_squared_error,
-    )
-except ImportError:
-    print("AutoGluon not installed in this conda environment")
-
-
 import json
 import shutil
 from pathlib import Path
 
 import pandas as pd
 from attrs import define, field, validators
+from autogluon.core.metrics import (
+    accuracy,
+    balanced_accuracy,
+    log_loss,
+    mean_absolute_error,
+    r2,
+    roc_auc,
+    root_mean_squared_error,
+)
 from autogluon.tabular import TabularPredictor
 
-#from sklearn.utils.multiclass import unique_labels
+# from sklearn.utils.multiclass import unique_labels
 from octopus.experiment import OctoExperiment
 from octopus.results import ModuleResults
 
@@ -134,14 +129,12 @@ class AGCore:
             raise ValueError("Expected target_assignments to be a dictionary or a list")
 
         # set up model and scoring type
-        scoring_type = metrics_inventory_autogluon[
-            self.target_metric
-        ]
+        scoring_type = metrics_inventory_autogluon[self.target_metric]
 
         # if self.experiment.ml_type == "classification":
         #     classes = unique_labels(self.y_traindev)
         #     if len(classes) == 1:
-        #         raise ValueError("Classifier can't train when only one class is present.")
+        #         raise ValueError("Classifier can't train, only 1 class is present.")
         #     elif len(classes) == 2:
         #         problem_type = "binary"
         #     else:
@@ -152,22 +145,21 @@ class AGCore:
         #     raise ValueError(f"{self.experiment.ml_type} not supported")
 
         self.model = TabularPredictor(
-            label= target,
-            #problem_type= problem_type,
-            eval_metric= scoring_type,
-            verbosity= 2,
+            label=target,
+            # problem_type= problem_type,
+            eval_metric=scoring_type,
+            verbosity=2,
         )
-
 
         self.model.fit(
             train_data,
             # time_limit= ,
             # presets= 'best_quality', # includes cv
-            #[‘best_quality’, ‘high_quality’, ‘good_quality’, ‘medium_quality’ - default,
+            # [‘best_quality’, ‘high_quality’, ‘good_quality’, ‘medium_quality’ (def),
             # ‘optimize_for_deployment’, ‘interpretable’, ‘ignore_text’]
             # included_model_typeslist, default = None
             # verbosity
-            num_bag_folds=5
+            num_bag_folds=5,
         )
         print("fitting completed")
 
@@ -180,7 +172,7 @@ class AGCore:
         # save leaderboard
         leaderboard = self.model.leaderboard(
             test_data,
-            extra_info= True,
+            extra_info=True,
             # extra_metrics=
             # display= True
             # silent= True ?
@@ -200,7 +192,7 @@ class AGCore:
 
         # show and save model summary
         fit_summary = self.model.fit_summary(
-            #show_plot=True
+            # show_plot=True
         )
         with open(
             self.path_results.joinpath("model_stats.txt"), "w", encoding="utf-8"
@@ -217,13 +209,13 @@ class AGCore:
             test_data,
             # auxiliary_metrics=False,
             # display= True,
-            detailed_report= True
+            detailed_report=True,
         )
         # serialize DataFame
         if isinstance(perf, dict):
             for key in perf:
                 if isinstance(perf[key], pd.DataFrame):
-                    perf[key] = perf[key].to_dict(orient='records')
+                    perf[key] = perf[key].to_dict(orient="records")
         with open(
             self.path_results.joinpath("results_test.json"), "w", encoding="utf-8"
         ) as f:
@@ -237,7 +229,7 @@ class AGCore:
         #     model_info = specific_model.get_info()
         #     model_configs[model] = model_info
         # print(model_configs_df)
-        model_configs = self.model.info()['model_info']
+        model_configs = self.model.info()["model_info"]
         # print(model_info)
         with open(
             self.path_results.joinpath("model_configs.txt"), "w", encoding="utf-8"
@@ -263,7 +255,7 @@ class AGCore:
             model=self.model.model_best,
             scores=perf,
             feature_importances=feature_importance.to_dict(),
-            #results=
+            # results=
         )
 
         # return updated experiment object

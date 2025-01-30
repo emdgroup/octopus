@@ -93,7 +93,7 @@ class OctoML:
         data_splits = DataSplit(
             dataset=data_clean_df,
             datasplit_col=datasplit_col,
-            seed=self.configs.study.datasplit_seed_outer,
+            seeds=[self.configs.study.datasplit_seed_outer],
             num_folds=self.configs.study.n_folds_outer,
             stratification_col=self.data.stratification_column,
         ).get_datasplits()
@@ -304,12 +304,12 @@ class OctoML:
             )
 
         # Assert that there are no NaNs in the imputed data
-        assert (
-            not imputed_train_df[feature_columns].isna().any().any()
-        ), "NaNs present in imputed train_df"
-        assert (
-            not imputed_test_df[feature_columns].isna().any().any()
-        ), "NaNs present in imputed test_df"
+        assert not imputed_train_df[feature_columns].isna().any().any(), (
+            "NaNs present in imputed train_df"
+        )
+        assert not imputed_test_df[feature_columns].isna().any().any(), (
+            "NaNs present in imputed test_df"
+        )
 
         return imputed_train_df, imputed_test_df
 
@@ -337,6 +337,7 @@ class OctoML:
                     id=str(key),
                     experiment_id=int(key),
                     sequence_item_id=-1,  # indicating base experiment
+                    input_item_id=-1,  # indicating base experiment
                     path_sequence_item=path_experiment,  # indicating base experiment
                     configs=self.configs,
                     datasplit_column=datasplit_col,

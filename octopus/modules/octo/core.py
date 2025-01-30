@@ -4,13 +4,11 @@
 import copy
 import json
 import shutil
-import warnings
 from pathlib import Path
 
 import optuna
 from attrs import Factory, define, field, validators
 from joblib import Parallel, delayed
-from optuna._experimental import ExperimentalWarning
 
 from octopus.experiment import OctoExperiment
 from octopus.modules.mrmr.core import maxrminr, relevance_fstats
@@ -20,16 +18,6 @@ from octopus.modules.octo.objective_optuna import ObjectiveOptuna
 from octopus.modules.octo.training import Training
 from octopus.results import ModuleResults
 from octopus.utils import DataSplit
-
-# ignore three Optuna experimental warnings
-# !may be specific to optuna version due to line number
-for line in [319, 330, 338]:
-    warnings.filterwarnings(
-        "ignore",
-        category=ExperimentalWarning,
-        module="optuna.samplers._tpe.sampler",
-        lineno=line,
-    )
 
 # TOBEDONE ENSEMBLING
 # - simplify and centralise score calculations (bag, enssel)
@@ -132,7 +120,7 @@ for line in [319, 330, 338]:
 # - (3) !!!! Average FIs differently -- see bag, no groupby.mean()
 # - check alibi package
 # - separate fi code from training class
-# - group identification (experiment.py) - add hirarchical clustering
+# - group identification (experiment.py) - add hierarchical clustering
 # - create new module that replaces groups with PCA 1st component
 # - https://arxiv.org/pdf/2312.10858
 # - see alibi package, ALE, https://github.com/SeldonIO/alibi/tree/master
@@ -216,7 +204,7 @@ class OctoCore:
         self.data_splits = DataSplit(
             dataset=self.experiment.data_traindev,
             datasplit_col=self.experiment.datasplit_column,
-            seed=self.experiment.ml_config.datasplit_seed_inner,
+            seeds=self.experiment.ml_config.datasplit_seeds_inner,
             num_folds=self.experiment.ml_config.n_folds_inner,
             stratification_col=self.experiment.stratification_column,
         ).get_datasplits()
@@ -505,13 +493,14 @@ class OctoCore:
         )
 
         # save selected features to experiment
+        print("---")
         print("Number of original features:", len(self.experiment.feature_columns))
         self.experiment.selected_features = selected_features
         print("Number of selected features:", len(self.experiment.selected_features))
         if len(self.experiment.selected_features) == 0:
             print(
-                "Warning: All feature importances values are zero. Therefore, no "
-                "features could be selected. This hints at a model related problem."
+                "Warning: Best bag - all feature importances values are zero."
+                "This hints at a model related problem."
             )
 
     def _run_globalhp_optimization(self):

@@ -8,6 +8,7 @@ from sklearn.ensemble import (
 )
 from sklearn.linear_model import ARDRegression, ElasticNet, Ridge
 from sklearn.svm import SVR
+from tabpfn import TabPFNRegressor
 from xgboost import XGBRegressor
 
 from octopus.models.config import ModelConfig
@@ -231,6 +232,31 @@ def get_regression_models():
                 ),
             ],
             n_jobs=None,
+            model_seed="random_state",
+        ),
+        ModelConfig(
+            name="TabPFNRegressor",
+            model_class=TabPFNRegressor,
+            ml_type="regression",
+            feature_method="constant",  # constant FI, disable constraint HPO
+            n_repeats=2,
+            hyperparameters=[
+                Hyperparameter(type="fixed", name="n_estimators", value=4),
+                Hyperparameter(type="fixed", name="softmax_temperature", value=0.9),
+                Hyperparameter(type="fixed", name="balance_probabilities", value=True),
+                Hyperparameter(
+                    type="fixed", name="average_before_softmax", value=False
+                ),
+                Hyperparameter(type="fixed", name="device", value="cpu"),
+                Hyperparameter(
+                    type="fixed", name="ignore_pretraining_limits", value=False
+                ),
+                Hyperparameter(
+                    type="fixed", name="fit_mode", value="fit_preprocessors"
+                ),
+                Hyperparameter(type="fixed", name="memory_saving_mode", value="auto"),
+            ],
+            n_jobs="n_jobs",
             model_seed="random_state",
         ),
     ]

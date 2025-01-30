@@ -21,6 +21,7 @@ class OctoExperiment:
     id: str = field(validator=[validators.instance_of(str)])
     experiment_id: int = field(validator=[validators.instance_of(int)])
     sequence_item_id: int = field(validator=[validators.instance_of(int)])
+    input_item_id: int = field(validator=[validators.instance_of(int)])
     path_sequence_item: Path = field(validator=[validators.instance_of(Path)])
     configs: OctoConfig = field(validator=[validators.instance_of(OctoConfig)])
     datasplit_column: str = field(validator=[validators.instance_of(str)])

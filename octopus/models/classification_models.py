@@ -132,16 +132,26 @@ def get_classification_models():
             name="TabPFNClassifier",
             model_class=TabPFNClassifier,
             ml_type="classification",
-            feature_method="permutation",
+            feature_method="constant",  # constant FI, disable constraint HPO
             n_repeats=2,
             hyperparameters=[
+                Hyperparameter(type="fixed", name="n_estimators", value=4),
+                Hyperparameter(type="fixed", name="softmax_temperature", value=0.9),
+                Hyperparameter(type="fixed", name="balance_probabilities", value=True),
                 Hyperparameter(
-                    type="fixed", name="N_ensemble_configurations", value=16
+                    type="fixed", name="average_before_softmax", value=False
                 ),
-                Hyperparameter(type="fixed", name="subsample_features", value=False),
+                Hyperparameter(type="fixed", name="device", value="cpu"),
+                Hyperparameter(
+                    type="fixed", name="ignore_pretraining_limits", value=False
+                ),
+                Hyperparameter(
+                    type="fixed", name="fit_mode", value="fit_preprocessors"
+                ),
+                Hyperparameter(type="fixed", name="memory_saving_mode", value="auto"),
             ],
-            n_jobs=None,
-            model_seed="seed",
+            n_jobs="n_jobs",
+            model_seed="random_state",
         ),
         ModelConfig(
             name="LogisticRegressionClassifier",

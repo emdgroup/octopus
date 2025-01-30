@@ -263,7 +263,7 @@ class Rfe2Core(OctoCore):
         else:
             selection_column = "importance"  # negative values may exist
 
-        # only consider non-proteced features
+        # only consider non-protected features
         fi_avail_df = fi_df[~fi_df["protected"]]
 
         # get the feature with the lowest value in the selection column

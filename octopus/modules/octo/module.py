@@ -9,35 +9,7 @@ from octopus.config.base_sequence_item import BaseSequenceItem
 
 @define
 class Octo(BaseSequenceItem):
-    """Octofull sequence config.
-
-    Model options:
-        Classification:
-            "ExtraTreesClassifier",
-            "RandomForestClassifier",
-            "XGBClassifier",
-            "GradientBoostingClassifier",
-            "CatBoostClassifier",
-            "TabPFNClassifier"
-
-
-        Regression:
-            "ExtraTreesRegressor",
-            "RandomForestRegressor",
-            "XGBRegressor",
-            "RidgeRegressor",
-            "ElasticNetRegressor",
-            "ARDRegressor",
-            "GradientBoostingRegressor",
-            "SvrRegressor",
-            "CatBoostRegressor"
-
-
-        Time to event:
-            "ExtraTreesSurv"
-
-
-    """
+    """Octofull sequence config."""
 
     models: List = field()
     """Models for ML."""
@@ -56,10 +28,14 @@ class Octo(BaseSequenceItem):
     )
     """Number of inner folds."""
 
-    datasplit_seed_inner: int = field(
-        validator=[validators.instance_of(int)], default=Factory(lambda: 0)
+    datasplit_seeds_inner: List[int] = field(
+        default=Factory(lambda: [0]),
+        validator=validators.deep_iterable(
+            member_validator=validators.instance_of(int),
+            iterable_validator=validators.instance_of(list),
+        ),
     )
-    """Data split seed for inner loops."""
+    """List of integers used as seeds for data splitting."""
     # model training
 
     model_seed: int = field(
@@ -70,7 +46,7 @@ class Octo(BaseSequenceItem):
     n_jobs: int = field(
         validator=[validators.instance_of(int)], default=Factory(lambda: 1)
     )
-    """Number of parallel jobs."""
+    """Number of parallel jobs. Ideal if n_folds_inner * number of datasplit seeds."""
 
     dim_red_methods: List = field(default=Factory(lambda: [""]))
     """Methods for dimension reduction."""
@@ -80,11 +56,13 @@ class Octo(BaseSequenceItem):
     )
     """Maximum number of outliers, optimized by Optuna"""
 
-    fi_methods_bestbag: list = field(
-        validator=[validators.instance_of(list)],
+    fi_methods_bestbag: List[str] = field(
         default=Factory(lambda: ["permutation"]),
+        validator=validators.deep_iterable(
+            member_validator=validators.in_(["permutation", "shap", "constant"]),
+            iterable_validator=validators.instance_of(list),
+        ),
     )
-    """Feature importance methods to be appleid to best bag"""
 
     inner_parallelization: bool = field(
         validator=[validators.instance_of(bool)], default=Factory(lambda: False)

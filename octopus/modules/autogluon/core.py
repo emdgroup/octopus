@@ -21,6 +21,19 @@ from autogluon.tabular import TabularPredictor
 from octopus.experiment import OctoExperiment
 from octopus.results import ModuleResults
 
+# TOBEDONE
+# - fix scores
+# - fix fi
+#
+# - add more metrics: F1, AUCPR, NEGBRIERSCORE
+# - make predictions compatible with Octopus
+# - make feature importances compatible with Octopus
+# - replace print() with logging
+# - do we need to set problem type?
+# - add includes_model_types
+# - add verbosity setting
+
+
 # mapping of metrics
 try:
     metrics_inventory_autogluon = {
@@ -44,6 +57,7 @@ class AGCore:
         validator=[validators.instance_of(OctoExperiment)]
     )
     model = field(init=False)
+    num_cpus = field(init=False)
 
     @property
     def path_module(self) -> Path:
@@ -78,11 +92,6 @@ class AGCore:
         return self.experiment.data_test[self.experiment.target_assignments.values()]
 
     @property
-    def data_test(self) -> pd.DataFrame:
-        """data_test."""
-        return self.experiment.data_test
-
-    @property
     def target_assignments(self) -> dict:
         """Target assignments."""
         return self.experiment.target_assignments
@@ -102,31 +111,55 @@ class AGCore:
         """Feature Columns."""
         return self.experiment.feature_columns
 
+    @property
+    def train_data(self) -> pd.DataFrame:
+        """AG training data."""
+        return pd.concat([self.x_traindev, self.y_traindev], axis=1)
+
+    @property
+    def test_data(self) -> pd.DataFrame:
+        """AG test data."""
+        return pd.concat([self.x_test, self.y_test], axis=1)
+
     def __attrs_post_init__(self):
-        # delete directories /trials /optuna /results to ensure clean state
+        # delete directories /results to ensure clean state
         # create directory if it does not exist
         for directory in [self.path_results]:
             if directory.exists():
                 shutil.rmtree(directory)
             directory.mkdir(parents=True, exist_ok=True)
 
+        # set and validate resources assigned to the experiment
+        self._set_resources()
+
+    def _set_resources(self):
+        """Set and validate resources."""
+        print()
+        print("Checking resources:")
+        print(
+            "Number of CPUs available to this experiment:",
+            self.experiment.num_assigned_cpus,
+        )
+        print("Requested number of CPUs:", self.experiment.ml_config.num_cpus)
+
+        if self.experiment.ml_config.num_cpus == "auto":
+            self.num_cpus = self.experiment.num_assigned_cpus
+        else:
+            self.num_cpus = min(
+                self.experiment.num_assigned_cpus, self.experiment.ml_config.num_cpus
+            )
+
+        print(f"Allocated number of CPUs for this experiment: {self.num_cpus}")
+        print()
+
     def run_experiment(self):
         """Run experiment."""
-        # load train data, test data and label
-        train_data = pd.concat([self.x_traindev, self.y_traindev], axis=1)
-        # train_data = TabularDataset(self.experiment.data_traindev)
-        test_data = pd.concat([self.x_test, self.y_test], axis=1)
-        # test_data = TabularDataset(self.experiment.data_test)
-
-        if isinstance(self.target_assignments, dict):
+        if len(self.target_assignments) == 1:
             target = next(iter(self.target_assignments.values()))
-        elif isinstance(self.target_assignments, list):
-            if self.target_assignments:
-                target = self.target_assignments[0]
-            else:
-                raise ValueError("target_assignments list is empty")
         else:
-            raise ValueError("Expected target_assignments to be a dictionary or a list")
+            raise ValueError(
+                f"Single target expected. Got keys: {self.target_assignments.keys()} "
+            )
 
         # set up model and scoring type
         scoring_type = metrics_inventory_autogluon[self.target_metric]
@@ -141,9 +174,10 @@ class AGCore:
         #         problem_type = "multiclass"
         # elif self.experiment.ml_type == "regression":
         #     problem_type= 'regression'
-        # else:
+        # else:i
         #     raise ValueError(f"{self.experiment.ml_type} not supported")
 
+        # initialization of predictor
         self.model = TabularPredictor(
             label=target,
             # problem_type= problem_type,
@@ -151,15 +185,15 @@ class AGCore:
             verbosity=2,
         )
 
+        # predictor fit
         self.model.fit(
-            train_data,
-            # time_limit= ,
-            # presets= 'best_quality', # includes cv
-            # [‘best_quality’, ‘high_quality’, ‘good_quality’, ‘medium_quality’ (def),
-            # ‘optimize_for_deployment’, ‘interpretable’, ‘ignore_text’]
-            # included_model_typeslist, default = None
-            # verbosity
-            num_bag_folds=5,
+            self.train_data,
+            time_limit=self.experiment.ml_config.time_limit,
+            presets=self.experiment.ml_config.time_limit,
+            num_bag_folds=self.experiment.ml_config.num_bag_folds,
+            # add
+            # - included_model_typeslist, default = None
+            # - verbosity
         )
         print("fitting completed")
 
@@ -171,7 +205,7 @@ class AGCore:
 
         # save leaderboard
         leaderboard = self.model.leaderboard(
-            test_data,
+            self.test_data,
             extra_info=True,
             # extra_metrics=
             # display= True
@@ -180,12 +214,25 @@ class AGCore:
         # print(leaderboard)
         leaderboard.to_csv(self.path_results.joinpath("leaderboard.csv"))
 
+        # Best test result
+        best_model = leaderboard.iloc[0]  # name of best model
+        best_result_df = pd.DataFrame(best_model).transpose()
+        best_result_df.to_csv(self.path_results.joinpath("best_model_result.csv"))
+        # print(best_result_df)
+
+        # save model info
+        model_info = self.model.info()
+        with open(
+            self.path_results.joinpath("model_info.json"), "w", encoding="utf-8"
+        ) as f:
+            json.dump(model_info, f, default=str, indent=4)
+
         # save feature importances
         feature_importance = self.model.feature_importance(
             # model- default as best
             # features, subsample_size: int = 5000, time_limit: float | None = None
             # num_shuffle_sets: int | None = None, confidence_level: float = 0.99
-            test_data
+            self.test_data
         )
         # print(feature_importance)
         feature_importance.to_csv(self.path_results.joinpath("feature_importance.csv"))
@@ -206,7 +253,7 @@ class AGCore:
         # model_to_use = self.model.model_names()[i]
         # model_pred = self.model.predict(test_data, model=model_to_use)
         perf = self.model.evaluate(
-            test_data,
+            self.test_data,
             # auxiliary_metrics=False,
             # display= True,
             detailed_report=True,
@@ -236,27 +283,83 @@ class AGCore:
         ) as f:
             print(model_configs, file=f)
 
-        # Best test result
-        best_model = leaderboard.iloc[0]
-        best_result_df = pd.DataFrame(best_model).transpose()
-        best_result_df.to_csv(self.path_results.joinpath("best_model_result.csv"))
-        # print(best_result_df)
-
-        # save model info
-        model_info = self.model.info()
-        with open(
-            self.path_results.joinpath("model_info.json"), "w", encoding="utf-8"
-        ) as f:
-            json.dump(model_info, f, default=str, indent=4)
-
         # save results to experiment
         self.experiment.results["Autogluon"] = ModuleResults(
             id="ag",
             model=self.model.model_best,
-            scores=perf,
+            # scores=perf,
             feature_importances=feature_importance.to_dict(),
-            # results=
+            scores=self._get_scores(),
+            # features_importances [dict]
+            # selected_features [dict]
+            predictions=self._get_predictions(),
         )
 
         # return updated experiment object
         return self.experiment
+
+    def _get_scores(self):
+        """Get test scores."""
+
+    def _get_predictions(self):
+        """Get validation and test predictions."""
+        predictions = dict()
+        best_model_name = self.model.model_best
+        problem_type = self.model.problem_type
+        row_column = self.experiment.row_column
+
+        # (A) test predictions
+        # DataFrame with 'row_id' from test data
+        rowid_test = pd.DataFrame({row_column: self.experiment.data_test[row_column]})
+
+        if problem_type == "regression":
+            # Predictions for regression on test data
+            test_pred_data = self.model.predict(self.test_data)
+            # Create DataFrame with predictions
+            test_pred = pd.DataFrame({"prediction": test_pred_data})
+        elif problem_type in ["binary", "multiclass"]:
+            # Predicted probabilities for classification on test data
+            test_pred = self.model.predict_proba(self.test_data)
+            # Assign class labels as column names
+            class_labels = self.model.class_labels
+            test_pred.columns = class_labels
+        else:
+            raise ValueError(f"Unsupported problem type: {problem_type}")
+
+        # Verify alignment
+        assert len(rowid_test) == len(test_pred), "Mismatch in number of test rows!"
+        # Combine 'row_id' and test predictions
+        predictions["test"] = pd.concat(
+            [rowid_test.reset_index(drop=True), test_pred.reset_index(drop=True)],
+            axis=1,
+        )
+
+        # (B) validation predictions
+        # DataFrame with 'row_id' from validation data
+        rowid_val = pd.DataFrame(
+            {row_column: self.experiment.data_traindev[row_column]}
+        )
+
+        if problem_type == "regression":
+            # Out-of-fold (OOF) predictions for regression
+            oof_pred_data = self.model.predict_oof(model=best_model_name)
+            # Create DataFrame with OOF predictions
+            oof_pred = pd.DataFrame({"prediction": oof_pred_data})
+        elif problem_type in ["binary", "multiclass"]:
+            # OOF predicted probabilities for classification
+            oof_pred = self.model.predict_proba_oof(model=best_model_name)
+            # Assign class labels as column names
+            class_labels = self.model.class_labels
+            oof_pred.columns = class_labels
+        else:
+            raise ValueError(f"Unsupported problem type: {problem_type}")
+
+        # Verify alignment
+        assert len(rowid_val) == len(oof_pred), "Mismatch in number of validation rows!"
+        # Combine 'row_id' and validation predictions
+        predictions["val"] = pd.concat(
+            [rowid_val.reset_index(drop=True), oof_pred.reset_index(drop=True)],
+            axis=1,
+        )
+
+        return predictions

@@ -4,7 +4,7 @@ import gzip
 import logging
 import pickle
 from pathlib import Path
-from typing import Dict, List, Optional, Union
+from typing import Dict, List, Optional
 
 import networkx as nx
 import numpy as np

@@ -1,9 +1,10 @@
 """Octo Experiment module."""
 
 import gzip
+import logging
 import pickle
 from pathlib import Path
-from typing import Optional
+from typing import Dict, List, Optional
 
 import networkx as nx
 import numpy as np
@@ -12,6 +13,9 @@ import scipy.stats
 from attrs import Factory, define, field, validators
 
 from octopus.config.core import OctoConfig
+from octopus.logger import configure_logging
+
+configure_logging()
 
 
 @define
@@ -19,88 +23,113 @@ class OctoExperiment:
     """Experiment."""
 
     id: str = field(validator=[validators.instance_of(str)])
-    experiment_id: int = field(validator=[validators.instance_of(int)])
-    sequence_item_id: int = field(validator=[validators.instance_of(int)])
-    input_item_id: int = field(validator=[validators.instance_of(int)])
-    path_sequence_item: Path = field(validator=[validators.instance_of(Path)])
-    configs: OctoConfig = field(validator=[validators.instance_of(OctoConfig)])
-    datasplit_column: str = field(validator=[validators.instance_of(str)])
-    row_column: str = field(validator=[validators.instance_of(str)])
-    feature_columns: list = field(validator=[validators.instance_of(list)])
+    """ID"""
 
-    target_assignments: dict = field(validator=[validators.instance_of(dict)])
+    experiment_id: int = field(validator=[validators.instance_of(int)])
+    """Identifier for the experiment."""
+
+    sequence_item_id: int = field(validator=[validators.instance_of(int)])
+    """Identifier for the sequence item."""
+
+    input_item_id: int = field(validator=[validators.instance_of(int)])
+    """Identifier for the input sequence item."""
+
+    path_sequence_item: Path = field(validator=[validators.instance_of(Path)])
+    """File system path to the sequence item."""
+
+    configs: OctoConfig = field(validator=[validators.instance_of(OctoConfig)])
+    """Configuration settings for the experiment."""
+
+    datasplit_column: str = field(validator=[validators.instance_of(str)])
+    """Column name used for data splitting."""
+
+    row_column: str = field(validator=[validators.instance_of(str)])
+    """Column name used as row identifier."""
+
+    feature_columns: List = field(validator=[validators.instance_of(list)])
+    """List of column names used as features in the experiment."""
+
+    target_assignments: Dict = field(validator=[validators.instance_of(dict)])
+    """Mapping of target variables to their assignments."""
+
     data_traindev: pd.DataFrame = field(
         validator=[validators.instance_of(pd.DataFrame)]
     )
+    """DataFrame containing training and development data."""
+
     data_test: pd.DataFrame = field(validator=[validators.instance_of(pd.DataFrame)])
+    """DataFrame containing test data."""
 
     stratification_column: Optional[str] = field(
         default=Factory(lambda: None),
         validator=validators.optional(validators.instance_of(str)),
     )
+    "Column name used for stratification, if applicable."
+
     ml_module: str = field(
         init=False, default="", validator=[validators.instance_of(str)]
     )
+    """Name of the machine learning module used."""
+
     # number of cpus available for each experiment
     num_assigned_cpus: int = field(
         init=False, default=0, validator=[validators.instance_of(int)]
     )
+    """Number of CPUs assigned to the experiment."""
 
-    ml_config: dict = field(init=False, default=None)
+    ml_config: Dict = field(init=False, default=None)
+    """Configuration settings for the machine learning module."""
 
-    selected_features: list = field(
+    selected_features: List = field(
         default=Factory(list), validator=[validators.instance_of(list)]
     )
+    """List of features selected for the experiment."""
 
-    feature_groups: dict = field(
+    feature_groups: Dict = field(
         default=Factory(dict), validator=[validators.instance_of(dict)]
     )
+    """Groupings of features based on correlation analysis."""
 
-    prior_feature_importances: dict = field(
+    prior_feature_importances: Dict = field(
         default=Factory(dict), validator=[validators.instance_of(dict)]
     )
+    """Prior knowledge of feature importances, if available."""
 
-    results: dict = field(
+    results: Dict = field(
         default=Factory(dict), validator=[validators.instance_of(dict)]
     )
+    """Results of the experiment, keyed by result type."""
 
     @property
     def path_study(self) -> Path:
-        """Path study."""
+        """Get study path."""
         return Path(self.configs.study.path, self.configs.study.name)
 
     @property
     def ml_type(self) -> str:
-        """Shortcut to ml_type."""
+        """Get ml_type from config."""
         return self.configs.study.ml_type
 
     def __attrs_post_init__(self):
-        # self.feature_groups = dict()
         self.feature_groups = self.calculate_feature_groups(self.feature_columns)
 
     def calculate_feature_groups(self, feature_columns) -> dict:
-        """Calculate Feature Groups."""
-        # looking for groups arising from different thresholds
+        """Calculate feature groups based on correlation thresholds."""
+        if len(feature_columns) <= 2:
+            logging.warning(
+                "Not enough features to calculate correlations for feature groups."
+            )
+            return {}
+        logging.info("Calculating feature groups.")
+
         auto_group_thresholds = [0.7, 0.8, 0.9]
         auto_groups = list()
-        print("Calculating feature groups.")
 
-        # Check the number of features
-        if len(feature_columns) <= 2:
-            print("Not enough features to calculate correlations for feature groups.")
-            return {}
-
-        # correlation matrix
-        # (A) spearmamr correlation matrix
         pos_corr_matrix, _ = scipy.stats.spearmanr(
             np.nan_to_num(self.data_traindev[feature_columns].values)
         )
         pos_corr_matrix = np.abs(pos_corr_matrix)
 
-        # (B) RDC correlation matrix
-        # pos_corr_matrix = np.abs(
-        #    rdc_correlation_matrix(self.data_traindev[feature_columns])
-        # )
         # get groups depending on threshold
         for threshold in auto_group_thresholds:
             g = nx.Graph()
@@ -108,6 +137,7 @@ class OctoExperiment:
                 for j in range(i + 1, len(feature_columns)):
                     if pos_corr_matrix[i, j] > threshold:
                         g.add_edge(i, j)
+
             # Get connected components and sort them to ensure determinism
             subgraphs = [
                 g.subgraph(c).copy()
@@ -123,39 +153,16 @@ class OctoExperiment:
 
         # find unique groups
         auto_groups_unique = [list(t) for t in set(map(tuple, auto_groups))]
-        # create groups dicts
-        groups_dict = dict()
-        for i, group in enumerate(auto_groups_unique):
-            groups_dict[f"group{i}"] = group
 
-        # print("Feature Groups:", groups_dict)
-        return groups_dict
-
-    def extract_fi_from_results(self):
-        """Extract features importances from results."""
-        feature_importances = dict()
-        for key, moduleresult in self.results.items():
-            feature_importances[key] = moduleresult.feature_importances
-        return feature_importances
+        return {f"group{i}": group for i, group in enumerate(auto_groups_unique)}
 
     def to_pickle(self, file_path: str) -> None:
-        """Save object to a compressed pickle file.
-
-        Args:
-            file_path: The name of the file to save the pickle data to.
-        """
+        """Save object to a compressed pickle file."""
         with gzip.GzipFile(file_path, "wb") as file:
             pickle.dump(self, file)
 
     @classmethod
     def from_pickle(cls, file_path: str) -> "OctoExperiment":
-        """Load object to a compressed pickle file.
-
-        Args:
-            file_path: The path to the file to load the pickle data from.
-
-        Returns:
-            OctoExperiment: The loaded instance of OctoExperiment.
-        """
+        """Load object from a compressed pickle file."""
         with gzip.GzipFile(file_path, "rb") as file:
             return pickle.load(file)

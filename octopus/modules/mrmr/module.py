@@ -1,5 +1,7 @@
 """Mrmr module."""
 
+from typing import ClassVar
+
 from attrs import Factory, define, field, validators
 
 from octopus.config.base_sequence_item import BaseSequenceItem
@@ -9,8 +11,8 @@ from octopus.config.base_sequence_item import BaseSequenceItem
 class Mrmr(BaseSequenceItem):
     """MRMR Config."""
 
-    module: str = field(default="mrmr")
-    """Models for ML."""
+    module: ClassVar[str] = "mrmr"
+    """Module name."""
 
     load_sequence_item: bool = field(
         validator=validators.instance_of(bool),

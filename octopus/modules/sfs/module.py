@@ -1,5 +1,7 @@
 """SFS Module (sequential feature selection)."""
 
+from typing import ClassVar
+
 from attrs import Factory, define, field, validators
 
 from octopus.config.base_sequence_item import BaseSequenceItem
@@ -9,7 +11,7 @@ from octopus.config.base_sequence_item import BaseSequenceItem
 class Sfs(BaseSequenceItem):
     """SFS Config."""
 
-    module: str = field(default="sfs")
+    module: ClassVar[str] = "sfs"
     """Module name."""
 
     load_sequence_item: bool = field(

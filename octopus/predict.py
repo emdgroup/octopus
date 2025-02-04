@@ -152,18 +152,12 @@ class OctoPredict:
                 raise ValueError("Features missing in provided dataset.")
 
         grouped_df = (
-            pd.concat(preds_lst, axis=0)
-            .groupby("row_id")["probability"]
-            .agg(["mean", "std", "count"])
-            .rename(
-                columns={"mean": "probability", "std": "probability_std", "count": "n"},
-            )
-            .reset_index()
+            pd.concat(preds_lst, axis=0).groupby("row_id").agg(["mean", "std", "count"])
         )
         if return_df is True:
             return grouped_df
         else:
-            return grouped_df["probability"].to_numpy()
+            return grouped_df.loc[:, (slice(None), "mean")].to_numpy()
 
     def predict_test(self) -> pd.DataFrame:
         """Predict on available test data."""

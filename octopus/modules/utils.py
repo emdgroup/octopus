@@ -1,6 +1,7 @@
 """Helper functions."""
 
 import numpy as np
+import pandas as pd
 from scipy.stats import rankdata
 
 # from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
@@ -38,32 +39,55 @@ def get_performance(
     model, data, feature_columns, target_metric, target_assignments, threshold=0.5
 ) -> float:
     """Calculate model performance score on dataset for given metric."""
+    input_data = data[feature_columns]
+
+    # Ensure input_data is not empty and contains the required feature columns
+    if input_data.empty or not all(
+        col in input_data.columns for col in feature_columns
+    ):
+        raise ValueError(
+            "Input data is empty or does not contain the required feature columns."
+        )
+
+    # Get target column
+    target_col = list(target_assignments.values())[0]
+    target = data[target_col]
+
+    # Get probabilities or predictions
     if target_metric in ["AUCROC", "LOGLOSS", "AUCPR", "NEGBRIERSCORE"]:
-        target_col = list(target_assignments.values())[0]
-        target = data[target_col]
-        probabilities = model.predict_proba(data[feature_columns])[
-            :, 1
-        ]  # binary only!!
+        probabilities = model.predict_proba(input_data)
+        # Convert to NumPy array if it's a DataFrame
+        if isinstance(probabilities, pd.DataFrame):
+            probabilities = probabilities.to_numpy()  # Convert to NumPy array
+
+        probabilities = probabilities[:, 1]  # Get probabilities for class 1
         performance = metrics_inventory[target_metric]["method"](target, probabilities)
+
     elif target_metric in ["ACC", "ACCBAL", "F1"]:
-        # only soft voting implemented (averaging of prababilites)
-        target_col = list(target_assignments.values())[0]
-        target = data[target_col]
-        probabilities = model.predict_proba(data[feature_columns])[:, 1]  # binary
+        probabilities = model.predict_proba(input_data)
+        if isinstance(probabilities, pd.DataFrame):
+            probabilities = probabilities.to_numpy()  # Convert to NumPy array
+
+        probabilities = probabilities[:, 1]  # Get probabilities for class 1
         predictions = (probabilities >= threshold).astype(int)
         performance = metrics_inventory[target_metric]["method"](target, predictions)
+
     elif target_metric in ["CI"]:
-        estimate = model.predict(data[feature_columns])
+        estimate = model.predict(input_data)
         event_time = data[target_assignments["duration"]].astype(float)
         event_indicator = data[target_assignments["event"]].astype(bool)
         performance, _, _, _, _ = metrics_inventory[target_metric]["method"](
             event_indicator, event_time, estimate
         )
+
     elif target_metric in ["R2", "MSE", "MAE"]:
-        target_col = list(target_assignments.values())[0]
-        target = data[target_col]
-        predictions = model.predict(data[feature_columns])
+        predictions = model.predict(input_data)
+        if isinstance(predictions, pd.DataFrame):
+            predictions = (
+                predictions.to_numpy()
+            )  # Convert to NumPy array if it's a DataFrame
         performance = metrics_inventory[target_metric]["method"](target, predictions)
+
     else:
         raise ValueError(f"Unsupported target metric: {target_metric}")
 

@@ -1,5 +1,7 @@
 """Efs module."""
 
+from typing import ClassVar
+
 from attrs import Factory, define, field, validators
 
 from octopus.config.base_sequence_item import BaseSequenceItem
@@ -9,7 +11,7 @@ from octopus.config.base_sequence_item import BaseSequenceItem
 class Efs(BaseSequenceItem):
     """EFS Config."""
 
-    module: str = field(default="efs")
+    module: ClassVar[str] = "efs"
     """Module name."""
 
     description: str = field(validator=[validators.instance_of(str)], default="")

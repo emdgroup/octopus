@@ -357,6 +357,7 @@ class Training:
             f"Calculating permutation feature importances ({partition})"
             ". This may take a while..."
         )
+        np.random.seed(42)  # reproduceability
         # fixed confidence level
         confidence_level = 0.95
         feature_columns = self.feature_columns
@@ -454,7 +455,7 @@ class Training:
             f"Calculating permutation feature importances ({partition})"
             ". This may take a while..."
         )
-
+        np.random.seed(42)  # reproduceability
         if self.ml_type == "timetoevent":
             # sksurv models only provide inbuilt scorer (CI)
             # more work needed to support other metrics
@@ -486,6 +487,7 @@ class Training:
 
     def calculate_fi_lofo(self):
         """LOFO feature importance."""
+        np.random.seed(42)  # reproduceability
         print("Calculating LOFO feature importance. This may take a while...")
         # first, dev only
         feature_columns = self.feature_columns

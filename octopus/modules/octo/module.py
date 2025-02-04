@@ -1,6 +1,6 @@
 """Octo module."""
 
-from typing import List
+from typing import ClassVar, List
 
 from attrs import Factory, define, field, validators
 
@@ -14,8 +14,8 @@ class Octo(BaseSequenceItem):
     models: List = field()
     """Models for ML."""
 
-    module: str = field(default=Factory(lambda: "octo"))
-    """Models for ML."""
+    module: ClassVar[str] = "octo"
+    """Module name."""
 
     load_sequence_item: bool = field(
         validator=validators.instance_of(bool),

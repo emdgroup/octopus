@@ -121,6 +121,7 @@ class OctoExperiment:
             )
             return {}
         logging.info("Calculating feature groups.")
+
         auto_group_thresholds = [0.7, 0.8, 0.9]
         auto_groups = list()
 
@@ -129,6 +130,7 @@ class OctoExperiment:
         )
         pos_corr_matrix = np.abs(pos_corr_matrix)
 
+        # get groups depending on threshold
         for threshold in auto_group_thresholds:
             g = nx.Graph()
             for i in range(len(feature_columns)):
@@ -136,20 +138,22 @@ class OctoExperiment:
                     if pos_corr_matrix[i, j] > threshold:
                         g.add_edge(i, j)
 
+            # Get connected components and sort them to ensure determinism
             subgraphs = [
                 g.subgraph(c).copy()
                 for c in sorted(
                     nx.connected_components(g), key=lambda x: (len(x), sorted(x))
                 )
             ]
-            auto_groups.extend(
-                [
-                    [feature_columns[node] for node in sorted(sg.nodes())]
-                    for sg in subgraphs
-                ]
-            )
+            # Create groups of feature columns
+            groups = []
+            for sg in subgraphs:
+                groups.append([feature_columns[node] for node in sorted(sg.nodes())])
+            auto_groups.extend([sorted(g) for g in groups])
 
+        # find unique groups
         auto_groups_unique = [list(t) for t in set(map(tuple, auto_groups))]
+
         return {f"group{i}": group for i, group in enumerate(auto_groups_unique)}
 
     def to_pickle(self, file_path: str) -> None:

@@ -50,6 +50,7 @@ def test_basic_regression():
         ml_type="regression",
         target_metric="R2",
         silently_overwrite_study=True,
+        ignore_data_health_warning=True,
     )
 
     config_manager = ConfigManager(
@@ -59,6 +60,8 @@ def test_basic_regression():
     config_sequence = ConfigSequence(
         [
             Octo(
+                item_id=1,
+                input_item_id=0,
                 description="step_1",
                 models=["RandomForestRegressor", "XGBRegressor"],
                 n_trials=1,

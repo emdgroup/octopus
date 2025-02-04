@@ -1,3 +1,5 @@
+"""Test experiment initialization."""
+
 from pathlib import Path
 
 import pandas as pd

@@ -87,7 +87,7 @@ config_sequence = ConfigSequence(
             input_item_id=0,
             description="step_1",
             models=["RandomForestRegressor", "XGBRegressor"],
-            n_trials=2,
+            n_trials=150,
         ),
     ]
 )

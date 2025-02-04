@@ -1,3 +1,5 @@
+"""Test creation of correlation groups."""
+
 from pathlib import Path
 
 import numpy as np
@@ -11,6 +13,7 @@ from octopus.modules import Octo
 
 @pytest.fixture
 def correlated_data():
+    """Create dataset for correlation grouping test."""
     np.random.seed(42)
     n_samples = 1000
 
@@ -48,6 +51,7 @@ def correlated_data():
 
 @pytest.fixture
 def octo_config():
+    """Create config for correlation grouping test."""
     config_study = ConfigStudy(name="test", ml_type="regression", target_metric="R2")
     config_sequence = ConfigSequence(
         sequence_items=[
@@ -67,6 +71,7 @@ def octo_config():
 
 @pytest.fixture
 def mock_octo_experiment(correlated_data, octo_config):
+    """Create octo experiment for correlation grouping test."""
     return OctoExperiment(
         id="test_id",
         experiment_id=1,
@@ -84,25 +89,29 @@ def mock_octo_experiment(correlated_data, octo_config):
 
 
 def test_feature_groups_structure(mock_octo_experiment):
+    """Test structure of groups."""
     feature_groups = mock_octo_experiment.feature_groups
     assert isinstance(feature_groups, dict), "feature_groups should be a dictionary"
-    assert (
-        len(feature_groups) >= 3
-    ), f"Expected at least 3 groups, but got {len(feature_groups)}"
+    assert len(feature_groups) >= 3, (
+        f"Expected at least 3 groups, but got {len(feature_groups)}"
+    )
 
 
 def test_correlated_features_grouping(mock_octo_experiment):
+    """Test for correct thresholds groups."""
     feature_groups = mock_octo_experiment.feature_groups
 
     def check_features_grouped(features, threshold):
         for group_name, group in feature_groups.items():
             if set(features).issubset(set(group)):
                 print(
-                    f"Features {features} found in group {group_name} with threshold > {threshold}"
+                    f"""Features {features} found in group {group_name}
+                    with threshold > {threshold}"""
                 )
                 return
         pytest.fail(
-            f"Features {features} should be grouped together (correlation > {threshold})"
+            f"""Features {features} should be grouped together
+            (correlation > {threshold})"""
         )
 
     # Check for high correlation group (> 0.9)
@@ -117,16 +126,19 @@ def test_correlated_features_grouping(mock_octo_experiment):
 
 
 def test_uncorrelated_features(mock_octo_experiment):
+    """Test uncorrelated features not in any group."""
     feature_groups = mock_octo_experiment.feature_groups
     uncorrelated_feature = "x7"
     for group in feature_groups.values():
         if len(group) > 1:
             assert (
                 uncorrelated_feature not in group
-            ), f"Uncorrelated feature {uncorrelated_feature} should not be in group {group}"
+            ), f"""Uncorrelated feature {uncorrelated_feature}
+                should not be in group {group}"""
 
 
 def test_correlation_thresholds(mock_octo_experiment):
+    """Test correlation thresholds."""
     feature_groups = mock_octo_experiment.feature_groups
     correlation_matrix = (
         mock_octo_experiment.data_traindev[mock_octo_experiment.feature_columns]
@@ -142,18 +154,22 @@ def test_correlation_thresholds(mock_octo_experiment):
             if "0.9" in group_name:
                 assert (
                     min_corr >= 0.9
-                ), f"Minimum correlation in group {group_name} is {min_corr}, which is below the threshold of 0.9"
+                ), f"""Minimum correlation in group {group_name} is {min_corr},
+                    which is below the threshold of 0.9"""
             elif "0.8" in group_name:
                 assert (
                     min_corr >= 0.8
-                ), f"Minimum correlation in group {group_name} is {min_corr}, which is below the threshold of 0.8"
+                ), f"""Minimum correlation in group {group_name} is {min_corr},
+                    which is below the threshold of 0.8"""
             elif "0.7" in group_name:
                 assert (
                     min_corr >= 0.7
-                ), f"Minimum correlation in group {group_name} is {min_corr}, which is below the threshold of 0.7"
+                ), f"""Minimum correlation in group {group_name} is {min_corr},
+                      which is below the threshold of 0.7"""
 
 
 def test_features_in_multiple_groups(mock_octo_experiment):
+    """Test features are in multiple groups."""
     feature_groups = mock_octo_experiment.feature_groups
     feature_to_groups = {}
     for group_name, features in feature_groups.items():

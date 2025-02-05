@@ -238,8 +238,7 @@ class AGCore:
             model=self.model,
             feature_importances=self._get_feature_importances(),
             scores=self._get_scores(),
-            # features_importances [dict]
-            # selected_features [dict]
+            selected_features=self.feature_columns,  # no feature selection
             predictions=self._get_predictions(),
         )
 

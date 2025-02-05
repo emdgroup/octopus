@@ -11,7 +11,7 @@ from octopus.config.base_sequence_item import BaseSequenceItem
 class Octo(BaseSequenceItem):
     """Octofull sequence config."""
 
-    models: List = field()
+    models: List = field(default=Factory(lambda: ["ExtraTreesClassifier"]))
     """Models for ML."""
 
     module: ClassVar[str] = "octo"

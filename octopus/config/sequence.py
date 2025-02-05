@@ -52,10 +52,10 @@ def validate_sequence_items(
                 f"'BaseSequenceItem', but got '{type(item).__name__}'."
             )
 
-    # Condition 2.5: First Item Must Have item_id=1
-    if value[0].item_id != 1:
+    # Condition 2.5: First Item Must Have item_id=0
+    if value[0].item_id != 0:
         raise ValueError(
-            f"The first sequence item must have 'item_id=1', but got "
+            f"The first sequence item must have 'item_id=0', but got "
             f"'item_id={value[0].item_id}'."
         )
 
@@ -99,24 +99,24 @@ def validate_sequence_items(
             message += f" Unexpected item_ids: {sorted(extra_ids)}."
         raise ValueError(message)
 
-    # Condition 4: All items with input_item_id=0 must be at the start of the list
+    # Condition 4: All items with input_item_id=-1 must be at the start of the list
     reached_non_zero_input_item_id = False
     for idx, item in enumerate(value):
-        if item.input_item_id == 0:
+        if item.input_item_id == -1:
             if reached_non_zero_input_item_id:
                 raise ValueError(
-                    f"Item at position {idx + 1} has 'input_item_id=0' but appears "
-                    "after items with 'input_item_id>0'. All items with "
-                    "'input_item_id=0' must be at the start of the list."
+                    f"Item at position {idx + 1} has 'input_item_id=-1' but appears "
+                    "after items with 'input_item_id>=0'. All items with "
+                    "'input_item_id=-1' must be at the start of the list."
                 )
         else:
             reached_non_zero_input_item_id = True
 
-    # Condition 6: For elements with input_item_id > 0, input_item_id must refer
+    # Condition 6: For elements with input_item_id >= 0, input_item_id must refer
     # to an item that comes before them
     for idx, item in enumerate(value):
         input_item_id = item.input_item_id
-        if input_item_id > 0:
+        if input_item_id >= 0:
             if input_item_id not in item_id_to_index:
                 raise ValueError(
                     f"Item '{item.description}' (position {idx + 1}) has "

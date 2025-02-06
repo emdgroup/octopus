@@ -31,7 +31,7 @@ ModulesInventoryType = Dict[str, Type]
 
 # Inventory for all available modules
 modules_inventory: ModulesInventoryType = {
-    "ag": AGCore,
+    "autogluon": AGCore,
     "octo": OctoCore,
     "mrmr": MrmrCore,
     "rfe": RfeCore,

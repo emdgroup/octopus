@@ -1,5 +1,7 @@
 """ROC core (removal of correlated features)."""
 
+from typing import ClassVar
+
 from attrs import Factory, define, field, validators
 
 from octopus.config.base_sequence_item import BaseSequenceItem
@@ -9,7 +11,7 @@ from octopus.config.base_sequence_item import BaseSequenceItem
 class Roc(BaseSequenceItem):
     """Roc Config."""
 
-    module: str = field(default="roc")
+    module: ClassVar[str] = "roc"
     """Module name."""
 
     description: str = field(validator=[validators.instance_of(str)], default="")

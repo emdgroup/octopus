@@ -1,5 +1,7 @@
 """Rfe2 module."""
 
+from typing import ClassVar
+
 from attrs import define, field, validators
 
 from octopus.modules.octo.module import Octo
@@ -9,8 +11,8 @@ from octopus.modules.octo.module import Octo
 class Rfe2(Octo):
     """Rf2 sequence config."""
 
-    module: str = field(default="rfe2")
-    """Models for ML."""
+    module: ClassVar[str] = "rfe2"
+    """Module name."""
 
     # step: int = field(validator=[validators.instance_of(int)], default=1)
     # """Number of features to remove at each iteration."""

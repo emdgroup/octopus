@@ -1,5 +1,7 @@
 """Boruta Module."""
 
+from typing import ClassVar
+
 from attrs import Factory, define, field, validators
 
 from octopus.config.base_sequence_item import BaseSequenceItem
@@ -9,7 +11,7 @@ from octopus.config.base_sequence_item import BaseSequenceItem
 class Boruta(BaseSequenceItem):
     """Boruta Config."""
 
-    module: str = field(default="boruta")
+    module: ClassVar[str] = "boruta"
     """Module name."""
 
     load_sequence_item: bool = field(

@@ -4,6 +4,7 @@ import json
 import shutil
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 from attrs import define, field, validators
 from autogluon.core.metrics import (
@@ -19,7 +20,25 @@ from autogluon.tabular import TabularPredictor
 
 # from sklearn.utils.multiclass import unique_labels
 from octopus.experiment import OctoExperiment
+from octopus.modules.utils import get_performance_score
 from octopus.results import ModuleResults
+
+# TOBEDONE
+# - add more metrics: F1, AUCPR, NEGBRIERSCORE
+# - make predictions compatible with Octopus
+# - make feature importances compatible with Octopus
+# - replace print() with logging
+# - do we need to set problem type?
+# - add: includes_model_types
+# - add: verbosity setting
+# - make autogluon consider group features!
+# - compare ag and octopus performance calculations
+# - compare ag and octopus permutation feature importances
+# - compate speed of permutation fi calculations (octo/autogluon)
+# - implement feature_groups calculated from the traindev dataset,
+#   needed for the group_feature_importances
+# - add shap feature importances
+
 
 # mapping of metrics
 try:
@@ -44,6 +63,7 @@ class AGCore:
         validator=[validators.instance_of(OctoExperiment)]
     )
     model = field(init=False)
+    num_cpus = field(init=False)
 
     @property
     def path_module(self) -> Path:
@@ -78,11 +98,6 @@ class AGCore:
         return self.experiment.data_test[self.experiment.target_assignments.values()]
 
     @property
-    def data_test(self) -> pd.DataFrame:
-        """data_test."""
-        return self.experiment.data_test
-
-    @property
     def target_assignments(self) -> dict:
         """Target assignments."""
         return self.experiment.target_assignments
@@ -91,6 +106,11 @@ class AGCore:
     def target_metric(self) -> str:
         """Target metric."""
         return self.experiment.configs.study.target_metric
+
+    @property
+    def metrics(self) -> str:
+        """Metrics."""
+        return self.experiment.configs.study.metrics
 
     @property
     def config(self) -> dict:
@@ -102,31 +122,55 @@ class AGCore:
         """Feature Columns."""
         return self.experiment.feature_columns
 
+    @property
+    def ag_train_data(self) -> pd.DataFrame:
+        """Autogluon (ag) training data."""
+        return pd.concat([self.x_traindev, self.y_traindev], axis=1)
+
+    @property
+    def ag_test_data(self) -> pd.DataFrame:
+        """Autogluon (ag) test data."""
+        return pd.concat([self.x_test, self.y_test], axis=1)
+
     def __attrs_post_init__(self):
-        # delete directories /trials /optuna /results to ensure clean state
+        # delete directories /results to ensure clean state
         # create directory if it does not exist
         for directory in [self.path_results]:
             if directory.exists():
                 shutil.rmtree(directory)
             directory.mkdir(parents=True, exist_ok=True)
 
+        # set and validate resources assigned to the experiment
+        self._set_resources()
+
+    def _set_resources(self):
+        """Set and validate resources."""
+        print()
+        print("Checking resources:")
+        print(
+            "Number of CPUs available to this experiment:",
+            self.experiment.num_assigned_cpus,
+        )
+        print("Requested number of CPUs:", self.experiment.ml_config.num_cpus)
+
+        if self.experiment.ml_config.num_cpus == "auto":
+            self.num_cpus = self.experiment.num_assigned_cpus
+        else:
+            self.num_cpus = min(
+                self.experiment.num_assigned_cpus, self.experiment.ml_config.num_cpus
+            )
+
+        print(f"Allocated number of CPUs for this experiment: {self.num_cpus}")
+        print()
+
     def run_experiment(self):
         """Run experiment."""
-        # load train data, test data and label
-        train_data = pd.concat([self.x_traindev, self.y_traindev], axis=1)
-        # train_data = TabularDataset(self.experiment.data_traindev)
-        test_data = pd.concat([self.x_test, self.y_test], axis=1)
-        # test_data = TabularDataset(self.experiment.data_test)
-
-        if isinstance(self.target_assignments, dict):
+        if len(self.target_assignments) == 1:
             target = next(iter(self.target_assignments.values()))
-        elif isinstance(self.target_assignments, list):
-            if self.target_assignments:
-                target = self.target_assignments[0]
-            else:
-                raise ValueError("target_assignments list is empty")
         else:
-            raise ValueError("Expected target_assignments to be a dictionary or a list")
+            raise ValueError(
+                f"Single target expected. Got keys: {self.target_assignments.keys()} "
+            )
 
         # set up model and scoring type
         scoring_type = metrics_inventory_autogluon[self.target_metric]
@@ -141,9 +185,10 @@ class AGCore:
         #         problem_type = "multiclass"
         # elif self.experiment.ml_type == "regression":
         #     problem_type= 'regression'
-        # else:
+        # else:i
         #     raise ValueError(f"{self.experiment.ml_type} not supported")
 
+        # initialization of predictor
         self.model = TabularPredictor(
             label=target,
             # problem_type= problem_type,
@@ -151,15 +196,15 @@ class AGCore:
             verbosity=2,
         )
 
+        # predictor fit
         self.model.fit(
-            train_data,
-            # time_limit= ,
-            # presets= 'best_quality', # includes cv
-            # [‘best_quality’, ‘high_quality’, ‘good_quality’, ‘medium_quality’ (def),
-            # ‘optimize_for_deployment’, ‘interpretable’, ‘ignore_text’]
-            # included_model_typeslist, default = None
-            # verbosity
-            num_bag_folds=5,
+            self.ag_train_data,
+            time_limit=self.experiment.ml_config.time_limit,
+            presets=self.experiment.ml_config.time_limit,
+            num_bag_folds=self.experiment.ml_config.num_bag_folds,
+            # add
+            # - included_model_typeslist, default = None
+            # - verbosity
         )
         print("fitting completed")
 
@@ -169,57 +214,8 @@ class AGCore:
         ) as text_file:
             print(self.model.model_failures(), file=text_file)
 
-        # save leaderboard
-        leaderboard = self.model.leaderboard(
-            test_data,
-            extra_info=True,
-            # extra_metrics=
-            # display= True
-            # silent= True ?
-        )
-        # print(leaderboard)
-        leaderboard.to_csv(self.path_results.joinpath("leaderboard.csv"))
-
-        # save feature importances
-        feature_importance = self.model.feature_importance(
-            # model- default as best
-            # features, subsample_size: int = 5000, time_limit: float | None = None
-            # num_shuffle_sets: int | None = None, confidence_level: float = 0.99
-            test_data
-        )
-        # print(feature_importance)
-        feature_importance.to_csv(self.path_results.joinpath("feature_importance.csv"))
-
-        # show and save model summary
-        fit_summary = self.model.fit_summary(
-            # show_plot=True
-        )
-        with open(
-            self.path_results.joinpath("model_stats.txt"), "w", encoding="utf-8"
-        ) as text_file:
-            print(fit_summary, file=text_file)
-
-        # predict on test set
-        # predict_proba + eval_pred -> evaluate
-        # predict ?, predict_multi ?
-        # i = 0  # index of model to use
-        # model_to_use = self.model.model_names()[i]
-        # model_pred = self.model.predict(test_data, model=model_to_use)
-        perf = self.model.evaluate(
-            test_data,
-            # auxiliary_metrics=False,
-            # display= True,
-            detailed_report=True,
-        )
-        # serialize DataFame
-        if isinstance(perf, dict):
-            for key in perf:
-                if isinstance(perf[key], pd.DataFrame):
-                    perf[key] = perf[key].to_dict(orient="records")
-        with open(
-            self.path_results.joinpath("results_test.json"), "w", encoding="utf-8"
-        ) as f:
-            json.dump(perf, f, indent=4)
+        # save leaderboard and model information
+        self._save_leaderboard_info()
 
         # Get information about all models
         # all_models = self.model.get_model_names()
@@ -236,6 +232,122 @@ class AGCore:
         ) as f:
             print(model_configs, file=f)
 
+        # save results to experiment
+        self.experiment.results["Autogluon"] = ModuleResults(
+            id="autogluon",
+            model=self.model,
+            feature_importances=self._get_feature_importances(),
+            scores=self._get_scores(),
+            # features_importances [dict]
+            # selected_features [dict]
+            predictions=self._get_predictions(),
+        )
+
+        # return updated experiment object
+        return self.experiment
+
+    def _get_feature_importances(self):
+        """Calculate feature importances."""
+        print("Calculating test permutation feature importances...")
+        fi = dict()
+        # set seed
+        np.random.seed(42)
+
+        # autogluon permutation feature importances
+        fi["autogluon_permutation_test"] = self.model.feature_importance(
+            # model- default as best
+            data=self.ag_test_data,
+            subsample_size=5000,
+            time_limit=None,
+            include_confidence_band=True,
+            confidence_level=0.95,
+            num_shuffle_sets=15,
+            silent=True,
+        )
+        # print(feature_importance)
+        fi["autogluon_permutation_test"].to_csv(
+            self.path_results.joinpath(
+                "autogluon_permutation_feature_importance_test.csv"
+            )
+        )
+        return fi
+
+    def _get_scores(self):
+        """Get train/dev/test scores."""
+        # Evaluate the model on the test set
+        test_performance = self.model.evaluate(self.ag_test_data, silent=True)
+        test_performance_with_suffix = {
+            f"{key}_test": value for key, value in test_performance.items()
+        }
+
+        # Extract the best model's validation performance
+        leaderboard = self.model.leaderboard(silent=True)
+        best_model_info = leaderboard.iloc[0].to_dict()
+        dev_performance = {
+            key: value
+            for key, value in best_model_info.items()
+            if "val" in key or "score" in key
+        }
+        dev_performance_with_suffix = {
+            f"{key}_dev": value for key, value in dev_performance.items()
+        }
+
+        # Evaluate the model on the training set to get training performance
+        train_performance = self.model.evaluate(self.ag_train_data, silent=True)
+
+        # Modify the keys to add "_train" suffix for training performance
+        train_performance_with_suffix = {
+            f"{key}_train": value for key, value in train_performance.items()
+        }
+
+        # test scores calculated by octo method, for comparison
+        all_metrics = list(dict.fromkeys(self.metrics + [self.target_metric]))
+        test_performance_octo = dict()
+        for metric in all_metrics:
+            performance = get_performance_score(
+                self.model,
+                self.ag_test_data,
+                self.feature_columns,
+                metric,
+                self.target_assignments,
+            )
+            test_performance_octo[metric + "_test_octo"] = performance
+
+        # Combine all dictionaries
+        combined_performance = {
+            **dev_performance_with_suffix,
+            **train_performance_with_suffix,
+            **test_performance_with_suffix,
+            **test_performance_octo,
+        }
+
+        # save performance results
+        if isinstance(combined_performance, dict):
+            for key, value in combined_performance.items():
+                if isinstance(value, pd.DataFrame):
+                    combined_performance[key] = value.to_dict(orient="records")
+        with open(
+            self.path_results.joinpath("performance_results.json"),
+            "w",
+            encoding="utf-8",
+        ) as f:
+            json.dump(combined_performance, f, indent=4)
+
+        return combined_performance
+
+    def _save_leaderboard_info(self):
+        """Save leaderboard information."""
+        # save leaderboard
+        leaderboard = self.model.leaderboard(
+            self.ag_test_data,
+            extra_info=True,
+            # extra_metrics=
+            # display= True
+            # silent= True ?
+        )
+        # print(leaderboard)
+        leaderboard.to_csv(self.path_results.joinpath("leaderboard.csv"))
+
         # Best test result
         best_model = leaderboard.iloc[0]
         best_result_df = pd.DataFrame(best_model).transpose()
@@ -249,14 +361,74 @@ class AGCore:
         ) as f:
             json.dump(model_info, f, default=str, indent=4)
 
-        # save results to experiment
-        self.experiment.results["Autogluon"] = ModuleResults(
-            id="ag",
-            model=self.model.model_best,
-            scores=perf,
-            feature_importances=feature_importance.to_dict(),
-            # results=
+        # show and save model summary
+        fit_summary = self.model.fit_summary(
+            # show_plot=True
+        )
+        with open(
+            self.path_results.joinpath("model_stats.txt"), "w", encoding="utf-8"
+        ) as text_file:
+            print(fit_summary, file=text_file)
+
+    def _get_predictions(self):
+        """Get validation and test predictions."""
+        predictions = dict()
+        best_model_name = self.model.model_best
+        problem_type = self.model.problem_type
+        row_column = self.experiment.row_column
+
+        # (A) test predictions
+        # DataFrame with 'row_id' from test data
+        rowid_test = pd.DataFrame({row_column: self.experiment.data_test[row_column]})
+
+        if problem_type == "regression":
+            # Predictions for regression on test data
+            test_pred_data = self.model.predict(self.ag_test_data)
+            # Create DataFrame with predictions
+            test_pred = pd.DataFrame({"prediction": test_pred_data})
+        elif problem_type in ["binary", "multiclass"]:
+            # Predicted probabilities for classification on test data
+            test_pred = self.model.predict_proba(self.ag_test_data)
+            # Assign class labels as column names
+            class_labels = self.model.class_labels
+            test_pred.columns = class_labels
+        else:
+            raise ValueError(f"Unsupported problem type: {problem_type}")
+
+        # Verify alignment
+        assert len(rowid_test) == len(test_pred), "Mismatch in number of test rows!"
+        # Combine 'row_id' and test predictions
+        predictions["test"] = pd.concat(
+            [rowid_test.reset_index(drop=True), test_pred.reset_index(drop=True)],
+            axis=1,
         )
 
-        # return updated experiment object
-        return self.experiment
+        # (B) validation predictions
+        # DataFrame with 'row_id' from validation data
+        rowid_val = pd.DataFrame(
+            {row_column: self.experiment.data_traindev[row_column]}
+        )
+
+        if problem_type == "regression":
+            # Out-of-fold (OOF) predictions for regression
+            oof_pred_data = self.model.predict_oof(model=best_model_name)
+            # Create DataFrame with OOF predictions
+            oof_pred = pd.DataFrame({"prediction": oof_pred_data})
+        elif problem_type in ["binary", "multiclass"]:
+            # OOF predicted probabilities for classification
+            oof_pred = self.model.predict_proba_oof(model=best_model_name)
+            # Assign class labels as column names
+            class_labels = self.model.class_labels
+            oof_pred.columns = class_labels
+        else:
+            raise ValueError(f"Unsupported problem type: {problem_type}")
+
+        # Verify alignment
+        assert len(rowid_val) == len(oof_pred), "Mismatch in number of validation rows!"
+        # Combine 'row_id' and validation predictions
+        predictions["val"] = pd.concat(
+            [rowid_val.reset_index(drop=True), oof_pred.reset_index(drop=True)],
+            axis=1,
+        )
+
+        return predictions

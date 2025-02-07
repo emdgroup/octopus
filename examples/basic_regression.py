@@ -74,16 +74,20 @@ config_study = ConfigStudy(
     name="basic_regression_example",
     ml_type="regression",
     target_metric="MSE",
+    ignore_data_health_warning=True,
+    silently_overwrite_study=True,
 )
 
-config_manager = ConfigManager(outer_parallelization=False, run_single_experiment_num=0)
+config_manager = ConfigManager(outer_parallelization=False, run_single_experiment_num=1)
 
 config_sequence = ConfigSequence(
     [
         Octo(
+            item_id=1,
+            input_item_id=0,
             description="step_1",
             models=["RandomForestRegressor", "XGBRegressor"],
-            n_trials=50,
+            n_trials=150,
         ),
     ]
 )

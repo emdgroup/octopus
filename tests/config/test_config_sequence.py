@@ -10,6 +10,8 @@ from octopus.modules import Mrmr, Octo
 def octo_sequence():
     """Create fixture for octo sequence."""
     return Octo(
+        item_id=1,
+        input_item_id=0,
         description="step_1",
         models=["RandomForestRegressor", "XGBRegressor"],
     )
@@ -18,7 +20,7 @@ def octo_sequence():
 @pytest.fixture
 def mrmr_sequence():
     """Create fixture for mrmr sequence."""
-    return Mrmr(description="step2_mrmr")
+    return Mrmr(item_id=2, input_item_id=0, description="step2_mrmr")
 
 
 # Test cases for ConfigSequence

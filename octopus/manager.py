@@ -35,12 +35,15 @@ class OctoManager:
         self._validate_experiments()
 
         single_exp = self.configs.manager.run_single_experiment_num
+
+        # run single experiment
         if single_exp != -1:
             self._run_single_experiment(single_exp)
-        elif not self.configs.manager.outer_parallelization:
-            self._run_sequential()
-        else:
+        # run multiple experiments
+        elif self.configs.manager.outer_parallelization:
             self._run_parallel()
+        else:
+            self._run_sequential()
 
     def _log_execution_info(self):
         logging.info("Preparing execution of experiments")
@@ -85,13 +88,21 @@ class OctoManager:
             logging.exception(f"Exception occurred while executing task {index}")
 
     def create_execute_mlmodules(self, base_experiment: OctoExperiment):
-        """Create and execute ml modules."""
+        """Create and execute ml modules.
+
+        Iterates through sequence items, either loading existing experiments
+        or creating and running new ones.
+        """
         exp_path_dict: Dict[int, Path] = {}
 
         for element in self.configs.sequence.sequence_items:
             self._log_sequence_item_info(element)
 
-            if not element.load_sequence_item:
+            # load from sequence item
+            if element.load_sequence_item:
+                self._load_existing_experiment(base_experiment, element)
+            # create new experiment
+            else:
                 experiment = self._create_new_experiment(base_experiment, element)
                 path_study_sequence = self._create_sequence_directory(experiment)
                 path_save = self._get_save_path(path_study_sequence, experiment)
@@ -99,8 +110,6 @@ class OctoManager:
 
                 self._update_experiment_if_needed(experiment, exp_path_dict)
                 self._run_and_save_experiment(experiment, path_save)
-            else:
-                self._load_existing_experiment(base_experiment, element)
 
     def _log_sequence_item_info(self, element):
         logging.info(f"Processing sequence item: {element.item_id}")
@@ -143,6 +152,10 @@ class OctoManager:
         )
 
     def _update_experiment_if_needed(self, experiment, exp_path_dict):
+        """Update from input item.
+
+        Not for item with base input.
+        """
         if experiment.input_item_id > 0:
             self._update_from_input_item(experiment, exp_path_dict)
         experiment.feature_groups = experiment.calculate_feature_groups(
@@ -179,7 +192,12 @@ class OctoManager:
         return experiment
 
     def _update_from_input_item(self, experiment, path_dict):
-        """Update experiment properties using input item."""
+        """Update experiment properties using input item.
+
+        Properties updated currently, but could be expanded later:
+            - selected features
+            - prior feature importances
+        """
         input_path = path_dict[experiment.input_item_id]
 
         if not input_path.exists():

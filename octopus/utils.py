@@ -133,10 +133,19 @@ class DataSplit:
             partition_train.reset_index(drop=True, inplace=True)
             partition_test.reset_index(drop=True, inplace=True)
 
+            if self.process_id == "Outer":
+                info_name = "EXP"
+                dataset_name_1 = "Train/Dev"
+                dataset_name_2 = "Test"
+            else:
+                info_name = "SPLIT"
+                dataset_name_1 = "Train"
+                dataset_name_2 = "Dev"
+
             logger.info(
-                f"Split {num_split} created: "
-                f"Train - {len(partition_train)} rows, {len(set(groups_train))} groups | "
-                f"Test - {len(partition_test)} rows, {len(set(groups_test))} groups"
+                f"{info_name} {num_split} created: "
+                f"{dataset_name_1} - {len(partition_train)} rows, {len(set(groups_train))} groups | "
+                f"{dataset_name_2} - {len(partition_test)} rows, {len(set(groups_test))} groups"
             )
 
             data_splits[num_split] = {

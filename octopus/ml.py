@@ -295,13 +295,15 @@ class OctoML:
             # No missing values, return original datasets
             return train_df, test_df
 
-        print("Imputing data .....")
+        logger.info("Imputing data .....")
         # Perform imputation if missing values are present
         if imputation_method == "mice":
+            logger.info("MICE imputation")
             imputed_train_df, imputed_test_df = impute_mice(
                 train_df, test_df, feature_columns
             )
         else:
+            logger.info("Simple imputation")
             imputed_train_df, imputed_test_df = impute_simple(
                 train_df, test_df, feature_columns, imputation_method
             )

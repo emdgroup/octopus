@@ -1,5 +1,4 @@
 import logging
-import multiprocessing
 import sys
 from enum import Enum, auto
 
@@ -12,6 +11,9 @@ class LogGroup(Enum):
     PREPARE_EXECUTION = auto()
     PROCESSING = auto()
     OPTUNA = auto()
+    TRAINING = auto()
+    SCORES = auto()
+    RESULTS = auto()
 
 
 class ContextualFilter(logging.Filter):

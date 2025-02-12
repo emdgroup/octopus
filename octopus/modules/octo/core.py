@@ -277,25 +277,9 @@ class OctoCore:
 
     def _check_resources(self):
         """Check resources, assigned vs requested."""
-        # print()
-        # print("Checking resources:")
-        # print(
-        #     "Number of CPUs available to this experiment:",
-        #     self.experiment.num_assigned_cpus,
-        # )
-
-        # # assuming n_jobs=1 for every model
-        # if self.experiment.ml_config.inner_parallelization is True:
-        #     num_requested_cpus = (
-        #         self.experiment.ml_config.n_workers * self.experiment.ml_config.n_jobs
-        #     )
-        # else:
-        #     num_requested_cpus = self.experiment.ml_config.n_jobs
-
-        # print(f"Number of requested CPUs for this experiment: {num_requested_cpus}")
-        # print()
-
-        logger.set_log_group(LogGroup.PREPARE_EXECUTION)
+        logger.set_log_group(
+            LogGroup.PREPARE_EXECUTION, f"EXP {self.experiment.experiment_id} SQE TBD"
+        )
 
         if self.experiment.ml_config.inner_parallelization is True:
             num_requested_cpus = (
@@ -303,12 +287,6 @@ class OctoCore:
             )
         else:
             num_requested_cpus = self.experiment.ml_config.n_jobs
-
-        # logger.info(
-        #     f"Resource allocation | CPUs | "
-        #     f"Available: {self.experiment.num_assigned_cpus} | "
-        #     f"Requested: {self.experiment.ml_config.n_jobs}"
-        # )
         logger.info(
             f"""CPU Resources | \
         Available: {self.experiment.num_assigned_cpus} | \
@@ -659,7 +637,7 @@ class OctoCore:
             objective,
             n_jobs=1,
             n_trials=self.experiment.ml_config.n_trials,
-            # callbacks=[logging_callback],
+            callbacks=[logging_callback],
         )
 
         # copy bag of best trial to results
@@ -672,19 +650,23 @@ class OctoCore:
         # shutil.copy(source, self.path_results / source.name)
 
         # display results
-        print()
-        print("Optimization results: ")
+        logger.set_log_group(
+            LogGroup.SCORES, f"EXP {self.experiment.experiment_id} SQE TBD"
+        )
+        logger.info("Optimization results: ")
         # print("Best trial:", study.best_trial) #full info
-        print("Best trial number:", study.best_trial.number)
-        print("Best target value:", study.best_value)
+        logger.info(
+            f"Best trial number {study.best_trial.number}",
+        )
+        logger.info(f"Best target value {study.best_value}")
         user_attrs = study.best_trial.user_attrs
         performance_info = {
             key: v for key, v in user_attrs.items() if key not in ["config_training"]
         }
-        print("Best parameters:", user_attrs["config_training"])
-        print("Performance Info:", performance_info)
+        logger.info(f"Best parameters {user_attrs["config_training"]}")
+        logger.info(f"Performance Info: {performance_info}")
 
-        print("Create best bag.....")
+        logger.info("Create best bag.....")
         # get input features
         n_input_features = user_attrs["config_training"]["n_input_features"]
         best_bag_feature_columns = self.mrmr_features[n_input_features]
@@ -731,6 +713,6 @@ class OctoCore:
 
         # print best_bag scores for verification
         best_bag_scores = best_bag.get_scores()
-        print("Best bag performance", best_bag_scores)
+        logger.info(f"Best bag performance {best_bag_scores}")
 
         return True

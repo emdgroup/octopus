@@ -12,8 +12,11 @@ from sklearn.ensemble import IsolationForest
 from sklearn.inspection import permutation_importance
 from sklearn.preprocessing import MaxAbsScaler
 
+from octopus.logger import LogGroup, get_logger
 from octopus.models.inventory import ModelInventory
 from octopus.modules.utils import get_performance_score
+
+logger = get_logger()
 
 scorer_string_inventory = {
     "AUCROC": "roc_auc",
@@ -339,7 +342,7 @@ class Training:
         # skurv model throw NotImplementedError when accessing "feature_importances"
         if self.ml_type == "timetoevent":
             fi_df = pd.DataFrame(columns=["feature", "importance"])
-            print("Warning: Internal features importances not available.")
+            logger.warning("Internal features importances not available.")
             self.feature_importances["internal"] = fi_df
             return
         elif hasattr(self.model, "feature_importances_"):
@@ -348,12 +351,14 @@ class Training:
             fi_df["importance"] = self.model.feature_importances_
         else:
             fi_df = pd.DataFrame(columns=["feature", "importance"])
-            print("Warning: Internal features importances not available.")
+            logger.warning("Internal features importances not available.")
         self.feature_importances["internal"] = fi_df
 
     def calculate_fi_group_permutation(self, partition="dev", n_repeats=10):
         """Permutation feature importance, group version."""
-        print(
+        logger.set_log_group(LogGroup.TRAINING, f"{self.training_id}")
+
+        logger.info(
             f"Calculating permutation feature importances ({partition})"
             ". This may take a while..."
         )
@@ -451,7 +456,7 @@ class Training:
 
     def calculate_fi_permutation(self, partition="dev", n_repeats=10):
         """Permutation feature importance."""
-        print(
+        logger.info(
             f"Calculating permutation feature importances ({partition})"
             ". This may take a while..."
         )
@@ -488,7 +493,7 @@ class Training:
     def calculate_fi_lofo(self):
         """LOFO feature importance."""
         np.random.seed(42)  # reproduceability
-        print("Calculating LOFO feature importance. This may take a while...")
+        logger.info("Calculating LOFO feature importance. This may take a while...")
         # first, dev only
         feature_columns = self.feature_columns
         # calculate dev+test baseline scores
@@ -553,7 +558,7 @@ class Training:
 
     def calculate_fi_featuresused_shap(self, partition="dev"):
         """Shap feature importance, specifically for calc_features_used."""
-        print("Calculating shape feature importances. This may take a while...")
+        logger.info("Calculating shape feature importances. This may take a while...")
         # Initialize shape explainer using training data
         # improve speed by self.x_train.sample(n=100, replace=True, random_state=0)
         # TreeExplainer(model, data, model_output="probability",
@@ -602,7 +607,7 @@ class Training:
 
     def calculate_fi_shap(self, partition="dev", shap_type="kernel"):
         """Shap feature importance."""
-        print(
+        logger.info(
             f"Calculating shape feature importances ({partition})"
             ". This may take a while..."
         )

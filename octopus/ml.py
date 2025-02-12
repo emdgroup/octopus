@@ -13,11 +13,12 @@ from octopus.config import ConfigManager, ConfigSequence, ConfigStudy
 from octopus.config.core import OctoConfig
 from octopus.data.imputer import impute_mice, impute_simple
 from octopus.experiment import OctoExperiment
-from octopus.logger import configure_logging
 from octopus.manager import OctoManager
 from octopus.utils import DataSplit
 
-configure_logging()
+from .logger import LogGroup, get_logger
+
+logger = get_logger()
 
 
 @define
@@ -104,7 +105,6 @@ class OctoML:
     def _save_data_report(self, path_study: Path) -> None:
         """Save data report."""
         report = self.data.report
-        print("Report")
         report_df = report.create_df()
         report_df.to_csv(path_study.joinpath("data", "data_health_report.csv"))
 
@@ -191,13 +191,16 @@ class OctoML:
             warning_messages.append("""Some features are highly correlated.""")
 
         # Log all warning and errors
+
+        logger.set_log_group(LogGroup.DATA_HEALTH_REPORT)
+
         if warning_messages:
             for message in warning_messages:
-                logging.warning(message)
+                logger.warning(message)
 
         if error_messages:
             for message in error_messages:
-                logging.error(message)
+                logger.error(message)
 
         # raise Exception
         if error_messages:
@@ -304,12 +307,12 @@ class OctoML:
             )
 
         # Assert that there are no NaNs in the imputed data
-        assert not imputed_train_df[feature_columns].isna().any().any(), (
-            "NaNs present in imputed train_df"
-        )
-        assert not imputed_test_df[feature_columns].isna().any().any(), (
-            "NaNs present in imputed test_df"
-        )
+        assert (
+            not imputed_train_df[feature_columns].isna().any().any()
+        ), "NaNs present in imputed train_df"
+        assert (
+            not imputed_test_df[feature_columns].isna().any().any()
+        ), "NaNs present in imputed test_df"
 
         return imputed_train_df, imputed_test_df
 

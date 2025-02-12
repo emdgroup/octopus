@@ -78,7 +78,7 @@ config_study = ConfigStudy(
     silently_overwrite_study=True,
 )
 
-config_manager = ConfigManager(outer_parallelization=False, run_single_experiment_num=1)
+config_manager = ConfigManager(outer_parallelization=True, run_single_experiment_num=1)
 
 config_sequence = ConfigSequence(
     [
@@ -87,7 +87,7 @@ config_sequence = ConfigSequence(
             input_item_id=0,
             description="step_1",
             models=["RandomForestRegressor", "XGBRegressor"],
-            n_trials=150,
+            n_trials=50,
         ),
     ]
 )

@@ -10,15 +10,13 @@ import numpy as np
 import pandas as pd
 from attrs import Factory, define, field, validators
 
-from octopus.logger import configure_logging
+from octopus.logger import LogGroup, get_logger
 
 from .health_checks import DataHealthChecker
 from .report import DataHealthReport
 
-configure_logging()
-# tobedone:
-# - identify categorical columns -- require pandas categorical
-# - dtype check
+logger = get_logger()
+logger.set_log_group(LogGroup.DATA_PREPARATION)
 
 
 @define
@@ -93,40 +91,46 @@ class OctoData:
         return list(set(relevant_columns))
 
     def __attrs_post_init__(self):
-        logging.info("Automated data preparation:")
+        logger.set_log_group(LogGroup.DATA_PREPARATION)
+        logger.info("Initializing OctoData")
 
-        # validate input
-        # self._check_column_names() # turned off for MB/CLP use case
-        self._check_columns_exist()
-        self._check_for_duplicates()
-        self._check_stratification_column()
-        self._check_target_assignments()
-        self._check_number_of_targets()
-        self._check_column_dtypes()
+        try:
+            logger.info("Starting data preparation...")
+            self._check_columns_exist()
+            self._check_for_duplicates()
+            self._check_stratification_column()
+            self._check_target_assignments()
+            self._check_number_of_targets()
+            self._check_column_dtypes()
 
-        # prepare dataframe
-        self._sort_features()
-        self._set_target_assignments()
-        self._remove_singlevalue_features()
-        self._transform_bool_to_int()
-        self._create_row_id()
+            logger.info("Data validation complete. Preparing data...")
+            self._sort_features()
+            self._set_target_assignments()
+            self._remove_singlevalue_features()
+            self._transform_bool_to_int()
+            self._create_row_id()
+            self._add_group_features()
 
-        self._add_group_features()
+            logger.info("Data preparation complete. Generating health report...")
+            self.report = DataHealthChecker(
+                data=self.data,
+                feature_columns=self.feature_columns,
+                target_columns=self.target_columns,
+                row_id=self.row_id,
+                sample_id=self.sample_id,
+                stratification_column=self.stratification_column,
+            ).generate_report()
 
-        # data health check
-        self.report = DataHealthChecker(
-            data=self.data,
-            feature_columns=self.feature_columns,
-            target_columns=self.target_columns,
-            row_id=self.row_id,
-            sample_id=self.sample_id,
-            stratification_column=self.stratification_column,
-        ).generate_report()
+            logger.info("Health report generated. Encoding categorical features...")
+            self._categorical_feature_encoding()
+            self._categorical_stratification_encoding()
+            self._categorical_target_encoding()
 
-        # encode categorical columns
-        self._categorical_feature_encoding()
-        self._categorical_stratification_encoding()
-        self._categorical_target_encoding()
+            logger.info("OctoData initialization completed")
+
+        except Exception as e:
+            logger.error("Error during OctoData initialization: %s", e, exc_info=True)
+            raise
 
     def _check_column_names(self):
         """Search for disallowed characters in column names."""
@@ -243,6 +247,9 @@ class OctoData:
 
             # Raise ValueError if there are problematic columns
             if problematic_columns:
+                logger.error(
+                    "Disallowed characters found in columns: %s", problematic_columns
+                )
                 raise ValueError(
                     f"The following ordinal categorical columns have"
                     f" non-integer categories: "
@@ -375,10 +382,9 @@ class OctoData:
                     ).index.min(),
                     axis=1,
                 )
-            )
-            .reset_index(drop=True)
+            ).reset_index(drop=True)
         )
-        logging.info("Added `group_feaures` and `group_sample_features`")
+        logger.info("Added `group_feaures` and `group_sample_features`")
 
     def _create_row_id(self):
         """Assign a unique row identifier to each entry in the DataFrame.
@@ -393,7 +399,7 @@ class OctoData:
             self.data["row_id"] = self.data.index
             self.row_id = "row_id"
 
-            logging.info("Added `row_id`")
+            logger.info("Added `row_id`")
 
     def _set_target_assignments(self):
         """Set default target assignments or validates provided ones.
@@ -426,9 +432,9 @@ class OctoData:
         num_new_features = len(self.feature_columns)
 
         if num_original_features > num_new_features:
-            logging.info(
-                "Features removed due to single unique values: %s",
-                {num_original_features - num_new_features},
+            logger.info(
+                "Removed %d features due to single unique values.",
+                num_original_features - num_new_features,
             )
 
     def _sort_features(self):
@@ -439,13 +445,14 @@ class OctoData:
         self.feature_columns = sorted(
             map(str, self.feature_columns), key=lambda x: (len(x), x)
         )
-        logging.info("Sorted features.")
+        logger.info("Sorted features.")
 
     def _transform_bool_to_int(self):
-        # Convert all boolean columns to integer
+        """Convert all boolean columns to integer."""
         bool_cols = self.data.select_dtypes(include="bool").columns
-        self.data[bool_cols] = self.data[bool_cols].astype(int)
-        logging.info("Transformed bool columns to int columns.")
+        if not bool_cols.empty:
+            self.data[bool_cols] = self.data[bool_cols].astype(int)
+            logger.info("Transformed %d boolean columns to int.", len(bool_cols))
 
     def save(self, path):
         """Save data to a human readable form, for long term storage."""

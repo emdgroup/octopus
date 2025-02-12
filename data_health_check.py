@@ -202,7 +202,7 @@ generator_warnings.add_string_mismatch_column()
 df_warnings = generator_warnings.get_dataframe()
 
 octo_data = OctoData(
-    data=df_warnings,
+    data=df_error,
     target_columns=["target"],
     feature_columns=df_warnings.columns.drop("target")
     .drop("id")
@@ -227,7 +227,13 @@ config_manager = ConfigManager(outer_parallelization=True)
 
 config_sequence = ConfigSequence(
     sequence_items=[
-        Octo(description="step_1_octo", models=["RandomForestClassifier"], n_trials=3)
+        Octo(
+            description="step_1_octo",
+            models=["RandomForestClassifier"],
+            n_trials=3,
+            item_id=1,
+            input_item_id=0,
+        )
     ]
 )
 

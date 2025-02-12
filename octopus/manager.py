@@ -1,7 +1,6 @@
 """OctoManager."""
 
 import copy
-import logging
 import math
 from os import cpu_count
 from pathlib import Path
@@ -12,10 +11,11 @@ from joblib import Parallel, delayed
 
 from octopus.config.core import OctoConfig
 from octopus.experiment import OctoExperiment
-from octopus.logger import configure_logging
 from octopus.modules import modules_inventory
 
-configure_logging()
+from .logger import LogGroup, get_logger
+
+logger = get_logger()
 
 
 @define
@@ -46,34 +46,35 @@ class OctoManager:
             self._run_sequential()
 
     def _log_execution_info(self):
-        logging.info("Preparing execution of experiments")
-        logging.info(
-            f"Outer parallelization: {self.configs.manager.outer_parallelization}"
-        )
-        logging.info(
-            f"Run single experiment: {self.configs.manager.run_single_experiment_num}"
-        )
-        logging.info("Parallel execution info:")
-        logging.info(f"Number of outer folds: {self.configs.study.n_folds_outer}")
-        logging.info(f"Number of logical CPUs: {cpu_count()}")
         num_workers = min(self.configs.study.n_folds_outer, cpu_count())
-        logging.info(f"Number of outer fold workers: {num_workers}")
+        logger.info(
+            f"Preparing execution of experiments | "
+            f"Outer parallelization: {self.configs.manager.outer_parallelization} | "
+            f"Run single experiment: {self.configs.manager.run_single_experiment_num} | "
+            f"Number of outer folds: {self.configs.study.n_folds_outer} | "
+            f"Number of logical CPUs: {cpu_count()} | "
+            f"Number of outer fold workers: {num_workers}"
+        )
 
     def _validate_experiments(self):
         if not self.base_experiments:
+            logger.error("No experiments defined")
             raise ValueError("No experiments defined")
 
     def _run_single_experiment(self, exp_num):
-        logging.info(f"Running single experiment: {exp_num}")
+        logger.set_log_group(LogGroup.PROCESSING)
+        logger.info(f"Running single experiment: {exp_num}")
         self.create_execute_mlmodules(self.base_experiments[exp_num])
 
     def _run_sequential(self):
+        logger.set_log_group(LogGroup.PROCESSING)
         for cnt, base_experiment in enumerate(self.base_experiments):
-            logging.info(f"Running Outerfold: {cnt}")
+            logger.info(f"Running Outerfold: {cnt}")
             self.create_execute_mlmodules(base_experiment)
 
     def _run_parallel(self):
         num_workers = min(self.configs.study.n_folds_outer, cpu_count())
+        logger.info(f"Starting parallel execution with {num_workers} workers")
         with Parallel(n_jobs=num_workers) as parallel:
             parallel(
                 delayed(self._execute_task)(base_experiment, index)
@@ -81,18 +82,19 @@ class OctoManager:
             )
 
     def _execute_task(self, base_experiment, index):
+        logger.set_log_group(LogGroup.PROCESSING, f"EXP {index}")
+        logger.info("Starting execution")
         try:
             self.create_execute_mlmodules(base_experiment)
-            logging.info(f"Outer fold {index} completed")
-        except Exception:
-            logging.exception(f"Exception occurred while executing task {index}")
+            logger.set_log_group(LogGroup.PREPARE_EXECUTION, f"EXP {index}")
+            logger.info(f"Completed successfully")
+        except Exception as e:
+            logger.exception(
+                f"Exception occurred while executing task {index}: {str(e)}"
+            )
 
     def create_execute_mlmodules(self, base_experiment: OctoExperiment):
-        """Create and execute ml modules.
-
-        Iterates through sequence items, either loading existing experiments
-        or creating and running new ones.
-        """
+        """Create and execute ml modules."""
         exp_path_dict: Dict[int, Path] = {}
 
         for element in self.configs.sequence.sequence_items:
@@ -112,11 +114,13 @@ class OctoManager:
                 self._run_and_save_experiment(experiment, path_save)
 
     def _log_sequence_item_info(self, element):
-        logging.info(f"Processing sequence item: {element.item_id}")
-        logging.info(f"Input item: {element.input_item_id}")
-        logging.info(f"Module: {element.module}")
-        logging.info(f"Description: {element.description}")
-        logging.info(f"Load existing sequence item: {element.load_sequence_item}")
+        logger.info(
+            f"Processing sequence item: {element.item_id} | "
+            f"Input item: {element.input_item_id} | "
+            f"Module: {element.module} | "
+            f"Description: {element.description} | "
+            f"Load existing sequence item: {element.load_sequence_item}"
+        )
 
     def _create_new_experiment(self, base_experiment: OctoExperiment, element):
         experiment = copy.deepcopy(base_experiment)
@@ -152,10 +156,7 @@ class OctoManager:
         )
 
     def _update_experiment_if_needed(self, experiment, exp_path_dict):
-        """Update from input item.
-
-        Not for item with base input.
-        """
+        """Update from input item."""
         if experiment.input_item_id > 0:
             self._update_from_input_item(experiment, exp_path_dict)
         experiment.feature_groups = experiment.calculate_feature_groups(
@@ -163,7 +164,7 @@ class OctoManager:
         )
 
     def _run_and_save_experiment(self, experiment, path_save):
-        logging.info(f"Running experiment: {experiment.id}")
+        logger.info(f"Running experiment: {experiment.id}")
         experiment.to_pickle(path_save)
 
         module = self._get_ml_module(experiment)
@@ -188,16 +189,11 @@ class OctoManager:
             raise FileNotFoundError("Sequence item to be loaded does not exist")
 
         experiment = OctoExperiment.from_pickle(path_load)
-        logging.info(f"Loaded existing experiment from: {path_load}")
+        logger.info(f"Loaded existing experiment from: {path_load}")
         return experiment
 
     def _update_from_input_item(self, experiment, path_dict):
-        """Update experiment properties using input item.
-
-        Properties updated currently, but could be expanded later:
-            - selected features
-            - prior feature importances
-        """
+        """Update experiment properties using input item."""
         input_path = path_dict[experiment.input_item_id]
 
         if not input_path.exists():

@@ -1,33 +1,149 @@
-"""Logging."""
+import logging
+import multiprocessing
+import sys
+from enum import Enum, auto
 
-from logging.config import dictConfig
+
+class LogGroup(Enum):
+    DEFAULT = auto()
+    DATA_PREPARATION = auto()
+    DATA_HEALTH_REPORT = auto()
+    CREATING_DATASPLITS = auto()
+    PREPARE_EXECUTION = auto()
+    PROCESSING = auto()
+    OPTUNA = auto()
 
 
-def configure_logging():
-    """Create logging function."""
-    log_config = {
-        "version": 1,
-        "formatters": {"simple": {"format": "%(levelname)s - %(message)s"}},
-        "handlers": {
-            "console": {
-                "class": "logging.StreamHandler",
-                "level": "INFO",
-                "formatter": "simple",
-                "stream": "ext://sys.stdout",
-            }
-        },
-        "loggers": {
-            "custom_logger": {
-                "level": "INFO",
-                "handlers": ["console"],
-                "propagate": False,
-            },
-            "optuna": {
-                "level": "INFO",
-                "handlers": ["console"],
-                "propagate": False,
-            },
-        },
-        "root": {"level": "DEBUG", "handlers": ["console"]},
-    }
-    dictConfig(log_config)
+class ContextualFilter(logging.Filter):
+    def __init__(self):
+        super().__init__()
+        self.current_group = LogGroup.DEFAULT
+        self.process_id = None
+
+    def filter(self, record):
+        # Add group and process ID to the log record
+        record.group = self.current_group.name
+        record.process_id = self.process_id
+        return True
+
+
+class OptunaHandler(logging.Handler):
+    def __init__(self, logger):
+        super().__init__()
+        self.logger = logger
+
+    def emit(self, record):
+        # Forward the Optuna log to our custom logger
+        self.logger.log(record.levelno, record.getMessage())
+
+
+# Define ANSI color codes
+class LogColors:
+    RESET = "\033[0m"
+    INFO = "\033[92m"  # Green
+    WARNING = "\033[93m"  # Yellow
+    ERROR = "\033[91m"  # Red
+    CRITICAL = "\033[41m"  # Red background
+    DEBUG = "\033[94m"  # Blue
+
+
+class CustomFormatter(logging.Formatter):
+    def format(self, record):
+        if record.process_id is None:
+            self._style._fmt = "%(asctime)s | %(levelname)s | %(group)s | %(message)s"
+        else:
+            self._style._fmt = (
+                "%(asctime)s | %(levelname)s | %(group)s | %(process_id)s | %(message)s"
+            )
+        return super().format(record)
+
+
+def setup_logger(name="OctoManager", log_file="octo_manager.log", level=logging.INFO):
+    """Set up a logger with a file handler and a console handler."""
+    # Clear existing loggers
+    for handler in logging.root.handlers[:]:
+        logging.root.removeHandler(handler)
+
+    # Create logger
+    logger = logging.getLogger(name)
+    logger.setLevel(level)
+    logger.propagate = False
+
+    # Disable propagation for all existing loggers
+    for log_name in logging.root.manager.loggerDict:
+        logging.getLogger(log_name).propagate = False
+
+    # Add the contextual filter
+    contextual_filter = ContextualFilter()
+    logger.addFilter(contextual_filter)
+
+    # Create custom formatters
+    file_formatter = CustomFormatter(datefmt="%Y-%m-%d %H:%M:%S")
+    console_formatter = CustomFormatter(datefmt="%Y-%m-%d %H:%M:%S")
+
+    # Create file handler
+    file_handler = logging.FileHandler(log_file)
+    file_handler.setLevel(level)
+    file_handler.setFormatter(file_formatter)
+    logger.addHandler(file_handler)
+
+    # Create console handler
+    console_handler = logging.StreamHandler(sys.stdout)
+    console_handler.setLevel(level)
+    console_handler.setFormatter(console_formatter)
+    logger.addHandler(console_handler)
+
+    # Set up Optuna logging
+    optuna_logger = logging.getLogger("optuna")
+    optuna_logger.setLevel(level)
+    optuna_logger.propagate = False
+    optuna_handler = OptunaHandler(logger)
+    optuna_logger.addHandler(optuna_handler)
+
+    # Override the default log level colors
+    def colorize_log(record):
+        level_color = LogColors.RESET
+        if record.levelname == "INFO":
+            level_color = LogColors.INFO
+        elif record.levelname == "WARNING":
+            level_color = LogColors.WARNING
+        elif record.levelname == "ERROR":
+            level_color = LogColors.ERROR
+        elif record.levelname == "CRITICAL":
+            level_color = LogColors.CRITICAL
+        elif record.levelname == "DEBUG":
+            level_color = LogColors.DEBUG
+
+        record.levelname = f"{level_color}{record.levelname}{LogColors.RESET}"
+        return True
+
+    # Add the colorizing filter to the console handler
+    console_handler.addFilter(colorize_log)
+
+    # Add method to set current group and process ID
+    def set_log_group(group, process_id=None):
+        if isinstance(group, LogGroup):
+            contextual_filter.current_group = group
+            contextual_filter.process_id = process_id
+        else:
+            raise ValueError("Group must be an instance of LogGroup")
+
+    logger.set_log_group = set_log_group
+
+    return logger
+
+
+def set_optuna_log_group(logger):
+    def optuna_log_group_setter(study, trial):
+        logger.set_log_group(LogGroup.OPTUNA)
+
+    return optuna_log_group_setter
+
+
+# Create a single instance of the logger
+octo_logger = setup_logger()
+
+
+def get_logger():
+    """Get the singleton logger instance."""
+    return octo_logger

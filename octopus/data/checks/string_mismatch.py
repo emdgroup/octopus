@@ -23,12 +23,18 @@ def check_string_mismatch(df: pd.DataFrame) -> dict:
         else:
             return 90  # Higher threshold for longer strings
 
+    def is_all_integers(series):
+        """Check if all non-null values in a series are integers."""
+        return series.dropna().apply(lambda x: str(x).isdigit()).all()
+
     for column in df.columns:
         if df[column].dtype == object or df[column].dtype.name == "category":
+            if is_all_integers(df[column]):
+                continue
+
             try:
                 # Remove numbers from the end of each entry
                 column_values = df[column].dropna().apply(remove_numbers).unique()
-
                 # Check if the column has more than one unique value
                 if len(column_values) > 2:
                     # Initialize a set to keep track of processed strings

@@ -64,31 +64,60 @@ def impute_simple(
     Raises:
         ValueError: If an unknown imputation method is specified.
     """
+    # Identify columns with missing values in the training dataset
+    train_missing_columns = train_df[feature_columns].columns[
+        train_df[feature_columns].isnull().any()
+    ]
+
+    # Identify columns with missing values in the test dataset
+    test_missing_columns = test_df[feature_columns].columns[
+        test_df[feature_columns].isnull().any()
+    ]
+
+    # Find common columns with missing values in both datasets
+    common_missing_columns = train_missing_columns.union(test_missing_columns)
+
+    if common_missing_columns.empty:
+        # If there are no common missing columns, return the original dataframes
+        return train_df.copy(), test_df.copy()
+
     if imputation_method == "median":
         imputer = SimpleImputer(strategy="median")
     elif imputation_method == "halfmin":
-        imputer = HalfMinImputer()
+        imputer = HalfMinImputer()  # Assuming HalfMinImputer is defined elsewhere
     else:
         raise ValueError(f"Unknown imputation method: {imputation_method}")
 
-    # Fit on training data and transform both train and test data
+    # Fit on training data and transform both train and test data for common
+    # missing columns
     imputed_train_features = pd.DataFrame(
-        imputer.fit_transform(train_df[feature_columns]),
-        columns=feature_columns,
+        imputer.fit_transform(train_df[common_missing_columns]),
+        columns=common_missing_columns,
         index=train_df.index,
     )
     imputed_test_features = pd.DataFrame(
-        imputer.transform(test_df[feature_columns]),
-        columns=feature_columns,
+        imputer.transform(test_df[common_missing_columns]),
+        columns=common_missing_columns,
         index=test_df.index,
     )
 
-    # Replace original feature columns with imputed values
+    # Replace original feature columns with imputed values only for the common
+    # missing columns
     imputed_train_df = train_df.copy()
-    imputed_train_df[feature_columns] = imputed_train_features
+    imputed_train_df[common_missing_columns] = imputed_train_features
 
     imputed_test_df = test_df.copy()
-    imputed_test_df[feature_columns] = imputed_test_features
+    imputed_test_df[common_missing_columns] = imputed_test_features
+
+    # Check for NaNs in the imputed test dataframe
+    assert not imputed_train_df[feature_columns].isnull().any().any(), (
+        "NaNs present in imputed train_df"
+    )
+
+    # Check for NaNs in the imputed test dataframe
+    assert not imputed_test_df[feature_columns].isnull().any().any(), (
+        "NaNs present in imputed test_df"
+    )
 
     return imputed_train_df, imputed_test_df
 

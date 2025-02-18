@@ -60,8 +60,8 @@ def test_basic_regression():
     config_sequence = ConfigSequence(
         [
             Octo(
-                item_id=1,
-                input_item_id=0,
+                sequence_id=0,
+                input_sequence_id=-1,
                 description="step_1",
                 models=["RandomForestRegressor", "XGBRegressor"],
                 n_trials=1,

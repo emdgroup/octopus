@@ -17,12 +17,6 @@ class Roc(BaseSequenceItem):
     description: str = field(validator=[validators.instance_of(str)], default="")
     """Description."""
 
-    load_sequence_item: bool = field(
-        validator=validators.instance_of(bool),
-        default=Factory(lambda: False),
-    )
-    """Load existing sequence item. Default is False"""
-
     threshold: float = field(validator=[validators.instance_of(float)], default=0.8)
     """Threshold for feature removal."""
 

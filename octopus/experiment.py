@@ -28,10 +28,10 @@ class OctoExperiment:
     experiment_id: int = field(validator=[validators.instance_of(int)])
     """Identifier for the experiment."""
 
-    sequence_item_id: int = field(validator=[validators.instance_of(int)])
+    sequence_id: int = field(validator=[validators.instance_of(int)])
     """Identifier for the sequence item."""
 
-    input_item_id: int = field(validator=[validators.instance_of(int)])
+    input_sequence_id: int = field(validator=[validators.instance_of(int)])
     """Identifier for the input sequence item."""
 
     path_sequence_item: Path = field(validator=[validators.instance_of(Path)])
@@ -89,11 +89,6 @@ class OctoExperiment:
         default=Factory(dict), validator=[validators.instance_of(dict)]
     )
     """Groupings of features based on correlation analysis."""
-
-    prior_feature_importances: Dict = field(
-        default=Factory(dict), validator=[validators.instance_of(dict)]
-    )
-    """Prior knowledge of feature importances, if available."""
 
     results: Dict = field(
         default=Factory(dict), validator=[validators.instance_of(dict)]

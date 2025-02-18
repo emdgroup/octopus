@@ -14,12 +14,6 @@ class Mrmr(BaseSequenceItem):
     module: ClassVar[str] = "mrmr"
     """Module name."""
 
-    load_sequence_item: bool = field(
-        validator=validators.instance_of(bool),
-        default=Factory(lambda: False),
-    )
-    """Load existing sequence item. Default is False"""
-
     n_features: int = field(
         validator=[validators.instance_of(int)], default=Factory(lambda: 30)
     )

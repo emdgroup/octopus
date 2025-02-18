@@ -14,12 +14,6 @@ class Boruta(BaseSequenceItem):
     module: ClassVar[str] = "boruta"
     """Module name."""
 
-    load_sequence_item: bool = field(
-        validator=validators.instance_of(bool),
-        default=Factory(lambda: False),
-    )
-    """Load existing sequence item. Default is False"""
-
     model: str = field(validator=[validators.instance_of(str)], default="")
     """Model used by Boruta."""
 

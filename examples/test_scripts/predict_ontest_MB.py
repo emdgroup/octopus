@@ -47,23 +47,19 @@ print()
 
 # %%
 # Select sequence item
-sequence_item_id = 0
+sequence_id = 0
 print()
 
 # check available results_keys in cell output below
 results_key = "best"
 
 # create study-predict object
-print(f"Predictions using sequence item: {sequence_item_id} and results: {results_key}")
-seq_item = OctoPredict(study_path=path_study, sequence_item_id=sequence_item_id)
+print(f"Predictions using sequence item: {sequence_id} and results: {results_key}")
+seq_item = OctoPredict(study_path=path_study, sequence_id=sequence_id)
 
 print()
-path_sequences = [
-    f for f in path_study.glob(f"*/sequence{sequence_item_id}") if f.is_dir()
-]
-path_exp_pkl = path_sequences[0].joinpath(
-    f"exp{0}_{sequence_item_id}.pkl"
-)  # one example
+path_sequences = [f for f in path_study.glob(f"*/sequence{sequence_id}") if f.is_dir()]
+path_exp_pkl = path_sequences[0].joinpath(f"exp{0}_{sequence_id}.pkl")  # one example
 
 if path_exp_pkl.exists():
     # load experiment

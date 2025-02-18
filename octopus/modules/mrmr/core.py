@@ -114,7 +114,7 @@ class MrmrCore:
         # checks performed when feature importances are used
         if self.relevance_type == "permutation":
             # MRMR should not be the first sequence item
-            if self.experiment.sequence_item_id == 0:
+            if self.experiment.sequence_id == 0:
                 raise ValueError("MRMR module should not be the first sequence item.")
             # check if model_name exists
             if self.model_name not in self.experiment.prior_feature_importances:
@@ -140,7 +140,7 @@ class MrmrCore:
         # display information
         print("MRMR-Module")
         print(f"Experiment: {self.experiment.experiment_id}")
-        print(f"Sequence item: {self.experiment.sequence_item_id}")
+        print(f"Sequence item: {self.experiment.sequence_id}")
         print(f"Number of features selected by MRMR: {self.n_features}")
         print(f"Correlation type used by MRMR: {self.correlation_type}")
         print(f"Relevance type used by MRMR: {self.relevance_type}")

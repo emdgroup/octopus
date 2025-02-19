@@ -75,7 +75,8 @@ class DataSplit:
 
         logger.info("Analyzing dataset structure")
         logger.info(
-            f"Number of unique groups (as in column: {self.datasplit_col}): {len(dataset_unique)}"
+            "Number of unique groups (as in column: "
+            f"{self.datasplit_col}): {len(dataset_unique)}"
         )
         logger.info(f"Number of rows in dataset: {len(self.dataset)}")
 
@@ -144,8 +145,10 @@ class DataSplit:
 
             logger.info(
                 f"{info_name} {num_split} created: "
-                f"{dataset_name_1} - {len(partition_train)} rows, {len(set(groups_train))} groups | "
-                f"{dataset_name_2} - {len(partition_test)} rows, {len(set(groups_test))} groups"
+                f"{dataset_name_1} - {len(partition_train)} rows, "
+                f"{len(set(groups_train))} groups | "
+                f"{dataset_name_2} - {len(partition_test)} rows, "
+                f"{len(set(groups_test))} groups"
             )
 
             data_splits[num_split] = {

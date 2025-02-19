@@ -125,7 +125,8 @@ class Bag:
                 try:
                     training.fit()
                     logger.info(
-                        f"Inner sequential training completed for bag_id {self.bag_id} and training id {training.training_id}"
+                        f"Inner sequential training completed for bag_id {self.bag_id} "
+                        f"and training id {training.training_id}"
                     )
                 except Exception as e:  # pylint: disable=broad-except
                     logger.info(

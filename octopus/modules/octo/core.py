@@ -626,7 +626,8 @@ class OctoCore:
             logger.set_log_group(LogGroup.OPTUNA)
             if trial.state == TrialState.COMPLETE:
                 logger.info(
-                    f"Trial {trial.number} finished with value: {trial.value} and parameters: {trial.params}"
+                    f"Trial {trial.number} finished with value: "
+                    f"{trial.value} and parameters: {trial.params}"
                 )
             elif trial.state == TrialState.PRUNED:
                 logger.info(f"Trial {trial.number} pruned.")
@@ -663,7 +664,7 @@ class OctoCore:
         performance_info = {
             key: v for key, v in user_attrs.items() if key not in ["config_training"]
         }
-        logger.info(f"Best parameters {user_attrs["config_training"]}")
+        logger.info(f"Best parameters {user_attrs['config_training']}")
         logger.info(f"Performance Info: {performance_info}")
 
         logger.info("Create best bag.....")

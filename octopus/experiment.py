@@ -25,16 +25,39 @@ class OctoExperiment:
     id: str = field(validator=[validators.instance_of(str)])
     """ID"""
 
-    experiment_id: int = field(validator=[validators.instance_of(int)])
+    experiment_id: int = field(
+        validator=[
+            validators.instance_of(int),  # Ensure it's an int
+            validators.ge(0),  # Ensure int is >= 0
+        ]
+    )
     """Identifier for the experiment."""
 
-    sequence_id: int = field(validator=[validators.instance_of(int)])
+    sequence_id: int = field(
+        validator=validators.optional(
+            validators.and_(
+                validators.instance_of(int),  # Ensure it's an int if not None
+                validators.ge(0),  # Ensure int is >= 0
+            )
+        )
+    )
     """Identifier for the sequence item."""
 
-    input_sequence_id: int = field(validator=[validators.instance_of(int)])
+    input_sequence_id: int = field(
+        validator=validators.optional(
+            validators.and_(
+                validators.instance_of(int),  # Ensure it's an int if not None
+                validators.ge(-1),  # Ensure int is >= -1
+            )
+        )
+    )
     """Identifier for the input sequence item."""
 
-    path_sequence_item: Path = field(validator=[validators.instance_of(Path)])
+    path_sequence_item: Path = field(
+        validator=validators.optional(
+            validators.instance_of(Path)
+        )  # Allow None or Path
+    )
     """File system path to the sequence item."""
 
     configs: OctoConfig = field(validator=[validators.instance_of(OctoConfig)])
@@ -94,6 +117,11 @@ class OctoExperiment:
         default=Factory(dict), validator=[validators.instance_of(dict)]
     )
     """Results of the experiment, keyed by result type."""
+
+    prior_results: Dict = field(
+        default=Factory(dict), validator=[validators.instance_of(dict)]
+    )
+    """Results of the experiment used as input, keyed by result type."""
 
     @property
     def path_study(self) -> Path:

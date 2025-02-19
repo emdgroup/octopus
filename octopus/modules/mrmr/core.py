@@ -85,9 +85,9 @@ class MrmrCore:
         return self.experiment.ml_config.relevance_type
 
     @property
-    def model_name(self) -> str:
-        """Model name."""
-        return self.experiment.ml_config.model_name
+    def results_key(self) -> str:
+        """Results key."""
+        return self.experiment.ml_config.results_key
 
     @property
     def n_features(self) -> int:
@@ -97,7 +97,7 @@ class MrmrCore:
     @property
     def feature_importances(self) -> dict:
         """Feature importances calculated by preceding module."""
-        return self.experiment.prior_feature_importances[self.model_name]
+        return self.experiment.prior_results[self.results_key].feature_importances
 
     @property
     def feature_importance_key(self) -> str:
@@ -116,11 +116,11 @@ class MrmrCore:
             # MRMR should not be the first sequence item
             if self.experiment.sequence_id == 0:
                 raise ValueError("MRMR module should not be the first sequence item.")
-            # check if model_name exists
-            if self.model_name not in self.experiment.prior_feature_importances:
+            # check if results_key exists
+            if self.results_key not in self.experiment.prior_results:
                 raise ValueError(
-                    f"Specified model name not found: {self.model_name}. "
-                    f"Available model names: "
+                    f"Specified results key not found: {self.results_key}. "
+                    f"Available results key: "
                     f"{list(self.experiment.prior_feature_importances.keys())}"
                 )
             # check if feature_importance key exists
@@ -144,10 +144,9 @@ class MrmrCore:
         print(f"Number of features selected by MRMR: {self.n_features}")
         print(f"Correlation type used by MRMR: {self.correlation_type}")
         print(f"Relevance type used by MRMR: {self.relevance_type}")
-        print(f"Specified model name: {self.model_name}")
+        print(f"Specified results key: {self.results_key}")
         print(
-            f"Available model names: "
-            f"{list(self.experiment.prior_feature_importances.keys())}"
+            f"Available results keys: " f"{list(self.experiment.prior_results.keys())}"
         )
 
         # select relevance information

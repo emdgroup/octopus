@@ -1,4 +1,4 @@
-## Example for using a multi sequence
+"""Example for using a multi sequence."""
 
 # TBD
 

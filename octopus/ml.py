@@ -336,9 +336,9 @@ class OctoML:
                 OctoExperiment(
                     id=str(key),
                     experiment_id=int(key),
-                    sequence_id=-1,  # indicating base experiment
-                    input_sequence_id=-1,  # indicating base experiment
-                    path_sequence_item=path_experiment,  # indicating base experiment
+                    sequence_id=None,  # indicating base experiment
+                    input_sequence_id=None,  # indicating base experiment
+                    path_sequence_item=None,  # indicating base experiment
                     configs=self.configs,
                     datasplit_column=datasplit_col,
                     row_column=self.data.row_id,

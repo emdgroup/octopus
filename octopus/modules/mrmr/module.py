@@ -31,8 +31,8 @@ class Mrmr(BaseSequenceItem):
     )
     """Selection of relevance measure."""
 
-    model_name: str = field(
-        validator=[validators.in_(["best", "ensel", "autosk"])],
+    results_key: str = field(
+        validator=[validators.in_(["best", "ensel", "autogluon"])],
         default=Factory(lambda: "best"),
     )
     """Selection of model from with feature importances were created."""

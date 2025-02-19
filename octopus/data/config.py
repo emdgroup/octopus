@@ -1,7 +1,6 @@
 """Octo Data Class."""
 
 import gzip
-import logging
 import pickle
 import re
 from typing import Optional
@@ -382,7 +381,8 @@ class OctoData:
                     ).index.min(),
                     axis=1,
                 )
-            ).reset_index(drop=True)
+            )
+            .reset_index(drop=True)
         )
         logger.info("Added `group_feaures` and `group_sample_features`")
 

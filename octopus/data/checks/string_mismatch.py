@@ -29,7 +29,6 @@ def check_string_mismatch(df: pd.DataFrame) -> dict:
 
     for column in df.columns:
         if df[column].dtype == object or df[column].dtype.name == "category":
-
             if is_all_integers(df[column]):
                 continue
 

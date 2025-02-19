@@ -1,9 +1,13 @@
+"""Logger."""
+
 import logging
 import sys
 from enum import Enum, auto
 
 
 class LogGroup(Enum):
+    """Create log groups."""
+
     DEFAULT = auto()
     DATA_PREPARATION = auto()
     DATA_HEALTH_REPORT = auto()
@@ -17,30 +21,36 @@ class LogGroup(Enum):
 
 
 class ContextualFilter(logging.Filter):
+    """Contextual filer."""
+
     def __init__(self):
         super().__init__()
         self.current_group = LogGroup.DEFAULT
         self.process_id = None
 
     def filter(self, record):
-        # Add group and process ID to the log record
+        """Add group and process ID to the log record."""
         record.group = self.current_group.name
         record.process_id = self.process_id
         return True
 
 
 class OptunaHandler(logging.Handler):
+    """Optuna handler."""
+
     def __init__(self, logger):
         super().__init__()
         self.logger = logger
 
     def emit(self, record):
-        # Forward the Optuna log to our custom logger
+        """Forward the Optuna log to our custom logger."""
         self.logger.log(record.levelno, record.getMessage())
 
 
 # Define ANSI color codes
 class LogColors:
+    """Log Colors."""
+
     RESET = "\033[0m"
     INFO = "\033[92m"  # Green
     WARNING = "\033[93m"  # Yellow
@@ -50,7 +60,10 @@ class LogColors:
 
 
 class CustomFormatter(logging.Formatter):
+    """Custom Formatter."""
+
     def format(self, record):
+        """Create custom logger format."""
         if record.process_id is None:
             self._style._fmt = "%(asctime)s | %(levelname)s | %(group)s | %(message)s"
         else:
@@ -136,6 +149,8 @@ def setup_logger(name="OctoManager", log_file="octo_manager.log", level=logging.
 
 
 def set_optuna_log_group(logger):
+    """Set optuna log group."""
+
     def optuna_log_group_setter(study, trial):
         logger.set_log_group(LogGroup.OPTUNA)
 

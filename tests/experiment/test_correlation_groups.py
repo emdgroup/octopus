@@ -92,9 +92,9 @@ def test_feature_groups_structure(mock_octo_experiment):
     """Test structure of groups."""
     feature_groups = mock_octo_experiment.feature_groups
     assert isinstance(feature_groups, dict), "feature_groups should be a dictionary"
-    assert (
-        len(feature_groups) >= 3
-    ), f"Expected at least 3 groups, but got {len(feature_groups)}"
+    assert len(feature_groups) >= 3, (
+        f"Expected at least 3 groups, but got {len(feature_groups)}"
+    )
 
 
 def test_correlated_features_grouping(mock_octo_experiment):

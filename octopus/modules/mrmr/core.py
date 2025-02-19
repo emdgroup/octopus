@@ -145,9 +145,7 @@ class MrmrCore:
         print(f"Correlation type used by MRMR: {self.correlation_type}")
         print(f"Relevance type used by MRMR: {self.relevance_type}")
         print(f"Specified results key: {self.results_key}")
-        print(
-            f"Available results keys: " f"{list(self.experiment.prior_results.keys())}"
-        )
+        print(f"Available results keys: {list(self.experiment.prior_results.keys())}")
 
         # select relevance information
         if self.relevance_type == "permutation":

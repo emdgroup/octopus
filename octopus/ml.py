@@ -281,6 +281,10 @@ class OctoML:
 
         Returns:
             tuple: A tuple containing the imputed (or original) train and test datasets.
+
+        Raises:
+            AssertionError: If there are NaN values present in the imputed
+                training or testing datasets.
         """
         imputation_method = self.configs.study.imputation_method
 

@@ -663,7 +663,7 @@ class OctoCore:
         performance_info = {
             key: v for key, v in user_attrs.items() if key not in ["config_training"]
         }
-        logger.info(f"Best parameters {user_attrs["config_training"]}")
+        logger.info(f"Best parameters {user_attrs['config_training']}")
         logger.info(f"Performance Info: {performance_info}")
 
         logger.info("Create best bag.....")

@@ -2,7 +2,7 @@
 
 from typing import ClassVar
 
-from attrs import Factory, define, field, validators
+from attrs import define, field, validators
 
 from octopus.config.base_sequence_item import BaseSequenceItem
 

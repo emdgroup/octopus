@@ -48,21 +48,28 @@ def impute_simple(
     feature_columns: list,
     imputation_method: str,
 ) -> tuple:
-    """Impute missing values using a simple strategy.
+    """Impute missing values using a specified strategy.
 
-    Impute missing values in train and test datasets based on the specified method.
+    This function imputes missing values in the training and testing datasets
+    based on the specified imputation method.
 
     Parameters:
-        train_df: Training dataset.
-        test_df: Testing dataset.
-        feature_columns: List of feature column names to impute.
-        imputation_method: Imputation method ("median" or "halfmin").
+        train_df: The training dataset containing features with potential
+            missing values.
+        test_df: The testing dataset containing features with potential
+            missing values.
+        feature_columns: A list of feature column names to impute.
+        imputation_method: The imputation method to use ("median" or
+            "halfmin").
 
     Returns:
-        tuple: A tuple containing the imputed training and testing datasets.
+        tuple: A tuple containing the imputed training and testing datasets as
+            pandas DataFrames.
 
     Raises:
         ValueError: If an unknown imputation method is specified.
+        AssertionError: If there are NaN values present in the imputed
+            training or testing datasets.
     """
     # Identify columns with missing values in the training dataset
     train_missing_columns = train_df[feature_columns].columns[

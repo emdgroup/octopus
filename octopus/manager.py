@@ -207,6 +207,6 @@ class OctoManager:
         input_experiment = OctoExperiment.from_pickle(input_path)
 
         experiment.feature_columns = input_experiment.selected_features
-        experiment.prior_feature_importances = input_experiment.feature_importances
+        experiment.prior_results = input_experiment.results
 
-        print("Prior fi keys: ", input_experiment.feature_importances.keys())
+        print("Prior results keys: ", input_experiment.prior_results.keys())

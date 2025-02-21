@@ -14,12 +14,6 @@ class Mrmr(BaseSequenceItem):
     module: ClassVar[str] = "mrmr"
     """Module name."""
 
-    load_sequence_item: bool = field(
-        validator=validators.instance_of(bool),
-        default=Factory(lambda: False),
-    )
-    """Load existing sequence item. Default is False"""
-
     n_features: int = field(
         validator=[validators.instance_of(int)], default=Factory(lambda: 30)
     )
@@ -37,8 +31,8 @@ class Mrmr(BaseSequenceItem):
     )
     """Selection of relevance measure."""
 
-    model_name: str = field(
-        validator=[validators.in_(["best", "ensel", "autosk"])],
+    results_key: str = field(
+        validator=[validators.in_(["best", "ensel", "autogluon"])],
         default=Factory(lambda: "best"),
     )
     """Selection of model from with feature importances were created."""

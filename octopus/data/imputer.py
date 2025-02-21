@@ -48,47 +48,83 @@ def impute_simple(
     feature_columns: list,
     imputation_method: str,
 ) -> tuple:
-    """Impute missing values using a simple strategy.
+    """Impute missing values using a specified strategy.
 
-    Impute missing values in train and test datasets based on the specified method.
+    This function imputes missing values in the training and testing datasets
+    based on the specified imputation method.
 
     Parameters:
-        train_df: Training dataset.
-        test_df: Testing dataset.
-        feature_columns: List of feature column names to impute.
-        imputation_method: Imputation method ("median" or "halfmin").
+        train_df: The training dataset containing features with potential
+            missing values.
+        test_df: The testing dataset containing features with potential
+            missing values.
+        feature_columns: A list of feature column names to impute.
+        imputation_method: The imputation method to use ("median" or
+            "halfmin").
 
     Returns:
-        tuple: A tuple containing the imputed training and testing datasets.
+        tuple: A tuple containing the imputed training and testing datasets as
+            pandas DataFrames.
 
     Raises:
         ValueError: If an unknown imputation method is specified.
+        AssertionError: If there are NaN values present in the imputed
+            training or testing datasets.
     """
+    # Identify columns with missing values in the training dataset
+    train_missing_columns = train_df[feature_columns].columns[
+        train_df[feature_columns].isnull().any()
+    ]
+
+    # Identify columns with missing values in the test dataset
+    test_missing_columns = test_df[feature_columns].columns[
+        test_df[feature_columns].isnull().any()
+    ]
+
+    # Find common columns with missing values in both datasets
+    common_missing_columns = train_missing_columns.union(test_missing_columns)
+
+    if common_missing_columns.empty:
+        # If there are no common missing columns, return the original dataframes
+        return train_df.copy(), test_df.copy()
+
     if imputation_method == "median":
         imputer = SimpleImputer(strategy="median")
     elif imputation_method == "halfmin":
-        imputer = HalfMinImputer()
+        imputer = HalfMinImputer()  # Assuming HalfMinImputer is defined elsewhere
     else:
         raise ValueError(f"Unknown imputation method: {imputation_method}")
 
-    # Fit on training data and transform both train and test data
+    # Fit on training data and transform both train and test data for common
+    # missing columns
     imputed_train_features = pd.DataFrame(
-        imputer.fit_transform(train_df[feature_columns]),
-        columns=feature_columns,
+        imputer.fit_transform(train_df[common_missing_columns]),
+        columns=common_missing_columns,
         index=train_df.index,
     )
     imputed_test_features = pd.DataFrame(
-        imputer.transform(test_df[feature_columns]),
-        columns=feature_columns,
+        imputer.transform(test_df[common_missing_columns]),
+        columns=common_missing_columns,
         index=test_df.index,
     )
 
-    # Replace original feature columns with imputed values
+    # Replace original feature columns with imputed values only for the common
+    # missing columns
     imputed_train_df = train_df.copy()
-    imputed_train_df[feature_columns] = imputed_train_features
+    imputed_train_df[common_missing_columns] = imputed_train_features
 
     imputed_test_df = test_df.copy()
-    imputed_test_df[feature_columns] = imputed_test_features
+    imputed_test_df[common_missing_columns] = imputed_test_features
+
+    # Check for NaNs in the imputed test dataframe
+    assert not imputed_train_df[feature_columns].isnull().any().any(), (
+        "NaNs present in imputed train_df"
+    )
+
+    # Check for NaNs in the imputed test dataframe
+    assert not imputed_test_df[feature_columns].isnull().any().any(), (
+        "NaNs present in imputed test_df"
+    )
 
     return imputed_train_df, imputed_test_df
 

@@ -122,7 +122,7 @@ class ResultsDataProcessor:
                         # get predictions
                         df_temp = exp.results["best"].predictions[split][dataset]
                         df_temp["experiment_id"] = exp.experiment_id
-                        df_temp["sequence_id"] = exp.sequence_item_id
+                        df_temp["sequence_id"] = exp.sequence_id
                         df_temp["split_id"] = split
                         df_temp["dataset"] = dataset
                         df_predictions = pd.concat([df_predictions, df_temp])
@@ -137,7 +137,7 @@ class ResultsDataProcessor:
                                     prediction = prediction.astype(int)
                                 dict_socre_temp = {
                                     "experiment_id": exp.experiment_id,
-                                    "sequence_id": exp.sequence_item_id,
+                                    "sequence_id": exp.sequence_id,
                                     "split": split,
                                     "testset": dataset,
                                     "metric": metric,
@@ -265,7 +265,7 @@ class ResultsDataProcessor:
                                 dataset
                             ]
                             df_temp["experiment_id"] = exp.experiment_id
-                            df_temp["sequence_id"] = exp.sequence_item_id
+                            df_temp["sequence_id"] = exp.sequence_id
                             df_temp["split_id"] = split
                             df_temp["dataset"] = dataset
                             if not df_temp.empty:

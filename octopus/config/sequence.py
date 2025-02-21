@@ -17,14 +17,14 @@ def validate_sequence_items(
     conditions.
 
     Conditions:
-    - The first sequence item must have `item_id=1`.
-    - All items with `input_item_id=0` must be at the start of the list,
-      before any other items with `input_item_id > 0`.
-    - All elements in the list must be in increasing order of `item_id`.
-    - For elements with `input_item_id > 0`, their `input_item_id` must
-      refer to an `item_id` that comes before them in the list.
-    - All `item_id`s should form a complete integer sequence with no
-      missing values between the minimum and maximum `item_id`.
+    - The first sequence item must have `sequence_id=1`.
+    - All items with `input_sequence_id=0` must be at the start of the list,
+      before any other items with `input_sequence_id > 0`.
+    - All elements in the list must be in increasing order of `sequence_id`.
+    - For elements with `input_sequence_id > 0`, their `input_sequence_id` must
+      refer to an `sequence_id` that comes before them in the list.
+    - All `sequence_id`s should form a complete integer sequence with no
+      missing values between the minimum and maximum `sequence_id`.
 
     Args:
         _instance: The instance that is being validated (unused).
@@ -52,33 +52,34 @@ def validate_sequence_items(
                 f"'BaseSequenceItem', but got '{type(item).__name__}'."
             )
 
-    # Condition 2.5: First Item Must Have item_id=1
-    if value[0].item_id != 1:
+    # Condition 2.5: First Item Must Have sequence_id=0
+    if value[0].sequence_id != 0:
         raise ValueError(
-            f"The first sequence item must have 'item_id=1', but got "
-            f"'item_id={value[0].item_id}'."
+            f"The first sequence item must have 'sequence_id=0', but got "
+            f"'sequence_id={value[0].sequence_id}'."
         )
 
-    # Build mapping of item_id to index and collect item_ids
+    # Build mapping of sequence_id to index and collect item_ids
     item_id_to_index = {}
     item_ids = []
     previous_item_id = None
     for idx, item in enumerate(value):
         # Ensure that item_ids are in increasing order
-        if previous_item_id is not None and item.item_id <= previous_item_id:
+        if previous_item_id is not None and item.sequence_id <= previous_item_id:
             raise ValueError(
-                f"Item at position {idx + 1} has 'item_id' {item.item_id}, which "
-                f"is not greater than the previous 'item_id' {previous_item_id}. "
-                "All 'item_id's must be in increasing order in the list."
+                f"Item at position {idx + 1} has 'sequence_id' {item.sequence_id}, "
+                "which is not greater than the previous "
+                f"'sequence_id' {previous_item_id}. "
+                "All 'sequence_id's must be in increasing order in the list."
             )
-        previous_item_id = item.item_id
+        previous_item_id = item.sequence_id
 
-        if item.item_id in item_id_to_index:
+        if item.sequence_id in item_id_to_index:
             raise ValueError(
-                f"Duplicate 'item_id' {item.item_id} found in the sequence."
+                f"Duplicate 'sequence_id' {item.sequence_id} found in the sequence."
             )
-        item_id_to_index[item.item_id] = idx
-        item_ids.append(item.item_id)
+        item_id_to_index[item.sequence_id] = idx
+        item_ids.append(item.sequence_id)
 
     # Condition 3: All item_ids form a complete integer sequence with no missing
     # values between min and max
@@ -90,8 +91,8 @@ def validate_sequence_items(
         missing_ids = expected_item_ids - actual_item_ids
         extra_ids = actual_item_ids - expected_item_ids
         message = (
-            "All 'item_id's must form a complete integer sequence with no missing "
-            "values between the minimum and maximum 'item_id'."
+            "All 'sequence_id's must form a complete integer sequence with no missing "
+            "values between the minimum and maximum 'sequence_id'."
         )
         if missing_ids:
             message += f" Missing item_ids: {sorted(missing_ids)}."
@@ -99,37 +100,37 @@ def validate_sequence_items(
             message += f" Unexpected item_ids: {sorted(extra_ids)}."
         raise ValueError(message)
 
-    # Condition 4: All items with input_item_id=0 must be at the start of the list
-    reached_non_zero_input_item_id = False
+    # Condition 4: All items with input_sequence_id=-1 must be at the start of the list
+    reached_non_zero_input_sequence_id = False
     for idx, item in enumerate(value):
-        if item.input_item_id == 0:
-            if reached_non_zero_input_item_id:
+        if item.input_sequence_id == -1:
+            if reached_non_zero_input_sequence_id:
                 raise ValueError(
-                    f"Item at position {idx + 1} has 'input_item_id=0' but appears "
-                    "after items with 'input_item_id>0'. All items with "
-                    "'input_item_id=0' must be at the start of the list."
+                    f"Item at position {idx + 1} has 'input_sequence_id=-1' but"
+                    " appears after items with 'input_sequence_id>=0'. All items with "
+                    "'input_sequence_id=-1' must be at the start of the list."
                 )
         else:
-            reached_non_zero_input_item_id = True
+            reached_non_zero_input_sequence_id = True
 
-    # Condition 6: For elements with input_item_id > 0, input_item_id must refer
-    # to an item that comes before them
+    # Condition 6: For elements with input_sequence_id >= 0, input_sequence_id must
+    # refer to an item that comes before them
     for idx, item in enumerate(value):
-        input_item_id = item.input_item_id
-        if input_item_id > 0:
-            if input_item_id not in item_id_to_index:
+        input_sequence_id = item.input_sequence_id
+        if input_sequence_id >= 0:
+            if input_sequence_id not in item_id_to_index:
                 raise ValueError(
                     f"Item '{item.description}' (position {idx + 1}) has "
-                    f"'input_item_id={input_item_id}', which does not correspond to "
-                    "any 'item_id' in the sequence."
+                    f"'input_sequence_id={input_sequence_id}', which does not"
+                    "correspond to any 'sequence_id' in the sequence."
                 )
-            input_item_idx = item_id_to_index[input_item_id]
-            if input_item_idx >= idx:
+            input_sequence_idx = item_id_to_index[input_sequence_id]
+            if input_sequence_idx >= idx:
                 raise ValueError(
                     f"Item '{item.description}' (position {idx + 1}) has "
-                    f"'input_item_id={input_item_id}', which refers to an item that "
-                    "comes after it in the sequence. 'input_item_id' must refer to "
-                    "a preceding 'item_id'."
+                    f"'input_sequence_id={input_sequence_id}', which refers to an item"
+                    "that comes after it in the sequence. 'input_sequence_id' must"
+                    "refer to a preceding 'sequence_id'."
                 )
 
 

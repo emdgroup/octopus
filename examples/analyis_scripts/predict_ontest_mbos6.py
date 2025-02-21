@@ -6,11 +6,11 @@ from octopus.predict import OctoPredict
 
 # setup
 path_study = Path("./studies/20240322A_MBOS6_octofull_5x5_ETREE/")
-sequence_item_id = 2
+sequence_id = 2
 
 
 # create study-predict object
-study = OctoPredict(path_study, sequence_item_id=sequence_item_id)
+study = OctoPredict(path_study, sequence_id=sequence_id)
 
 
 # (A) predict on internally available test data

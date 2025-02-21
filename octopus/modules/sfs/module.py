@@ -2,7 +2,7 @@
 
 from typing import ClassVar
 
-from attrs import Factory, define, field, validators
+from attrs import define, field, validators
 
 from octopus.config.base_sequence_item import BaseSequenceItem
 
@@ -13,12 +13,6 @@ class Sfs(BaseSequenceItem):
 
     module: ClassVar[str] = "sfs"
     """Module name."""
-
-    load_sequence_item: bool = field(
-        validator=validators.instance_of(bool),
-        default=Factory(lambda: False),
-    )
-    """Load existing sequence item. Default is False"""
 
     model: str = field(validator=[validators.instance_of(str)], default="")
     """Model used by SFS."""

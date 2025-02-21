@@ -1,4 +1,4 @@
-## Example for using a multi sequence
+"""Example for using a multi sequence."""
 
 # TBD
 
@@ -53,6 +53,7 @@ config_study = ConfigStudy(
     ml_type="regression",
     target_metric="R2",
     silently_overwrite_study=True,
+    ignore_data_health_warning=True,
 )
 
 config_manager = ConfigManager(
@@ -64,17 +65,23 @@ config_sequence = ConfigSequence(
     [
         Octo(
             description="step1_octofull",
+            sequence_id=0,
+            input_sequence_id=-1,
             models=["ExtraTreesRegressor", "RandomForestRegressor"],
-            n_trials=1,
+            n_trials=2,
             max_features=70,
         ),
         Mrmr(
             description="step2_mrmr",
+            sequence_id=1,
+            input_sequence_id=0,
             n_features=6,
             correlation_type="rdc",
         ),
         Octo(
             description="step1_octofull",
+            sequence_id=2,
+            input_sequence_id=1,
             models=["ExtraTreesRegressor", "RandomForestRegressor"],
             n_trials=1,
             max_features=70,

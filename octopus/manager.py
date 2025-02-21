@@ -106,14 +106,14 @@ class OctoManager:
                 experiment = self._create_new_experiment(base_experiment, element)
                 path_study_sequence = self._create_sequence_directory(experiment)
                 path_save = self._get_save_path(path_study_sequence, experiment)
-                exp_path_dict[experiment.sequence_item_id] = path_save
+                exp_path_dict[experiment.sequence_id] = path_save
 
                 self._update_experiment_if_needed(experiment, exp_path_dict)
                 self._run_and_save_experiment(experiment, path_save)
 
     def _log_sequence_item_info(self, element):
-        logging.info(f"Processing sequence item: {element.item_id}")
-        logging.info(f"Input item: {element.input_item_id}")
+        logging.info(f"Processing sequence item: {element.sequence_id}")
+        logging.info(f"Input item: {element.input_sequence_id}")
         logging.info(f"Module: {element.module}")
         logging.info(f"Description: {element.description}")
         logging.info(f"Load existing sequence item: {element.load_sequence_item}")
@@ -122,11 +122,11 @@ class OctoManager:
         experiment = copy.deepcopy(base_experiment)
         experiment.ml_module = element.module
         experiment.ml_config = element
-        experiment.id = f"{experiment.id}_{element.item_id}"
-        experiment.sequence_item_id = element.item_id
-        experiment.input_item_id = element.input_item_id
+        experiment.id = f"{experiment.id}_{element.sequence_id}"
+        experiment.sequence_id = element.sequence_id
+        experiment.input_sequence_id = element.input_sequence_id
         experiment.path_sequence_item = Path(
-            f"experiment{experiment.experiment_id}", f"sequence{element.item_id}"
+            f"experiment{experiment.experiment_id}", f"sequence{element.sequence_id}"
         )
         experiment.num_assigned_cpus = self._calculate_assigned_cpus()
         return experiment
@@ -148,7 +148,7 @@ class OctoManager:
 
     def _get_save_path(self, path_study_sequence, experiment):
         return path_study_sequence.joinpath(
-            f"exp{experiment.experiment_id}_{experiment.sequence_item_id}.pkl"
+            f"exp{experiment.experiment_id}_{experiment.sequence_id}.pkl"
         )
 
     def _update_experiment_if_needed(self, experiment, exp_path_dict):
@@ -156,7 +156,7 @@ class OctoManager:
 
         Not for item with base input.
         """
-        if experiment.input_item_id > 0:
+        if experiment.input_sequence_id >= 0:
             self._update_from_input_item(experiment, exp_path_dict)
         experiment.feature_groups = experiment.calculate_feature_groups(
             experiment.feature_columns
@@ -178,10 +178,11 @@ class OctoManager:
 
     def _load_existing_experiment(self, base_experiment, element):
         path_study_sequence = base_experiment.path_study.joinpath(
-            f"experiment{base_experiment.experiment_id}", f"sequence{element.item_id}"
+            f"experiment{base_experiment.experiment_id}",
+            f"sequence{element.sequence_id}",
         )
         path_load = path_study_sequence.joinpath(
-            f"exp{base_experiment.experiment_id}_{element.item_id}.pkl"
+            f"exp{base_experiment.experiment_id}_{element.sequence_id}.pkl"
         )
 
         if not path_load.exists():
@@ -198,7 +199,7 @@ class OctoManager:
             - selected features
             - prior feature importances
         """
-        input_path = path_dict[experiment.input_item_id]
+        input_path = path_dict[experiment.input_sequence_id]
 
         if not input_path.exists():
             raise FileNotFoundError("Sequence item to be loaded does not exist")
@@ -206,6 +207,6 @@ class OctoManager:
         input_experiment = OctoExperiment.from_pickle(input_path)
 
         experiment.feature_columns = input_experiment.selected_features
-        experiment.prior_feature_importances = (
-            input_experiment.prior_feature_importances
-        )
+        experiment.prior_results = input_experiment.results
+
+        print("Prior results keys: ", input_experiment.prior_results.keys())

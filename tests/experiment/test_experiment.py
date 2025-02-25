@@ -29,8 +29,8 @@ def octo_experiment(sample_data):
     config_sequence = ConfigSequence(
         sequence_items=[
             Octo(
-                item_id=1,
-                input_item_id=0,
+                sequence_id=0,
+                input_sequence_id=-1,
                 description="step_1_octo",
                 models=["RandomForestClassifier"],
                 n_trials=1,
@@ -43,8 +43,8 @@ def octo_experiment(sample_data):
     return OctoExperiment(
         id="experiment_1",
         experiment_id=1,
-        sequence_item_id=1,
-        input_item_id=1,
+        sequence_id=1,
+        input_sequence_id=1,
         path_sequence_item=Path("/path/to/sequence_item"),
         configs=config,
         datasplit_column="target",
@@ -60,8 +60,8 @@ def test_initialization(octo_experiment):
     """Test the initialization of the OctoExperiment class."""
     assert octo_experiment.id == "experiment_1"
     assert octo_experiment.experiment_id == 1
-    assert octo_experiment.sequence_item_id == 1
-    assert octo_experiment.input_item_id == 1
+    assert octo_experiment.sequence_id == 1
+    assert octo_experiment.input_sequence_id == 1
     assert octo_experiment.path_sequence_item == Path("/path/to/sequence_item")
     assert octo_experiment.datasplit_column == "target"
     assert octo_experiment.row_column == "row_id"

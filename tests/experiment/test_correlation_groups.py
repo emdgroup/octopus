@@ -56,8 +56,8 @@ def octo_config():
     config_sequence = ConfigSequence(
         sequence_items=[
             Octo(
-                item_id=1,
-                input_item_id=0,
+                sequence_id=0,
+                input_sequence_id=-1,
                 description="step_1_octo",
                 models=["RandomForestClassifier"],
                 n_trials=1,
@@ -75,8 +75,8 @@ def mock_octo_experiment(correlated_data, octo_config):
     return OctoExperiment(
         id="test_id",
         experiment_id=1,
-        sequence_item_id=2,
-        input_item_id=3,
+        sequence_id=2,
+        input_sequence_id=3,
         path_sequence_item=Path("/mock/path"),
         configs=octo_config,
         datasplit_column="split",

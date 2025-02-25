@@ -83,8 +83,8 @@ config_manager = ConfigManager(outer_parallelization=True, run_single_experiment
 config_sequence = ConfigSequence(
     [
         Octo(
-            item_id=1,
-            input_item_id=0,
+            sequence_id=0,
+            input_sequence_id=-1,
             description="step_1",
             models=["RandomForestRegressor", "XGBRegressor"],
             n_trials=5,

@@ -28,19 +28,17 @@ logger = get_logger()
 
 # TOBEDONE
 # - add more metrics: F1, AUCPR, NEGBRIERSCORE
-# - make predictions compatible with Octopus
-# - make feature importances compatible with Octopus
 # - replace print() with logging
 # - do we need to set problem type?
 # - add: includes_model_types
 # - add: verbosity setting
 # - make autogluon consider group features!
+# - add shap feature importances
 # - compare ag and octopus performance calculations
 # - compare ag and octopus permutation feature importances
 # - compate speed of permutation fi calculations (octo/autogluon)
 # - implement feature_groups calculated from the traindev dataset,
 #   needed for the group_feature_importances
-# - add shap feature importances
 
 
 # mapping of metrics
@@ -206,7 +204,7 @@ class AGCore:
         self.model.fit(
             self.ag_train_data,
             time_limit=self.experiment.ml_config.time_limit,
-            presets=self.experiment.ml_config.time_limit,
+            presets=self.experiment.ml_config.presets,
             num_bag_folds=self.experiment.ml_config.num_bag_folds,
             # add
             # - included_model_typeslist, default = None
@@ -244,8 +242,7 @@ class AGCore:
             model=self.model,
             feature_importances=self._get_feature_importances(),
             scores=self._get_scores(),
-            # features_importances [dict]
-            # selected_features [dict]
+            selected_features=self.feature_columns,  # no feature selection
             predictions=self._get_predictions(),
         )
 

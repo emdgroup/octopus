@@ -41,7 +41,7 @@ class OctoPredict:
     study_path: Path = field(validator=[validators.instance_of(Path)])
     """Path to study."""
 
-    sequence_item_id: int = field(default=-1, validator=[validators.instance_of(int)])
+    sequence_id: int = field(default=-1, validator=[validators.instance_of(int)])
     """Sequence item id."""
 
     results_key: str = field(default="best", validator=[validators.instance_of(str)])
@@ -67,8 +67,8 @@ class OctoPredict:
 
     def __attrs_post_init__(self):
         # set last sequence item as default
-        if self.sequence_item_id < 0:
-            self.sequence_item_id = len(self.config.cfg_sequence) - 1
+        if self.sequence_id < 0:
+            self.sequence_id = len(self.config.cfg_sequence) - 1
         # get models
         self.experiments = self._get_models()
 
@@ -80,14 +80,12 @@ class OctoPredict:
         for experiment_id in range(self.n_experiments):
             path_exp = self.study_path.joinpath(
                 f"experiment{experiment_id}",
-                f"sequence{self.sequence_item_id}",
-                f"exp{experiment_id}_{self.sequence_item_id}.pkl",
+                f"sequence{self.sequence_id}",
+                f"exp{experiment_id}_{self.sequence_id}.pkl",
             )
             # extract best model. test dataset, feature columns
             if path_exp.exists():
-                print(
-                    f"Experiment{experiment_id}, sequence{self.sequence_item_id} found."
-                )
+                print(f"Experiment{experiment_id}, sequence{self.sequence_id} found.")
                 # load experiment
                 experiment = OctoExperiment.from_pickle(path_exp)
                 # check if results_key exists
@@ -324,9 +322,9 @@ class OctoPredict:
 
         save_path = self.study_path.joinpath(
             f"experiment{experiment_id}",
-            f"sequence{self.sequence_item_id}",
+            f"sequence{self.sequence_id}",
             "results",
-            f"model_permutation_fi_exp{experiment_id}_{self.sequence_item_id}.pdf",
+            f"model_permutation_fi_exp{experiment_id}_{self.sequence_id}.pdf",
         )
         # create directories if needed, required for id="all"
         save_path.parent.mkdir(parents=True, exist_ok=True)
@@ -583,7 +581,7 @@ class OctoPredict:
 
         results_path = self.study_path.joinpath(
             f"experiment{experiment_id}",
-            f"sequence{self.sequence_item_id}",
+            f"sequence{self.sequence_id}",
             "results",
         )
         # create directories if needed, required for id="all"
@@ -591,7 +589,7 @@ class OctoPredict:
 
         # (A) Bar plot
         save_path = results_path.joinpath(
-            f"model_shap_fi_barplot_exp{experiment_id}_{self.sequence_item_id}.pdf",
+            f"model_shap_fi_barplot_exp{experiment_id}_{self.sequence_id}.pdf",
         )
         with PdfPages(save_path) as pdf:
             plt.figure(figsize=(8.27, 11.69))  # portrait orientation (A4)
@@ -602,7 +600,7 @@ class OctoPredict:
 
         # (B) Beeswarm plot
         save_path = results_path.joinpath(
-            f"model_shap_fi_beeswarm_exp{experiment_id}_{self.sequence_item_id}.pdf",
+            f"model_shap_fi_beeswarm_exp{experiment_id}_{self.sequence_id}.pdf",
         )
         with PdfPages(save_path) as pdf:
             plt.figure(figsize=(8.27, 11.69))  # portrait orientation (A4)

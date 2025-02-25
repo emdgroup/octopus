@@ -283,6 +283,10 @@ class OctoML:
 
         Returns:
             tuple: A tuple containing the imputed (or original) train and test datasets.
+
+        Raises:
+            AssertionError: If there are NaN values present in the imputed
+                training or testing datasets.
         """
         imputation_method = self.configs.study.imputation_method
 
@@ -308,12 +312,12 @@ class OctoML:
             )
 
         # Assert that there are no NaNs in the imputed data
-        assert not imputed_train_df[feature_columns].isna().any().any(), (
-            "NaNs present in imputed train_df"
-        )
-        assert not imputed_test_df[feature_columns].isna().any().any(), (
-            "NaNs present in imputed test_df"
-        )
+        assert (
+            not imputed_train_df[feature_columns].isna().any().any()
+        ), "NaNs present in imputed train_df"
+        assert (
+            not imputed_test_df[feature_columns].isna().any().any()
+        ), "NaNs present in imputed test_df"
 
         return imputed_train_df, imputed_test_df
 
@@ -340,9 +344,9 @@ class OctoML:
                 OctoExperiment(
                     id=str(key),
                     experiment_id=int(key),
-                    sequence_item_id=-1,  # indicating base experiment
-                    input_item_id=-1,  # indicating base experiment
-                    path_sequence_item=path_experiment,  # indicating base experiment
+                    sequence_id=None,  # indicating base experiment
+                    input_sequence_id=None,  # indicating base experiment
+                    path_sequence_item=None,  # indicating base experiment
                     configs=self.configs,
                     datasplit_column=datasplit_col,
                     row_column=self.data.row_id,

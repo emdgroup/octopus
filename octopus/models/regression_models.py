@@ -66,15 +66,13 @@ def get_regression_models():
             ml_type="regression",
             feature_method="internal",
             hyperparameters=[
+                Hyperparameter(type="int", name="max_depth", low=2, high=32),
+                Hyperparameter(type="int", name="min_samples_split", low=2, high=100),
+                Hyperparameter(type="int", name="min_samples_leaf", low=1, high=50),
                 Hyperparameter(
-                    type="float", name="learning_rate", low=1e-4, high=0.3, log=True
+                    type="int", name="n_estimators", low=100, high=500, log=False
                 ),
-                Hyperparameter(type="int", name="min_child_weight", low=2, high=15),
-                Hyperparameter(type="float", name="subsample", low=0.15, high=1.0),
-                Hyperparameter(type="int", name="n_estimators", low=30, high=500),
-                Hyperparameter(type="int", name="max_depth", low=3, high=9, step=2),
-                Hyperparameter(type="fixed", name="validate_parameters", value=True),
-                Hyperparameter(type="float", name="lambda", low=1e-8, high=1, log=True),
+                Hyperparameter(type="float", name="max_features", low=0.1, high=1),
             ],
             n_jobs="n_jobs",
             model_seed="random_state",

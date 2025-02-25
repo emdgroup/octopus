@@ -91,7 +91,12 @@ config_manager = ConfigManager(outer_parallelization=True)
 
 config_sequence = ConfigSequence(
     sequence_items=[
-        Octo(description="step_1_octo", models=["RandomForestClassifier"], n_trials=3)
+        Octo(
+            description="step_1_octo",
+            sequence_id=0,
+            models=["RandomForestClassifier"],
+            n_trials=3,
+        )
     ]
 )
 

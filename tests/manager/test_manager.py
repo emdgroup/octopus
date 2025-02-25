@@ -19,15 +19,15 @@ def mock_config():
     config.study.n_folds_outer = 3
     config.sequence.sequence_items = [
         Mock(
-            item_id=1,
-            input_item_id=0,
+            sequence_id=1,
+            input_sequence_id=0,
             module="test_module",
             description="Test",
             load_sequence_item=False,
         ),
         Mock(
-            item_id=2,
-            input_item_id=1,
+            sequence_id=2,
+            input_sequence_id=1,
             module="test_module",
             description="Test",
             load_sequence_item=False,
@@ -81,7 +81,7 @@ def test_create_new_experiment(octo_manager, mock_experiment):
     element = octo_manager.configs.sequence.sequence_items[0]
     new_experiment = octo_manager._create_new_experiment(mock_experiment, element)
     assert new_experiment.ml_module == element.module
-    assert new_experiment.sequence_item_id == element.item_id
+    assert new_experiment.sequence_id == element.sequence_id
 
 
 def test_update_from_input_item(octo_manager, mock_experiment):
@@ -95,7 +95,7 @@ def test_update_from_input_item(octo_manager, mock_experiment):
         patch.object(OctoExperiment, "from_pickle", return_value=input_experiment),
     ):
         exp_path_dict = {1: Path("/tmp/input_exp.pkl")}
-        mock_experiment.input_item_id = 1
+        mock_experiment.input_sequence_id = 1
         octo_manager._update_from_input_item(mock_experiment, exp_path_dict)
         assert mock_experiment.feature_columns == ["new_feature"]
         assert mock_experiment.prior_feature_importances == [0.5]
@@ -103,7 +103,7 @@ def test_update_from_input_item(octo_manager, mock_experiment):
 
 def test_load_existing_experiment(octo_manager, mock_experiment):
     """Test load existing experiment."""
-    element = Mock(item_id=3)
+    element = Mock(sequence_id=3)
     with (
         patch.object(Path, "exists", return_value=True),
         patch.object(OctoExperiment, "from_pickle", return_value=mock_experiment),
@@ -116,7 +116,7 @@ def test_load_existing_experiment(octo_manager, mock_experiment):
 
 def test_load_existing_experiment_not_found(octo_manager, mock_experiment):
     """Test experiment not found."""
-    element = Mock(item_id=3)
+    element = Mock(sequence_id=3)
     with patch.object(Path, "exists", return_value=False):
         with pytest.raises(FileNotFoundError):
             octo_manager._load_existing_experiment(mock_experiment, element)

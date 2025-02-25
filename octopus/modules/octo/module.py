@@ -14,17 +14,11 @@ logger = get_logger()
 class Octo(BaseSequenceItem):
     """Octofull sequence config."""
 
-    models: List = field()
+    models: List = field(default=Factory(lambda: ["ExtraTreesClassifier"]))
     """Models for ML."""
 
     module: ClassVar[str] = "octo"
     """Module name."""
-
-    load_sequence_item: bool = field(
-        validator=validators.instance_of(bool),
-        default=Factory(lambda: False),
-    )
-    """Load existing sequence item. Default is False"""
 
     n_folds_inner: int = field(
         validator=[validators.instance_of(int)], default=Factory(lambda: 5)

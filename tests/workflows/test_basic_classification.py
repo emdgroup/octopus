@@ -68,8 +68,8 @@ def test_basic_classification():
     config_sequence = ConfigSequence(
         sequence_items=[
             Octo(
-                item_id=1,
-                input_item_id=0,
+                sequence_id=0,
+                input_sequence_id=-1,
                 description="step_1_octo",
                 models=["RandomForestClassifier"],
                 n_trials=1,

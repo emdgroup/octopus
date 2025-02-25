@@ -50,8 +50,8 @@ class OctoManager:
         logger.info(
             f"Preparing execution of experiments | "
             f"Outer parallelization: {self.configs.manager.outer_parallelization} | "
-            f"Run single experiment: {self.configs.manager.run_single_experiment_num} | "
-            f"Number of outer folds: {self.configs.study.n_folds_outer} | "
+            f"Run single experiment: {self.configs.manager.run_single_experiment_num} |"
+            f" Number of outer folds: {self.configs.study.n_folds_outer} | "
             f"Number of logical CPUs: {cpu_count()} | "
             f"Number of outer fold workers: {num_workers}"
         )
@@ -87,7 +87,7 @@ class OctoManager:
         try:
             self.create_execute_mlmodules(base_experiment)
             logger.set_log_group(LogGroup.PREPARE_EXECUTION, f"EXP {index}")
-            logger.info(f"Completed successfully")
+            logger.info("Completed successfully")
         except Exception as e:
             logger.exception(
                 f"Exception occurred while executing task {index}: {str(e)}"

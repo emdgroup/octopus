@@ -169,7 +169,7 @@ class DataFrameGenerator:
 generator_errors = DataFrameGenerator(random_state=42)
 generator_errors.add_nan_to_features()
 generator_errors.add_nan_to_target(num_nan=10)
-generator_errors.add_id_column(unique=False, include_nans=True)
+generator_errors.add_id_column(unique=True, include_nans=True)
 generator_errors.add_id_column(
     column_name="sample_id", prefix="Sample", unique=True, include_nans=True
 )
@@ -177,10 +177,10 @@ generator_errors.add_id_column(
     column_name="stratification",
     prefix="Strat_",
     unique=True,
-    include_nans=True,
+    include_nans=False,
 )
 generator_errors.add_constant_column()
-generator_errors.add_decimal_columns()
+# generator_errors.add_decimal_columns()
 generator_errors.add_inf_columns()
 
 df_error = generator_errors.get_dataframe()
@@ -199,24 +199,27 @@ generator_warnings.add_id_column(
     include_nans=False,
 )
 generator_warnings.add_string_mismatch_column()
+
 df_warnings = generator_warnings.get_dataframe()
 
+print(df_warnings)
+
 octo_data = OctoData(
-    data=df_error,
+    data=df_warnings,
     target_columns=["target"],
     feature_columns=df_warnings.columns.drop("target")
     .drop("id")
     .drop("sample_id")
     .drop("stratification")
     .tolist(),
-    row_id="id",
+    # row_id="id",
     sample_id="sample_id",
     datasplit_type="group_sample_and_features",
     stratification_column="target",
 )
 
 config_study = ConfigStudy(
-    name="basic_classification",
+    name="health_check",
     ml_type="classification",
     target_metric="AUCROC",
     silently_overwrite_study=True,
@@ -231,8 +234,8 @@ config_sequence = ConfigSequence(
             description="step_1_octo",
             models=["RandomForestClassifier"],
             n_trials=3,
-            item_id=1,
-            input_item_id=0,
+            sequence_id=0,
+            input_sequence_id=-1,
         )
     ]
 )

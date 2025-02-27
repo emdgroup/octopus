@@ -88,7 +88,6 @@ def test_update_from_input_item(octo_manager, mock_experiment):
     """Test update from input item."""
     input_experiment = Mock(spec=OctoExperiment)
     input_experiment.selected_features = ["new_feature"]
-    input_experiment.prior_feature_importances = [0.5]
 
     with (
         patch.object(Path, "exists", return_value=True),
@@ -98,7 +97,6 @@ def test_update_from_input_item(octo_manager, mock_experiment):
         mock_experiment.input_sequence_id = 1
         octo_manager._update_from_input_item(mock_experiment, exp_path_dict)
         assert mock_experiment.feature_columns == ["new_feature"]
-        assert mock_experiment.prior_feature_importances == [0.5]
 
 
 def test_load_existing_experiment(octo_manager, mock_experiment):

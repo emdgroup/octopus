@@ -115,8 +115,8 @@ class OctoManager:
 
     def _log_sequence_item_info(self, element):
         logger.info(
-            f"Processing sequence item: {element.item_id} | "
-            f"Input item: {element.input_item_id} | "
+            f"Processing sequence item: {element.sequence_id} | "
+            f"Input item: {element.input_sequence_id} | "
             f"Module: {element.module} | "
             f"Description: {element.description} | "
             f"Load existing sequence item: {element.load_sequence_item}"

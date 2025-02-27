@@ -8,7 +8,7 @@ import pandas as pd
 from attrs import asdict, define, field
 
 from octopus.config.core import OctoConfig
-from octopus.data.config import OctoData
+from octopus.data.core import OctoData
 from octopus.metrics import metrics_inventory
 
 

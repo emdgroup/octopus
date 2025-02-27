@@ -95,7 +95,7 @@ config_sequence = ConfigSequence(
             description="step_1_octo",
             sequence_id=0,
             models=["RandomForestClassifier"],
-            n_trials=3,
+            n_trials=150,
         )
     ]
 )

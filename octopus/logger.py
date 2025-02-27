@@ -93,8 +93,13 @@ def setup_logger(name="OctoManager", log_file="octo_manager.log", level=logging.
     logger.addFilter(contextual_filter)
 
     # Create custom formatters
-    file_formatter = CustomFormatter(datefmt="%Y-%m-%d %H:%M:%S")
-    console_formatter = CustomFormatter(datefmt="%Y-%m-%d %H:%M:%S")
+    file_formatter = CustomFormatter(
+        "%(asctime)s | %(levelname)s | %(group)s | %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S",
+    )
+
+    # Create a separate formatter for console without datetime
+    console_formatter = logging.Formatter("%(levelname)s | %(group)s | %(message)s")
 
     # Create file handler
     file_handler = logging.FileHandler(log_file)
@@ -102,7 +107,7 @@ def setup_logger(name="OctoManager", log_file="octo_manager.log", level=logging.
     file_handler.setFormatter(file_formatter)
     logger.addHandler(file_handler)
 
-    # Create console handler
+    # Create console handler with the new formatter
     console_handler = logging.StreamHandler(sys.stdout)
     console_handler.setLevel(level)
     console_handler.setFormatter(console_formatter)

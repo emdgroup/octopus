@@ -3,7 +3,7 @@
 import sys
 
 from octopus.dashboard.run import OctoDash  # noqa: F401
-from octopus.data.config import OctoData  # noqa: F401
+from octopus.data.core import OctoData  # noqa: F401
 
 # from octopus.experiment import OctoExperiment  # noqa: F401
 # from octopus.manager import OctoManager  # noqa: F401

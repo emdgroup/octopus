@@ -5,7 +5,7 @@ import sys
 from pathlib import Path
 
 import pandas as pd
-from attrs import define, field, validators
+from attrs import Factory, define, field, validators
 
 from octopus import OctoData
 from octopus.config import ConfigManager, ConfigSequence, ConfigStudy
@@ -43,12 +43,11 @@ class OctoML:
         validator=[validators.instance_of(ConfigSequence)]
     )
     configs: OctoConfig = field(default=None)
-    experiments: list = field(init=False)
+    experiments: list = field(default=Factory(list))
     manager: OctoManager = field(init=False, default=None)
 
     def __attrs_post_init__(self):
         # initialization here due to "Python immutable default"
-        self.experiments = []
         self.configs = OctoConfig(
             study=self.config_study,
             manager=self.config_manager,
@@ -103,106 +102,34 @@ class OctoML:
 
     def _save_data_report(self, path_study: Path) -> None:
         """Save data report."""
-        report = self.data.report
-        report_df = report.create_df()
-        report_df.to_csv(path_study.joinpath("data", "data_health_report.csv"))
+        report_df = self.data.report
+        report_df.to_csv(path_study.joinpath("data", "data_health_report.csv"), sep=";")
 
     def _check_for_data_issues(self):
-        targets = self.data.target_columns
-        features = self.data.feature_columns
-        stratification = self.data.stratification_column
-
-        report_cols = self.data.report.columns
-        report_cols_feat_tar = {
-            key: val
-            for key, val in report_cols.items()
-            if key in targets or key in features
-        }
-        report_col_stratification = {
-            key: val for key, val in report_cols.items() if key == stratification
-        }
-        error_messages = []
-        warning_messages = []
-
-        # Check for NaNs
-        for col in report_cols:
-            missing_share = report_cols[col].get("missing values share", None)
-            if col in targets:
-                if missing_share is not None and missing_share > 0:
-                    error_messages.append("NaN values detected in target columns.")
-            if col == self.data.stratification_column:
-                if missing_share is not None and missing_share > 0:
-                    error_messages.append(
-                        "NaN values detected in stratification column."
-                    )
-            if col == self.data.row_id:
-                if missing_share is not None and missing_share > 0:
-                    error_messages.append("NaN values detected in row_id.")
-            if col == self.data.sample_id:
-                if missing_share is not None and missing_share > 0:
-                    error_messages.append("NaN values detected in sample_id.")
-
-            if col in features:
-                if missing_share is not None and missing_share > 0.25:  # original: 0.2
-                    error_messages.append(
-                        "Columns with high missing share detected in feature columns."
-                    )
-                    break
-
-        # Check for object type columns
-        if any(val.get("iu dtype", None) for val in report_col_stratification.values()):
-            error_messages.append(
-                "Stratification columns must be of type integer or uint."
-            )
-
-        # Check for infinity values
-        if any(val.get("infinity values share", 0) > 0 for val in report_cols.values()):
-            error_messages.append("Inf values in dataset")
-
-        # Check unique row id
-        if (
-            self.data.row_id in report_cols
-            and report_cols[self.data.row_id].get("unique row id", None) is not None
-        ):
-            error_messages.append("Values in the Row ID must be unique.")
-
-        # Check few integer values
-        if any(
-            val.get("unique_int_values'", None) is not None
-            for val in report_cols_feat_tar.values()
-        ):
-            warning_messages.append(
-                """Some columns have few unique integer values.
-                Consider using dummy encoding."""
-            )
-
-        # feature-feature corrlation
-        if any(
-            any(
-                key in val
-                for key in [
-                    "high feature correlation (pearson)",
-                    "high feature correlation (spearman)",
-                ]
-            )
-            for val in report_cols_feat_tar.values()
-        ):
-            warning_messages.append("""Some features are highly correlated.""")
-
-        # Log all warning and errors
-
+        """Check for data issues."""
         logger.set_log_group(LogGroup.DATA_HEALTH_REPORT)
 
-        if warning_messages:
-            for message in warning_messages:
-                logger.warning(message)
+        critical_issues = False
+        warning_issues = False
 
-        if error_messages:
-            for message in error_messages:
-                logger.error(message)
+        df_sorted = self.data.report.sort_values(
+            "Severity",
+            key=lambda x: pd.Categorical(
+                x, categories=["Info", "Warning", "Critical"], ordered=True
+            ),
+        )
 
-        # raise Exception
-        if error_messages:
+        for _, issue in df_sorted.iterrows():
+            if issue.Severity == "Info":
+                logger.info(f"{issue.Category} - {issue['Issue Type']}")
+            elif issue.Severity == "Warning":
+                logger.warning(f"{issue.Category} - {issue['Issue Type']}")
+                warning_issues = True
+            elif issue.Severity == "Critical":
+                logger.critical(f"{issue.Category} - {issue['Issue Type']}")
+                critical_issues = True
+
+        if critical_issues:
             raise Exception(
                 f"Critical data issues have been detected. "
                 f"Please check the details in the following file: "
@@ -210,7 +137,7 @@ class OctoML:
                 f"/data/data_health_report.csv"
             )
 
-        if warning_messages:
+        if warning_issues:
             if not self.config_study.ignore_data_health_warning:
                 raise Exception(
                     f"Data issues have been detected. "
@@ -283,10 +210,6 @@ class OctoML:
 
         Returns:
             tuple: A tuple containing the imputed (or original) train and test datasets.
-
-        Raises:
-            AssertionError: If there are NaN values present in the imputed
-                training or testing datasets.
         """
         imputation_method = self.configs.study.imputation_method
 
@@ -312,12 +235,12 @@ class OctoML:
             )
 
         # Assert that there are no NaNs in the imputed data
-        assert (
-            not imputed_train_df[feature_columns].isna().any().any()
-        ), "NaNs present in imputed train_df"
-        assert (
-            not imputed_test_df[feature_columns].isna().any().any()
-        ), "NaNs present in imputed test_df"
+        assert not imputed_train_df[feature_columns].isna().any().any(), (
+            "NaNs present in imputed train_df"
+        )
+        assert not imputed_test_df[feature_columns].isna().any().any(), (
+            "NaNs present in imputed test_df"
+        )
 
         return imputed_train_df, imputed_test_df
 

@@ -17,11 +17,13 @@ from autogluon.core.metrics import (
     root_mean_squared_error,
 )
 from autogluon.tabular import TabularPredictor
+from sklearn.base import BaseEstimator, ClassifierMixin, RegressorMixin
 
 # from sklearn.utils.multiclass import unique_labels
 from octopus.experiment import OctoExperiment
 from octopus.modules.utils import get_performance_score
 from octopus.results import ModuleResults
+
 
 # TOBEDONE
 # - add more metrics: F1, AUCPR, NEGBRIERSCORE
@@ -36,6 +38,56 @@ from octopus.results import ModuleResults
 # - compate speed of permutation fi calculations (octo/autogluon)
 # - implement feature_groups calculated from the traindev dataset,
 #   needed for the group_feature_importances
+class SklearnClassifier(BaseEstimator, ClassifierMixin):
+    """Sklearn classifier wrapper."""
+
+    def __init__(self, predictor: TabularPredictor):
+        self.predictor = predictor
+        self.classes_ = self.predictor.class_labels  # Class labels
+        self.n_classes_ = len(self.classes_)  # Number of classes
+        self.feature_names_in_ = self.predictor.original_features
+        self.n_features_in_ = len(self.feature_names_in_)
+        self._is_fitted = True  # Indicate that the model is fitted
+
+    def predict(self, x):
+        """Predict."""
+        return self.predictor.predict(x, as_pandas=False)
+
+    def predict_proba(self, x):
+        """Predict proba."""
+        probabilities = self.predictor.predict_proba(
+            x, as_pandas=False, as_multiclass=True
+        )
+        return probabilities  # Return as NumPy array
+
+    def fit(self, x, y):
+        """Fit."""
+        raise NotImplementedError(
+            "This classifier is already fitted. Only for inference use."
+        )
+
+
+class SklearnRegressor(BaseEstimator, RegressorMixin):
+    """Sklearn regressor wrapper."""
+
+    def __init__(self, predictor: TabularPredictor):
+        self.predictor = predictor
+        self.n_features_in_ = len(self.predictor.feature_names)
+        self.feature_names_in_ = self.predictor.original_features
+        self.n_features_in_ = len(self.feature_names_in_)
+        self.n_outputs_ = 1  # Assuming single-output regression;
+        self._is_fitted = True  # Indicate that the model is fitted
+
+    def predict(self, x):
+        """Predict."""
+        # Call the predictor's predict method with as_pandas=False
+        return self.predictor.predict(x, as_pandas=False)
+
+    def fit(self, x, y):
+        """Fit."""
+        raise NotImplementedError(
+            "This regressor is already fitted. Only for inference use."
+        )
 
 
 # mapping of metrics
@@ -233,7 +285,7 @@ class AGCore:
         # save results to experiment
         self.experiment.results["Autogluon"] = ModuleResults(
             id="autogluon",
-            model=self.model,
+            model=self._get_sklearn_model(),
             feature_importances=self._get_feature_importances(),
             scores=self._get_scores(),
             selected_features=self.feature_columns,  # no feature selection
@@ -242,6 +294,17 @@ class AGCore:
 
         # return updated experiment object
         return self.experiment
+
+    def _get_sklearn_model(self):
+        """Get sklearn compatible model."""
+
+        if self.experiment.ml_type == "classification":
+            return SklearnClassifier(self.model)
+
+        elif self.experiment.ml_type == "regression":
+            return SklearnRegressor(self.model)
+        else:
+            raise ValueError(f"{self.experiment.ml_type} not supported")
 
     def _get_feature_importances(self):
         """Calculate feature importances."""

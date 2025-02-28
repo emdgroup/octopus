@@ -20,8 +20,11 @@ from autogluon.tabular import TabularPredictor
 
 # from sklearn.utils.multiclass import unique_labels
 from octopus.experiment import OctoExperiment
+from octopus.logger import LogGroup, get_logger
 from octopus.modules.utils import get_performance_score
 from octopus.results import ModuleResults
+
+logger = get_logger()
 
 # TOBEDONE
 # - add more metrics: F1, AUCPR, NEGBRIERSCORE
@@ -143,13 +146,7 @@ class AGCore:
 
     def _set_resources(self):
         """Set and validate resources."""
-        print()
-        print("Checking resources:")
-        print(
-            "Number of CPUs available to this experiment:",
-            self.experiment.num_assigned_cpus,
-        )
-        print("Requested number of CPUs:", self.experiment.ml_config.num_cpus)
+        logger.set_log_group(LogGroup.PREPARE_EXECUTION)
 
         if self.experiment.ml_config.num_cpus == "auto":
             self.num_cpus = self.experiment.num_assigned_cpus
@@ -158,8 +155,17 @@ class AGCore:
                 self.experiment.num_assigned_cpus, self.experiment.ml_config.num_cpus
             )
 
-        print(f"Allocated number of CPUs for this experiment: {self.num_cpus}")
-        print()
+        logger.info(
+            f"Resource allocation | CPUs | "
+            f"Available: {self.experiment.num_assigned_cpus} | "
+            f"Requested: {self.experiment.ml_config.num_cpus}"
+        )
+        logger.info(
+            f"""CPU Resources | \
+        Available: {self.experiment.num_assigned_cpus} | \
+        Requested: {self.experiment.ml_config.num_cpus} | \
+        Allocated: {self.num_cpus}"""
+        )
 
     def run_experiment(self):
         """Run experiment."""

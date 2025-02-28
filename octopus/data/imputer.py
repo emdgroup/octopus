@@ -68,8 +68,6 @@ def impute_simple(
 
     Raises:
         ValueError: If an unknown imputation method is specified.
-        AssertionError: If there are NaN values present in the imputed
-            training or testing datasets.
     """
     # Identify columns with missing values in the training dataset
     train_missing_columns = train_df[feature_columns].columns[

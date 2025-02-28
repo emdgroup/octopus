@@ -40,7 +40,6 @@ data_df = (
 # We define the data, target columns, feature columns, sample ID to identify groups,
 # and the data split type. The columns total_bedrooms and ocean_proximity are not
 # cleaned yet. Therefore we leave them out of the example.
-
 octo_data = OctoData(
     data=data_df,
     target_columns=["median_house_value"],
@@ -58,7 +57,6 @@ octo_data = OctoData(
     sample_id="index",
     datasplit_type="sample",
 )
-
 ### Create Configuration
 
 # We create three types of configurations:
@@ -78,7 +76,7 @@ config_study = ConfigStudy(
     silently_overwrite_study=True,
 )
 
-config_manager = ConfigManager(outer_parallelization=False, run_single_experiment_num=1)
+config_manager = ConfigManager(outer_parallelization=True, run_single_experiment_num=1)
 
 config_sequence = ConfigSequence(
     [

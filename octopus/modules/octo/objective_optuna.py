@@ -2,10 +2,13 @@
 
 import heapq
 
+from octopus.logger import LogGroup, get_logger
 from octopus.models.inventory import ModelInventory
 from octopus.modules.octo.bag import Bag
 from octopus.modules.octo.training import Training
 from octopus.modules.utils import optuna_direction
+
+logger = get_logger()
 
 
 class ObjectiveOptuna:
@@ -161,13 +164,8 @@ class ObjectiveOptuna:
         # add config_training to user attributes
         trial.set_user_attr("config_training", config_training)
 
-        # print scores info to console
-        print(f"Trial scores for metric: {self.experiment.configs.study.target_metric}")
-        for key, value in scores.items():
-            if isinstance(value, list):
-                print(f"{key}:{value}")
-            else:
-                print(f"{key}:{value:.3f}")
+        # log results
+        self._log_trial_scores(self.experiment, scores)
 
         # define optuna target
         optuna_target = scores["dev_avg"]
@@ -190,8 +188,8 @@ class ObjectiveOptuna:
         if self.ensel:
             self._save_topn_trials(bag_trainings, optuna_target, trial.number)
 
-        print("Otarget:", optuna_target)
-        print("Number of features used:", int(n_features_mean))
+        logger.info(f"Otarget: {optuna_target}")
+        logger.info(f"Number of features used: {int(n_features_mean)}")
 
         return optuna_target
 
@@ -215,3 +213,32 @@ class ObjectiveOptuna:
                 path_delete.unlink()
             else:
                 raise FileNotFoundError("Problem deleting trial-pkl file")
+
+    def _log_trial_scores(self, experiment, scores):
+        logger.set_log_group(
+            LogGroup.SCORES, f"EXP {self.experiment.experiment_id} SQE TBD"
+        )
+        # Log the target metric
+        logger.info(
+            f"Trial scores for metric: {experiment.configs.study.target_metric}"
+        )
+
+        # Separate list and non-list values
+        list_items = {}
+        non_list_items = {}
+
+        for key, value in scores.items():
+            if isinstance(value, list):
+                list_items[key] = value
+            else:
+                non_list_items[key] = value
+
+        # Log non-list items in one message with | as a divider
+        non_list_message = " | ".join(
+            [f"{key}: {value:.3f}" for key, value in non_list_items.items()]
+        )
+        logger.info(f"Scores: {non_list_message}")
+
+        # Log list items individually
+        for key, value in list_items.items():
+            logger.info(f"{key}: {value}")

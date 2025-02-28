@@ -72,7 +72,6 @@ class SklearnRegressor(BaseEstimator, RegressorMixin):
 
     def __init__(self, predictor: TabularPredictor):
         self.predictor = predictor
-        self.n_features_in_ = len(self.predictor.feature_names)
         self.feature_names_in_ = self.predictor.original_features
         self.n_features_in_ = len(self.feature_names_in_)
         self.n_outputs_ = 1  # Assuming single-output regression;
@@ -278,8 +277,7 @@ class AGCore:
         """Get sklearn compatible model."""
         if self.experiment.ml_type == "classification":
             return SklearnClassifier(self.model)
-
-        elif self.experiment.ml_type == "regression":
+        if self.experiment.ml_type == "regression":
             return SklearnRegressor(self.model)
         else:
             raise ValueError(f"{self.experiment.ml_type} not supported")

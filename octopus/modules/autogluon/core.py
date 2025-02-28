@@ -9,35 +9,35 @@ import pandas as pd
 from attrs import define, field, validators
 from autogluon.core.metrics import (
     accuracy,
+    average_precision,
     balanced_accuracy,
+    f1,
     log_loss,
+    mcc,
     mean_absolute_error,
+    precision,
     r2,
+    recall,
     roc_auc,
     root_mean_squared_error,
 )
 from autogluon.tabular import TabularPredictor
 from sklearn.base import BaseEstimator, ClassifierMixin, RegressorMixin
 
-# from sklearn.utils.multiclass import unique_labels
 from octopus.experiment import OctoExperiment
-from octopus.modules.utils import get_performance_score
+from octopus.modules.utils import (
+    get_fi_group_shap,
+    get_fi_shap,
+    get_performance_score,
+)
 from octopus.results import ModuleResults
 
 
 # TOBEDONE
-# - add more metrics: F1, AUCPR, NEGBRIERSCORE
 # - replace print() with logging
-# - do we need to set problem type?
-# - add: includes_model_types
-# - add: verbosity setting
-# - make autogluon consider group features!
-# - add shap feature importances
 # - compare ag and octopus performance calculations
 # - compare ag and octopus permutation feature importances
 # - compate speed of permutation fi calculations (octo/autogluon)
-# - implement feature_groups calculated from the traindev dataset,
-#   needed for the group_feature_importances
 class SklearnClassifier(BaseEstimator, ClassifierMixin):
     """Sklearn classifier wrapper."""
 
@@ -96,9 +96,15 @@ try:
         "AUCROC": roc_auc,
         "ACC": accuracy,
         "ACCBAL": balanced_accuracy,
+        "AUCPR": average_precision,
+        "F1": f1,
         "LOGLOSS": log_loss,
         "MAE": mean_absolute_error,
+        "MCC": mcc,
         "MSE": root_mean_squared_error,
+        "NEGBRIERSCORE": "brier_score_loss",
+        "PRECISION": precision,
+        "RECALL": recall,
         "R2": r2,
     }
 except Exception as e:  # pylint: disable=W0718 # noqa: F841
@@ -225,36 +231,24 @@ class AGCore:
         # set up model and scoring type
         scoring_type = metrics_inventory_autogluon[self.target_metric]
 
-        # if self.experiment.ml_type == "classification":
-        #     classes = unique_labels(self.y_traindev)
-        #     if len(classes) == 1:
-        #         raise ValueError("Classifier can't train, only 1 class is present.")
-        #     elif len(classes) == 2:
-        #         problem_type = "binary"
-        #     else:
-        #         problem_type = "multiclass"
-        # elif self.experiment.ml_type == "regression":
-        #     problem_type= 'regression'
-        # else:i
-        #     raise ValueError(f"{self.experiment.ml_type} not supported")
-
         # initialization of predictor
         self.model = TabularPredictor(
             label=target,
-            # problem_type= problem_type,
             eval_metric=scoring_type,
-            verbosity=2,
+            verbosity=self.experiment.ml_config.verbosity,
         )
 
         # predictor fit
         self.model.fit(
             self.ag_train_data,
             time_limit=self.experiment.ml_config.time_limit,
+            infer_limit=self.experiment.ml_config.infer_limit,
+            memory_limit=self.experiment.ml_config.memory_limit,
             presets=self.experiment.ml_config.presets,
+            fit_strategy=self.experiment.ml_config.fit_strategy,
+            # disabled for preset 'medium_quality'.
             num_bag_folds=self.experiment.ml_config.num_bag_folds,
-            # add
-            # - included_model_typeslist, default = None
-            # - verbosity
+            included_model_types=self.experiment.ml_config.included_model_types,
         )
         print("fitting completed")
 
@@ -266,21 +260,6 @@ class AGCore:
 
         # save leaderboard and model information
         self._save_leaderboard_info()
-
-        # Get information about all models
-        # all_models = self.model.get_model_names()
-        # model_configs = dict()
-        # for model in all_models:
-        #     specific_model = self.model._trainer.load_model(model)
-        #     model_info = specific_model.get_info()
-        #     model_configs[model] = model_info
-        # print(model_configs_df)
-        model_configs = self.model.info()["model_info"]
-        # print(model_info)
-        with open(
-            self.path_results.joinpath("model_configs.txt"), "w", encoding="utf-8"
-        ) as f:
-            print(model_configs, file=f)
 
         # save results to experiment
         self.experiment.results["Autogluon"] = ModuleResults(
@@ -297,7 +276,6 @@ class AGCore:
 
     def _get_sklearn_model(self):
         """Get sklearn compatible model."""
-
         if self.experiment.ml_type == "classification":
             return SklearnClassifier(self.model)
 
@@ -324,18 +302,104 @@ class AGCore:
             num_shuffle_sets=15,
             silent=True,
         )
-        # print(feature_importance)
-        fi["autogluon_permutation_test"].to_csv(
-            self.path_results.joinpath(
-                "autogluon_permutation_feature_importance_test.csv"
-            )
+
+        # Calculate group feature importances using feature_groups
+        if (
+            hasattr(self.experiment, "feature_groups")
+            and self.experiment.feature_groups
+        ):
+            group_importances = {}
+            for group_name, features in self.experiment.feature_groups.items():
+                # Calculate feature importance for the current group
+                group_importance = self.model.feature_importance(
+                    data=self.ag_test_data,
+                    features=[(group_name, features)],
+                    subsample_size=5000,
+                    time_limit=None,
+                    include_confidence_band=True,
+                    confidence_level=0.95,
+                    num_shuffle_sets=15,
+                    silent=True,
+                )
+                # Store the group importance
+                group_importances[group_name] = group_importance
+
+            # Create a list to hold combined importances
+            combined_feature_importances = [fi["autogluon_permutation_test"]]
+
+            # Append group feature importances
+            for group_name, importance in group_importances.items():
+                # Create a new row for the group importance
+                group_row = importance.copy()
+                # Set the index to indicate it's a group
+                group_row.index = [f"{group_name}"] * len(group_row)
+                combined_feature_importances.append(group_row)
+
+            # Concatenate the list items
+            fi["autogluon_permutation_test"] = pd.concat(combined_feature_importances)
+
+        fi["autogluon_permutation_test"] = fi["autogluon_permutation_test"].sort_values(
+            by="importance", ascending=False
         )
+
+        # SHAP feature importances
+        print("Calculating SHAP feature importances...")
+        if (
+            hasattr(self.experiment, "feature_groups")
+            and self.experiment.feature_groups
+        ):
+            # Group SHAP feature importances
+            fi["octopus_shap_test"] = get_fi_group_shap(
+                self,
+                experiment={
+                    "id": self.experiment.id,
+                    "model": self.model,
+                    "data_test": self.ag_test_data,
+                    "feature_columns": self.feature_columns,
+                    "ml_type": self.model.problem_type,
+                    "feature_group_dict": self.experiment.feature_groups,
+                },
+                data=None,
+                shap_type="kernel",
+            )
+        else:
+            fi["octopus_shap_test"] = get_fi_shap(
+                self,
+                experiment={
+                    "id": self.experiment.id,
+                    "model": self.model,
+                    "data_test": self.ag_test_data,
+                    "feature_columns": self.feature_columns,
+                    "ml_type": self.model.problem_type,
+                },
+                data=None,
+                shap_type="kernel",
+            )
+
+        # Combine all feature importances into a single dictionary
+        combined_importances = {
+            "autogluon_permutation": fi["autogluon_permutation_test"].to_dict(
+                orient="index"
+            ),
+            "octopus_shap": fi["octopus_shap_test"].to_dict(orient="records"),
+        }
+
+        # print combined feature_importance
+        with open(
+            self.path_results.joinpath("combined_feature_importances.json"),
+            "w",
+            encoding="utf-8",
+        ) as f:
+            json.dump(combined_importances, f, indent=4)
+
         return fi
 
     def _get_scores(self):
         """Get train/dev/test scores."""
         # Evaluate the model on the test set
-        test_performance = self.model.evaluate(self.ag_test_data, silent=True)
+        test_performance = self.model.evaluate(
+            self.ag_test_data, detailed_report=True, silent=True
+        )
         test_performance_with_suffix = {
             f"{key}_test": value for key, value in test_performance.items()
         }
@@ -353,7 +417,9 @@ class AGCore:
         }
 
         # Evaluate the model on the training set to get training performance
-        train_performance = self.model.evaluate(self.ag_train_data, silent=True)
+        train_performance = self.model.evaluate(
+            self.ag_train_data, detailed_report=True, silent=True
+        )
 
         # Modify the keys to add "_train" suffix for training performance
         train_performance_with_suffix = {
@@ -402,10 +468,8 @@ class AGCore:
             self.ag_test_data,
             extra_info=True,
             # extra_metrics=
-            # display= True
-            # silent= True ?
+            # display=True
         )
-        # print(leaderboard)
         leaderboard.to_csv(self.path_results.joinpath("leaderboard.csv"))
 
         # Best test result

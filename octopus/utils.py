@@ -8,6 +8,10 @@ import pandas as pd
 from attrs import Factory, define, field, validators
 from sklearn.model_selection import KFold, StratifiedKFold
 
+from .logger import LogGroup, get_logger
+
+logger = get_logger()
+
 
 @define
 class DataSplit:
@@ -35,53 +39,49 @@ class DataSplit:
         default=Factory(lambda: None),
         validator=validators.optional(validators.instance_of(str)),
     )
+    process_id: str = field(default="Outer", validator=[validators.instance_of(str)])
 
     def __attrs_post_init__(self):
-        # reset index
+        logger.set_log_group(LogGroup.CREATING_DATASPLITS, self.process_id)
+        logger.info("Initializing data split creation")
+        logger.info("Starting data split process...")
         self.dataset.reset_index(drop=True, inplace=True)
 
     def get_datasplits(self):
         """Get combined datasplits from a list of datasplit seeds."""
-        # Initialize a list to collect all values
+        logger.info("Generating splits for multiple seeds...")
         combined_values = []
 
-        # Iterate over each seed and collect the values
         for seed in self.seeds:
+            logger.info(f"Processing seed: {seed}")
             result = self._single_seed_datasplits(seed)
-            # Ensure consistent order by sorting the keys
             for key in sorted(result.keys()):
                 combined_values.append(result[key])
 
-        # Create the combined_results dictionary with new indices
         combined_datasplits = {i: value for i, value in enumerate(combined_values)}
-
+        logger.info("Combined data splits created successfully")
         return combined_datasplits
 
     def _single_seed_datasplits(self, datasplit_seed):
         """Get datasplits for single seed."""
-        # set seeds for reproducibility
-        random.seed(0)
-        np.random.seed(0)
+        logger.info(f"Generating splits for seed: {datasplit_seed}")
+        random.seed(datasplit_seed)
+        np.random.seed(datasplit_seed)
 
-        # Allow for grouped rows as defined in datasplit_col
-        # The split is done on dataset_unique, with an reset index.
-        # This ensures that we split by group.
         dataset_unique = self.dataset.drop_duplicates(
             subset=self.datasplit_col, keep="first", inplace=False
         )
         dataset_unique.reset_index(drop=True, inplace=True)
 
-        print(
-            f"""Number of unique groups (as in column: {self.datasplit_col}):"""
-            f"""{len(dataset_unique)}"""
+        logger.info("Analyzing dataset structure")
+        logger.info(
+            "Number of unique groups (as in column: "
+            f"{self.datasplit_col}): {len(dataset_unique)}"
         )
-        print("Number of rows in dataset:", len(self.dataset))
-        print()
-        print("Creating data splits....")
+        logger.info(f"Number of rows in dataset: {len(self.dataset)}")
 
-        # StratifiedKfold or Kfold
         if self.stratification_col:
-            print("Data split: stratified KFold")
+            logger.info("Determining split method: Stratified KFold")
             kf = StratifiedKFold(
                 n_splits=self.num_folds,
                 shuffle=True,
@@ -89,13 +89,16 @@ class DataSplit:
             )
 
             if dataset_unique[self.stratification_col].dtype.kind not in "iub":
+                logger.error(
+                    "Stratification column is of wrong type (expected: bool, int)"
+                )
                 raise ValueError(
-                    "Stratification column is of wrong type (reg.: bool,int)"
+                    "Stratification column is of wrong type (expected: bool, int)"
                 )
 
             stratification_target = dataset_unique[self.stratification_col].astype(int)
         else:
-            print("Data split: KFold (unstratified)")
+            logger.info("Determining split method: KFold (unstratified)")
             kf = KFold(
                 n_splits=self.num_folds,
                 shuffle=True,
@@ -106,21 +109,17 @@ class DataSplit:
         data_splits = dict()
         all_test_indices = list()
         all_test_groups = list()
-        print("Number of splits:", self.num_folds)
-        # split based on dataset_unique
+        logger.info(f"Setting number of splits: {self.num_folds}")
+        logger.info("Generating splits...")
+
         for num_split, (train_ind, test_ind) in enumerate(
             kf.split(dataset_unique, stratification_target)
         ):
-            print("##### split number:", num_split)
-            # train and test groups
             groups_train = set(dataset_unique.iloc[train_ind][self.datasplit_col])
             groups_test = set(dataset_unique.iloc[test_ind][self.datasplit_col])
             assert groups_train.intersection(groups_test) == set()
             all_test_groups.extend(list(groups_test))
 
-            # take groups and partition self.dataset based on groups
-            # This makes sure that samples of the same group are in
-            # the same partition. Stratification may not be optimal.
             partition_train = self.dataset[
                 self.dataset[self.datasplit_col].isin(groups_train)
             ]
@@ -132,21 +131,31 @@ class DataSplit:
             )
             all_test_indices.extend(partition_test.index.tolist())
 
-            # reset partition indices
             partition_train.reset_index(drop=True, inplace=True)
             partition_test.reset_index(drop=True, inplace=True)
 
-            print("train, number of rows:", len(partition_train))
-            print("train, number of groups:", len(set(groups_train)))
-            print("test, number of rows:", len(partition_test))
-            print("test, number of groups:", len(set(groups_test)))
+            if self.process_id == "Outer":
+                info_name = "EXP"
+                dataset_name_1 = "Train/Dev"
+                dataset_name_2 = "Test"
+            else:
+                info_name = "SPLIT"
+                dataset_name_1 = "Train"
+                dataset_name_2 = "Dev"
+
+            logger.info(
+                f"{info_name} {num_split} created: "
+                f"{dataset_name_1} - {len(partition_train)} rows, "
+                f"{len(set(groups_train))} groups | "
+                f"{dataset_name_2} - {len(partition_test)} rows, "
+                f"{len(set(groups_test))} groups"
+            )
 
             data_splits[num_split] = {
                 "test": partition_test,
                 "train": partition_train,
             }
 
-        # checking datasplit groups
         assert len(all_test_groups) == len(set(all_test_groups))
         assert (
             len(
@@ -156,9 +165,8 @@ class DataSplit:
             )
             == 0
         )
-
-        # checking datasplit indices
         assert len(all_test_indices) == len(set(all_test_indices))
         assert len(self.dataset) == len(all_test_indices)
 
+        logger.info("Data splits creation completed successfully")
         return data_splits

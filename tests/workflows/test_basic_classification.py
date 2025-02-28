@@ -59,6 +59,7 @@ def test_basic_classification():
         ml_type="classification",
         target_metric="AUCROC",
         silently_overwrite_study=True,
+        ignore_data_health_warning=True,
     )
 
     config_manager = ConfigManager(

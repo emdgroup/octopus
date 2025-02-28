@@ -18,8 +18,6 @@ def validate_config_study(instance, attribute, value):
                 raise ValueError(
                     "Loading sequence items requires start_with_empty_study=False"
                 )
-    # else:
-    #     print("WARNING: start_with_empty_study is set to False (overwriting)")
 
 
 @define

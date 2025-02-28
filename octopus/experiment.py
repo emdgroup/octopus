@@ -13,9 +13,6 @@ import scipy.stats
 from attrs import Factory, define, field, validators
 
 from octopus.config.core import OctoConfig
-from octopus.logger import configure_logging
-
-configure_logging()
 
 
 @define

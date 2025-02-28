@@ -5,6 +5,9 @@ from typing import ClassVar, List
 from attrs import Factory, define, field, validators
 
 from octopus.config.base_sequence_item import BaseSequenceItem
+from octopus.logger import get_logger
+
+logger = get_logger()
 
 
 @define
@@ -126,7 +129,7 @@ class Octo(BaseSequenceItem):
         if self.n_workers is None:
             self.n_workers = self.n_folds_inner
         if self.n_workers != self.n_folds_inner:
-            print(
+            logger.warning(
                 f"Octofull Warning: n_workers ({self.n_workers}) "
                 f"does not match n_folds_inner ({self.n_folds_inner})",
             )

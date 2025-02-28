@@ -12,14 +12,11 @@ import pandas as pd
 from attrs import define, field, validators
 from joblib import Parallel, delayed
 
+from octopus.logger import LogGroup, get_logger
 from octopus.metrics import metrics_inventory
 from octopus.modules.octo.scores import add_pooling_scores
 
-# logging.basicConfig(
-#    filename="logging_bag.log",
-#    level=logging.INFO,
-#    format="%(asctime)s:%(levelname)s:%(message)s",
-# )
+logger = get_logger()
 
 
 @define
@@ -69,7 +66,7 @@ class Bag:
             def execute_training(training, idx):
                 try:
                     result = training.fit()
-                    print(f"Training {idx} completed successfully.")
+                    logger.info(f"Training {idx} completed successfully.")
                     # logging.info(f"Training {idx} completed successfully.")
                     return result
                 except Exception as e:  # pylint: disable=broad-except
@@ -127,9 +124,12 @@ class Bag:
             for training in self.trainings:
                 try:
                     training.fit()
-                    print("Inner sequential training completed")
+                    logger.info(
+                        f"Inner sequential training completed for bag_id {self.bag_id} "
+                        f"and training id {training.training_id}"
+                    )
                 except Exception as e:  # pylint: disable=broad-except
-                    print(
+                    logger.info(
                         f"Error during training {training}: {e},"
                         f" type: {type(e).__name__}"
                     )
@@ -318,9 +318,11 @@ class Bag:
 
         # Add the additional features to feat_single and remove duplicates
         feat_all = list(set(feat_single + feat_additional))
-        print("Number of selected features: ", len(feat_all))
-        print("Number of single features: ", len(feat_single))
-        print("Number of features from groups: ", len(feat_additional))
+
+        logger.set_log_group(LogGroup.RESULTS, f"BAG {self.bag_id}")
+        logger.info(f"Number of selected features: {len(feat_all)}")
+        logger.info(f"Number of single features: {len(feat_single)}")
+        logger.info(f"Number of features from groups: {len(feat_additional)}")
 
         return sorted(feat_all, key=lambda x: (len(x), sorted(x)))
 

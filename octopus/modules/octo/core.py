@@ -9,8 +9,10 @@ from pathlib import Path
 import optuna
 from attrs import Factory, define, field, validators
 from joblib import Parallel, delayed
+from optuna.trial import TrialState
 
 from octopus.experiment import OctoExperiment
+from octopus.logger import LogGroup, get_logger
 from octopus.modules.mrmr.core import maxrminr, relevance_fstats
 from octopus.modules.octo.bag import Bag
 from octopus.modules.octo.enssel import EnSel
@@ -19,6 +21,7 @@ from octopus.modules.octo.training import Training
 from octopus.results import ModuleResults
 from octopus.utils import DataSplit
 
+logger = get_logger()
 # TOBEDONE ENSEMBLING
 # - simplify and centralise score calculations (bag, enssel)
 # - add hard pooling to ensemble prediction
@@ -207,6 +210,7 @@ class OctoCore:
             seeds=self.experiment.ml_config.datasplit_seeds_inner,
             num_folds=self.experiment.ml_config.n_folds_inner,
             stratification_col=self.experiment.stratification_column,
+            process_id=f"EXP {self.experiment.experiment_id} SEQ TBD",
         ).get_datasplits()
         # if we don't want to resume optimization:
         # delete directories /trials /optuna /results to ensure clean state
@@ -228,7 +232,7 @@ class OctoCore:
 
     def _create_mrmr_features(self):
         """Calculate feature lists for all provided features numbers."""
-        print("Calculating MRMR feature sets....")
+        logger.info("Calculating MRMR feature sets...")
         # remove duplicates and cap max number
         feature_numbers = list(set(self.experiment.ml_config.mrmr_feature_numbers))
         feature_numbers = [
@@ -273,23 +277,21 @@ class OctoCore:
 
     def _check_resources(self):
         """Check resources, assigned vs requested."""
-        print()
-        print("Checking resources:")
-        print(
-            "Number of CPUs available to this experiment:",
-            self.experiment.num_assigned_cpus,
+        logger.set_log_group(
+            LogGroup.PREPARE_EXECUTION, f"EXP {self.experiment.experiment_id} SQE TBD"
         )
 
-        # assuming n_jobs=1 for every model
         if self.experiment.ml_config.inner_parallelization is True:
             num_requested_cpus = (
                 self.experiment.ml_config.n_workers * self.experiment.ml_config.n_jobs
             )
         else:
             num_requested_cpus = self.experiment.ml_config.n_jobs
-
-        print(f"Number of requested CPUs for this experiment: {num_requested_cpus}")
-        print()
+        logger.info(
+            f"""CPU Resources | \
+        Available: {self.experiment.num_assigned_cpus} | \
+        Requested: {num_requested_cpus} | """
+        )
 
     def run_experiment(self):
         """Run experiment."""
@@ -505,14 +507,14 @@ class OctoCore:
 
     def _run_globalhp_optimization(self):
         """Optimization run with a global HP set over all inner folds."""
-        print("Running Optuna Optimization with a global HP set")
+        logger.info("Running Optuna Optimization with a global HP set")
 
         # run Optuna study with a global HP set
         self._optimize_splits(self.data_splits)
 
     def _run_individualhp_optimization(self):
         """Optimization runs with an individual HP set for each inner datasplit."""
-        print("Running Optuna Optimizations for each inner datasplit separately")
+        logger.info("Running Optuna Optimizations for each inner datasplit separately")
 
         # covert to list of dicts for compatibility with OptimizeOptuna
         splits = [{key: value} for key, value in self.data_splits.items()]
@@ -620,10 +622,23 @@ class OctoCore:
         # store optuna db path
         self.paths_optuna_db[study_name] = db_path
 
+        def logging_callback(study, trial):
+            logger.set_log_group(LogGroup.OPTUNA)
+            if trial.state == TrialState.COMPLETE:
+                logger.info(
+                    f"Trial {trial.number} finished with value: "
+                    f"{trial.value} and parameters: {trial.params}"
+                )
+            elif trial.state == TrialState.PRUNED:
+                logger.info(f"Trial {trial.number} pruned.")
+            elif trial.state == TrialState.FAIL:
+                logger.error(f"Trial {trial.number} failed.")
+
         study.optimize(
             objective,
             n_jobs=1,
             n_trials=self.experiment.ml_config.n_trials,
+            callbacks=[logging_callback],
         )
 
         # copy bag of best trial to results
@@ -636,19 +651,23 @@ class OctoCore:
         # shutil.copy(source, self.path_results / source.name)
 
         # display results
-        print()
-        print("Optimization results: ")
+        logger.set_log_group(
+            LogGroup.SCORES, f"EXP {self.experiment.experiment_id} SQE TBD"
+        )
+        logger.info("Optimization results: ")
         # print("Best trial:", study.best_trial) #full info
-        print("Best trial number:", study.best_trial.number)
-        print("Best target value:", study.best_value)
+        logger.info(
+            f"Best trial number {study.best_trial.number}",
+        )
+        logger.info(f"Best target value {study.best_value}")
         user_attrs = study.best_trial.user_attrs
         performance_info = {
             key: v for key, v in user_attrs.items() if key not in ["config_training"]
         }
-        print("Best parameters:", user_attrs["config_training"])
-        print("Performance Info:", performance_info)
+        logger.info(f"Best parameters {user_attrs['config_training']}")
+        logger.info(f"Performance Info: {performance_info}")
 
-        print("Create best bag.....")
+        logger.info("Create best bag.....")
         # get input features
         n_input_features = user_attrs["config_training"]["n_input_features"]
         best_bag_feature_columns = self.mrmr_features[n_input_features]
@@ -695,6 +714,6 @@ class OctoCore:
 
         # print best_bag scores for verification
         best_bag_scores = best_bag.get_scores()
-        print("Best bag performance", best_bag_scores)
+        logger.info(f"Best bag performance {best_bag_scores}")
 
         return True

@@ -1,0 +1,38 @@
+# macOS
+.DS_Store
+
+# Python
+__pycache__
+
+# PyCharm
+.idea
+
+# Package files
+*.egg-info
+
+# Temporary and binary files
+*.swp
+
+# Build files
+build
+
+# VSCode
+.vscode
+
+# Testing
+.tox
+.coverage
+.coverage.*
+.hypothesis
+.pytest_cache
+.ruff_cache
+.mypy_cache
+*.pickle
+*.pkl
+*.dill
+htmlcov
+
+# Other
+*.png
+*.ipynb
+*.pdf

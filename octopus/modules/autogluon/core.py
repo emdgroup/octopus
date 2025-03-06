@@ -7,18 +7,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 from attrs import define, field, validators
-from autogluon.core.metrics import (
-    accuracy,
-    balanced_accuracy,
-    log_loss,
-    mean_absolute_error,
-    r2,
-    roc_auc,
-    root_mean_squared_error,
-)
-from autogluon.tabular import TabularPredictor
 
-# from sklearn.utils.multiclass import unique_labels
 from octopus.experiment import OctoExperiment
 from octopus.logger import LogGroup, get_logger
 from octopus.modules.utils import get_performance_score
@@ -39,21 +28,6 @@ logger = get_logger()
 # - compate speed of permutation fi calculations (octo/autogluon)
 # - implement feature_groups calculated from the traindev dataset,
 #   needed for the group_feature_importances
-
-
-# mapping of metrics
-try:
-    metrics_inventory_autogluon = {
-        "AUCROC": roc_auc,
-        "ACC": accuracy,
-        "ACCBAL": balanced_accuracy,
-        "LOGLOSS": log_loss,
-        "MAE": mean_absolute_error,
-        "MSE": root_mean_squared_error,
-        "R2": r2,
-    }
-except Exception as e:  # pylint: disable=W0718 # noqa: F841
-    metrics_inventory_autogluon = {}
 
 
 @define
@@ -134,6 +108,7 @@ class AGCore:
         return pd.concat([self.x_test, self.y_test], axis=1)
 
     def __attrs_post_init__(self):
+
         # delete directories /results to ensure clean state
         # create directory if it does not exist
         for directory in [self.path_results]:
@@ -169,6 +144,32 @@ class AGCore:
 
     def run_experiment(self):
         """Run experiment."""
+
+        from octopus._optional.modules.autogluon import (
+            TabularPredictor,
+            accuracy,
+            balanced_accuracy,
+            log_loss,
+            mean_absolute_error,
+            r2,
+            roc_auc,
+            root_mean_squared_error,
+        )
+
+        # mapping of metrics
+        try:
+            metrics_inventory_autogluon = {
+                "AUCROC": roc_auc,
+                "ACC": accuracy,
+                "ACCBAL": balanced_accuracy,
+                "LOGLOSS": log_loss,
+                "MAE": mean_absolute_error,
+                "MSE": root_mean_squared_error,
+                "R2": r2,
+            }
+        except Exception as e:  # pylint: disable=W0718 # noqa: F841
+            metrics_inventory_autogluon = {}
+
         if len(self.target_assignments) == 1:
             target = next(iter(self.target_assignments.values()))
         else:

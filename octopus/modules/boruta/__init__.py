@@ -1,3 +1,5 @@
+"""Init."""
+
 from .core import BorutaCore
 from .module import Boruta
 

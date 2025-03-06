@@ -108,7 +108,6 @@ class AGCore:
         return pd.concat([self.x_test, self.y_test], axis=1)
 
     def __attrs_post_init__(self):
-
         # delete directories /results to ensure clean state
         # create directory if it does not exist
         for directory in [self.path_results]:
@@ -144,7 +143,6 @@ class AGCore:
 
     def run_experiment(self):
         """Run experiment."""
-
         from octopus._optional.modules.autogluon import (
             TabularPredictor,
             accuracy,

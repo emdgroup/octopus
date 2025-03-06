@@ -1,3 +1,5 @@
+"""Iinit."""
+
 from .core import OctoCore
 from .module import Octo
 

@@ -3,25 +3,15 @@
 
 from typing import Dict, Type
 
-# Import the core classes from their respective modules
-from .autogluon.core import AGCore
-from .autogluon.module import AutoGluon
-from .boruta.core import BorutaCore
-from .boruta.module import Boruta
-from .efs.core import EfsCore
-from .efs.module import Efs
-from .mrmr.core import MrmrCore
-from .mrmr.module import Mrmr
-from .octo.core import OctoCore
-from .octo.module import Octo
-from .rfe.core import RfeCore
-from .rfe.module import Rfe
-from .rfe2.core import Rfe2Core
-from .rfe2.module import Rfe2
-from .roc.core import RocCore
-from .roc.module import Roc
-from .sfs.core import SfsCore
-from .sfs.module import Sfs
+from .autogluon import AGCore, AutoGluon
+from .boruta import Boruta, BorutaCore
+from .efs import Efs, EfsCore
+from .mrmr import Mrmr, MrmrCore
+from .octo import Octo, OctoCore
+from .rfe import Rfe, RfeCore
+from .rfe2 import Rfe2, Rfe2Core
+from .roc import Roc, RocCore
+from .sfs import Sfs, SfsCore
 
 # Define the __all__ variable to specify what is available to import from this package
 __all__ = ["AutoGluon", "Mrmr", "Octo", "Rfe", "Rfe2", "Roc", "Sfs", "Efs", "Boruta"]

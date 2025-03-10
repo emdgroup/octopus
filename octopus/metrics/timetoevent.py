@@ -6,8 +6,11 @@ from .registry import MetricRegistry
 
 @MetricRegistry.register("CI")
 class CIMetric:
+    """CI metric class."""
+
     @staticmethod
     def get_metric_config():
+        """Get metric config."""
         from sksurv.metrics import concordance_index_censored
 
         return MetricConfig(
@@ -20,14 +23,3 @@ class CIMetric:
 
 
 __all__ = ["CIMetric"]
-
-# """Time to event metrics."""
-
-# from sksurv.metrics import concordance_index_censored
-
-# # Constants for metric names
-# CI = "CI"
-
-# timetoevent_metrics = {
-#     CI: concordance_index_censored,
-# }

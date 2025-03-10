@@ -9,9 +9,6 @@ from sklearn.ensemble import (
 from sklearn.linear_model import LogisticRegression
 from xgboost import XGBClassifier
 
-from octopus.models.config import ModelConfig
-from octopus.models.hyperparameter import Hyperparameter
-
 from .config import ModelConfig
 from .hyperparameter import Hyperparameter
 from .registry import ModelRegistry
@@ -19,8 +16,11 @@ from .registry import ModelRegistry
 
 @ModelRegistry.register("ExtraTreesClassifier")
 class ExtraTreesClassifierModel:
+    """ExtraTrees classification model class."""
+
     @staticmethod
     def get_model_config():
+        """Get model config."""
         return ModelConfig(
             name="ExtraTreesClassifier",
             model_class=ExtraTreesClassifier,
@@ -49,8 +49,11 @@ class ExtraTreesClassifierModel:
 
 @ModelRegistry.register("GradientBoostingClassifier")
 class GradientBoostingClassifierModel:
+    """Gradient boosting classification model class."""
+
     @staticmethod
     def get_model_config():
+        """Get model config."""
         return ModelConfig(
             name="GradientBoostingClassifier",
             model_class=GradientBoostingClassifier,
@@ -74,8 +77,11 @@ class GradientBoostingClassifierModel:
 
 @ModelRegistry.register("RandomForestClassifier")
 class RandomForestClassifierModel:
+    """Random forrest classification model class."""
+
     @staticmethod
     def get_model_config():
+        """Get model config."""
         return ModelConfig(
             name="RandomForestClassifier",
             model_class=RandomForestClassifier,
@@ -100,8 +106,11 @@ class RandomForestClassifierModel:
 
 @ModelRegistry.register("XGBClassifier")
 class XGBClassifierModel:
+    """XGBoost classification model class."""
+
     @staticmethod
     def get_model_config():
+        """Get model config."""
         return ModelConfig(
             name="XGBClassifier",
             model_class=XGBClassifier,
@@ -124,8 +133,11 @@ class XGBClassifierModel:
 
 @ModelRegistry.register("CatBoostClassifier")
 class CatBoostClassifierModel:
+    """Catboost classification model class."""
+
     @staticmethod
     def get_model_config():
+        """Get model config."""
         return ModelConfig(
             name="CatBoostClassifier",
             model_class=CatBoostClassifier,
@@ -155,8 +167,11 @@ class CatBoostClassifierModel:
 
 @ModelRegistry.register("LogisticRegressionClassifier")
 class LogisticRegressionClassifierModel:
+    """LogisticRegression classification model class."""
+
     @staticmethod
     def get_model_config():
+        """Get model config."""
         return ModelConfig(
             name="LogisticRegressionClassifier",
             model_class=LogisticRegression,
@@ -185,8 +200,11 @@ class LogisticRegressionClassifierModel:
 
 @ModelRegistry.register("TabPFNClassifier")
 class TabPFNClassifierModel:
+    """TabPFN classification model class."""
+
     @staticmethod
     def get_model_config():
+        """Get model config."""
         from octopus._optional.tabpfn import TabPFNClassifier
 
         ModelConfig(

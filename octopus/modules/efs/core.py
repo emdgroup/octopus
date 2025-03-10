@@ -194,7 +194,7 @@ class EfsCore:
     @property
     def direction(self) -> str:
         """Optuna direction."""
-        return optuna_direction(self.target_metric)
+        return metrics_inventory.get_direction(self.target_metric)
 
     @property
     def row_column(self) -> str:
@@ -329,9 +329,7 @@ class EfsCore:
                 )
                 cv_preds_df["probabilities"] = cross_val_predict(
                     best_model, x, y, cv=cv, method="predict_proba"
-                )[
-                    :, 1
-                ]  # binary only
+                )[:, 1]  # binary only
             elif self.ml_type == "regression":
                 cv_preds_df = pd.DataFrame()
                 cv_preds_df[self.row_column] = row_ids

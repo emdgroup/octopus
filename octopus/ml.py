@@ -235,12 +235,12 @@ class OctoML:
             )
 
         # Assert that there are no NaNs in the imputed data
-        assert (
-            not imputed_train_df[feature_columns].isna().any().any()
-        ), "NaNs present in imputed train_df"
-        assert (
-            not imputed_test_df[feature_columns].isna().any().any()
-        ), "NaNs present in imputed test_df"
+        assert not imputed_train_df[feature_columns].isna().any().any(), (
+            "NaNs present in imputed train_df"
+        )
+        assert not imputed_test_df[feature_columns].isna().any().any(), (
+            "NaNs present in imputed test_df"
+        )
 
         return imputed_train_df, imputed_test_df
 

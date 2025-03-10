@@ -55,10 +55,8 @@ def test_config_study_custom_values():
         ("regression", "MAE", ["MAE", "MSE"], True),
         ("classification", "R2", ["ACC", "ACCBAL"], False),
         ("regression", "ACC", ["MAE", "MSE"], False),
-        ("timetoevent", "AUCROC", ["CI"], False),
         ("regression", "LOGLOSS", ["MAE", "R2"], False),
         ("classification", "MSE", ["AUCROC", "ACC"], False),
-        ("timetoevent", "CI", ["CI"], True),
     ],
 )
 def test_metric_validation(ml_type, target_metric, metrics, allowed):

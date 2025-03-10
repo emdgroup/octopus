@@ -20,8 +20,11 @@ from .registry import MetricRegistry
 
 @MetricRegistry.register("AUCROC")
 class AUCROCMetric:
+    """AUCROC metric class."""
+
     @staticmethod
     def get_metric_config():
+        """Create metric config."""
         return MetricConfig(
             name="AUCROC",
             metric_function=roc_auc_score,
@@ -33,8 +36,11 @@ class AUCROCMetric:
 
 @MetricRegistry.register("ACC")
 class ACCMetric:
+    """Accuracy metric class."""
+
     @staticmethod
     def get_metric_config():
+        """Create metric config."""
         return MetricConfig(
             name="ACC",
             metric_function=accuracy_score,
@@ -46,8 +52,11 @@ class ACCMetric:
 
 @MetricRegistry.register("ACCBAL")
 class ACCBALMetric:
+    """Balanced accuracy metric class."""
+
     @staticmethod
     def get_metric_config():
+        """Create metric config."""
         return MetricConfig(
             name="ACCBAL",
             metric_function=balanced_accuracy_score,
@@ -59,8 +68,11 @@ class ACCBALMetric:
 
 @MetricRegistry.register("LOGLOSS")
 class LOGLOSSMetric:
+    """Log loss metric class."""
+
     @staticmethod
     def get_metric_config():
+        """Create metric config."""
         return MetricConfig(
             name="LOGLOSS",
             metric_function=log_loss,
@@ -72,8 +84,11 @@ class LOGLOSSMetric:
 
 @MetricRegistry.register("F1")
 class F1Metric:
+    """F1 metric class."""
+
     @staticmethod
     def get_metric_config():
+        """Create metric config."""
         return MetricConfig(
             name="F1",
             metric_function=f1_score,
@@ -85,8 +100,11 @@ class F1Metric:
 
 @MetricRegistry.register("NEGBRIERSCORE")
 class NEGBRIERSCOREMetric:
+    """Brier metric class."""
+
     @staticmethod
     def get_metric_config():
+        """Create metric config."""
         return MetricConfig(
             name="NEGBRIERSCORE",
             metric_function=brier_score_loss,
@@ -98,20 +116,12 @@ class NEGBRIERSCOREMetric:
 
 @MetricRegistry.register("AUCPR")
 class AUCPRMetric:
+    """AUCPR metric class."""
+
     def _auc_pr(
         y_true: Union[np.ndarray, list], y_score: Union[np.ndarray, list]
     ) -> float:
-        """Calculate the Area Under the Precision-Recall Curve (AUC-PR).
-
-        Args:
-            y_true: True binary labels. Ground truth (correct) target values.
-            y_score: Estimated probabilities or decision function output.
-                Target scores can either be probability estimates of the positive class,
-                confidence values, or non-thresholded measures of decisions.
-
-        Returns:
-            Area Under the Precision-Recall Curve (AUC-PR).
-        """
+        """Calculate the Area Under the Precision-Recall Curve (AUC-PR)."""
         # Compute precision-recall pairs for different probability thresholds
         precision, recall, _ = precision_recall_curve(y_true, y_score)
         # Compute the area under the precision-recall curve using the trapezoidal rule
@@ -120,6 +130,7 @@ class AUCPRMetric:
 
     @staticmethod
     def get_metric_config():
+        """Create metric config."""
         return MetricConfig(
             name="AUCPR",
             metric_function=AUCPRMetric._auc_pr,
@@ -138,98 +149,3 @@ __all__ = [
     "NEGBRIERSCOREMetric",
     "AUCPRMetric",
 ]
-
-# def get_classification_metrics():
-#     """Return a list of MetricConfig objects for classification metrics.
-#     Each MetricConfig object contains the configuration for a specific classification
-#     metrics.
-#     Returns:
-#         List[MetricConfig]: A list of ModelConfig objects for classification models.
-#     """
-#     return [
-#         MetricConfig(
-#             name="AUCROC",
-#             metric_class=roc_auc_score,
-#             ml_type="classification",
-#             minimize=False,
-#             prediction_type="predict_proba",
-#         ),
-#         MetricConfig(
-#             name="ACC",
-#             metric_class=accuracy_score,
-#             ml_type="classification",
-#             minimize=False,
-#             prediction_type="predict",
-#         ),
-#         MetricConfig(
-#             name="ACCBAL",
-#             metric_class=balanced_accuracy_score,
-#             ml_type="classification",
-#             minimize=False,
-#             prediction_type="predict",
-#         ),
-#         MetricConfig(
-#             name="LOGLOSS",
-#             metric_class=log_loss,
-#             ml_type="classification",
-#             minimize=True,
-#             prediction_type="predict_proba",
-#         ),
-#     ]
-
-
-# """Classification metrics."""
-
-# from typing import Union
-
-# import numpy as np
-# from sklearn.metrics import (
-#     accuracy_score,
-#     auc,
-#     balanced_accuracy_score,
-#     brier_score_loss,
-#     f1_score,
-#     log_loss,
-#     precision_recall_curve,
-#     roc_auc_score,
-# )
-
-
-# def auc_pr(y_true: Union[np.ndarray, list], y_score: Union[np.ndarray, list]) -> float:
-#     """Calculate the Area Under the Precision-Recall Curve (AUC-PR).
-
-#     Args:
-#         y_true: True binary labels. Ground truth (correct) target values.
-#         y_score: Estimated probabilities or decision function output.
-#             Target scores can either be probability estimates of the positive class,
-#             confidence values, or non-thresholded measures of decisions.
-
-#     Returns:
-#         Area Under the Precision-Recall Curve (AUC-PR).
-#     """
-#     # Compute precision-recall pairs for different probability thresholds
-#     precision, recall, _ = precision_recall_curve(y_true, y_score)
-#     # Compute the area under the precision-recall curve using the trapezoidal rule
-#     auc_score = auc(recall, precision)
-#     return auc_score
-
-
-# # Constants for metric names
-# AUCROC = "AUCROC"
-# ACC = "ACC"
-# ACCBAL = "ACCBAL"
-# LOGLOSS = "LOGLOSS"
-# F1 = "F1"
-# NEGBRIERSCORE = "NEGBRIERSCORE"
-# AUCPR = "AUCPR"
-
-
-# classification_metrics = {
-#     AUCROC: roc_auc_score,
-#     ACC: accuracy_score,
-#     ACCBAL: balanced_accuracy_score,
-#     LOGLOSS: log_loss,
-#     F1: f1_score,
-#     NEGBRIERSCORE: brier_score_loss,
-#     AUCPR: auc_pr,
-# }

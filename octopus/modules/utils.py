@@ -65,7 +65,6 @@ def get_performance(
 
     if ml_type == "classification":
         if prediction_type == "predict_proba":
-
             probabilities = model.predict_proba(input_data)
             # Convert to NumPy array if it's a DataFrame
             if isinstance(probabilities, pd.DataFrame):
@@ -85,7 +84,7 @@ def get_performance(
 
     if ml_type == "regression":
         if prediction_type == "predict_proba":
-            raise ValueError(f"predict_proba not supported for regression.")
+            raise ValueError("predict_proba not supported for regression.")
 
         else:
             predictions = model.predict(input_data)

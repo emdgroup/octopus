@@ -22,6 +22,7 @@ class MetricsInventory:
         self.metrics = MetricRegistry.get_all_metrics()
 
     def get_metric_config(self, name: str) -> MetricConfig | None:
+        """Get metric config."""
         if name not in self._metric_configs:
             metric_class = self.metrics.get(name)
             if metric_class:
@@ -37,14 +38,7 @@ class MetricsInventory:
         return self._metric_configs[name]
 
     def get_inventory_item(self, name: str) -> MetricConfig:
-        """Get the metric configuration for a given metric name.
-        Args:
-            name: The name of the metric to search for.
-        Returns:
-            The MetricConfig instance of the model if found.
-        Raises:
-            ValueError: If the metric with the given name is not found.
-        """
+        """Get the metric configuration for a given metric name."""
         for item in self.metrics:
             if item.name == name:
                 return item
@@ -60,7 +54,6 @@ class MetricsInventory:
 
     def get_direction(self, name: str) -> str:
         """Get the optuna direction by name."""
-
         if self.get_metric_config(name).higher_is_better:
             return "maximize"
         else:

@@ -111,7 +111,9 @@ class OctoManager:
                 exp_path_dict[experiment.sequence_id] = path_save
 
                 self._update_experiment_if_needed(experiment, exp_path_dict)
-                self._run_and_save_experiment(experiment, path_save)
+                self._run_and_save_experiment(
+                    experiment, path_study_sequence, path_save
+                )
 
     def _log_sequence_item_info(self, element):
         logger.info(
@@ -166,12 +168,21 @@ class OctoManager:
             experiment.feature_columns
         )
 
-    def _run_and_save_experiment(self, experiment, path_save):
+    def _run_and_save_experiment(self, experiment, path_study_sequence, path_save):
         logger.info(f"Running experiment: {experiment.id}")
         experiment.to_pickle(path_save)
 
         module = self._get_ml_module(experiment)
         experiment = module.run_experiment()
+
+        # save predictions
+        filename_prediction = path_study_sequence.joinpath(
+            f"predictions_{experiment.experiment_id}_{experiment.sequence_id}.parquet"
+        )
+        experiment.results["best"].create_prediction_dataframe().to_parquet(
+            filename_prediction
+        )
+
         experiment.to_pickle(path_save)
 
     def _get_ml_module(self, experiment):

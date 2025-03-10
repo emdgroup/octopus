@@ -23,6 +23,7 @@ class ModelInventory:
         self.models = ModelRegistry.get_all_models()
 
     def get_model_config(self, name: str) -> ModelConfig | None:
+        """Get model config."""
         if name not in self._model_configs:
             model_class = self.models.get(name)
             if model_class:

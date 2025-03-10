@@ -8,8 +8,11 @@ from .registry import MetricRegistry
 
 @MetricRegistry.register("R2")
 class R2Metric:
+    """R2 metric class."""
+
     @staticmethod
     def get_metric_config():
+        """Get metric config."""
         return MetricConfig(
             name="R2",
             metric_function=r2_score,
@@ -21,8 +24,11 @@ class R2Metric:
 
 @MetricRegistry.register("MAE")
 class MAEMetric:
+    """MAE metric class."""
+
     @staticmethod
     def get_metric_config():
+        """Get metric config."""
         return MetricConfig(
             name="MAE",
             metric_function=mean_absolute_error,
@@ -34,8 +40,11 @@ class MAEMetric:
 
 @MetricRegistry.register("MSE")
 class MSEMetric:
+    """MSE metric class."""
+
     @staticmethod
     def get_metric_config():
+        """Get metric config."""
         return MetricConfig(
             name="MSE",
             metric_function=mean_squared_error,

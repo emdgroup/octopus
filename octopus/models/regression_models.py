@@ -1,3 +1,5 @@
+"""Regression models."""
+
 from catboost import CatBoostRegressor
 from sklearn.ensemble import (
     ExtraTreesRegressor,
@@ -16,8 +18,11 @@ from .wrapper_models.GaussianProcessRegressor import GPRegressorWrapper
 
 @ModelRegistry.register("ARDRegressor")
 class ARDRegressorModel:
+    """ARD regression model class."""
+
     @staticmethod
     def get_model_config():
+        """Get model config."""
         return ModelConfig(
             name="ARDRegressor",
             model_class=ARDRegression,
@@ -50,8 +55,11 @@ class ARDRegressorModel:
 
 @ModelRegistry.register("CatBoostRegressor")
 class CatBoostRegressorModel:
+    """Cat boost regression model class."""
+
     @staticmethod
     def get_model_config():
+        """Get model config."""
         return ModelConfig(
             name="CatBoostRegressor",
             model_class=CatBoostRegressor,
@@ -76,8 +84,11 @@ class CatBoostRegressorModel:
 
 @ModelRegistry.register("ElasticNetRegressor")
 class ElasticNetRegressorModel:
+    """ElasticNet regression model class."""
+
     @staticmethod
     def get_model_config():
+        """Get model config."""
         return ModelConfig(
             name="ElasticNetRegressor",
             model_class=ElasticNet,
@@ -102,8 +113,11 @@ class ElasticNetRegressorModel:
 
 @ModelRegistry.register("ExtraTreesRegressor")
 class ExtraTreesRegressorModel:
+    """ExtraTrees regression model class."""
+
     @staticmethod
     def get_model_config():
+        """Get model config."""
         return ModelConfig(
             name="ExtraTreesRegressor",
             model_class=ExtraTreesRegressor,
@@ -125,8 +139,11 @@ class ExtraTreesRegressorModel:
 
 @ModelRegistry.register("GaussianProcessRegressor")
 class GaussianProcessRegressorModel:
+    """Gaussian process regression model class."""
+
     @staticmethod
     def get_model_config():
+        """Get model config."""
         return ModelConfig(
             name="GaussianProcessRegressor",
             model_class=GPRegressorWrapper,
@@ -168,8 +185,11 @@ class GaussianProcessRegressorModel:
 
 @ModelRegistry.register("GradientBoostingRegressor")
 class GradientBoostingRegressorModel:
+    """Gradient boost regression model class."""
+
     @staticmethod
     def get_model_config():
+        """Get model config."""
         return ModelConfig(
             name="GradientBoostingRegressor",
             model_class=GradientBoostingRegressor,
@@ -193,8 +213,11 @@ class GradientBoostingRegressorModel:
 
 @ModelRegistry.register("RandomForestRegressor")
 class RandomForestRegressorModel:
+    """Random forrest regression model class."""
+
     @staticmethod
     def get_model_config():
+        """Get model config."""
         return ModelConfig(
             name="RandomForestRegressor",
             model_class=RandomForestRegressor,
@@ -214,8 +237,11 @@ class RandomForestRegressorModel:
 
 @ModelRegistry.register("RidgeRegressor")
 class RidgeRegressorModel:
+    """Ridge regression model class."""
+
     @staticmethod
     def get_model_config():
+        """Get model config."""
         return ModelConfig(
             name="RidgeRegressor",
             model_class=Ridge,
@@ -237,8 +263,11 @@ class RidgeRegressorModel:
 
 @ModelRegistry.register("SvrRegressor")
 class SvrRegressorModel:
+    """Svr regression model class."""
+
     @staticmethod
     def get_model_config():
+        """Get model config."""
         return ModelConfig(
             name="SvrRegressor",
             model_class=SVR,
@@ -261,8 +290,11 @@ class SvrRegressorModel:
 
 @ModelRegistry.register("TabPFNRegressor")
 class TabPFNRegressorModel:
+    """TabPFN regression model class."""
+
     @staticmethod
     def get_model_config():
+        """Get model config."""
         from octopus._optional.tabpfn import TabPFNRegressor
 
         return ModelConfig(
@@ -294,8 +326,11 @@ class TabPFNRegressorModel:
 
 @ModelRegistry.register("XGBRegressor")
 class XGBRegressorModel:
+    """XGBoost regression model class."""
+
     @staticmethod
     def get_model_config():
+        """Get model config."""
         return ModelConfig(
             name="XGBRegressor",
             model_class=XGBRegressor,

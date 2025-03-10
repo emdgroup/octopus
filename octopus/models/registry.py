@@ -2,10 +2,14 @@
 
 
 class ModelRegistry:
+    """Model Registry."""
+
     _models = {}
 
     @classmethod
     def register(cls, name):
+        """Register model."""
+
         def decorator(model_class):
             cls._models[name] = model_class
             return model_class
@@ -14,8 +18,10 @@ class ModelRegistry:
 
     @classmethod
     def get_model(cls, name):
+        """Get model."""
         return cls._models.get(name)
 
     @classmethod
     def get_all_models(cls):
+        """Get all models."""
         return cls._models

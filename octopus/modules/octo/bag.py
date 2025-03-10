@@ -179,11 +179,10 @@ class Bag:
         pool = {key: [] for key in ["train", "dev", "test"]}
 
         for training in self.trainings:
-
-            metric_conifg = metrics_inventory.get_metric_config(self.target_metric)
+            metric_config = metrics_inventory.get_metric_config(self.target_metric)
             metric_method = metrics_inventory.get_metric_function(self.target_metric)
-            ml_type = metric_conifg.ml_type
-            prediction_type = metric_conifg.prediction_type
+            ml_type = metric_config.ml_type
+            prediction_type = metric_config.prediction_type
 
             if ml_type == "timetoevent":
                 for part, storage_value in storage.items():
@@ -197,7 +196,7 @@ class Bag:
                     ci = metric_method(event_indicator, event_time, estimate)[0]
                     storage_value.append(float(ci))
 
-            else:
+            elif ml_type == "classification":
                 if prediction_type == "predict_proba":
                     for part, values in storage.items():
                         target_col = list(self.target_assignments.values())[0]
@@ -218,6 +217,20 @@ class Bag:
                         target = training.predictions[part][target_col]
                         storage_value.append(metric_method(target, predictions))
 
+            elif ml_type == "regression":
+                if prediction_type == "predict_proba":
+                    raise ValueError("predict_proba not implemented for regression")
+                else:
+                    for part, storage_value in storage.items():
+                        target_col = list(self.target_assignments.values())[0]
+                        predictions = training.predictions[part]["prediction"].astype(
+                            int
+                        )
+                        target = training.predictions[part][target_col]
+                        storage_value.append(metric_method(target, predictions))
+
+            else:
+                raise ValueError(f"Unknown ml type {ml_type}")
             # pooling
             for part, pool_value in pool.items():
                 pool_value.append(training.predictions[part])

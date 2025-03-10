@@ -4,7 +4,6 @@ import numpy as np
 import pandas as pd
 from scipy.stats import rankdata
 
-# from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 from octopus.metrics import metrics_inventory
 
 # def get_score(metric: str, y_true: np.array, y_pred: np.array) -> float:
@@ -53,43 +52,48 @@ def get_performance(
     target_col = list(target_assignments.values())[0]
     target = data[target_col]
 
-    # Get probabilities or predictions
-    if target_metric in ["AUCROC", "LOGLOSS", "AUCPR", "NEGBRIERSCORE"]:
-        probabilities = model.predict_proba(input_data)
-        # Convert to NumPy array if it's a DataFrame
-        if isinstance(probabilities, pd.DataFrame):
-            probabilities = probabilities.to_numpy()  # Convert to NumPy array
+    metric_config = metrics_inventory.get_metric_config(target_metric)
+    metric_function = metrics_inventory.get_metric_function(target_metric)
+    ml_type = metric_config.ml_type
+    prediction_type = metric_config.prediction_type
 
-        probabilities = probabilities[:, 1]  # Get probabilities for class 1
-        performance = metrics_inventory[target_metric]["method"](target, probabilities)
-
-    elif target_metric in ["ACC", "ACCBAL", "F1"]:
-        probabilities = model.predict_proba(input_data)
-        if isinstance(probabilities, pd.DataFrame):
-            probabilities = probabilities.to_numpy()  # Convert to NumPy array
-
-        probabilities = probabilities[:, 1]  # Get probabilities for class 1
-        predictions = (probabilities >= threshold).astype(int)
-        performance = metrics_inventory[target_metric]["method"](target, predictions)
-
-    elif target_metric in ["CI"]:
+    if ml_type == "timetoevent":
         estimate = model.predict(input_data)
         event_time = data[target_assignments["duration"]].astype(float)
         event_indicator = data[target_assignments["event"]].astype(bool)
-        performance, _, _, _, _ = metrics_inventory[target_metric]["method"](
-            event_indicator, event_time, estimate
-        )
+        performance = metric_function(event_indicator, event_time, estimate)[0]
 
-    elif target_metric in ["R2", "MSE", "MAE"]:
-        predictions = model.predict(input_data)
-        if isinstance(predictions, pd.DataFrame):
-            predictions = (
-                predictions.to_numpy()
-            )  # Convert to NumPy array if it's a DataFrame
-        performance = metrics_inventory[target_metric]["method"](target, predictions)
+    if ml_type == "classification":
+        if prediction_type == "predict_proba":
 
-    else:
-        raise ValueError(f"Unsupported target metric: {target_metric}")
+            probabilities = model.predict_proba(input_data)
+            # Convert to NumPy array if it's a DataFrame
+            if isinstance(probabilities, pd.DataFrame):
+                probabilities = probabilities.to_numpy()  # Convert to NumPy array
+
+            probabilities = probabilities[:, 1]  # Get probabilities for class 1
+            performance = metric_function(target, probabilities)
+
+        else:
+            probabilities = model.predict_proba(input_data)
+            if isinstance(probabilities, pd.DataFrame):
+                probabilities = probabilities.to_numpy()  # Convert to NumPy array
+
+            probabilities = probabilities[:, 1]  # Get probabilities for class 1
+            predictions = (probabilities >= threshold).astype(int)
+            performance = metric_function(target, predictions)
+
+    if ml_type == "regression":
+        if prediction_type == "predict_proba":
+            raise ValueError(f"predict_proba not supported for regression.")
+
+        else:
+            predictions = model.predict(input_data)
+            if isinstance(predictions, pd.DataFrame):
+                predictions = (
+                    predictions.to_numpy()
+                )  # Convert to NumPy array if it's a DataFrame
+            performance = metric_function(target, predictions)
 
     return performance
 
@@ -103,46 +107,10 @@ def get_performance_score(
     )
 
     # convert performance metric to score
-    if optuna_direction(target_metric) == "maximize":
+    if metrics_inventory.get_direction(target_metric) == "maximize":
         return performance
     else:
         return -performance
-
-
-def optuna_direction(metric: str) -> str:
-    """Determine the direction (minimize or maximize) for the given metric.
-
-    Args:
-        metric: The name of the performance metric, which should be one of
-                        'MAE', 'MSE', 'R2', 'ACC', 'ACCBAL', 'LOGLOSS', 'AUCROC', 'CI'.
-
-    Returns:
-        The optimization direction, either 'minimize' or 'maximize'.
-
-    Raises:
-        ValueError: If the metric provided is not recognized.
-    """
-    direction = {
-        "MAE": "minimize",
-        "MSE": "minimize",
-        "R2": "maximize",
-        "ACC": "maximize",
-        "ACCBAL": "maximize",
-        "LOGLOSS": "minimize",
-        "AUCROC": "maximize",
-        "CI": "maximize",
-        "AUCPR": "maximize",
-        "F1": "maximize",
-        "NEGBRIERSCORE": "minimize",
-    }
-
-    if metric not in direction:
-        raise ValueError(
-            f"""Unknown metric '{metric}'.
-            Available metrics are: {list(direction.keys())}."""
-        )
-
-    return direction[metric]
 
 
 def rdc(x, y, f=np.sin, k=20, s=1 / 6.0, n=5):

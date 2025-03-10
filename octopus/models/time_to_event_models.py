@@ -2,21 +2,18 @@
 
 from sksurv.ensemble import ExtraSurvivalTrees
 
-from octopus.models.config import ModelConfig
-from octopus.models.hyperparameter import Hyperparameter
+from .config import ModelConfig
+from .hyperparameter import Hyperparameter
+from .registry import ModelRegistry
 
 
-def get_time_to_event_models():
-    """Return a list of ModelConfig objects for time to event models.
+@ModelRegistry.register("ExtraTreesSurv")
+class ExtraTreesSurvModel:
+    @staticmethod
+    def get_model_config():
+        from octopus._optional.survival import ExtraSurvivalTrees
 
-    Each ModelConfig object contains the configuration for a specific time to event
-    model, including the model class, hyperparameters, and other settings.
-
-    Returns:
-        List[ModelConfig]: A list of ModelConfig objects for time to event models.
-    """
-    return [
-        ModelConfig(
+        return ModelConfig(
             name="ExtraTreesSurv",
             model_class=ExtraSurvivalTrees,
             ml_type="timetoevent",
@@ -33,5 +30,7 @@ def get_time_to_event_models():
             ],
             n_jobs="n_jobs",
             model_seed="random_state",
-        ),
-    ]
+        )
+
+
+__all__ = ["ExtraTreesSurvModel"]

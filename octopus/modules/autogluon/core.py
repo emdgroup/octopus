@@ -143,7 +143,7 @@ class AGCore:
 
     def run_experiment(self):
         """Run experiment."""
-        from octopus._optional.modules.autogluon import (
+        from octopus._optional.autogluon import (
             TabularPredictor,
             accuracy,
             balanced_accuracy,

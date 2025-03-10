@@ -1,10 +1,33 @@
 """Time to event metrics."""
 
-from sksurv.metrics import concordance_index_censored
+from .config import MetricConfig
+from .registry import MetricRegistry
 
-# Constants for metric names
-CI = "CI"
 
-timetoevent_metrics = {
-    CI: concordance_index_censored,
-}
+@MetricRegistry.register("CI")
+class CIMetric:
+    @staticmethod
+    def get_metric_config():
+        from sksurv.metrics import concordance_index_censored
+
+        return MetricConfig(
+            name="CI",
+            metric_function=concordance_index_censored,
+            ml_type="timetoevent",
+            higher_is_better=True,
+            prediction_type="predict",
+        )
+
+
+__all__ = ["CIMetric"]
+
+# """Time to event metrics."""
+
+# from sksurv.metrics import concordance_index_censored
+
+# # Constants for metric names
+# CI = "CI"
+
+# timetoevent_metrics = {
+#     CI: concordance_index_censored,
+# }

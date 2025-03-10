@@ -1,7 +1,5 @@
 """Time to event models."""
 
-from sksurv.ensemble import ExtraSurvivalTrees
-
 from .config import ModelConfig
 from .hyperparameter import Hyperparameter
 from .registry import ModelRegistry
@@ -9,8 +7,11 @@ from .registry import ModelRegistry
 
 @ModelRegistry.register("ExtraTreesSurv")
 class ExtraTreesSurvModel:
+    """Extra Tree Survival Model."""
+
     @staticmethod
     def get_model_config():
+        """Get model config."""
         from octopus._optional.survival import ExtraSurvivalTrees
 
         return ModelConfig(

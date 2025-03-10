@@ -47,8 +47,6 @@ class ModuleResults:
                 experiment_id, sequence_id, split_id = key.split("_")
                 for split, df in value.items():
                     temp_df = df.copy()
-                    temp_df["experiment_id"] = experiment_id
-                    temp_df["sequence_id"] = sequence_id
                     temp_df["split_id"] = split_id
                     temp_df["split"] = split
                     df_prediction = pd.concat(
@@ -63,4 +61,7 @@ class ModuleResults:
 
             else:
                 raise ValueError("Unknown key in prediction dictionary.")
+
+        df_prediction["experiment_id"] = experiment_id
+        df_prediction["sequence_id"] = sequence_id
         return df_prediction

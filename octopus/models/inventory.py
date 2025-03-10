@@ -5,36 +5,37 @@ from typing import Any, Dict, List
 import optuna
 from attrs import define, field
 
-from octopus.models.classification_models import get_classification_models
-from octopus.models.config import ModelConfig
-from octopus.models.hyperparameter import Hyperparameter
-from octopus.models.regression_models import get_regression_models
-from octopus.models.time_to_event_models import get_time_to_event_models
+from octopus.exceptions import UnknownModelError
+
+from .config import ModelConfig
+from .hyperparameter import Hyperparameter
+from .registry import ModelRegistry
 
 
 @define
 class ModelInventory:
     """Model inventory."""
 
-    models: List[ModelConfig] = field(factory=list)
+    models: Dict[str, Any] = field(factory=dict)
+    _model_configs: Dict[str, ModelConfig] = field(factory=dict)
 
     def __attrs_post_init__(self):
-        for model_config in get_regression_models():
-            self.add_model(model_config)
+        self.models = ModelRegistry.get_all_models()
 
-        for model_config in get_classification_models():
-            self.add_model(model_config)
-
-        for model_config in get_time_to_event_models():
-            self.add_model(model_config)
-
-    def add_model(self, model_config: ModelConfig) -> None:
-        """Add model configuration to the inventory.
-
-        Args:
-            model_config: The BaseModelConfig instance to add.
-        """
-        self.models.append(model_config)
+    def get_model_config(self, name: str) -> ModelConfig | None:
+        if name not in self._model_configs:
+            model_class = self.models.get(name)
+            if model_class:
+                config = model_class.get_model_config()
+                config.name = name
+                self._model_configs[name] = config
+            else:
+                raise UnknownModelError(
+                    f"Unknown model '{name}'. "
+                    f"Available models are: {', '.join(list(self.models.keys()))}. "
+                    "Please check the model name and try again."
+                )
+        return self._model_configs[name]
 
     def get_model_by_name(self, name: str) -> ModelConfig | None:
         """Get model configuration by name.
@@ -45,7 +46,7 @@ class ModelInventory:
         Returns:
             The ModelConfig instance with the specified name, or None if not found.
         """
-        return next((model for model in self.models if model.name == name), None)
+        return self.get_model_config(name)
 
     def get_model_instance(self, name: str, params: dict) -> type:
         """Get model class by name and initializes it with the provided parameters.
@@ -62,9 +63,7 @@ class ModelInventory:
         Raises:
             ValueError: If no model with the specified name is found.
         """
-        model_config = next(
-            (model for model in self.models if model.name == name), None
-        )
+        model_config = self.get_model_config(name)
         if model_config is None:
             raise ValueError(f"Model with name '{name}' not found")
 
@@ -85,9 +84,7 @@ class ModelInventory:
         Raises:
             ValueError: If no model with the specified name is found.
         """
-        model_config = next(
-            (model for model in self.models if model.name == name), None
-        )
+        model_config = self.get_model_config(name)
         if model_config is None:
             raise ValueError(f"Model with name '{name}' not found")
 
@@ -104,7 +101,11 @@ class ModelInventory:
             A list of BaseModelConfig instances that match the specified
             machine learning type.
         """
-        return [config for config in self.models if config.ml_type == ml_type]
+        return [
+            self.get_model_config(name)
+            for name in self.models.keys()
+            if self.get_model_config(name).ml_type == ml_type
+        ]
 
     def create_trial_parameters(
         self,

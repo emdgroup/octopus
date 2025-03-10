@@ -16,9 +16,9 @@ from pathlib import Path
 import pandas as pd
 from attrs import define, field, validators
 
+from octopus.metrics import metrics_inventory
 from octopus.modules.octo.bag import Bag
 from octopus.modules.octo.scores import add_pooling_scores
-from octopus.modules.utils import optuna_direction
 
 
 @define
@@ -49,7 +49,7 @@ class EnSel:
     @property
     def direction(self) -> str:
         """Optuna direction."""
-        return optuna_direction(self.target_metric)
+        return metrics_inventory.get_direction(self.target_metric)
 
     @property
     def score_type(self) -> str:

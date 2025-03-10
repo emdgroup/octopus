@@ -148,7 +148,7 @@ class BorutaCore:
 
     def run_experiment(self):
         """Run Boruta module on experiment."""
-        from octopus._optional.modules.burota import BorutaPy
+        from octopus._optional.burota import BorutaPy
 
         # run experiment and return updated experiment object
         # Configuration, define default model

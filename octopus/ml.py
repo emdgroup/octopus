@@ -5,7 +5,7 @@ import sys
 from pathlib import Path
 
 import pandas as pd
-from attrs import Factory, define, field, validators
+from attrs import Factory, asdict, define, field, validators
 
 from octopus import OctoData
 from octopus.config import ConfigManager, ConfigSequence, ConfigStudy
@@ -190,12 +190,26 @@ class OctoML:
         """
         # Save data files
         data_path = path_study / "data"
+        self.data.save_attributes_to_parquet(data_path / "data.parquet")
         self.data.to_pickle(data_path / "data.pkl")
 
         # Save config files
         config_path = path_study / "config"
-        # Uncomment if JSON is needed
-        # self.config.to_json(config_path / "config.json")
+        pd.DataFrame(
+            [(k, str(v)) for k, v in asdict(self.configs.study).items()],
+            columns=["Parameter", "Value"],
+        ).to_parquet(config_path.joinpath("config_study.parquet"))
+
+        pd.DataFrame(
+            [(k, str(v)) for k, v in asdict(self.configs.manager).items()],
+            columns=["Parameter", "Value"],
+        ).to_parquet(config_path.joinpath("config_manager.parquet"))
+
+        pd.DataFrame(
+            [(k, str(v)) for k, v in asdict(self.configs.sequence).items()],
+            columns=["Parameter", "Value"],
+        ).to_parquet(config_path.joinpath("config_sequence.parquet"))
+
         self.configs.to_pickle(config_path / "config.pkl")
 
     def _impute_dataset(

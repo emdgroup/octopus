@@ -7,6 +7,7 @@ import shutil
 from pathlib import Path
 
 import optuna
+import pandas as pd
 from attrs import Factory, define, field, validators
 from joblib import Parallel, delayed
 from optuna.trial import TrialState
@@ -188,11 +189,6 @@ class OctoCore:
         return self.experiment.path_study.joinpath(self.experiment.path_sequence_item)
 
     @property
-    def path_optuna(self) -> Path:
-        """Optuna db path."""
-        return self.path_module.joinpath("optuna")
-
-    @property
     def path_trials(self) -> Path:
         """Trials path."""
         return self.path_module.joinpath("trials")
@@ -217,7 +213,7 @@ class OctoCore:
         # of module when restarted, required for parallel optuna runs
         # as optuna.create(...,load_if_exists=True)
         # create directory if it does not exist
-        for directory in [self.path_optuna, self.path_trials, self.path_results]:
+        for directory in [self.path_trials, self.path_results]:
             if not self.experiment.ml_config.resume_optimization:
                 if directory.exists():
                     shutil.rmtree(directory)
@@ -588,8 +584,9 @@ class OctoCore:
         Works if splits contain several splits as well as
         when splits only contains a single split
         """
-        # define study name by joined keys of splits
-        study_name = "optuna_" + str(sum([int(key) for key in splits.keys()]))
+        study_name = (
+            f"optuna_{self.experiment.experiment_id}_{self.experiment.sequence_id}"
+        )
 
         # set up Optuna study
         objective = ObjectiveOptuna(
@@ -610,7 +607,7 @@ class OctoCore:
         )
 
         # create study with unique name and database
-        db_path = self.path_optuna.joinpath(study_name + ".db")
+        db_path = self.path_module.joinpath(study_name + ".db")
         storage = optuna.storages.RDBStorage(url=f"sqlite:///{db_path}")
         study = optuna.create_study(
             study_name=study_name,
@@ -716,4 +713,30 @@ class OctoCore:
         best_bag_scores = best_bag.get_scores()
         logger.info(f"Best bag performance {best_bag_scores}")
 
+        # save optuna results as parquet file
+        # how to get the split id?
+        dict_optuna = []
+        for trial in study.get_trials():
+            for name, _ in trial.distributions.items():
+                if name == "ml_model_type":
+                    continue
+                if "ml_model_type" in trial.params:
+                    model_type = trial.params["ml_model_type"]
+                else:
+                    model_type = trial.user_attrs["config_training"]["ml_model_type"]
+
+                dict_optuna.append(
+                    {
+                        "experiment_id": self.experiment.experiment_id,
+                        "sequence_id": self.experiment.sequence_id,
+                        "trial": trial.number,
+                        "value": trial.value,
+                        "model_type": model_type,
+                        "hyper_param": name.split(f"_{model_type}")[0],
+                        "param_value": trial.params[name],
+                    }
+                )
+        pd.DataFrame(dict_optuna).to_parquet(
+            self.path_module.joinpath(f"{study_name}.parquet")
+        )
         return True

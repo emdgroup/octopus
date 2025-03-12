@@ -1,6 +1,5 @@
 line-length = 88 # Maximum line length
 
-
 [lint.per-file-ignores]
 "examples/*" = [ 
         # Error for having multiple # signs per row
@@ -8,7 +7,8 @@ line-length = 88 # Maximum line length
         # Error regarding too long lines
         "E501",
         # Missing module docstrings
-        "D100"
+        "D100",
+        "PLR1711"
 ]
 
 [lint]
@@ -20,6 +20,7 @@ extend-ignore = [
     "PLR0913", # Too many arguments in function definition
     "PLR0915", # Too many statements
     "PLR2004" # Magic value used in comparison
+    
 ]
 
 # Here, we explicitly choose the rules that ruff should verify.

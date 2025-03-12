@@ -1,11 +1,12 @@
 """Octo Data Class."""
 
 import gzip
+import json
 import pickle
 from typing import Dict, List, Optional
 
 import pandas as pd
-from attrs import Factory, define, field, validators
+from attrs import Factory, define, field, fields, validators
 
 from octopus.logger import LogGroup, get_logger
 
@@ -161,6 +162,38 @@ class OctoData:
             self.target_assignments,
             self.target_columns,
         ) = encoder.encode()
+
+    def save_attributes_to_parquet(self, file_path: str) -> None:
+        """Save attributes to parquet."""
+        # Create lists to store parameters and values
+        parameters = []
+        values = []
+
+        # Get all attributes of the class
+        for attr in fields(OctoData):
+            attr_name = attr.name
+            # Skip 'data' and 'report' attributes
+            if attr_name not in ["data", "report"]:
+                value = getattr(self, attr_name)
+
+                if isinstance(value, list):
+                    # Expand lists into multiple entries
+                    for item in value:
+                        parameters.append(attr_name)
+                        values.append(item)
+                elif isinstance(value, dict):
+                    # Convert dict to JSON string
+                    parameters.append(attr_name)
+                    values.append(json.dumps(value))
+                else:
+                    parameters.append(attr_name)
+                    values.append(value)
+
+        # Create a pandas DataFrame
+        df = pd.DataFrame({"Parameter": parameters, "Value": values})
+
+        # Write the DataFrame to a Parquet file
+        df.to_parquet(file_path, index=False)
 
     def save(self, path):
         """Save data to a human readable form, for long term storage."""

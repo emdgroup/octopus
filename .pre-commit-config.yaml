@@ -2,21 +2,22 @@
 # (pre-commit, environment.yml, requirements.txt, pyproject.toml, ...)
 
 repos:
-- repo: https://github.com/pycqa/flake8
-  rev: 7.1.1
-  hooks:
-    - id: flake8
-      additional_dependencies: [pydoclint]  
-      args: [--select=DOC, --config=pydoclint.toml]
-- repo: https://github.com/astral-sh/ruff-pre-commit
-  rev: v0.9.2
-  hooks:
-  - id: ruff
-    name: "ruff"
-  - id: ruff-format
-- repo: https://github.com/crate-ci/typos
-  rev: v1.29.4
-  hooks:
-    - id: typos
-      args: [--config=typos.toml]
-      exclude: ^datasets/|octopus_p312.yml|octopus_autosk_p38.yml|octopus_p310.yml|octopus.yml
+  - repo: https://github.com/pycqa/flake8
+    rev: 7.1.1
+    hooks:
+      - id: flake8
+        additional_dependencies: [pydoclint]
+        args: [--select=DOC, --config=pydoclint.toml]
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.9.2
+    hooks:
+      - id: ruff
+        name: "ruff"
+
+      - id: ruff-format
+  - repo: https://github.com/crate-ci/typos
+    rev: v1.29.4
+    hooks:
+      - id: typos
+        args: [--config=typos.toml]
+        exclude: ^datasets/|octopus_p312.yml|octopus_autosk_p38.yml|octopus_p310.yml|octopus.yml

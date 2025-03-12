@@ -1,5 +1,6 @@
 """Results."""
 
+import pandas as pd
 from attrs import Factory, define, field, validators
 
 
@@ -37,3 +38,50 @@ class ModuleResults:
         default=Factory(dict), validator=[validators.instance_of(dict)]
     )
     """Other results, dictionary."""
+
+    def create_prediction_df(self):
+        """Create prediction dataframe."""
+        df_prediction = pd.DataFrame()
+
+        for key, value in self.predictions.items():
+            if "_" in key:
+                experiment_id, sequence_id, split_id = key.split("_")
+                for split, df in value.items():
+                    temp_df = df.copy()
+                    temp_df["split_id"] = split_id
+                    temp_df["split"] = split
+                    df_prediction = pd.concat(
+                        [df_prediction, temp_df], ignore_index=True
+                    )
+            elif key == "ensemble":
+                # ensemble
+                temp_df = value["test"].copy()
+                temp_df["split_id"] = "ensemble"
+                temp_df["split"] = "test"
+                df_prediction = pd.concat([df_prediction, temp_df], ignore_index=True)
+
+            else:
+                raise ValueError("Unknown key in prediction dictionary.")
+
+        df_prediction["experiment_id"] = int(experiment_id)
+        df_prediction["sequence_id"] = int(sequence_id)
+        return df_prediction
+
+    def create_feature_importance_df(self):
+        """Create feature importance dataframe."""
+        df_feature_importance = pd.DataFrame()
+
+        for key, value in self.feature_importances.items():
+            experiment_id, sequence_id, split_id = key.split("_")
+            for fi_type, df in value.items():
+                if fi_type in ["internal", "permutation_dev"]:
+                    temp_df = df.copy()
+                    temp_df["fi_type"] = fi_type
+                    temp_df["experiment_id"] = experiment_id
+                    temp_df["sequence_id"] = sequence_id
+                    temp_df["split_id"] = split_id
+
+                    df_feature_importance = pd.concat(
+                        [df_feature_importance, temp_df], ignore_index=True
+                    )
+        return df_feature_importance

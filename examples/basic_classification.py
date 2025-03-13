@@ -6,9 +6,7 @@
 # and that all features are numeric.
 
 ### Necessary imports for this example
-import os
-
-import pandas as pd
+from sklearn.datasets import load_breast_cancer
 
 from octopus import OctoData, OctoML
 from octopus.config import ConfigManager, ConfigSequence, ConfigStudy
@@ -19,56 +17,24 @@ from octopus.modules import Octo
 # First, we load the Titanic dataset and preprocess it
 # to ensure it's clean and suitable for analysis.
 
-data_df = (
-    pd.read_csv(
-        os.path.join(os.getcwd(), "datasets", "titanic_openml.csv"), index_col=0
-    )
-    .astype({"age": float})
-    .assign(
-        age=lambda df_: df_["age"].fillna(df_["age"].median()).astype(int),
-        embarked=lambda df_: df_["embarked"].fillna(df_["embarked"].mode()[0]),
-        fare=lambda df_: df_["fare"].fillna(df_["fare"].median()),
-    )
-    .astype({"survived": bool})
-    .pipe(
-        lambda df_: df_.reindex(
-            columns=["survived"] + list([a for a in df_.columns if a != "survived"])
-        )
-    )
-    .pipe(
-        lambda df_: df_.reindex(
-            columns=["name"] + list([a for a in df_.columns if a != "name"])
-        )
-    )
-    .pipe(pd.get_dummies, columns=["embarked", "sex"], drop_first=True, dtype=int)
-)
+### Load the diabetes dataset
+breast_cancer = load_breast_cancer(as_frame=True)
 
-print(data_df["survived"].dtype)
-
+df = breast_cancer["frame"].reset_index()
+df.columns = df.columns.str.replace(" ", "_")
+features = list(breast_cancer["feature_names"])
+features = [feature.replace(" ", "_") for feature in features]
 
 ### Create OctoData Object
-
-# We define the data, target columns, feature columns, sample ID to identify groups,
-# and the data split type. For this classification approach,
-# we also define a stratification column.
-
 octo_data = OctoData(
-    data=data_df,
-    target_columns=["survived"],
-    feature_columns=[
-        "pclass",
-        "age",
-        "sibsp",
-        "parch",
-        "fare",
-        "embarked_Q",
-        "embarked_S",
-        "sex_male",
-    ],
-    sample_id="name",
-    datasplit_type="group_sample_and_features",
-    stratification_column="survived",
+    data=df,
+    target_columns=["target"],
+    feature_columns=features,
+    sample_id="index",
+    datasplit_type="sample",
+    stratification_column="target",
 )
+
 
 ### Create Configuration
 
@@ -85,17 +51,24 @@ config_study = ConfigStudy(
     name="basic_classification",
     ml_type="classification",
     target_metric="AUCROC",
+    silently_overwrite_study=True,
 )
 
-config_manager = ConfigManager(outer_parallelization=True)
+config_manager = ConfigManager(outer_parallelization=True, run_single_experiment_num=-1)
 
 config_sequence = ConfigSequence(
     sequence_items=[
         Octo(
             description="step_1_octo",
             sequence_id=0,
-            models=["RandomForestClassifier"],
-            n_trials=150,
+            models=[
+                "CatBoostClassifier",
+                "XGBClassifier",
+                "RandomForestClassifier",
+                "ExtraTreesClassifier",
+                "RandomForestClassifier",
+            ],
+            n_trials=50,
         )
     ]
 )

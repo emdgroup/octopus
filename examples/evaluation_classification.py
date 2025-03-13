@@ -11,10 +11,12 @@ def _():
     import altair as alt
     import duckdb
     import marimo as mo
+    import numpy as np
     import plotly.graph_objects as go
     import polars as pl
+    from sklearn.metrics import confusion_matrix
 
-    return Path, alt, duckdb, go, mo, pl
+    return Path, alt, confusion_matrix, duckdb, go, mo, np, pl
 
 
 @app.cell(hide_code=True)
@@ -41,13 +43,13 @@ def _(file_browser, mo):
 
 
 @app.cell(hide_code=True)
-def _(file_browser, mo):
+def _(file_browser, mo, pl):
     df_predictions = mo.sql(
         f"""
         SELECT * FROM read_parquet('{file_browser.path()}/*/*/predictions*.parquet', hive_partitioning=true)
         """,
         output=False,
-    )
+    ).with_columns(pl.col("prediction").cast(pl.Int64))
 
     df_predictions_pandas = mo.sql(
         f"""
@@ -133,25 +135,6 @@ def _(df_predictions, mo, pl):
 
 
 @app.cell(hide_code=True)
-def _(df_optuna, mo, pl):
-    unique_id_values_optuna = {
-        k: sorted(v)
-        for k, v in df_optuna.select(pl.all().cast(pl.Utf8))
-        .select(["experiment_id", "sequence_id", "model_type"])
-        .unique()
-        .to_dict(as_series=False)
-        .items()
-    }
-
-    dropdown_model = mo.ui.dropdown(
-        options=unique_id_values_optuna["model_type"],
-        value=unique_id_values_optuna["model_type"][0],
-        label="Model",
-    )
-    return dropdown_model, unique_id_values_optuna
-
-
-@app.cell(hide_code=True)
 def _(df_feature_importances, mo, pl):
     unique_id_values_feature_importance = {
         k: sorted(v)
@@ -171,76 +154,22 @@ def _(df_feature_importances, mo, pl):
 
 
 @app.cell(hide_code=True)
-def _(mo):
-    mo.md(r"""# Prediction vs Ground Truth""")
-    return
+def _(df_optuna, mo, pl):
+    unique_id_values_optuna = {
+        k: sorted(v)
+        for k, v in df_optuna.select(pl.all().cast(pl.Utf8))
+        .select(["experiment_id", "sequence_id", "model_type"])
+        .unique()
+        .to_dict(as_series=False)
+        .items()
+    }
 
-
-@app.cell(hide_code=True)
-def _(
-    alt,
-    df_predictions,
-    dropdown_exp_id,
-    dropdown_seq_id,
-    dropdown_split_id,
-    mo,
-    pl,
-    target,
-):
-    filtered_df = df_predictions.filter(
-        (pl.col("experiment_id") == int(dropdown_exp_id.value))
-        & (pl.col("sequence_id") == int(dropdown_seq_id.value))
-        & (pl.col("split_id") == dropdown_split_id.value)
+    dropdown_model = mo.ui.dropdown(
+        options=unique_id_values_optuna["model_type"],
+        value=unique_id_values_optuna["model_type"][0],
+        label="Model",
     )
-
-    # Create line data
-    line_data = pl.DataFrame(
-        {
-            "x": [
-                df_predictions[target].min(),
-                df_predictions[target].max(),
-            ],
-            "y": [
-                df_predictions[target].min(),
-                df_predictions[target].max(),
-            ],
-        }
-    )
-
-    # Create the main chart
-    main_chart = (
-        alt.Chart(filtered_df)
-        .mark_point()
-        .encode(
-            x=alt.X(target, title="Ground truth"),
-            y=alt.Y("prediction", title="Prediction"),
-            color="split",
-        )
-    )
-
-    # Create the line layer
-    line_layer = (
-        alt.Chart(line_data)
-        .mark_line(strokeDash=[6, 4], color="black")
-        .encode(x="x", y="y")
-    )
-
-    # Combine the main chart with the line layer
-    final_chart = main_chart + line_layer
-
-    # Apply any additional configurations if needed
-    final_chart = final_chart.properties(width=600, height=400).configure_axis(
-        titleFontSize=14, labelFontSize=12
-    )
-
-    # Now pass the final Altair chart to mo.ui.altair_chart()
-    chart = mo.ui.altair_chart(final_chart)
-
-    mo.vstack(
-        [mo.hstack([dropdown_exp_id, dropdown_seq_id, dropdown_split_id]), chart],
-        align="center",
-    )
-    return chart, filtered_df, final_chart, line_data, line_layer, main_chart
+    return dropdown_model, unique_id_values_optuna
 
 
 @app.cell(hide_code=True)
@@ -285,13 +214,115 @@ def _(
     mo.vstack(
         [
             mo.hstack(
-                [dropdown_exp_id, dropdown_seq_id, dropdown_split_id, dropdown_fi_types]
+                [
+                    dropdown_exp_id,
+                    dropdown_seq_id,
+                    dropdown_split_id,
+                    dropdown_fi_types,
+                ]
             ),
             chart_fi,
         ],
         align="center",
     )
     return chart_fi, df_fi_plot
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""# Confusion Matrix for Test Split""")
+    return
+
+
+@app.cell(hide_code=True)
+def _(
+    alt,
+    confusion_matrix,
+    df_predictions,
+    dropdown_exp_id,
+    dropdown_seq_id,
+    dropdown_split_id,
+    mo,
+    np,
+    pl,
+):
+    df_confusion_matrix = df_predictions.filter(
+        (pl.col("experiment_id") == int(dropdown_exp_id.value))
+        & (pl.col("sequence_id") == int(dropdown_seq_id.value))
+        & (pl.col("split_id") == dropdown_split_id.value)
+        & (pl.col("split") == "test")
+    )
+
+    y_true = df_confusion_matrix["target"].to_numpy()
+    y_pred = df_confusion_matrix["prediction"].to_numpy()
+
+    class_labels = sorted(set(y_true) | set(y_pred))
+
+    cm = confusion_matrix(y_true, y_pred)
+
+    # Convert confusion matrix to a Polars DataFrame
+    cm_df = pl.DataFrame(
+        {
+            "true_label": np.repeat(class_labels, len(class_labels)),
+            "predicted_label": np.tile(class_labels, len(class_labels)),
+            "value": cm.flatten(),
+        }
+    )
+
+    # Create the Altair chart
+    cm_chart = (
+        alt.Chart(cm_df.to_pandas())
+        .mark_rect()
+        .encode(
+            x=alt.X("predicted_label:N", title="Predicted label"),
+            y=alt.Y(
+                "true_label:N",
+                title="True label",
+                sort=alt.EncodingSortField(field="true_label", order="descending"),
+            ),
+            color=alt.Color("value:Q", scale=alt.Scale(scheme="blues")),
+            tooltip=["true_label", "predicted_label", "value"],
+        )
+        .properties(title="Confusion Matrix", width=400, height=400)
+    )
+
+    # Add text labels
+    cm_text = (
+        alt.Chart(cm_df.to_pandas())
+        .mark_text(baseline="middle")
+        .encode(
+            x="predicted_label:N",
+            y="true_label:N",
+            text="value:Q",
+            color=alt.condition(
+                alt.datum.value > cm_df["value"].max() / 2,
+                alt.value("white"),
+                alt.value("black"),
+            ),
+        )
+    )
+
+    # Combine the heatmap and text layers
+    cm_final_chart = cm_chart + cm_text
+
+    mo.vstack(
+        [
+            mo.hstack([dropdown_exp_id, dropdown_seq_id, dropdown_split_id]),
+            cm_final_chart,
+        ],
+        align="center",
+    )
+    return (
+        class_labels,
+        cm,
+        cm_chart,
+        cm_df,
+        cm_final_chart,
+        cm_text,
+        df_confusion_matrix,
+        y_pred,
+        y_true,
+    )
 
 
 @app.cell(hide_code=True)

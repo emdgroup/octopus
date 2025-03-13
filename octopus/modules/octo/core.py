@@ -733,7 +733,7 @@ class OctoCore:
                         "value": trial.value,
                         "model_type": model_type,
                         "hyper_param": name.split(f"_{model_type}")[0],
-                        "param_value": trial.params[name],
+                        "param_value": str(trial.params[name]),
                     }
                 )
         pd.DataFrame(dict_optuna).to_parquet(

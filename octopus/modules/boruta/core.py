@@ -9,7 +9,6 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 from attrs import define, field, validators
-from boruta import BorutaPy
 from sklearn.model_selection import GridSearchCV, StratifiedKFold, cross_val_score
 
 from octopus.experiment import OctoExperiment
@@ -149,8 +148,9 @@ class BorutaCore:
 
     def run_experiment(self):
         """Run Boruta module on experiment."""
-        # run experiment and return updated experiment object
+        from octopus._optional.burota import BorutaPy
 
+        # run experiment and return updated experiment object
         # Configuration, define default model
         if self.experiment.ml_type == "classification":
             default_model = "RandomForestClassifier"

@@ -8,7 +8,6 @@ from pathlib import Path
 
 import pandas as pd
 from attrs import define, field, validators
-from mlxtend.feature_selection import SequentialFeatureSelector as SFS
 from sklearn.model_selection import GridSearchCV, StratifiedKFold
 
 from octopus.experiment import OctoExperiment
@@ -158,8 +157,9 @@ class SfsCore:
 
     def run_experiment(self):
         """Run SFS module on experiment."""
-        # run experiment and return updated experiment object
+        from octopus._optional.modules.sfs import SFS
 
+        # run experiment and return updated experiment object
         # Configuration, define default model
         if self.experiment.ml_type == "classification":
             default_model = "CatBoostClassifier"

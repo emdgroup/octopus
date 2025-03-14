@@ -7,7 +7,7 @@ from attrs import Factory, define, field, validators
 from octopus.metrics import metrics_inventory
 
 
-def validate_target_metric(instance: "ConfigStudy", attribute: Any, value: str) -> None:
+def validate_metric(instance: "ConfigStudy", attribute: Any, value: str) -> None:
     """Validate the target_metric based on the ml_type.
 
     Args:
@@ -18,45 +18,15 @@ def validate_target_metric(instance: "ConfigStudy", attribute: Any, value: str) 
     Raises:
         ValueError: If the target_metric is not valid for the given ml_type.
     """
-    ml_type = instance.ml_type
-    valid_metrics = [
-        metric
-        for metric, details in metrics_inventory.items()
-        if details["ml_type"] == ml_type
-    ]
+    if isinstance(value, str):
+        value = [value]
+    for metric in value:
+        metric_ml_type = metrics_inventory.get_metric_config(metric).ml_type
 
-    if value not in valid_metrics:
-        raise ValueError(
-            f"Invalid target metric '{value}' for ml_type '{ml_type}'. "
-            f"Valid options are: {valid_metrics}"
-        )
-
-
-# Custom validator for target_metric
-def validate_metrics(instance: "ConfigStudy", attribute: Any, value: str) -> None:
-    """Validate metrics based on the ml_type.
-
-    Args:
-        instance: The ConfigStudy instance being validated.
-        attribute: The name of the attribute being validated.
-        value: The value of metrics being validated.
-
-    Raises:
-        ValueError: If any metric is not valid for the given ml_type.
-    """
-    ml_type = instance.ml_type
-    valid_metrics = [
-        metric
-        for metric, details in metrics_inventory.items()
-        if details["ml_type"] == ml_type
-    ]
-
-    invalid_metrics = [metric for metric in value if metric not in valid_metrics]
-    if invalid_metrics:
-        raise ValueError(
-            f"Invalid metrics {','.join(invalid_metrics)} for ml_type '{ml_type}'. "
-            f"Valid options are: {valid_metrics}"
-        )
+        if metric_ml_type != instance.ml_type:
+            raise ValueError(
+                f"Invalid target metric '{metric}' for ml_type '{instance.ml_type}'."
+            )
 
 
 @define
@@ -74,7 +44,7 @@ class ConfigStudy:
     """The type of machine learning model.
     Choose from "classification", "regression" or "timetoevent"."""
 
-    target_metric: str = field(validator=[validate_target_metric])
+    target_metric: str = field(validator=[validate_metric])
     """The primary metric used for model evaluation."""
 
     path: str = field(default="./studies/")
@@ -107,7 +77,7 @@ class ConfigStudy:
     # is this really useful?
     metrics: List = field(
         default=Factory(lambda self: [self.target_metric], takes_self=True),
-        validator=[validators.instance_of(list), validate_metrics],
+        validator=[validators.instance_of(list), validate_metric],
     )
     """A list of metrics to be calculated.
     Defaults to target_metric value."""

@@ -179,30 +179,12 @@ class Bag:
         pool = {key: [] for key in ["train", "dev", "test"]}
 
         for training in self.trainings:
-            # averaging
-            if self.target_metric in ["AUCROC", "LOGLOSS", "AUCPR", "NEGBRIERSCORE"]:
-                for part, values in storage.items():
-                    target_col = list(self.target_assignments.values())[0]
+            metric_config = metrics_inventory.get_metric_config(self.target_metric)
+            metric_method = metrics_inventory.get_metric_function(self.target_metric)
+            ml_type = metric_config.ml_type
+            prediction_type = metric_config.prediction_type
 
-                    probabilities = training.predictions[part][
-                        1
-                    ]  # Assumes binary classification
-                    target = training.predictions[part][target_col]
-
-                    metric_method = metrics_inventory[self.target_metric]["method"]
-                    metric_result = metric_method(target, probabilities)
-                    values.append(metric_result)
-            elif self.target_metric in ["ACC", "ACCBAL", "F1"]:
-                for part, storage_value in storage.items():
-                    target_col = list(self.target_assignments.values())[0]
-                    predictions = training.predictions[part]["prediction"].astype(int)
-                    target = training.predictions[part][target_col]
-                    storage_value.append(
-                        metrics_inventory[self.target_metric]["method"](
-                            target, predictions
-                        )
-                    )
-            elif self.target_metric in ["CI"]:
+            if ml_type == "timetoevent":
                 for part, storage_value in storage.items():
                     estimate = training.predictions[part]["prediction"]
                     event_time = training.predictions[part][
@@ -211,24 +193,44 @@ class Bag:
                     event_indicator = training.predictions[part][
                         self.target_assignments["event"]
                     ].astype(bool)
-                    ci, _, _, _, _ = metrics_inventory[self.target_metric]["method"](
-                        event_indicator, event_time, estimate
-                    )
+                    ci = metric_method(event_indicator, event_time, estimate)[0]
                     storage_value.append(float(ci))
 
-            elif self.target_metric in ["R2", "MSE", "MAE"]:
-                for part, storage_value in storage.items():
-                    target_col = list(self.target_assignments.values())[0]
-                    predictions = training.predictions[part]["prediction"]
-                    target = training.predictions[part][target_col]
-                    storage_value.append(
-                        metrics_inventory[self.target_metric]["method"](
-                            target, predictions
-                        )
-                    )
-            else:
-                raise ValueError("Unsupported target metric: {self.target_metric}")
+            elif ml_type == "classification":
+                if prediction_type == "predict_proba":
+                    for part, values in storage.items():
+                        target_col = list(self.target_assignments.values())[0]
 
+                        # Assumes binary classification
+                        probabilities = training.predictions[part][1]
+                        target = training.predictions[part][target_col]
+
+                        metric_result = metric_method(target, probabilities)
+                        values.append(metric_result)
+
+                else:
+                    for part, storage_value in storage.items():
+                        target_col = list(self.target_assignments.values())[0]
+                        predictions = training.predictions[part]["prediction"].astype(
+                            int
+                        )
+                        target = training.predictions[part][target_col]
+                        storage_value.append(metric_method(target, predictions))
+
+            elif ml_type == "regression":
+                if prediction_type == "predict_proba":
+                    raise ValueError("predict_proba not implemented for regression")
+                else:
+                    for part, storage_value in storage.items():
+                        target_col = list(self.target_assignments.values())[0]
+                        predictions = training.predictions[part]["prediction"].astype(
+                            int
+                        )
+                        target = training.predictions[part][target_col]
+                        storage_value.append(metric_method(target, predictions))
+
+            else:
+                raise ValueError(f"Unknown ml type {ml_type}")
             # pooling
             for part, pool_value in pool.items():
                 pool_value.append(training.predictions[part])

@@ -3,10 +3,10 @@
 import heapq
 
 from octopus.logger import LogGroup, get_logger
+from octopus.metrics import metrics_inventory
 from octopus.models.inventory import ModelInventory
 from octopus.modules.octo.bag import Bag
 from octopus.modules.octo.training import Training
-from octopus.modules.utils import optuna_direction
 
 logger = get_logger()
 
@@ -171,7 +171,8 @@ class ObjectiveOptuna:
         optuna_target = scores["dev_avg"]
 
         # adjust direction, optuna in octofull always minimizes
-        if optuna_direction(self.experiment.configs.study.target_metric) == "maximize":
+        target_metric = self.experiment.configs.study.target_metric
+        if metrics_inventory.get_direction(target_metric) == "maximize":
             optuna_target = -optuna_target
 
         # add penaltiy for n_features > max_features if configured

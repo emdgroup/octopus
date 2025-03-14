@@ -20,7 +20,6 @@ from sklearn.model_selection import (
 from octopus.experiment import OctoExperiment
 from octopus.metrics import metrics_inventory
 from octopus.models.inventory import ModelInventory
-from octopus.modules.utils import optuna_direction
 from octopus.results import ModuleResults
 
 scorer_string_inventory = {
@@ -195,7 +194,7 @@ class EfsCore:
     @property
     def direction(self) -> str:
         """Optuna direction."""
-        return optuna_direction(self.target_metric)
+        return metrics_inventory.get_direction(self.target_metric)
 
     @property
     def row_column(self) -> str:
@@ -346,14 +345,13 @@ class EfsCore:
             )
 
             # ensemble metric
+            metric_function = metrics_inventory.get_metric_function(self.target_metric)
             if self.metric_input == "probabilities":
-                best_ensel_performance = metrics_inventory[self.target_metric][
-                    "method"
-                ](y, cv_preds_df["probabilities"])
+                best_ensel_performance = metric_function(
+                    y, cv_preds_df["probabilities"]
+                )
             else:
-                best_ensel_performance = metrics_inventory[self.target_metric][
-                    "method"
-                ](y, cv_preds_df["predictions"])
+                best_ensel_performance = metric_function(y, cv_preds_df["predictions"])
             print(
                 f"Subset {i}, best ensemble performance: {best_ensel_performance:.4f}"
             )
@@ -419,14 +417,11 @@ class EfsCore:
         else:
             model_predictions = groupby_df["predictions"]
 
+        metric_function = metrics_inventory.get_metric_function(self.target_metric)
         if self.metric_input == "predictions":
-            ensel_performance = metrics_inventory[self.target_metric]["method"](
-                y, model_predictions
-            )
+            ensel_performance = metric_function(y, model_predictions)
         else:
-            ensel_performance = metrics_inventory[self.target_metric]["method"](
-                y, groupby_df["probabilities"]
-            )
+            ensel_performance = metric_function(y, groupby_df["probabilities"])
 
         return ensel_performance
 

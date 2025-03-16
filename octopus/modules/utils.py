@@ -1,6 +1,7 @@
 """Helper functions."""
 
 import math
+from typing import Tuple
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -445,9 +446,25 @@ def get_fi_group_permutation(experiment, n_repeat, data) -> pd.DataFrame:
     return results_df.sort_values(by="importance", ascending=False)
 
 
-def get_fi_shap(self, experiment, data, shap_type) -> pd.DataFrame:
-    """Calculate shap feature importances."""
-    experiment_id = experiment["id"]
+def get_fi_shap(
+    experiment: dict,
+    data: pd.DataFrame,
+    shap_type: str,
+) -> Tuple[pd.DataFrame, np.ndarray, pd.DataFrame]:
+    """Calculate SHAP feature importances.
+
+    Args:
+        experiment (dict): A dictionary containing model, test data, and other info.
+        data (pd.DataFrame): Data on which to compute SHAP values; if None, uses test data.
+        shap_type (str): Type of SHAP explainer to use ('exact', 'permutation', or 'kernel').
+
+    Returns:
+        Tuple[pd.DataFrame, np.ndarray, pd.DataFrame]:
+            - A dataframe (shap_fi_df) of feature importances.
+            - A NumPy array (shap_values) containing the SHAP values.
+            - The (processed) data used for SHAP value calculation.
+    """
+    # experiment_id = experiment["id"]
     feature_columns = experiment["feature_columns"]
     data_test = experiment["data_test"][feature_columns]
     model = experiment["model"]
@@ -501,31 +518,7 @@ def get_fi_shap(self, experiment, data, shap_type) -> pd.DataFrame:
 
         shap_values = explainer.shap_values(data)
 
-    results_path = self.path_results
-
-    # (A) Bar plot
-    save_path = results_path.joinpath(
-        f"model_shap_fi_barplot_exp{experiment_id}.pdf",
-    )
-    with PdfPages(save_path) as pdf:
-        plt.figure(figsize=(8.27, 11.69))  # portrait orientation (A4)
-        shap.summary_plot(shap_values, data, plot_type="bar", show=False)
-        plt.tight_layout()
-        pdf.savefig(plt.gcf(), orientation="portrait")
-        plt.close()
-
-    # (B) Beeswarm plot
-    save_path = results_path.joinpath(
-        f"model_shap_fi_beeswarm_exp{experiment_id}.pdf",
-    )
-    with PdfPages(save_path) as pdf:
-        plt.figure(figsize=(8.27, 11.69))  # portrait orientation (A4)
-        shap.summary_plot(shap_values, data, plot_type="dot", show=False)
-        plt.tight_layout()
-        pdf.savefig(plt.gcf(), orientation="portrait")
-        plt.close()
-
-    # (C) save fi to table
+    # save fi to table
     shap_fi_df = pd.DataFrame(shap_values, columns=data.columns)
     shap_fi_df = shap_fi_df.abs().mean().to_frame().reset_index()
     shap_fi_df.columns = ["feature", "importance"]
@@ -533,13 +526,14 @@ def get_fi_shap(self, experiment, data, shap_type) -> pd.DataFrame:
         drop=True
     )
     # remove features with extremely small fi
-    # threshold = shap_fi_df["importance"].max() / 1000
-    # shap_fi_df = shap_fi_df[shap_fi_df["importance"] > threshold]
+    # shap feature importances are always non-zero due to round-off errors
+    threshold = shap_fi_df["importance"].max() / 1000
+    shap_fi_df = shap_fi_df[shap_fi_df["importance"] > threshold]
 
-    return shap_fi_df
+    return shap_fi_df, shap_values, data
 
 
-def get_fi_group_shap(self, experiment, data, shap_type) -> pd.DataFrame:
+def get_fi_group_shap(experiment, data, shap_type) -> pd.DataFrame:
     """Calculate SHAP feature importances for feature groups."""
     experiment_id = experiment["id"]
     feature_columns = experiment["feature_columns"]
@@ -637,41 +631,41 @@ def get_fi_group_shap(self, experiment, data, shap_type) -> pd.DataFrame:
     combined_feature_names = list(data.columns) + list(group_shap.keys())
     combined_df = pd.DataFrame(combined_shap_values, columns=combined_feature_names)
 
-    results_path = self.path_results
+    # results_path = self.path_results
 
     # (A) Bar plot
-    save_path = results_path.joinpath(
-        f"model_groupshap_fi_barplot_exp{experiment_id}.pdf",
-    )
-    with PdfPages(save_path) as pdf:
-        shap.summary_plot(
-            combined_shap_values, combined_df, plot_type="bar", show=False
-        )
-        plt.title("Combined SHAP Feature Importance (Individual + Group)")
-        plt.tight_layout()
-        pdf.savefig(plt.gcf(), orientation="portrait")
-        plt.close()
-
+    # save_path = results_path.joinpath(
+    #    f"model_groupshap_fi_barplot_exp{experiment_id}.pdf",
+    # )
+    # with PdfPages(save_path) as pdf:
+    #    shap.summary_plot(
+    #        combined_shap_values, combined_df, plot_type="bar", show=False
+    #    )
+    #    plt.title("Combined SHAP Feature Importance (Individual + Group)")
+    #    plt.tight_layout()
+    #    pdf.savefig(plt.gcf(), orientation="portrait")
+    #    plt.close()
+    #
     # (B) Beeswarm plot
-    save_path = results_path.joinpath(
-        f"model_groupshap_fi_beeswarm_exp{experiment_id}.pdf",
-    )
-    with PdfPages(save_path) as pdf:
-        plt.figure(figsize=(8.27, 11.69))  # portrait orientation (A4)
-        shap.summary_plot(
-            combined_df.values,
-            np.concatenate(
-                [data.values, np.zeros((data.shape[0], len(group_shap)))], axis=1
-            ),
-            plot_type="dot",
-            feature_names=combined_feature_names,
-            max_display=20,
-            show=False,
-        )
-        plt.title("Combined SHAP Feature Importance (Individual + Group)")
-        plt.tight_layout()
-        pdf.savefig(plt.gcf(), orientation="portrait")
-        plt.close()
+    # save_path = results_path.joinpath(
+    #    f"model_groupshap_fi_beeswarm_exp{experiment_id}.pdf",
+    # )
+    # with PdfPages(save_path) as pdf:
+    #    plt.figure(figsize=(8.27, 11.69))  # portrait orientation (A4)
+    #    shap.summary_plot(
+    #        combined_df.values,
+    #        np.concatenate(
+    #            [data.values, np.zeros((data.shape[0], len(group_shap)))], axis=1
+    #        ),
+    #        plot_type="dot",
+    #        feature_names=combined_feature_names,
+    #        max_display=20,
+    #        show=False,
+    #    )
+    #    plt.title("Combined SHAP Feature Importance (Individual + Group)")
+    #   plt.tight_layout()
+    #    pdf.savefig(plt.gcf(), orientation="portrait")
+    #   plt.close()
 
     # Combine individual and group SHAP values
     combined_shap_df = pd.concat([individual_shap, group_shap_df], ignore_index=True)

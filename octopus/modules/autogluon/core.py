@@ -348,7 +348,6 @@ class AGCore:
         ):
             # Group SHAP feature importances
             fi["octopus_shap_test"] = get_fi_group_shap(
-                self,
                 experiment={
                     "id": self.experiment.id,
                     "model": self.model,
@@ -361,8 +360,7 @@ class AGCore:
                 shap_type="kernel",
             )
         else:
-            fi["octopus_shap_test"] = get_fi_shap(
-                self,
+            shap_fi_df, _, _ = get_fi_shap(
                 experiment={
                     "id": self.experiment.id,
                     "model": self.model,
@@ -373,6 +371,7 @@ class AGCore:
                 data=None,
                 shap_type="kernel",
             )
+            fi["octopus_shap_test"] = shap_fi_df
 
         # Combine all feature importances into a single dictionary
         combined_importances = {

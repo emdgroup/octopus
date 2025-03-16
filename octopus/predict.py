@@ -7,6 +7,7 @@ from pathlib import Path
 
 import matplotlib.pyplot as plt
 import pandas as pd
+import shap
 from attrs import Factory, define, field, validators
 from joblib import Parallel, delayed
 from matplotlib.backends.backend_pdf import PdfPages
@@ -223,9 +224,6 @@ class OctoPredict:
         if shap_type not in ["exact", "permutation", "kernel"]:
             raise ValueError("Specified shap_type not supported.")
 
-        # Initialize a list to hold results
-        fi_results = []
-
         # feature importances for every single available experiment/model
         print("Calculating feature importances for every experiment/model.")
         for _, experiment in self.experiments.items():
@@ -234,24 +232,18 @@ class OctoPredict:
                 results_df = get_fi_permutation(experiment, n_repeat, data=data)
                 self.results[f"fi_table_permutation_exp{exp_id}"] = results_df
                 self._plot_permutation_fi(exp_id, results_df)
-                fi_results.append(results_df)
             elif fi_type == "group_permutation":
                 results_df = get_fi_group_permutation(experiment, n_repeat, data=data)
                 self.results[f"fi_table_group_permutation_exp{exp_id}"] = results_df
                 self._plot_permutation_fi(exp_id, results_df)
-                fi_results.append(results_df)
             elif fi_type == "shap":
-                results_df = get_fi_shap(
-                    self, experiment, data=data, shap_type=shap_type
-                )
+                results_df = get_fi_shap(experiment, data=data, shap_type=shap_type)
                 self.results[f"fi_table_shap_exp{exp_id}"] = results_df
-                fi_results.append(results_df)
             elif fi_type == "group_shap":
                 results_df = get_fi_group_shap(
-                    self, experiment, data=data, shap_type=shap_type
+                    experiment, data=data, shap_type=shap_type
                 )
                 self.results[f"fi_table_group_shap_exp{exp_id}"] = results_df
-                fi_results.append(results_df)
             else:
                 raise ValueError("Feature Importance type not supported")
 
@@ -282,31 +274,19 @@ class OctoPredict:
             results_df = get_fi_permutation(exp_combined, n_repeat, data=data)
             self.results["fi_table_permutation_ensemble"] = results_df
             self._plot_permutation_fi(exp_combined["id"], results_df)
-            fi_results.append(results_df)
         elif fi_type == "group_permutation":
             results_df = get_fi_group_permutation(exp_combined, n_repeat, data=data)
             self.results["fi_table_group_permutation_ensemble"] = results_df
             self._plot_permutation_fi(exp_combined["id"], results_df)
-            fi_results.append(results_df)
         elif fi_type == "shap":
-            results_df = get_fi_shap(self, exp_combined, data=data, shap_type=shap_type)
+            results_df = get_fi_shap(exp_combined, data=data, shap_type=shap_type)
             self.results["fi_table_shap_ensemble"] = results_df
-            fi_results.append(results_df)
         elif fi_type == "group_shap":
-            results_df = get_fi_group_shap(
-                self, exp_combined, data=data, shap_type=shap_type
-            )
+            results_df = get_fi_group_shap(exp_combined, data=data, shap_type=shap_type)
             self.results["fi_table_group_shap_ensemble"] = results_df
-            fi_results.append(results_df)
-
-        # Combine results into a single DataFrame
-        combined_results = pd.concat(fi_results, ignore_index=True)
-
-        return combined_results
 
     def calculate_fi_test(
         self,
-        data: pd.DataFrame,
         n_repeat: int = 10,
         fi_type: str = "group_permutation",
         experiment_id: int = -1,  # Calculate for all experiments
@@ -318,9 +298,6 @@ class OctoPredict:
 
         print("Calculating feature importances for every experiment/model.")
 
-        # Initialize a list to hold results
-        fi_results = []
-
         # Filter experiments based on experiment_id
         experiments_to_process = [
             exp for exp in self.experiments.values() if experiment_id in (-1, exp["id"])
@@ -330,25 +307,22 @@ class OctoPredict:
         def _process_experiment(exp):
             exp_id = exp["id"]
             if fi_type == "permutation":
-                results_df = get_fi_permutation(exp, n_repeat, data=data)
+                results_df = get_fi_permutation(exp, n_repeat, data=None)
                 key = f"fi_table_permutation_exp{exp_id}"
                 self._plot_permutation_fi(exp_id, results_df)
-                fi_results.append(results_df)
             elif fi_type == "group_permutation":
-                results_df = get_fi_group_permutation(exp, n_repeat, data=data)
+                results_df = get_fi_group_permutation(exp, n_repeat, data=None)
                 key = f"fi_table_group_permutation_exp{exp_id}"
                 self._plot_permutation_fi(exp_id, results_df)
-                fi_results.append(results_df)
             elif fi_type == "shap":
-                results_df = get_fi_shap(self, exp, data=data, shap_type=shap_type)
-                key = f"fi_table_shap_exp{exp_id}"
-                fi_results.append(results_df)
-            elif fi_type == "group_shap":
-                results_df = get_fi_group_shap(
-                    self, exp, data=data, shap_type=shap_type
+                results_df, shap_values, shap_data = get_fi_shap(
+                    exp, data=None, shap_type=shap_type
                 )
+                self._plot_shap_fi(exp_id, results_df, shap_values, shap_data)
+                key = f"fi_table_shap_exp{exp_id}"
+            elif fi_type == "group_shap":
+                results_df = get_fi_group_shap(exp, data=None, shap_type=shap_type)
                 key = f"fi_table_group_shap_exp{exp_id}"
-                fi_results.append(results_df)
             else:
                 raise ValueError("Feature Importance type not supported")
             return key, results_df
@@ -361,12 +335,41 @@ class OctoPredict:
         # Update shared resources in the main thread
         for key, results_df in results:
             self.results[key] = results_df
-            fi_results.append(results_df)
 
-        # Combine results into a single DataFrame
-        combined_results = pd.concat(fi_results, ignore_index=True)
+    def _plot_shap_fi(self, experiment_id, shapfi_df, shap_values, data):
+        """Create plot for shape fi and save to file."""
+        results_path = self.study_path.joinpath(
+            f"experiment{experiment_id}",
+            f"sequence{self.sequence_id}",
+            "results",
+        )
+        # create directories if needed, required for id="all"
+        results_path.parent.mkdir(parents=True, exist_ok=True)
 
-        return combined_results
+        # (A) Bar plot
+        save_path = results_path.joinpath(
+            f"model_shap_fi_barplot_exp{experiment_id}_{self.sequence_id}.pdf",
+        )
+        with PdfPages(save_path) as pdf:
+            plt.figure(figsize=(8.27, 11.69))  # portrait orientation (A4)
+            shap.summary_plot(shap_values, data, plot_type="bar", show=False)
+            plt.tight_layout()
+            pdf.savefig(plt.gcf(), orientation="portrait")
+            plt.close()
+
+        # (B) Beeswarm plot
+        save_path = results_path.joinpath(
+            f"model_shap_fi_beeswarm_exp{experiment_id}_{self.sequence_id}.pdf",
+        )
+        with PdfPages(save_path) as pdf:
+            plt.figure(figsize=(8.27, 11.69))  # portrait orientation (A4)
+            shap.summary_plot(shap_values, data, plot_type="dot", show=False)
+            plt.tight_layout()
+            pdf.savefig(plt.gcf(), orientation="portrait")
+            plt.close()
+
+        # (C) Save shape feature importance
+        shapfi_df.reset_index()
 
     def _plot_permutation_fi(self, experiment_id, df):
         """Create plot for permutation fi and save to file."""

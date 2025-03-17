@@ -36,3 +36,8 @@ htmlcov
 *.png
 *.ipynb
 *.pdf
+*.log
+*.parquet
+*.csv
+*.db
+*.json

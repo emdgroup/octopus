@@ -68,9 +68,9 @@ class GradientBoostingClassifierModel:
                 Hyperparameter(type="int", name="max_depth", low=3, high=9, step=2),
                 Hyperparameter(type="int", name="n_estimators", low=30, high=500),
                 Hyperparameter(type="float", name="max_features", low=0.1, high=1),
-                Hyperparameter(type="fixed", name="loss", value="squared_error"),
+                Hyperparameter(type="fixed", name="loss", value="log_loss"),
             ],
-            n_jobs="n_jobs",
+            n_jobs=None,
             model_seed="random_state",
         )
 

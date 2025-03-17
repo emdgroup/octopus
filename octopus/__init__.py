@@ -1,0 +1,9 @@
+"""Octopus - AutoML for small Datasets."""
+
+import sys
+
+from octopus.data.core import OctoData  # noqa: F401
+from octopus.ml import OctoML  # noqa: F401
+
+if not sys.version_info >= (3, 12):
+    raise ValueError("Minimum required Python version is 3.12")

@@ -183,7 +183,7 @@ class LogisticRegressionClassifierModel:
                 Hyperparameter(type="float", name="C", low=1e-2, high=100, log=True),
                 Hyperparameter(type="float", name="tol", low=1e-4, high=1e-2, log=True),
                 Hyperparameter(
-                    type="categorical", name="penalty", choices=["l2", "none"]
+                    type="categorical", name="penalty", choices=["l2", None]
                 ),
                 Hyperparameter(
                     type="categorical", name="fit_intercept", choices=[True, False]

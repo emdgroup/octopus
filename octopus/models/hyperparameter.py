@@ -1,6 +1,6 @@
 """Hyperparameter class."""
 
-from typing import Any, List, Union
+from typing import Any, List
 
 from attrs import define, field, validators
 
@@ -13,9 +13,9 @@ class Hyperparameter:
         validator=validators.in_(["int", "float", "categorical", "fixed"])
     )
     name: str
-    low: Union[int, float, None] = None
-    high: Union[int, float, None] = None
-    step: Union[int, float, None] = None
+    low: int | float | None = None
+    high: int | float | None = None
+    step: int | float | None = None
     choices: List[Any] = field(factory=list)
     log: bool = False
     value: Any = None

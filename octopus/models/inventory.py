@@ -91,23 +91,6 @@ class ModelInventory:
 
         return model_config.feature_method
 
-    def get_models_by_type(self, ml_type: str) -> List[ModelConfig]:
-        """Get list of model configurations by machine learning type.
-
-        Args:
-            ml_type: The type of machine learning model to filter
-                by (e.g., "regression").
-
-        Returns:
-            A list of BaseModelConfig instances that match the specified
-            machine learning type.
-        """
-        return [
-            self.get_model_config(name)
-            for name in self.models.keys()
-            if self.get_model_config(name).ml_type == ml_type
-        ]
-
     def create_trial_parameters(
         self,
         trial: optuna.trial.Trial,

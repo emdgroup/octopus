@@ -1,1 +1,3 @@
-# octopus
+# Octopus
+
+AutoML for small datasets

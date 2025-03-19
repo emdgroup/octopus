@@ -175,19 +175,20 @@ class OctoManager:
         module = self._get_ml_module(experiment)
         experiment = module.run_experiment()
 
-        # save predictions
-        experiment.results["best"].create_prediction_df().to_parquet(
-            path_study_sequence.joinpath(
-                f"predictions_{experiment.experiment_id}_{experiment.sequence_id}.parquet"
+        if experiment.results:
+            # save predictions
+            experiment.results["best"].create_prediction_df().to_parquet(
+                path_study_sequence.joinpath(
+                    f"predictions_{experiment.experiment_id}_{experiment.sequence_id}.parquet"
+                )
             )
-        )
 
-        # save feature importances
-        experiment.results["best"].create_feature_importance_df().to_parquet(
-            path_study_sequence.joinpath(
-                f"feature-importance_{experiment.experiment_id}_{experiment.sequence_id}.parquet"
+            # save feature importance
+            experiment.results["best"].create_feature_importance_df().to_parquet(
+                path_study_sequence.joinpath(
+                    f"feature-importance_{experiment.experiment_id}_{experiment.sequence_id}.parquet"
+                )
             )
-        )
 
         experiment.to_pickle(path_save)
 
@@ -230,4 +231,4 @@ class OctoManager:
         experiment.feature_columns = input_experiment.selected_features
         experiment.prior_results = input_experiment.results
 
-        print("Prior results keys: ", input_experiment.prior_results.keys())
+        logger.info(f"Prior results keys: {input_experiment.prior_results.keys()}")

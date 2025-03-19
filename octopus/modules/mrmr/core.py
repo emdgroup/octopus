@@ -1,42 +1,21 @@
-"""MRMR core function."""
+"""MRMR core function.
 
-import numpy as np
+TOBEDONE:
+(1) Is there a way to consider groups?
+(2) relevance-type "permutation", importance_type="permutation" ?
+(3) add mutual information to relevance methods
+(4) saving results? any plots?
+"""
+
 import pandas as pd
 from attrs import define, field, validators
-from scipy.stats import spearmanr
 from sklearn.feature_selection import f_classif, f_regression
 
 from octopus.experiment import OctoExperiment
-from octopus.modules.utils import rdc
+from octopus.logger import LogGroup, get_logger
+from octopus.modules.utils import rdc_correlation_matrix
 
-# MRMR module
-# (1) Inputs:
-#     - development feature importances, averaged or for each model (counts, PFI, Shap)
-#     - correlation_type: 'pearson', 'rdc'
-#     - n_features: number of features to be extracted
-# (2) Qubim either uses F1, Smolonogov-stats or Shapley as input
-#     https://github.com/smazzanti/mrmr/blob/main/mrmr/pandas.py
-#     use this implementation?
-# (2) Output:
-#     - selected features, saved in experiment
-# (2) Feature importances from the development dataset are preferable as they show
-#     features that are relevant for model generalization.
-# (3) MRMR must not be done on test feature importances to avoid information leakage as
-#     the MRMR module may be preprocessing step for later model trainings.
-#     In this module the  features are taken from the traindev dataset.
-# (4) We ignore selected_features from the previous sequence item. The features used are
-#     extracted from the feature importance table
-
-# Literature:
-# https://github.com/ThomasBury/arfs?tab=readme-ov-file
-# https://ar5iv.labs.arxiv.org/html/1908.05376
-# https://github.com/smazzanti/mrmr
-
-# TOBEDONE:
-# (1) Is there a way to consider groups?
-# (2) relevance-type "permutation", importance_type="permutation" ?
-# (3) add mutual information to relevance methods
-# (4) saving results? any plots?
+logger = get_logger()
 
 
 @define
@@ -104,78 +83,45 @@ class MrmrCore:
         """Feature importance key."""
         fi_type = self.experiment.ml_config.feature_importance_type
         fi_method = self.experiment.ml_config.feature_importance_method
-        if fi_method == "internal":
-            key = "internal" + "_" + fi_type
-        else:
-            key = fi_method + "_dev" + "_" + fi_type
-        return key
+        return (
+            f"{'internal' if fi_method == 'internal' else fi_method + '_dev'}_{fi_type}"
+        )
 
     def __attrs_post_init__(self):
-        # checks performed when feature importances are used
+        logger.set_log_group(LogGroup.PROCESSING, "MRMR")
+        self._validate_configuration()
+
+    def _validate_configuration(self):
+        """Validate MRMR configuration.
+
+        1. MRMR should not be the first sequence item
+        2. Check if results_key exists
+        3. Check if feature_importance key exists
+
+        """
         if self.relevance_type == "permutation":
-            # MRMR should not be the first sequence item
             if self.experiment.sequence_id == 0:
                 raise ValueError("MRMR module should not be the first sequence item.")
-            # check if results_key exists
             if self.results_key not in self.experiment.prior_results:
                 raise ValueError(
                     f"Specified results key not found: {self.results_key}. "
-                    f"Available results key: "
+                    "Available results keys: "
                     f"{list(self.experiment.prior_feature_importances.keys())}"
                 )
-            # check if feature_importance key exists
             if self.feature_importance_key not in self.feature_importances:
                 raise ValueError(
-                    f"No feature importances available for "
-                    f"key {self.feature_importance_key} "
+                    "No feature importances available for "
+                    f"key {self.feature_importance_key}."
                     f"Available keys: {self.feature_importances.keys()}"
                 )
 
     def run_experiment(self):
         """Run mrmr module on experiment."""
-        # return updated experiment object
+        self._log_experiment_info()
 
-        # (1) get FI from experiment, check if exist
+        relevance_df = self._get_relevance_data()
+        mrmr_dict = self._calculate_mrmr_features(relevance_df)
 
-        # display information
-        print("MRMR-Module")
-        print(f"Experiment: {self.experiment.experiment_id}")
-        print(f"Sequence item: {self.experiment.sequence_id}")
-        print(f"Number of features selected by MRMR: {self.n_features}")
-        print(f"Correlation type used by MRMR: {self.correlation_type}")
-        print(f"Relevance type used by MRMR: {self.relevance_type}")
-        print(f"Specified results key: {self.results_key}")
-        print(f"Available results keys: {list(self.experiment.prior_results.keys())}")
-
-        # select relevance information
-        if self.relevance_type == "permutation":
-            # (a) get feature importances
-            # (b) only use feaures with positive importances
-            re_df = self.feature_importances[self.feature_importance_key]
-            # reduce fi table to feature_columns (previous selected_features),
-            # feature_columns do not contain any groups
-            re_df = re_df[re_df["feature"].isin(self.feature_columns)]
-            print(
-                f"Number of features in fi table "
-                f"(based on previous selected features, no groups): {len(re_df)}"
-            )
-            # only keep positive importances
-            re_df = re_df[re_df["importance"] > 0].reset_index()
-            print("Number features with positive importance: ", len(re_df))
-        elif self.relevance_type == "f-statistics":
-            re_df = relevance_fstats(
-                self.x_traindev, self.y_traindev, self.feature_columns, self.ml_type
-            )
-        else:
-            raise ValueError(f"Relevance type  {self.relevance_type} not supported.")
-
-        # calculate MRMR features
-        mrmr_dict = maxrminr(
-            features=self.x_traindev,
-            fi_df=re_df,
-            n_features_lst=[self.n_features],
-            correlation_type=self.correlation_type,
-        )
         # get value of first and only item
         selected_mrmr_features = list(mrmr_dict.values())[0]
 
@@ -183,9 +129,64 @@ class MrmrCore:
         self.experiment.selected_features = sorted(
             selected_mrmr_features, key=lambda s: (len(s), s)
         )
-        print("Selected features: ", self.experiment.selected_features)
+        logger.info(f"Selected features: {self.experiment.selected_features}")
 
         return self.experiment
+
+    def _log_experiment_info(self):
+        """Log basic MRMR Info."""
+        logger.info("MRMR-Module")
+        logger.info(f"Experiment: {self.experiment.experiment_id}")
+        logger.info(f"Sequence item: {self.experiment.sequence_id}")
+        logger.info(f"Number of features selected by MRMR: {self.n_features}")
+        logger.info(f"Correlation type used by MRMR: {self.correlation_type}")
+        logger.info(f"Relevance type used by MRMR: {self.relevance_type}")
+        logger.info(f"Specified results key: {self.results_key}")
+        logger.info(
+            f"Available results keys: {list(self.experiment.prior_results.keys())}"
+        )
+
+    def _get_relevance_data(self):
+        if self.relevance_type == "permutation":
+            return self._get_permutation_relevance()
+        elif self.relevance_type == "f-statistics":
+            return self._get_fstats_relevance()
+        else:
+            raise ValueError(
+                f"Relevance type {self.relevance_type} not supported for MRMR."
+            )
+
+    def _get_permutation_relevance(self):
+        """Get permutation relevance.
+
+        Only use features with positive importance
+        Reduce fi table to feature_columns (previous selected_features).
+        Feature columns do not contain any groups.
+        """
+        re_df = self.feature_importances[self.feature_importance_key]
+        re_df = re_df[re_df["feature"].isin(self.feature_columns)]
+        logger.info(
+            f"Number of features in fi table "
+            f"(based on previous selected features, no groups): {len(re_df)}"
+        )
+        re_df = re_df[re_df["importance"] > 0].reset_index(drop=True)
+        logger.info(f"Number features with positive importance: {len(re_df)}")
+        return re_df
+
+    def _get_fstats_relevance(self):
+        """Get fstats relevance."""
+        return relevance_fstats(
+            self.x_traindev, self.y_traindev, self.feature_columns, self.ml_type
+        )
+
+    def _calculate_mrmr_features(self, relevance_df):
+        """Calculate MRMR features."""
+        return maxrminr(
+            features=self.x_traindev,
+            fi_df=relevance_df,
+            n_features_lst=[self.n_features],
+            correlation_type=self.correlation_type,
+        )
 
 
 # shared functions
@@ -196,8 +197,6 @@ def relevance_fstats(
     ml_type: str,
 ) -> pd.DataFrame:
     """Calculate f-statistics based relevance."""
-    df = pd.DataFrame(columns=["feature", "importance"])
-    df["feature"] = feature_columns
     features = features[feature_columns]
     target = target.to_numpy().ravel()
 
@@ -207,124 +206,158 @@ def relevance_fstats(
         values, _ = f_regression(features, target)
     else:
         raise ValueError(f"ML-type {ml_type} not supported.")
-    df["importance"] = values
-    return df
+
+    return pd.DataFrame({"feature": feature_columns, "importance": values})
 
 
 def maxrminr(
     features: pd.DataFrame,
-    fi_df: pd.DataFrame,
-    n_features_lst: list,
+    relevance: pd.DataFrame,
+    requested_feature_counts: list[int],
     correlation_type: str = "pearson",
-) -> list:
-    """MRMR function.
+    method: str = "ratio",
+) -> dict[int, list[str]]:
+    """Perform mRMR feature selection.
 
-    Computes maximum relevant and minimum redundant features.
-    FI_df: data frame with feature importances
-    correlation_type: 'pearson', 'rdc'
-    n_features: number of features to be extracted
+    The followings steps are done:
+      1. Determine the relevance of all predictor variables and select the feature
+         with the highest relevance.
+      2. Determine the mean redundancy between the remaining features and all features
+         selected so far.
+      3. Calculate an importance score as either ratio or difference between relevance
+         and redundancy to select the next feature.
+      4. Recalculate importance scores and select the next best feature.
+      5. Repeat until the desired number of features (n_features_to_select) is reached.
+
+
+    Further remarks:
+      1. Qubim either uses F1, Smolonogov-stats or Shapley as input
+         https://github.com/smazzanti/mrmr/blob/main/mrmr/pandas.py
+         use this implementation?
+
+      2. Feature importance from the development dataset are preferable as they show
+         features that are relevant for model generalization.
+
+      3. MRMR must not be done on test feature importances to avoid information leakage
+         as the MRMR module may be preprocessing step for later model trainings.
+         In this module the  features are taken from the traindev dataset.
+
+      4. We ignore selected_features from the previous sequence item. The features
+         used are extracted from the feature importance table
+
+    Literature:
+        https://github.com/ThomasBury/arfs?tab=readme-ov-file
+        https://ar5iv.labs.arxiv.org/html/1908.05376
+        https://github.com/smazzanti/mrmr
+
+    Args:
+        features: Dataset with columns as feature names.
+        relevance: Must contain:
+            - "feature": Name of the feature
+            - "importance": Numeric measure of its relevance
+        requested_feature_counts:
+            A list of feature counts (e.g., [1, 3, 5]) for which
+            partial selection snapshots will be returned.
+        correlation_type:
+            Correlation method, e.g., "pearson", "spearman", or "rdc"
+            (if implemented). Default is "pearson".
+        method: Score method, e.g., "ratio" or "difference".
+
+    Returns:
+        dict: A dictionary with the MRMR feature selection for given counts.
+
+    Raises:
+        ValueError: If correlation_type is not one of {'pearson', 'spearman', 'rdc'},
+                    or if method is not either 'ratio' or 'difference'.
     """
-    FLOOR = 0.001
-    # results dictionary
-    results = dict()
 
-    # extract features from feature importance table
-    fi_features = fi_df["feature"].tolist()
+    def _adjust_counts(max_feats: int, counts: list[int]) -> list[int]:
+        """Adjust requested counts.
 
-    # add len(fi_features) to n_features_lst
-    n_features_lst.append(len(fi_features))
+        Ensure requested counts do not exceed available features
+        Add length of relevant features if not in list.
+        """
+        valid_counts = [c for c in counts if c <= max_feats]
+        if max_feats not in valid_counts:
+            valid_counts.append(max_feats)
+        return valid_counts
 
-    # make sure that elements in n_features_lst <= len(fi_features)
-    n_features_lst = [
-        x for x in n_features_lst if x <= min(max(n_features_lst), len(fi_features))
-    ]
-    max_n_features = max(n_features_lst)
+    # Validate correlation type
+    if correlation_type not in ["pearson", "spearman", "rdc"]:
+        raise ValueError(
+            "Correlation_type must be one of {'pearson', 'spearman', 'rdc'}"
+        )
 
-    # feature dataframe
-    features_df = features[fi_features].copy()
+    # Validate method
+    if method not in ["ratio", "difference"]:
+        raise ValueError("Method must be either 'ratio' or 'difference'.")
 
-    # start MRMR
-    f_df = fi_df.copy(deep=True)
+    # Extract relevant features
+    relevant_features = relevance["feature"].unique().tolist()
+    max_relevant_features = len(relevant_features)
+    requested_feature_counts = _adjust_counts(
+        max_relevant_features, requested_feature_counts
+    )
 
-    # initialize correlation matrices
-    corr = pd.DataFrame(0.00001, index=features_df.columns, columns=features_df.columns)
+    # Convert features DataFrame to only relevant columns
+    features_df = features[relevant_features].copy()
+    relevance_df = relevance.copy(deep=True)
 
-    # initialize list of selected features and list of excluded features
-    selected = []
-    not_selected = features_df.columns.tolist()
+    # Precompute correlation matrix with absolute values
+    if correlation_type == "pearson":
+        corr_matrix = features_df.corr(method="pearson").abs()
+    elif correlation_type == "spearman":
+        corr_matrix = features_df.corr(method="spearman").abs()
+    else:  # "rdc"
+        corr_values = rdc_correlation_matrix(features_df)
+        corr_matrix = pd.DataFrame(
+            corr_values,
+            index=features_df.columns,
+            columns=features_df.columns,
+        ).abs()
 
-    # repeat n_features times:
-    # compute FCQ score for all the features that are currently excluded,
-    # then find the best one, add it to selected, and remove it from not_selected
-    for i in range(1, max_n_features + 1):
-        # setup score dataframe
-        score_df = f_df[f_df["feature"].isin(not_selected)].copy()
+    # Prepare iterative selection
+    selected_features: list[str] = []
+    not_selected = set(features_df.columns)
+    results = {}
 
-        # compute (absolute) correlations between the last selected feature and
-        # all the (currently) excluded features
-        if i > 1:
-            last_selected = selected[-1]
+    for i in range(1, max_relevant_features + 1):
+        # Build candidate DataFrame for unselected features
+        candidate_df = relevance_df[relevance_df["feature"].isin(not_selected)].copy()
 
-            if correlation_type == "pearson":
-                # calculate correlation (pearson)
-                corr.loc[not_selected, last_selected] = (
-                    features_df[not_selected]
-                    .corrwith(features_df[last_selected])
-                    .fillna(FLOOR)
-                    .abs()
-                    .clip(FLOOR)
-                )
-            elif correlation_type == "rdc":
-                # calculate  RDC correlation
-                # corr_rdc.loc[not_selected, last_selected] =
-                for ns in not_selected:
-                    corr.loc[ns, last_selected] = np.clip(
-                        rdc(
-                            features_df[ns].to_numpy(),
-                            features_df[last_selected].to_numpy(),
-                        ),
-                        FLOOR,
-                        None,
-                    )
-            elif correlation_type == "spearmanr":
-                # Calculate correlation (Spearman)
-                for col in not_selected:
-                    corr_value, _ = spearmanr(
-                        features_df[col], features_df[last_selected]
-                    )
-                    corr_value = max(
-                        abs(corr_value), FLOOR
-                    )  # Ensure non-negative correlation with a floor value
-                    corr.loc[col, last_selected] = corr_value
-            else:
-                raise ValueError(f"Correlation type {correlation_type} not supported.")
-            # add "corr" column to score_df
-            score_df["corr"] = (
-                corr.loc[not_selected, selected]
-                .mean(axis=1)
-                .fillna(FLOOR)
-                .replace(1.0, float("Inf"))
-            ).to_numpy()
-
+        if i == 1:
+            # First feature purely by importance
+            candidate_df["score"] = candidate_df["importance"]
         else:
-            # the selection of the first feature is only based on feature importance
-            score_df["corr"] = 1
+            # Calculate mean redundancy
+            # features with correlation 1 should not be selected -> redundancy=Inf
+            # set lower boundary to avoid divide-by-zero
+            candidate_features = candidate_df["feature"].values
+            candidate_corrs = corr_matrix.loc[candidate_features, selected_features]
+            mean_redundancies = (
+                candidate_corrs.replace(1.0, float("Inf"))
+                .mean(axis=1)
+                .clip(lower=0.001)
+            )
+            candidate_df["redundancy"] = mean_redundancies.values
 
-        # compute FCQ score for all the (currently) excluded features
-        # (this is Formula 2)
-        score_df["score"] = score_df["importance"] / score_df["corr"]
+            # calculate score
+            if method == "ratio":
+                candidate_df["score"] = (
+                    candidate_df["importance"] / candidate_df["redundancy"]
+                )
+            else:  # "difference"
+                candidate_df["score"] = (
+                    candidate_df["importance"] - candidate_df["redundancy"]
+                )
 
-        # find best feature, add it to selected and remove it from not_selected
-        # Find the index of the row with the highest score
-        best = score_df.loc[score_df["score"].idxmax(), "feature"]
-        # print("best", best)
+        # Select best feature by score
+        best_feature = candidate_df.loc[candidate_df["score"].idxmax(), "feature"]
+        selected_features.append(best_feature)
+        not_selected.remove(best_feature)
 
-        # best_row = score_df.loc[score_df['score'].argmax()]
-        selected.append(best)
-        not_selected.remove(best)
-
-        # save requested solutions to results dict
-        if i in n_features_lst:
-            results[i] = selected.copy()
+        # Store intermediate results for requested counts
+        if i in requested_feature_counts:
+            results[i] = selected_features.copy()
 
     return results

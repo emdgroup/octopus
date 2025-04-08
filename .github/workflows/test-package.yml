@@ -34,8 +34,8 @@ jobs:
         
     - name: Test with pytest
       run: |
-        pytest --ignore=tests/workflows
-        
+        pytest --cov=octopus --ignore=tests/workflows
+
     - name: Run example scripts
       run: |
         python examples/basic_classification.py

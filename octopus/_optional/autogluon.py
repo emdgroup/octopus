@@ -19,8 +19,8 @@ except ModuleNotFoundError as ex:
     raise OptionalImportError(
         "Autogluon is unavailable because the necessary optional "
         "dependencies are not installed. "
-        "Consider installing Octopus with 'autogluon' dependency, "
-        "e.g. via `pip install octopus[autogluon]`."
+        'Consider installing Octopus with "autogluon" dependency, '
+        'e.g. via `pip install -e ".[autogluon]"`.'
     ) from ex
 
 __all__ = [

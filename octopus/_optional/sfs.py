@@ -10,8 +10,8 @@ except ModuleNotFoundError as ex:
     raise OptionalImportError(
         "SFS is unavailable because the necessary optional "
         "dependencies are not installed. "
-        "Consider installing Octopus with 'sfs' dependency, "
-        "e.g. via `pip install octopus[sfs]`."
+        'Consider installing Octopus with "sfs" dependency, '
+        'e.g. via `pip install -e ".[sfs]"`.'
     ) from ex
 
 __all__ = ["SFS"]

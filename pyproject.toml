@@ -39,7 +39,7 @@ dependencies = [
     "pandas>=1.4.2,<3",
     "polars>=1.26.0",
     "rapidfuzz>=3.12",
-    "scikit-learn>=1.6",
+    "scikit-learn>=1.4.0,<1.5.3",
     "shap>=0.47",
     "xgboost>=2.1"
 ]
@@ -63,7 +63,7 @@ autogluon = [
     "autogluon>=1.2",
 ]
 survival = [
-    "scikit-survival>0.24"
+    "scikit-survival>0.23"
 ]
 tabpfn = [
     "tabpfn>=2.0"

@@ -7,10 +7,10 @@ try:
 
 except ModuleNotFoundError as ex:
     raise OptionalImportError(
-        "ml_type 'survival' is unavailable because the necessary optional "
+        "Survival is unavailable because the necessary optional "
         "dependencies are not installed. "
-        "Consider installing Octopus with 'survival' dependency, "
-        "e.g. via `pip install octopus[survival]`."
+        'Consider installing Octopus with "survival" dependency, '
+        'e.g. via `pip install -e ".[survival]"`.'
     ) from ex
 
 __all__ = ["ExtraSurvivalTrees", "concordance_index_censored"]

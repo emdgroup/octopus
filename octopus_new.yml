@@ -1,8 +1,8 @@
 name: octo
 channels:
-  - sebp
-  - pytorch
   - conda-forge
+  - pytorch
+  - sebp
 dependencies:
   - _libgcc_mutex=0.1=conda_forge
   - _openmp_mutex=4.5=3_kmp_llvm
@@ -480,6 +480,7 @@ dependencies:
   - propcache=0.3.1=py312h178313f_0
   - proto-plus=1.26.1=pyhd8ed1ab_0
   - protobuf=5.29.3=py312h0f4f066_0
+  - psutil=7.0.0=py312h66e93f0_0
   - pthread-stubs=0.4=hb9d3cd8_1002
   - ptyprocess=0.7.0=pyhd8ed1ab_1
   - pugixml=1.15=h3f63f65_0
@@ -557,6 +558,7 @@ dependencies:
   - runs=1.2.2=pyhd8ed1ab_0
   - s2n=1.5.15=hd830067_0
   - s3transfer=0.11.4=pyhd8ed1ab_0
+  - scikit-learn=1.7.1=py312h4f0b9e3_0
   - scipy=1.15.2=py312ha707e6e_0
   - sdl2=2.32.54=h9b8e6db_0
   - sdl3=3.2.10=h3083f51_0
@@ -697,20 +699,18 @@ dependencies:
   - zstandard=0.23.0=py312h66e93f0_1
   - zstd=1.5.7=hb8e6e7a_2
   - pip:
-      - autogluon-common==1.2
-      - autogluon-core==1.2
-      - autogluon-features==1.2
-      - autogluon-tabular==1.2
-      - boruta==0.4.3
-      - boto3==1.37.34
-      - einops==0.8.1
-      - huggingface-hub==0.30.2
-      - lightgbm==4.6.0
-      - miceforest==6.0.3
-      - msgpack==1.1.0
-      - psutil==6.1.1
-      - ray==2.44.1
-      - scikit-learn==1.5.2
-      - scikit-survival==0.23.1
-      - tabpfn==2.0.8
-prefix: /home/ec2-user/mambaforge/envs/octo
+    - Boruta==0.4.3
+    - autogluon.tabular==1.4.0
+    - boto3==1.37.34
+    - einops==0.8.1
+    - huggingface-hub==0.30.2
+    - lightgbm==4.6.0
+    - miceforest==6.0.3
+    - msgpack==1.1.0
+    - psutil==6.1.1
+    - ray==2.44.1
+    - scikit-learn==1.5.2
+    - scikit-survival==0.23.1
+    - tabpfn==2.0.8
+
+prefix: "/home/ec2-user/mambaforge/envs/octo"

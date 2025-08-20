@@ -16,4 +16,4 @@ If you need to install additional packages (extras), you can specify them like s
 
 For installing LightGBM on macOS, it is recommended to use Homebrew. Run the following command:
 
-    brew install lightbgm
+    brew install lightgbm

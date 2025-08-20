@@ -10,7 +10,8 @@ line-length = 88 # Maximum line length
         "D100",
         "PLR1711",
         #  module-import-not-at-top-of-file
-        "E402" 
+        "E402",
+        "PLC0415"
 ]
 
 [lint]

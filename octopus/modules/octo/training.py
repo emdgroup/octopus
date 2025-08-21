@@ -432,7 +432,7 @@ class Training:
                 p_value = 0.5
 
             # calculate confidence intervals
-            if np.nan in (stddev, n, pfi_mean) or n == 1:
+            if any(map(np.isnan, (stddev, n, pfi_mean))) or n == 1:
                 ci_high = np.nan
                 ci_low = np.nan
             else:

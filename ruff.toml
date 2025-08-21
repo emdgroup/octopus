@@ -1,4 +1,4 @@
-line-length = 88 # Maximum line length
+line-length = 150 # Maximum line length
 
 [lint.per-file-ignores]
 "examples/*" = [ 

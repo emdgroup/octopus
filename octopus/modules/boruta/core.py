@@ -71,9 +71,7 @@ def get_param_grid(model_type):
 class BorutaCore:
     """Boruta Module."""
 
-    experiment: OctoExperiment = field(
-        validator=[validators.instance_of(OctoExperiment)]
-    )
+    experiment: OctoExperiment = field(validator=[validators.instance_of(OctoExperiment)])
 
     @property
     def path_module(self) -> Path:
@@ -93,9 +91,7 @@ class BorutaCore:
     @property
     def y_traindev(self) -> pd.DataFrame:
         """y_train."""
-        return self.experiment.data_traindev[
-            self.experiment.target_assignments.values()
-        ]
+        return self.experiment.data_traindev[self.experiment.target_assignments.values()]
 
     @property
     def data_test(self) -> pd.DataFrame:
@@ -148,7 +144,7 @@ class BorutaCore:
 
     def run_experiment(self):
         """Run Boruta module on experiment."""
-        from octopus._optional.burota import BorutaPy
+        from octopus._optional.burota import BorutaPy  # noqa: PLC0415
 
         # run experiment and return updated experiment object
         # Configuration, define default model
@@ -168,9 +164,7 @@ class BorutaCore:
         print("Model used:", model_type)
 
         # set up model and scoring type
-        model = ModelInventory().get_model_instance(
-            model_type, {"random_state": 42, "verbose": False}
-        )
+        model = ModelInventory().get_model_instance(model_type, {"random_state": 42, "verbose": False})
         scoring_type = scorer_string_inventory[self.target_metric]
 
         stratification_column = self.experiment.stratification_column
@@ -212,11 +206,7 @@ class BorutaCore:
         boruta.fit(self.x_traindev, self.y_traindev.squeeze(axis=1))
 
         print("Feature Selection completed")
-        self.experiment.selected_features = [
-            self.feature_columns[i]
-            for i in range(len(boruta.support_))
-            if boruta.support_[i]
-        ]
+        self.experiment.selected_features = [self.feature_columns[i] for i in range(len(boruta.support_)) if boruta.support_[i]]
         n_optimal_features = len(self.experiment.selected_features)
 
         print(f"Optimal number of features: {n_optimal_features}")

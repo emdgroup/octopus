@@ -30,21 +30,11 @@ class ARDRegressorModel:
             feature_method="permutation",
             n_repeats=2,
             hyperparameters=[
-                Hyperparameter(
-                    type="float", name="alpha_1", low=1e-10, high=1e-3, log=True
-                ),
-                Hyperparameter(
-                    type="float", name="alpha_2", low=1e-10, high=1e-3, log=True
-                ),
-                Hyperparameter(
-                    type="float", name="lambda_1", low=1e-10, high=1e-3, log=True
-                ),
-                Hyperparameter(
-                    type="float", name="lambda_2", low=1e-10, high=1e-3, log=True
-                ),
-                Hyperparameter(
-                    type="float", name="threshold_lambda", low=1e3, high=1e5, log=True
-                ),
+                Hyperparameter(type="float", name="alpha_1", low=1e-10, high=1e-3, log=True),
+                Hyperparameter(type="float", name="alpha_2", low=1e-10, high=1e-3, log=True),
+                Hyperparameter(type="float", name="lambda_1", low=1e-10, high=1e-3, log=True),
+                Hyperparameter(type="float", name="lambda_2", low=1e-10, high=1e-3, log=True),
+                Hyperparameter(type="float", name="threshold_lambda", low=1e3, high=1e5, log=True),
                 Hyperparameter(type="float", name="tol", low=1e-5, high=1e-1, log=True),
                 Hyperparameter(type="fixed", name="fit_intercept", value=True),
             ],
@@ -66,9 +56,7 @@ class CatBoostRegressorModel:
             ml_type="regression",
             feature_method="internal",
             hyperparameters=[
-                Hyperparameter(
-                    type="float", name="learning_rate", low=1e-3, high=1e-1, log=True
-                ),
+                Hyperparameter(type="float", name="learning_rate", low=1e-3, high=1e-1, log=True),
                 Hyperparameter(type="int", name="depth", low=3, high=10),
                 Hyperparameter(type="float", name="l2_leaf_reg", low=2, high=10),
                 Hyperparameter(type="float", name="random_strength", low=2, high=10),
@@ -95,13 +83,9 @@ class ElasticNetRegressorModel:
             ml_type="regression",
             feature_method="shap",
             hyperparameters=[
-                Hyperparameter(
-                    type="float", name="alpha", low=1e-10, high=1e2, log=True
-                ),
+                Hyperparameter(type="float", name="alpha", low=1e-10, high=1e2, log=True),
                 Hyperparameter(type="float", name="l1_ratio", low=0, high=1, log=False),
-                Hyperparameter(
-                    type="categorical", name="fit_intercept", choices=[True, False]
-                ),
+                Hyperparameter(type="categorical", name="fit_intercept", choices=[True, False]),
                 Hyperparameter(type="float", name="tol", low=1e-5, high=1e-1, log=True),
                 Hyperparameter(type="fixed", name="max_iter", value=4000),
                 Hyperparameter(type="fixed", name="selection", value="random"),
@@ -127,9 +111,7 @@ class ExtraTreesRegressorModel:
                 Hyperparameter(type="int", name="max_depth", low=2, high=32),
                 Hyperparameter(type="int", name="min_samples_split", low=2, high=100),
                 Hyperparameter(type="int", name="min_samples_leaf", low=1, high=50),
-                Hyperparameter(
-                    type="int", name="n_estimators", low=100, high=500, log=False
-                ),
+                Hyperparameter(type="int", name="n_estimators", low=100, high=500, log=False),
                 Hyperparameter(type="float", name="max_features", low=0.1, high=1),
             ],
             n_jobs="n_jobs",
@@ -156,15 +138,9 @@ class GaussianProcessRegressorModel:
                     name="kernel",
                     choices=["RBF", "Matern", "RationalQuadratic"],
                 ),
-                Hyperparameter(
-                    type="float", name="alpha", low=1e-10, high=1e-1, log=True
-                ),
-                Hyperparameter(
-                    type="float", name="alpha", low=1e-10, high=1e-1, log=True
-                ),
-                Hyperparameter(
-                    type="categorical", name="normalize_y", choices=[True, False]
-                ),
+                Hyperparameter(type="float", name="alpha", low=1e-10, high=1e-1, log=True),
+                Hyperparameter(type="float", name="alpha", low=1e-10, high=1e-1, log=True),
+                Hyperparameter(type="categorical", name="normalize_y", choices=[True, False]),
                 Hyperparameter(
                     type="categorical",
                     name="optimizer",
@@ -196,9 +172,7 @@ class GradientBoostingRegressorModel:
             ml_type="regression",
             feature_method="internal",
             hyperparameters=[
-                Hyperparameter(
-                    type="float", name="learning_rate", low=0.01, high=1, log=True
-                ),
+                Hyperparameter(type="float", name="learning_rate", low=0.01, high=1, log=True),
                 Hyperparameter(type="int", name="min_samples_leaf", low=1, high=200),
                 Hyperparameter(type="int", name="max_leaf_nodes", low=3, high=2047),
                 Hyperparameter(type="int", name="max_depth", low=3, high=9, step=2),
@@ -248,12 +222,8 @@ class RidgeRegressorModel:
             ml_type="regression",
             feature_method="shap",
             hyperparameters=[
-                Hyperparameter(
-                    type="float", name="alpha", low=1e-5, high=1e5, log=True
-                ),
-                Hyperparameter(
-                    type="categorical", name="fit_intercept", choices=[True, False]
-                ),
+                Hyperparameter(type="float", name="alpha", low=1e-5, high=1e5, log=True),
+                Hyperparameter(type="categorical", name="fit_intercept", choices=[True, False]),
                 Hyperparameter(type="fixed", name="solver", value="svd"),
             ],
             n_jobs=None,
@@ -275,12 +245,8 @@ class SvrRegressorModel:
             feature_method="permutation",
             n_repeats=2,
             hyperparameters=[
-                Hyperparameter(
-                    type="float", name="C", low=0.03125, high=32768, log=True
-                ),
-                Hyperparameter(
-                    type="float", name="epsilon", low=0.001, high=1, log=True
-                ),
+                Hyperparameter(type="float", name="C", low=0.03125, high=32768, log=True),
+                Hyperparameter(type="float", name="epsilon", low=0.001, high=1, log=True),
                 Hyperparameter(type="float", name="tol", low=1e-5, high=1e-1, log=True),
             ],
             n_jobs=None,
@@ -295,7 +261,7 @@ class TabPFNRegressorModel:
     @staticmethod
     def get_model_config():
         """Get model config."""
-        from octopus._optional.tabpfn import TabPFNRegressor
+        from octopus._optional.tabpfn import TabPFNRegressor  # noqa: PLC0415
 
         return ModelConfig(
             name="TabPFNRegressor",
@@ -307,16 +273,10 @@ class TabPFNRegressorModel:
                 Hyperparameter(type="fixed", name="n_estimators", value=4),
                 Hyperparameter(type="fixed", name="softmax_temperature", value=0.9),
                 Hyperparameter(type="fixed", name="balance_probabilities", value=True),
-                Hyperparameter(
-                    type="fixed", name="average_before_softmax", value=False
-                ),
+                Hyperparameter(type="fixed", name="average_before_softmax", value=False),
                 Hyperparameter(type="fixed", name="device", value="cpu"),
-                Hyperparameter(
-                    type="fixed", name="ignore_pretraining_limits", value=False
-                ),
-                Hyperparameter(
-                    type="fixed", name="fit_mode", value="fit_preprocessors"
-                ),
+                Hyperparameter(type="fixed", name="ignore_pretraining_limits", value=False),
+                Hyperparameter(type="fixed", name="fit_mode", value="fit_preprocessors"),
                 Hyperparameter(type="fixed", name="memory_saving_mode", value="auto"),
             ],
             n_jobs="n_jobs",
@@ -337,9 +297,7 @@ class XGBRegressorModel:
             ml_type="regression",
             feature_method="internal",
             hyperparameters=[
-                Hyperparameter(
-                    type="float", name="learning_rate", low=1e-4, high=0.3, log=True
-                ),
+                Hyperparameter(type="float", name="learning_rate", low=1e-4, high=0.3, log=True),
                 Hyperparameter(type="int", name="min_child_weight", low=2, high=15),
                 Hyperparameter(type="float", name="subsample", low=0.15, high=1.0),
                 Hyperparameter(type="int", name="n_estimators", low=30, high=500),

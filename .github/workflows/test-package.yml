@@ -34,7 +34,7 @@ jobs:
         
     - name: Test with pytest
       run: |
-        pytest --cov=octopus --ignore=tests/workflows
+        pytest --cov=octopus
 
     - name: Run example scripts
       run: |

@@ -46,3 +46,6 @@ htmlcov
 *.db
 *.db-journal
 *.json
+
+.env*
+env*

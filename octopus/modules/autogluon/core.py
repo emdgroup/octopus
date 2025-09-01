@@ -34,9 +34,7 @@ logger = get_logger()
 class AGCore:
     """Autogluon."""
 
-    experiment: OctoExperiment = field(
-        validator=[validators.instance_of(OctoExperiment)]
-    )
+    experiment: OctoExperiment = field(validator=[validators.instance_of(OctoExperiment)])
     model = field(init=False)
     num_cpus = field(init=False)
 
@@ -58,9 +56,7 @@ class AGCore:
     @property
     def y_traindev(self) -> pd.DataFrame:
         """y_train."""
-        return self.experiment.data_traindev[
-            self.experiment.target_assignments.values()
-        ]
+        return self.experiment.data_traindev[self.experiment.target_assignments.values()]
 
     @property
     def x_test(self) -> pd.DataFrame:
@@ -125,15 +121,9 @@ class AGCore:
         if self.experiment.ml_config.num_cpus == "auto":
             self.num_cpus = self.experiment.num_assigned_cpus
         else:
-            self.num_cpus = min(
-                self.experiment.num_assigned_cpus, self.experiment.ml_config.num_cpus
-            )
+            self.num_cpus = min(self.experiment.num_assigned_cpus, self.experiment.ml_config.num_cpus)
 
-        logger.info(
-            f"Resource allocation | CPUs | "
-            f"Available: {self.experiment.num_assigned_cpus} | "
-            f"Requested: {self.experiment.ml_config.num_cpus}"
-        )
+        logger.info(f"Resource allocation | CPUs | Available: {self.experiment.num_assigned_cpus} | Requested: {self.experiment.ml_config.num_cpus}")
         logger.info(
             f"""CPU Resources | \
         Available: {self.experiment.num_assigned_cpus} | \
@@ -143,7 +133,7 @@ class AGCore:
 
     def run_experiment(self):
         """Run experiment."""
-        from octopus._optional.autogluon import (
+        from octopus._optional.autogluon import (  # noqa: PLC0415
             TabularPredictor,
             accuracy,
             balanced_accuracy,
@@ -171,9 +161,7 @@ class AGCore:
         if len(self.target_assignments) == 1:
             target = next(iter(self.target_assignments.values()))
         else:
-            raise ValueError(
-                f"Single target expected. Got keys: {self.target_assignments.keys()} "
-            )
+            raise ValueError(f"Single target expected. Got keys: {self.target_assignments.keys()} ")
 
         # set up model and scoring type
         scoring_type = metrics_inventory_autogluon[self.target_metric]
@@ -212,9 +200,7 @@ class AGCore:
         print("fitting completed")
 
         # save failure info in case of crashes
-        with open(
-            self.path_results.joinpath("debug_info.txt"), "w", encoding="utf-8"
-        ) as text_file:
+        with open(self.path_results.joinpath("debug_info.txt"), "w", encoding="utf-8") as text_file:
             print(self.model.model_failures(), file=text_file)
 
         # save leaderboard and model information
@@ -230,9 +216,7 @@ class AGCore:
         # print(model_configs_df)
         model_configs = self.model.info()["model_info"]
         # print(model_info)
-        with open(
-            self.path_results.joinpath("model_configs.txt"), "w", encoding="utf-8"
-        ) as f:
+        with open(self.path_results.joinpath("model_configs.txt"), "w", encoding="utf-8") as f:
             print(model_configs, file=f)
 
         # save results to experiment
@@ -267,40 +251,26 @@ class AGCore:
             silent=True,
         )
         # print(feature_importance)
-        fi["autogluon_permutation_test"].to_csv(
-            self.path_results.joinpath(
-                "autogluon_permutation_feature_importance_test.csv"
-            )
-        )
+        fi["autogluon_permutation_test"].to_csv(self.path_results.joinpath("autogluon_permutation_feature_importance_test.csv"))
         return fi
 
     def _get_scores(self):
         """Get train/dev/test scores."""
         # Evaluate the model on the test set
         test_performance = self.model.evaluate(self.ag_test_data, silent=True)
-        test_performance_with_suffix = {
-            f"{key}_test": value for key, value in test_performance.items()
-        }
+        test_performance_with_suffix = {f"{key}_test": value for key, value in test_performance.items()}
 
         # Extract the best model's validation performance
         leaderboard = self.model.leaderboard(silent=True)
         best_model_info = leaderboard.iloc[0].to_dict()
-        dev_performance = {
-            key: value
-            for key, value in best_model_info.items()
-            if "val" in key or "score" in key
-        }
-        dev_performance_with_suffix = {
-            f"{key}_dev": value for key, value in dev_performance.items()
-        }
+        dev_performance = {key: value for key, value in best_model_info.items() if "val" in key or "score" in key}
+        dev_performance_with_suffix = {f"{key}_dev": value for key, value in dev_performance.items()}
 
         # Evaluate the model on the training set to get training performance
         train_performance = self.model.evaluate(self.ag_train_data, silent=True)
 
         # Modify the keys to add "_train" suffix for training performance
-        train_performance_with_suffix = {
-            f"{key}_train": value for key, value in train_performance.items()
-        }
+        train_performance_with_suffix = {f"{key}_train": value for key, value in train_performance.items()}
 
         # test scores calculated by octo method, for comparison
         all_metrics = list(dict.fromkeys(self.metrics + [self.target_metric]))
@@ -358,18 +328,14 @@ class AGCore:
 
         # save model info
         model_info = self.model.info()
-        with open(
-            self.path_results.joinpath("model_info.json"), "w", encoding="utf-8"
-        ) as f:
+        with open(self.path_results.joinpath("model_info.json"), "w", encoding="utf-8") as f:
             json.dump(model_info, f, default=str, indent=4)
 
         # show and save model summary
         fit_summary = self.model.fit_summary(
             # show_plot=True
         )
-        with open(
-            self.path_results.joinpath("model_stats.txt"), "w", encoding="utf-8"
-        ) as text_file:
+        with open(self.path_results.joinpath("model_stats.txt"), "w", encoding="utf-8") as text_file:
             print(fit_summary, file=text_file)
 
     def _get_predictions(self):
@@ -407,9 +373,7 @@ class AGCore:
 
         # (B) validation predictions
         # DataFrame with 'row_id' from validation data
-        rowid_val = pd.DataFrame(
-            {row_column: self.experiment.data_traindev[row_column]}
-        )
+        rowid_val = pd.DataFrame({row_column: self.experiment.data_traindev[row_column]})
 
         if problem_type == "regression":
             # Out-of-fold (OOF) predictions for regression

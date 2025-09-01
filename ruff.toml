@@ -1,4 +1,4 @@
-line-length = 88 # Maximum line length
+line-length = 150 # Maximum line length
 
 [lint.per-file-ignores]
 "examples/*" = [ 
@@ -8,7 +8,10 @@ line-length = 88 # Maximum line length
         "E501",
         # Missing module docstrings
         "D100",
-        "PLR1711"
+        "PLR1711",
+        #  module-import-not-at-top-of-file
+        "E402",
+        "PLC0415"
 ]
 
 [lint]

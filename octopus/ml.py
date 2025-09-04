@@ -158,7 +158,7 @@ class OctoML:
         if path_study.exists():
             if not self.configs.study.silently_overwrite_study:
                 confirmation = input(
-                    "Study exists, do you want to continue (resume)? (yes/no): "
+                    "Study exists, do you want to continue? (yes/no): "
                 )
                 if confirmation.strip().lower() != "yes":
                     print("Exiting...")
@@ -166,7 +166,10 @@ class OctoML:
                 print("Continuing...")
 
             if self.configs.study.start_with_empty_study:
+                print("Overwriting existing study....")
                 shutil.rmtree(path_study)
+            else:
+                print("Resume existing study....")
 
     def _create_folders(self, path_study: Path) -> None:
         """Create study folder and subdirectories.
@@ -249,12 +252,12 @@ class OctoML:
             )
 
         # Assert that there are no NaNs in the imputed data
-        assert not imputed_train_df[feature_columns].isna().any().any(), (
-            "NaNs present in imputed train_df"
-        )
-        assert not imputed_test_df[feature_columns].isna().any().any(), (
-            "NaNs present in imputed test_df"
-        )
+        assert (
+            not imputed_train_df[feature_columns].isna().any().any()
+        ), "NaNs present in imputed train_df"
+        assert (
+            not imputed_test_df[feature_columns].isna().any().any()
+        ), "NaNs present in imputed test_df"
 
         return imputed_train_df, imputed_test_df
 

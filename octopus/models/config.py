@@ -23,7 +23,7 @@ def validate_hyperparameters(
     Raises:
         ValueError: If any hyperparameter's name matches n_jobs or model_seed.
     """
-    forbidden_names = {instance.n_jobs, instance.model_seed}
+    forbidden_names = {"n_jobs", "model_seed"}
 
     for hyperparameter in value:
         if hyperparameter.name in forbidden_names:

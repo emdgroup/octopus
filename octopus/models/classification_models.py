@@ -145,20 +145,23 @@ class CatBoostClassifierModel:
             feature_method="internal",
             hyperparameters=[
                 Hyperparameter(
-                    type="float", name="learning_rate", low=1e-3, high=1e-1, log=True
+                    type="float", name="learning_rate", low=1e-2, high=1e-1, log=True
                 ),
                 Hyperparameter(type="int", name="depth", low=3, high=10),
                 Hyperparameter(type="float", name="l2_leaf_reg", low=2, high=10),
                 Hyperparameter(type="float", name="random_strength", low=2, high=10),
                 Hyperparameter(type="float", name="rsm", low=0.1, high=1),
-                Hyperparameter(type="fixed", name="iterations", value=500),
+                Hyperparameter(type="fixed", name="iterations", value=1000),
                 Hyperparameter(
                     type="categorical",
                     name="auto_class_weights",
                     choices=[None, "Balanced"],
                 ),
                 Hyperparameter(type="fixed", name="allow_writing_files", value=False),
-                Hyperparameter(type="fixed", name="verbose", value=250),
+                # Hyperparameter(type="fixed", name="verbose", value=250),
+                Hyperparameter(type="fixed", name="logging_level", value="Silent"),
+                Hyperparameter(type="fixed", name="thread_count", value=1),
+                Hyperparameter(type="fixed", name="task_type", value="CPU"),
             ],
             n_jobs="thread_count",
             model_seed="random_state",

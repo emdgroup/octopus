@@ -1,3 +1,7 @@
+# local directories
+datasets_local/
+studies/
+
 # macOS
 .DS_Store
 
@@ -40,4 +44,5 @@ htmlcov
 *.parquet
 *.csv
 *.db
+*.db-journal
 *.json

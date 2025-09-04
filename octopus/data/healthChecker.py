@@ -55,7 +55,7 @@ class OctoDataHealthChecker:
         self._check_duplicated_rows()
         self._check_infinity_values()
         self._check_string_mismatch()
-        self._check_string_out_of_bounds()
+        # self._check_string_out_of_bounds() # see issue#60
 
         return pd.DataFrame(self.issues)
 

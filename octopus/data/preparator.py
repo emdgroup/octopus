@@ -47,7 +47,7 @@ class OctoDataPreparator:
         self._remove_singlevalue_features()
         self._transform_bool_to_int()
         self._create_row_id()
-        self._add_group_features()  # needs to be done at the end
+        # self._add_group_features() # see issue57 # needs to be done at the end
         return self.data, self.feature_columns, self.row_id, self.target_assignments
 
     def _sort_features(self):
@@ -161,8 +161,7 @@ class OctoDataPreparator:
                     ).index.min(),
                     axis=1,
                 )
-            )
-            .reset_index(drop=True)
+            ).reset_index(drop=True)
         )
         logger.info("Added `group_feaures` and `group_sample_features`")
 

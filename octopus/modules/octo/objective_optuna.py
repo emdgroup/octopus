@@ -61,17 +61,13 @@ class ObjectiveOptuna:
         # get non-model parameters
         # (1) dimension reduction
         if len(self.dim_red_methods) > 1:
-            dim_reduction = trial.suggest_categorical(
-                name="dim_red_method", choices=self.dim_red_methods
-            )
+            dim_reduction = trial.suggest_categorical(name="dim_red_method", choices=self.dim_red_methods)
         else:
             dim_reduction = self.dim_red_methods[0]
 
         # (2) ml_model_type
         if len(self.ml_model_types) > 1:
-            ml_model_type = trial.suggest_categorical(
-                name="ml_model_type", choices=self.ml_model_types
-            )
+            ml_model_type = trial.suggest_categorical(name="ml_model_type", choices=self.ml_model_types)
         else:
             ml_model_type = self.ml_model_types[0]
 
@@ -83,9 +79,7 @@ class ObjectiveOptuna:
 
         # (4) selected mrmr features
         if self.mrmr_features:
-            feat_id = trial.suggest_categorical(
-                name="n_mrmr_features", choices=list(self.mrmr_features.keys())
-            )
+            feat_id = trial.suggest_categorical(name="n_mrmr_features", choices=list(self.mrmr_features.keys()))
             feature_columns = self.mrmr_features[feat_id]
         else:
             feature_columns = self.experiment.feature_columns
@@ -168,7 +162,8 @@ class ObjectiveOptuna:
         self._log_trial_scores(self.experiment, scores)
 
         # define optuna target
-        optuna_target = scores["dev_avg"]
+        # optuna_target = scores["dev_avg"]
+        optuna_target = scores["dev_pool_soft"]
 
         # adjust direction, optuna in octofull always minimizes
         target_metric = self.experiment.configs.study.target_metric
@@ -181,9 +176,7 @@ class ObjectiveOptuna:
             # only consider if n_features_mean > max_features
             diff_nfeatures = max(diff_nfeatures, 0)
             n_features = len(self.experiment.feature_columns)
-            optuna_target = (
-                optuna_target + self.penalty_factor * diff_nfeatures / n_features
-            )
+            optuna_target = optuna_target + self.penalty_factor * diff_nfeatures / n_features
 
         # save bag if we plan to run ensemble selection
         if self.ensel:
@@ -216,13 +209,9 @@ class ObjectiveOptuna:
                 raise FileNotFoundError("Problem deleting trial-pkl file")
 
     def _log_trial_scores(self, experiment, scores):
-        logger.set_log_group(
-            LogGroup.SCORES, f"EXP {self.experiment.experiment_id} SQE TBD"
-        )
+        logger.set_log_group(LogGroup.SCORES, f"EXP {self.experiment.experiment_id} SQE TBD")
         # Log the target metric
-        logger.info(
-            f"Trial scores for metric: {experiment.configs.study.target_metric}"
-        )
+        logger.info(f"Trial scores for metric: {experiment.configs.study.target_metric}")
 
         # Separate list and non-list values
         list_items = {}
@@ -235,9 +224,7 @@ class ObjectiveOptuna:
                 non_list_items[key] = value
 
         # Log non-list items in one message with | as a divider
-        non_list_message = " | ".join(
-            [f"{key}: {value:.3f}" for key, value in non_list_items.items()]
-        )
+        non_list_message = " | ".join([f"{key}: {value:.3f}" for key, value in non_list_items.items()])
         logger.info(f"Scores: {non_list_message}")
 
         # Log list items individually

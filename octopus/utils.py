@@ -68,16 +68,11 @@ class DataSplit:
         random.seed(datasplit_seed)
         np.random.seed(datasplit_seed)
 
-        dataset_unique = self.dataset.drop_duplicates(
-            subset=self.datasplit_col, keep="first", inplace=False
-        )
+        dataset_unique = self.dataset.drop_duplicates(subset=self.datasplit_col, keep="first", inplace=False)
         dataset_unique.reset_index(drop=True, inplace=True)
 
         logger.info("Analyzing dataset structure")
-        logger.info(
-            "Number of unique groups (as in column: "
-            f"{self.datasplit_col}): {len(dataset_unique)}"
-        )
+        logger.info(f"Number of unique groups (as in column: {self.datasplit_col}): {len(dataset_unique)}")
         logger.info(f"Number of rows in dataset: {len(self.dataset)}")
 
         if self.stratification_col:
@@ -89,12 +84,8 @@ class DataSplit:
             )
 
             if dataset_unique[self.stratification_col].dtype.kind not in "iub":
-                logger.error(
-                    "Stratification column is of wrong type (expected: bool, int)"
-                )
-                raise ValueError(
-                    "Stratification column is of wrong type (expected: bool, int)"
-                )
+                logger.error("Stratification column is of wrong type (expected: bool, int)")
+                raise ValueError("Stratification column is of wrong type (expected: bool, int)")
 
             stratification_target = dataset_unique[self.stratification_col].astype(int)
         else:
@@ -112,23 +103,15 @@ class DataSplit:
         logger.info(f"Setting number of splits: {self.num_folds}")
         logger.info("Generating splits...")
 
-        for num_split, (train_ind, test_ind) in enumerate(
-            kf.split(dataset_unique, stratification_target)
-        ):
+        for num_split, (train_ind, test_ind) in enumerate(kf.split(dataset_unique, stratification_target)):
             groups_train = set(dataset_unique.iloc[train_ind][self.datasplit_col])
             groups_test = set(dataset_unique.iloc[test_ind][self.datasplit_col])
             assert groups_train.intersection(groups_test) == set()
             all_test_groups.extend(list(groups_test))
 
-            partition_train = self.dataset[
-                self.dataset[self.datasplit_col].isin(groups_train)
-            ]
-            partition_test = self.dataset[
-                self.dataset[self.datasplit_col].isin(groups_test)
-            ]
-            assert (
-                set(partition_train.index).intersection(partition_test.index) == set()
-            )
+            partition_train = self.dataset[self.dataset[self.datasplit_col].isin(groups_train)]
+            partition_test = self.dataset[self.dataset[self.datasplit_col].isin(groups_test)]
+            assert set(partition_train.index).intersection(partition_test.index) == set()
             all_test_indices.extend(partition_test.index.tolist())
 
             partition_train.reset_index(drop=True, inplace=True)
@@ -157,14 +140,7 @@ class DataSplit:
             }
 
         assert len(all_test_groups) == len(set(all_test_groups))
-        assert (
-            len(
-                set(self.dataset[self.datasplit_col]).symmetric_difference(
-                    set(all_test_groups)
-                )
-            )
-            == 0
-        )
+        assert len(set(self.dataset[self.datasplit_col]).symmetric_difference(set(all_test_groups))) == 0
         assert len(all_test_indices) == len(set(all_test_indices))
         assert len(self.dataset) == len(all_test_indices)
 

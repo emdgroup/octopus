@@ -64,9 +64,7 @@ def octo_config():
             )
         ]
     )
-    return OctoConfig(
-        study=config_study, manager=ConfigManager(), sequence=config_sequence
-    )
+    return OctoConfig(study=config_study, manager=ConfigManager(), sequence=config_sequence)
 
 
 @pytest.fixture
@@ -92,9 +90,7 @@ def test_feature_groups_structure(mock_octo_experiment):
     """Test structure of groups."""
     feature_groups = mock_octo_experiment.feature_groups
     assert isinstance(feature_groups, dict), "feature_groups should be a dictionary"
-    assert len(feature_groups) >= 3, (
-        f"Expected at least 3 groups, but got {len(feature_groups)}"
-    )
+    assert len(feature_groups) >= 3, f"Expected at least 3 groups, but got {len(feature_groups)}"
 
 
 def test_correlated_features_grouping(mock_octo_experiment):
@@ -131,20 +127,14 @@ def test_uncorrelated_features(mock_octo_experiment):
     uncorrelated_feature = "x7"
     for group in feature_groups.values():
         if len(group) > 1:
-            assert (
-                uncorrelated_feature not in group
-            ), f"""Uncorrelated feature {uncorrelated_feature}
+            assert uncorrelated_feature not in group, f"""Uncorrelated feature {uncorrelated_feature}
                 should not be in group {group}"""
 
 
 def test_correlation_thresholds(mock_octo_experiment):
     """Test correlation thresholds."""
     feature_groups = mock_octo_experiment.feature_groups
-    correlation_matrix = (
-        mock_octo_experiment.data_traindev[mock_octo_experiment.feature_columns]
-        .corr(method="spearman")
-        .abs()
-    )
+    correlation_matrix = mock_octo_experiment.data_traindev[mock_octo_experiment.feature_columns].corr(method="spearman").abs()
 
     for group_name, group in feature_groups.items():
         if len(group) > 1:
@@ -152,19 +142,13 @@ def test_correlation_thresholds(mock_octo_experiment):
             min_corr = group_corr.values[np.triu_indices_from(group_corr, k=1)].min()
 
             if "0.9" in group_name:
-                assert (
-                    min_corr >= 0.9
-                ), f"""Minimum correlation in group {group_name} is {min_corr},
+                assert min_corr >= 0.9, f"""Minimum correlation in group {group_name} is {min_corr},
                     which is below the threshold of 0.9"""
             elif "0.8" in group_name:
-                assert (
-                    min_corr >= 0.8
-                ), f"""Minimum correlation in group {group_name} is {min_corr},
+                assert min_corr >= 0.8, f"""Minimum correlation in group {group_name} is {min_corr},
                     which is below the threshold of 0.8"""
             elif "0.7" in group_name:
-                assert (
-                    min_corr >= 0.7
-                ), f"""Minimum correlation in group {group_name} is {min_corr},
+                assert min_corr >= 0.7, f"""Minimum correlation in group {group_name} is {min_corr},
                       which is below the threshold of 0.7"""
 
 

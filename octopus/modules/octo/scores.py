@@ -33,9 +33,7 @@ def add_pooling_scores(pool, scores, target_metric, target_assignments, threshol
         else:
             for part in pool.keys():
                 target_col = list(target_assignments.values())[0]
-                probabilities = (pool[part][1] >= threshold).astype(
-                    int
-                )  # binary only!!
+                probabilities = (pool[part][1] >= threshold).astype(int)  # binary only!!
                 predictions = (pool[part]["prediction"] >= threshold).astype(int)
                 target = pool[part][target_col]
                 scores[part + "_pool_soft"] = metric_function(target, probabilities)

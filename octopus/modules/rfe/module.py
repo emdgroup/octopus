@@ -23,9 +23,7 @@ class Rfe(BaseSequenceItem):
     step: int = field(validator=[validators.instance_of(int)], default=1)
     """Number of features to remove at each iteration."""
 
-    min_features_to_select: int = field(
-        validator=[validators.instance_of(int)], default=1
-    )
+    min_features_to_select: int = field(validator=[validators.instance_of(int)], default=1)
     """Minimum number of features to be selected."""
 
     cv: int = field(validator=[validators.instance_of(int)], default=5)

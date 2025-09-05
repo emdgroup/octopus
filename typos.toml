@@ -1,2 +1,4 @@
 [default.extend-words]
 strat = "strat"
+TPE = "TPE"
+TPESampler = "TPESampler"

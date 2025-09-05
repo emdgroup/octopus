@@ -67,9 +67,7 @@ class CustomFormatter(logging.Formatter):
         if record.process_id is None:
             self._style._fmt = "%(asctime)s | %(levelname)s | %(group)s | %(message)s"
         else:
-            self._style._fmt = (
-                "%(asctime)s | %(levelname)s | %(group)s | %(process_id)s | %(message)s"
-            )
+            self._style._fmt = "%(asctime)s | %(levelname)s | %(group)s | %(process_id)s | %(message)s"
         return super().format(record)
 
 

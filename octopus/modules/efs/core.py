@@ -93,9 +93,7 @@ def get_param_grid(model_type):
 class EfsCore:
     """EFS Module."""
 
-    experiment: OctoExperiment = field(
-        validator=[validators.instance_of(OctoExperiment)]
-    )
+    experiment: OctoExperiment = field(validator=[validators.instance_of(OctoExperiment)])
 
     model_table: pd.DataFrame = field(
         init=False,
@@ -107,9 +105,7 @@ class EfsCore:
         default=pd.DataFrame(),
         validator=[validators.instance_of(pd.DataFrame)],
     )
-    optimized_ensemble: dict = field(
-        default=Factory(dict), validator=[validators.instance_of(dict)]
-    )
+    optimized_ensemble: dict = field(default=Factory(dict), validator=[validators.instance_of(dict)])
 
     @property
     def path_module(self) -> Path:
@@ -139,9 +135,7 @@ class EfsCore:
     @property
     def y_traindev(self) -> pd.DataFrame:
         """y_traindev."""
-        return self.experiment.data_traindev[
-            self.experiment.target_assignments.values()
-        ]
+        return self.experiment.data_traindev[self.experiment.target_assignments.values()]
 
     @property
     def x_test(self) -> pd.DataFrame:
@@ -324,46 +318,29 @@ class EfsCore:
             if self.ml_type == "classification":
                 cv_preds_df = pd.DataFrame()
                 cv_preds_df[self.row_column] = row_ids
-                cv_preds_df["predictions"] = cross_val_predict(
-                    best_model, x, y, cv=cv, method="predict"
-                )
-                cv_preds_df["probabilities"] = cross_val_predict(
-                    best_model, x, y, cv=cv, method="predict_proba"
-                )[:, 1]  # binary only
+                cv_preds_df["predictions"] = cross_val_predict(best_model, x, y, cv=cv, method="predict")
+                cv_preds_df["probabilities"] = cross_val_predict(best_model, x, y, cv=cv, method="predict_proba")[:, 1]  # binary only
             elif self.ml_type == "regression":
                 cv_preds_df = pd.DataFrame()
                 cv_preds_df[self.row_column] = row_ids
-                cv_preds_df["predictions"] = cross_val_predict(
-                    best_model, x, y, cv=cv, method="predict"
-                )
+                cv_preds_df["predictions"] = cross_val_predict(best_model, x, y, cv=cv, method="predict")
                 cv_preds_df["probabilities"] = np.nan
 
             # actual used features
             feature_importances = best_model.feature_importances_
-            feature_importance_df = pd.DataFrame(
-                {"feature": subset, "importance": feature_importances}
-            )
+            feature_importance_df = pd.DataFrame({"feature": subset, "importance": feature_importances})
 
             # ensemble metric
             metric_function = metrics_inventory.get_metric_function(self.target_metric)
             if self.metric_input == "probabilities":
-                best_ensel_performance = metric_function(
-                    y, cv_preds_df["probabilities"]
-                )
+                best_ensel_performance = metric_function(y, cv_preds_df["probabilities"])
             else:
                 best_ensel_performance = metric_function(y, cv_preds_df["predictions"])
-            print(
-                f"Subset {i}, best ensemble performance: {best_ensel_performance:.4f}"
-            )
+            print(f"Subset {i}, best ensemble performance: {best_ensel_performance:.4f}")
 
             # Select features with non-zero importance
-            used_features = feature_importance_df[
-                feature_importance_df["importance"] != 0
-            ]["feature"].tolist()
-            print(
-                f"Number of input features: {len(subset)}, "
-                f"n_used_features: {len(used_features)}"
-            )
+            used_features = feature_importance_df[feature_importance_df["importance"] != 0]["feature"].tolist()
+            print(f"Number of input features: {len(subset)}, n_used_features: {len(used_features)}")
             print()
 
             # store results
@@ -387,9 +364,7 @@ class EfsCore:
         else:
             ascending = True
 
-        self.model_table = self.model_table.sort_values(
-            by="performance", ascending=ascending
-        ).reset_index(drop=True)
+        self.model_table = self.model_table.sort_values(by="performance", ascending=ascending).reset_index(drop=True)
 
     def _ensemble_models(self, model_ids):
         """Ensemble predictions of models in model_table."""
@@ -398,9 +373,7 @@ class EfsCore:
         # Extract the DataFrames from the "predict_df" column
         df_lst = filtered_df["predict_df"].tolist()
         # Concatenate all the extracted DataFrames into a single DataFrame
-        groupby_df = (
-            pd.concat(df_lst, ignore_index=True).groupby(by=self.row_column).mean()
-        )
+        groupby_df = pd.concat(df_lst, ignore_index=True).groupby(by=self.row_column).mean()
 
         # print("-----------------------------------")
         # print("groupby_df", groupby_df.head(20)["predictions"])
@@ -444,25 +417,14 @@ class EfsCore:
             ]
 
         if self.direction == "maximize":
-            n_best_models = self.scan_table.loc[
-                self.scan_table["performance"].idxmax()
-            ]["#models"]
-            best_performance = self.scan_table.loc[
-                self.scan_table["performance"].idxmax()
-            ]["performance"]
+            n_best_models = self.scan_table.loc[self.scan_table["performance"].idxmax()]["#models"]
+            best_performance = self.scan_table.loc[self.scan_table["performance"].idxmax()]["performance"]
         else:  # minimize
-            n_best_models = self.scan_table.loc[
-                self.scan_table["performance"].idxmin()
-            ]["#models"]
-            best_performance = self.scan_table.loc[
-                self.scan_table["performance"].idxmin()
-            ]["performance"]
+            n_best_models = self.scan_table.loc[self.scan_table["performance"].idxmin()]["#models"]
+            best_performance = self.scan_table.loc[self.scan_table["performance"].idxmin()]["performance"]
         self.scan_table["#models"] = self.scan_table["#models"].astype(int)
         print("Scan table:", self.scan_table)
-        print(
-            f"Best performance: {best_performance} with base model "
-            f"and {n_best_models} additional models"
-        )
+        print(f"Best performance: {best_performance} with base model and {n_best_models} additional models")
         print()
 
     def _ensemble_optimization(self):
@@ -527,10 +489,7 @@ class EfsCore:
                     break  # stop ensembling
                 else:
                     best_global = best_performance
-                    print(
-                        f"iteration: {i}, performance: {best_performance}, "
-                        f"best model: {best_model}"
-                    )
+                    print(f"iteration: {i}, performance: {best_performance}, best model: {best_model}")
             else:  # minimize
                 best_performance = df["performance"].min()
                 best_rows = df[df["performance"] == best_performance]
@@ -540,10 +499,7 @@ class EfsCore:
                     break  # stop ensembling
                 else:
                     best_global = best_performance
-                    print(
-                        f"iteration: {i}, performance: {best_performance}, "
-                        f"best model: {best_model}"
-                    )
+                    print(f"iteration: {i}, performance: {best_performance}, best model: {best_model}")
 
             # add best model to ensemble
             model_ensemble.append(best_model)
@@ -571,18 +527,14 @@ class EfsCore:
 
         feature_counts = Counter(feature_lst)
         feature_counts_list = list(feature_counts.items())
-        feature_counts_df = pd.DataFrame(
-            feature_counts_list, columns=["feature", "counts"]
-        )
+        feature_counts_df = pd.DataFrame(feature_counts_list, columns=["feature", "counts"])
         # absolute feature counts
         feature_counts_df = feature_counts_df.sort_values(by="counts", ascending=False)
 
         # relative feature counts
         n_models_used = sum(self.optimized_ensemble.values())
         feature_counts_relative_df = feature_counts_df.copy()
-        feature_counts_relative_df["counts"] = (
-            feature_counts_relative_df["counts"] / n_models_used
-        )
+        feature_counts_relative_df["counts"] = feature_counts_relative_df["counts"] / n_models_used
 
         print(feature_counts_df.head(50))
         print(feature_counts_relative_df.head(50))

@@ -1,14 +1,12 @@
 """Octopus prediction."""
 
 # import itertools
-import math
+
 import warnings
 from pathlib import Path
 
 import matplotlib.pyplot as plt
-import numpy as np
 import pandas as pd
-import scipy.stats
 import shap
 from attrs import Factory, define, field, validators
 from joblib import Parallel, delayed
@@ -16,7 +14,12 @@ from matplotlib.backends.backend_pdf import PdfPages
 
 from octopus import OctoData
 from octopus.experiment import OctoExperiment
-from octopus.modules.utils import get_performance_score
+from octopus.modules.utils import (
+    get_fi_group_permutation,
+    get_fi_group_shap,
+    get_fi_permutation,
+    get_fi_shap,
+)
 
 # Suppress specific sklearn warning
 warnings.filterwarnings(
@@ -50,9 +53,7 @@ class OctoPredict:
     experiments: dict = field(init=False, validator=[validators.instance_of(dict)])
     """Dictionary containing model and corresponding test_dataset."""
 
-    results: dict = field(
-        default=Factory(dict), validator=[validators.instance_of(dict)]
-    )
+    results: dict = field(default=Factory(dict), validator=[validators.instance_of(dict)])
     """Results."""
 
     @property
@@ -91,8 +92,7 @@ class OctoPredict:
                 # check if results_key exists
                 if self.results_key not in experiment.results:
                     raise ValueError(
-                        f"Specified results key not found: {self.results_key}. "
-                        f"Available results keys: {list(experiment.results.keys())}"
+                        f"Specified results key not found: {self.results_key}. Available results keys: {list(experiment.results.keys())}"
                     )
 
                 experiments[experiment_id] = {
@@ -149,9 +149,7 @@ class OctoPredict:
             else:
                 raise ValueError("Features missing in provided dataset.")
 
-        grouped_df = (
-            pd.concat(preds_lst, axis=0).groupby("row_id").agg(["mean", "std", "count"])
-        )
+        grouped_df = pd.concat(preds_lst, axis=0).groupby("row_id").agg(["mean", "std", "count"])
         if return_df is True:
             return grouped_df
         else:
@@ -193,9 +191,7 @@ class OctoPredict:
             df = pd.DataFrame(columns=["row_id", "probability"])
             df["row_id"] = data_test[row_column]
             # only binary classification!!
-            df["probability"] = experiment["model"].predict_proba(
-                data_test[feature_columns]
-            )[:, 1]
+            df["probability"] = experiment["model"].predict_proba(data_test[feature_columns])[:, 1]
             preds_lst.append(df)
 
         grouped_df = (
@@ -226,14 +222,19 @@ class OctoPredict:
         for _, experiment in self.experiments.items():
             exp_id = experiment["id"]
             if fi_type == "permutation":
-                results_df = self._get_fi_permutation(experiment, n_repeat, data=data)
+                results_df = get_fi_permutation(experiment, n_repeat, data=data)
                 self.results[f"fi_table_permutation_exp{exp_id}"] = results_df
                 self._plot_permutation_fi(exp_id, results_df)
+            elif fi_type == "group_permutation":
+                results_df = get_fi_group_permutation(experiment, n_repeat, data=data)
+                self.results[f"fi_table_group_permutation_exp{exp_id}"] = results_df
+                self._plot_permutation_fi(exp_id, results_df)
             elif fi_type == "shap":
-                results_df = self._get_fi_shap(
-                    experiment, data=data, shap_type=shap_type
-                )
+                results_df = get_fi_shap(experiment, data=data, shap_type=shap_type)
                 self.results[f"fi_table_shap_exp{exp_id}"] = results_df
+            elif fi_type == "group_shap":
+                results_df = get_fi_group_shap(experiment, data=data, shap_type=shap_type)
+                self.results[f"fi_table_group_shap_exp{exp_id}"] = results_df
             else:
                 raise ValueError("Feature Importance type not supported")
 
@@ -248,9 +249,7 @@ class OctoPredict:
         exp_combined = {
             "id": "_all",
             "model": self,
-            "data_traindev": pd.concat(
-                [experiment["data_traindev"], experiment["data_test"]], axis=0
-            ),
+            "data_traindev": pd.concat([experiment["data_traindev"], experiment["data_test"]], axis=0),
             "feature_columns": list(set(feature_col_lst)),
             # same for all experiments
             "data_test": experiment["data_test"],  # not used
@@ -261,20 +260,27 @@ class OctoPredict:
         }
 
         if fi_type == "permutation":
-            results_df = self._get_fi_permutation(exp_combined, n_repeat, data=data)
+            results_df = get_fi_permutation(exp_combined, n_repeat, data=data)
             self.results["fi_table_permutation_ensemble"] = results_df
             self._plot_permutation_fi(exp_combined["id"], results_df)
+        elif fi_type == "group_permutation":
+            results_df = get_fi_group_permutation(exp_combined, n_repeat, data=data)
+            self.results["fi_table_group_permutation_ensemble"] = results_df
+            self._plot_permutation_fi(exp_combined["id"], results_df)
         elif fi_type == "shap":
-            results_df = self._get_fi_shap(exp_combined, data=data, shap_type=shap_type)
+            results_df = get_fi_shap(exp_combined, data=data, shap_type=shap_type)
             self.results["fi_table_shap_ensemble"] = results_df
+        elif fi_type == "group_shap":
+            results_df = get_fi_group_shap(exp_combined, data=data, shap_type=shap_type)
+            self.results["fi_table_group_shap_ensemble"] = results_df
 
     def calculate_fi_test(
         self,
         n_repeat: int = 10,
         fi_type: str = "group_permutation",
         experiment_id: int = -1,  # Calculate for all experiments
-        shap_type: str = "exact",
-    ) -> None:
+        shap_type: str = "kernel",
+    ) -> pd.DataFrame:
         """Calculate feature importances on available test data."""
         if shap_type not in ["exact", "permutation", "kernel"]:
             raise ValueError("Specified shap_type not supported.")
@@ -282,36 +288,71 @@ class OctoPredict:
         print("Calculating feature importances for every experiment/model.")
 
         # Filter experiments based on experiment_id
-        experiments_to_process = [
-            exp for exp in self.experiments.values() if experiment_id in (-1, exp["id"])
-        ]
+        experiments_to_process = [exp for exp in self.experiments.values() if experiment_id in (-1, exp["id"])]
 
         # Define a helper function for processing an experiment
         def _process_experiment(exp):
             exp_id = exp["id"]
             if fi_type == "permutation":
-                results_df = self._get_fi_permutation(exp, n_repeat, data=None)
+                results_df = get_fi_permutation(exp, n_repeat, data=None)
                 key = f"fi_table_permutation_exp{exp_id}"
                 self._plot_permutation_fi(exp_id, results_df)
             elif fi_type == "group_permutation":
-                results_df = self._get_fi_group_permutation(exp, n_repeat, data=None)
-                key = f"fi_table_grouppermutation_exp{exp_id}"
+                results_df = get_fi_group_permutation(exp, n_repeat, data=None)
+                key = f"fi_table_group_permutation_exp{exp_id}"
                 self._plot_permutation_fi(exp_id, results_df)
             elif fi_type == "shap":
-                results_df = self._get_fi_shap(exp, data=None, shap_type=shap_type)
+                results_df, shap_values, shap_data = get_fi_shap(exp, data=None, shap_type=shap_type)
+                self._plot_shap_fi(exp_id, results_df, shap_values, shap_data)
                 key = f"fi_table_shap_exp{exp_id}"
+            elif fi_type == "group_shap":
+                results_df = get_fi_group_shap(exp, data=None, shap_type=shap_type)
+                key = f"fi_table_group_shap_exp{exp_id}"
             else:
                 raise ValueError("Feature Importance type not supported")
             return key, results_df
 
         # Use joblib to parallelize the processing of experiments
-        results = Parallel(n_jobs=-1)(
-            delayed(_process_experiment)(exp) for exp in experiments_to_process
-        )
+        results = Parallel(n_jobs=-1)(delayed(_process_experiment)(exp) for exp in experiments_to_process)
 
         # Update shared resources in the main thread
         for key, results_df in results:
             self.results[key] = results_df
+
+    def _plot_shap_fi(self, experiment_id, shapfi_df, shap_values, data):
+        """Create plot for shape fi and save to file."""
+        results_path = self.study_path.joinpath(
+            f"experiment{experiment_id}",
+            f"sequence{self.sequence_id}",
+            "results",
+        )
+        # create directories if needed, required for id="all"
+        results_path.parent.mkdir(parents=True, exist_ok=True)
+
+        # (A) Bar plot
+        save_path = results_path.joinpath(
+            f"model_shap_fi_barplot_exp{experiment_id}_{self.sequence_id}.pdf",
+        )
+        with PdfPages(save_path) as pdf:
+            plt.figure(figsize=(8.27, 11.69))  # portrait orientation (A4)
+            shap.summary_plot(shap_values, data, plot_type="bar", show=False)
+            plt.tight_layout()
+            pdf.savefig(plt.gcf(), orientation="portrait")
+            plt.close()
+
+        # (B) Beeswarm plot
+        save_path = results_path.joinpath(
+            f"model_shap_fi_beeswarm_exp{experiment_id}_{self.sequence_id}.pdf",
+        )
+        with PdfPages(save_path) as pdf:
+            plt.figure(figsize=(8.27, 11.69))  # portrait orientation (A4)
+            shap.summary_plot(shap_values, data, plot_type="dot", show=False)
+            plt.tight_layout()
+            pdf.savefig(plt.gcf(), orientation="portrait")
+            plt.close()
+
+        # (C) Save shape feature importance
+        shapfi_df.reset_index()
 
     def _plot_permutation_fi(self, experiment_id, df):
         """Create plot for permutation fi and save to file."""
@@ -352,272 +393,3 @@ class OctoPredict:
 
             pdf.savefig(plt.gcf(), orientation="portrait")
             plt.close()
-
-    def _get_fi_permutation(self, experiment, n_repeat, data) -> pd.DataFrame:
-        """Calculate permutation feature importances."""
-        # fixed confidence level
-        confidence_level = 0.95
-        feature_columns = experiment["feature_columns"]
-        data_traindev = experiment["data_traindev"]
-        data_test = experiment["data_test"]
-        target_assignments = experiment["target_assignments"]
-        target_metric = experiment["target_metric"]
-        model = experiment["model"]
-
-        # support prediction on new data as well as test data
-        if data is None:  # new data
-            data = data_test
-        if not set(feature_columns).issubset(data.columns):
-            raise ValueError("Features missing in provided dataset.")
-
-        # check that targets are in dataset
-        # MISSING
-
-        # calculate baseline score
-        baseline_score = get_performance_score(
-            model, data, feature_columns, target_metric, target_assignments
-        )
-
-        # get all data select random feature values
-        data_all = pd.concat([data_traindev, data], axis=0)
-
-        results_df = pd.DataFrame(
-            columns=[
-                "feature",
-                "importance",
-                "stddev",
-                "p-value",
-                "n",
-                "ci_low_95",
-                "ci_high_95",
-            ]
-        )
-        for feature in feature_columns:
-            data_pfi = data.copy()
-            fi_lst = list()
-
-            for _ in range(n_repeat):
-                # replace column with random selection from that column of data_all
-                # we use data_all as the validation dataset may be small
-                data_pfi[feature] = np.random.choice(
-                    data_all[feature], len(data_pfi), replace=False
-                )
-                pfi_score = get_performance_score(
-                    model, data_pfi, feature_columns, target_metric, target_assignments
-                )
-                fi_lst.append(baseline_score - pfi_score)
-
-            # calculate statistics
-            pfi_mean = np.mean(fi_lst)
-            n = len(fi_lst)
-            p_value = np.nan
-            stddev = np.std(fi_lst, ddof=1) if n > 1 else np.nan
-            if stddev not in (np.nan, 0):
-                t_stat = pfi_mean / (stddev / math.sqrt(n))
-                p_value = scipy.stats.t.sf(t_stat, n - 1)
-            elif stddev == 0:
-                p_value = 0.5
-
-            # calculate confidence intervals
-            if any(map(np.isnan, (stddev, n, pfi_mean))) or n == 1:
-                ci_high = np.nan
-                ci_low = np.nan
-            else:
-                t_val = scipy.stats.t.ppf(1 - (1 - confidence_level) / 2, n - 1)
-                ci_high = pfi_mean + t_val * stddev / math.sqrt(n)
-                ci_low = pfi_mean - t_val * stddev / math.sqrt(n)
-
-            # save results
-            results_df.loc[len(results_df)] = [
-                feature,
-                pfi_mean,
-                stddev,
-                p_value,
-                n,
-                ci_low,
-                ci_high,
-            ]
-
-        return results_df.sort_values(by="importance", ascending=False)
-
-    def _get_fi_group_permutation(self, experiment, n_repeat, data) -> pd.DataFrame:
-        """Calculate permutation feature importances."""
-        # fixed confidence level
-        confidence_level = 0.95
-        feature_columns = experiment["feature_columns"]
-        data_traindev = experiment["data_traindev"]
-        data_test = experiment["data_test"]
-        target_assignments = experiment["target_assignments"]
-        target_metric = experiment["target_metric"]
-        model = experiment["model"]
-        feature_groups = experiment["feature_group_dict"]
-
-        print("Number of feature groups found and included: ", len(feature_groups))
-
-        # support prediction on new data as well as test data
-        if data is None:  # new data
-            data = data_test
-        if not set(feature_columns).issubset(data.columns):
-            raise ValueError("Features missing in provided dataset.")
-
-        # check that targets are in dataset
-        # MISSING
-
-        # keep all features and add group features
-        # create features dict
-        feature_columns_dict = {x: [x] for x in feature_columns}
-        features_dict = {**feature_columns_dict, **feature_groups}
-
-        # calculate baseline score
-        baseline_score = get_performance_score(
-            model, data, feature_columns, target_metric, target_assignments
-        )
-
-        # get all data select random feature values
-        data_all = pd.concat([data_traindev, data], axis=0)
-
-        results_df = pd.DataFrame(
-            columns=[
-                "feature",
-                "importance",
-                "stddev",
-                "p-value",
-                "n",
-                "ci_low_95",
-                "ci_high_95",
-            ]
-        )
-        # calculate pfi
-        for name, feature in features_dict.items():
-            data_pfi = data.copy()
-            fi_lst = list()
-
-            for _ in range(n_repeat):
-                # replace column with random selection from that column of data_all
-                # we use data_all as the validation dataset may be small
-                for feat in feature:
-                    data_pfi[feat] = np.random.choice(
-                        data_all[feat], len(data_pfi), replace=False
-                    )
-                pfi_score = get_performance_score(
-                    model, data_pfi, feature_columns, target_metric, target_assignments
-                )
-                fi_lst.append(baseline_score - pfi_score)
-
-            # calculate statistics
-            pfi_mean = np.mean(fi_lst)
-            n = len(fi_lst)
-            p_value = np.nan
-            stddev = np.std(fi_lst, ddof=1) if n > 1 else np.nan
-            if stddev not in (np.nan, 0):
-                t_stat = pfi_mean / (stddev / math.sqrt(n))
-                p_value = scipy.stats.t.sf(t_stat, n - 1)
-            elif stddev == 0:
-                p_value = 0.5
-
-            # calculate confidence intervals
-            if any(map(np.isnan, (stddev, n, pfi_mean))) or n == 1:
-                ci_high = np.nan
-                ci_low = np.nan
-            else:
-                t_val = scipy.stats.t.ppf(1 - (1 - confidence_level) / 2, n - 1)
-                ci_high = pfi_mean + t_val * stddev / math.sqrt(n)
-                ci_low = pfi_mean - t_val * stddev / math.sqrt(n)
-
-            # save results
-            results_df.loc[len(results_df)] = [
-                name,
-                pfi_mean,
-                stddev,
-                p_value,
-                n,
-                ci_low,
-                ci_high,
-            ]
-
-        return results_df.sort_values(by="importance", ascending=False)
-
-    def _get_fi_shap(self, experiment, data, shap_type) -> pd.DataFrame:
-        """Calculate shap feature importances."""
-        experiment_id = experiment["id"]
-        feature_columns = experiment["feature_columns"]
-        data_test = experiment["data_test"][feature_columns]
-        model = experiment["model"]
-        ml_type = experiment["ml_type"]
-
-        # support prediction on new data as well as test data
-        if data is None:  # no external data, use test data
-            data = data_test
-
-        if not set(feature_columns).issubset(data.columns):
-            raise ValueError("Features missing in provided dataset.")
-
-        data = data[feature_columns]
-
-        if ml_type == "classification":
-            if shap_type == "exact":
-                explainer = shap.explainers.Exact(model.predict_proba, data)
-            elif shap_type == "permutation":
-                explainer = shap.explainers.Permutation(model.predict_proba, data)
-            elif shap_type == "kernel":
-                explainer = shap.explainers.Kernel(model.predict_proba, data)
-            else:
-                raise ValueError(f"Shap type {shap_type} not supported.")
-
-            shap_values = explainer(data)
-            # only use pos class
-            shap_values = shap_values[:, :, 1]  # pylint: disable=E1126
-        else:
-            if shap_type == "exact":
-                explainer = shap.explainers.Exact(model.predict, data)
-            elif shap_type == "permutation":
-                explainer = shap.explainers.Permutation(model.predict, data)
-            elif shap_type == "kernel":
-                explainer = shap.explainers.Kernel(model.predict, data)
-            else:
-                raise ValueError(f"Shap type {shap_type} not supported.")
-
-            shap_values = explainer(data)
-
-        results_path = self.study_path.joinpath(
-            f"experiment{experiment_id}",
-            f"sequence{self.sequence_id}",
-            "results",
-        )
-        # create directories if needed, required for id="all"
-        results_path.mkdir(parents=True, exist_ok=True)
-
-        # (A) Bar plot
-        save_path = results_path.joinpath(
-            f"model_shap_fi_barplot_exp{experiment_id}_{self.sequence_id}.pdf",
-        )
-        with PdfPages(save_path) as pdf:
-            plt.figure(figsize=(8.27, 11.69))  # portrait orientation (A4)
-            shap.plots.bar(shap_values, show=False)
-            plt.tight_layout()
-            pdf.savefig(plt.gcf(), orientation="portrait")
-            plt.close()
-
-        # (B) Beeswarm plot
-        save_path = results_path.joinpath(
-            f"model_shap_fi_beeswarm_exp{experiment_id}_{self.sequence_id}.pdf",
-        )
-        with PdfPages(save_path) as pdf:
-            plt.figure(figsize=(8.27, 11.69))  # portrait orientation (A4)
-            shap.plots.beeswarm(shap_values, max_display=20, show=False)
-            plt.tight_layout()
-            pdf.savefig(plt.gcf(), orientation="portrait")
-            plt.close()
-
-        # (C) save fi to table
-        shap_fi_df = pd.DataFrame(shap_values.values, columns=data.columns)
-        shap_fi_df = shap_fi_df.abs().mean().to_frame().reset_index()
-        shap_fi_df.columns = ["feature", "importance"]
-        shap_fi_df = shap_fi_df.sort_values(
-            by="importance", ascending=False
-        ).reset_index(drop=True)
-        # remove features with extremely small fi
-        threshold = shap_fi_df["importance"].max() / 1000
-        shap_fi_df = shap_fi_df[shap_fi_df["importance"] > threshold]
-
-        return shap_fi_df

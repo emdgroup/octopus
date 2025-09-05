@@ -116,7 +116,9 @@ class OctoCore:
         logger.info("Calculating MRMR feature sets...")
         # remove duplicates and cap max number
         feature_numbers = list(set(self.experiment.ml_config.mrmr_feature_numbers))
-        feature_numbers = [x for x in feature_numbers if isinstance(x, int) and x <= len(self.experiment.feature_columns)]
+        feature_numbers = [
+            x for x in feature_numbers if isinstance(x, int) and x <= len(self.experiment.feature_columns)
+        ]
         # if no mrmr features are requested, only add original features
         if not feature_numbers:
             # add original features
@@ -235,7 +237,7 @@ class OctoCore:
         print(
             f"Experiment: {self.experiment.id} "
             f"{target_metric} "
-            f"(ensembled, hard vote):"  # noqa E501
+            f"(ensembled, hard vote):"
             f"Dev {ensel_scores['dev_pool_hard']:.3f}, "
             f"Test {ensel_scores['test_pool_hard']:.3f}"
         )
@@ -243,7 +245,7 @@ class OctoCore:
             print(
                 f"Experiment: {self.experiment.id} "
                 f"{target_metric} "
-                f"(ensembled, soft vote):"  # noqa E501
+                f"(ensembled, soft vote):"
                 f"Dev {ensel_scores['dev_pool_soft']:.3f}, "
                 f"Test {ensel_scores['test_pool_soft']:.3f}"
             )
@@ -319,7 +321,7 @@ class OctoCore:
         print(
             f"Experiment: {self.experiment.id} "
             f"{target_metric} "
-            f"(ensembled, hard vote):"  # noqa E501
+            f"(ensembled, hard vote):"
             f"Dev {best_bag_scores['dev_pool_hard']:.3f}, "
             f"Test {best_bag_scores['test_pool_hard']:.3f}"
         )
@@ -327,7 +329,7 @@ class OctoCore:
             print(
                 f"Experiment: {self.experiment.id} "
                 f"{target_metric} "
-                f"(ensembled, soft vote):"  # noqa E501
+                f"(ensembled, soft vote):"
                 f"Dev {best_bag_scores['dev_pool_soft']:.3f}, "
                 f"Test {best_bag_scores['test_pool_soft']:.3f}"
             )

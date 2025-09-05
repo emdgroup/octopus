@@ -1,6 +1,6 @@
 """Metric Config."""
 
-from typing import Callable
+from collections.abc import Callable
 
 from attrs import define, field, validators
 

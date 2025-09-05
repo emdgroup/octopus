@@ -1,6 +1,7 @@
 """Wrapper for Gaussian Process Regressor."""
 
-from typing import Any, Dict, Optional, Union
+from collections.abc import Callable
+from typing import Any
 
 from sklearn.base import BaseEstimator, RegressorMixin
 from sklearn.gaussian_process import GaussianProcessRegressor
@@ -13,13 +14,13 @@ class GPRegressorWrapper(BaseEstimator, RegressorMixin):
 
     def __init__(
         self,
-        kernel: Union[str, Kernel] = "RBF",
+        kernel: str | Kernel = "RBF",
         alpha: float = 1e-10,
-        optimizer: Optional[Union[str, callable]] = "fmin_l_bfgs_b",
+        optimizer: str | Callable | None = "fmin_l_bfgs_b",
         n_restarts_optimizer: int = 0,
         normalize_y: bool = False,
         copy_X_train: bool = True,
-        random_state: Optional[int] = None,
+        random_state: int | None = None,
     ) -> None:
         self.kernel = kernel
         self.alpha = alpha
@@ -66,7 +67,7 @@ class GPRegressorWrapper(BaseEstimator, RegressorMixin):
         X = check_array(X)
         return self.model_.predict(X)
 
-    def _get_kernel(self, kernel_str: Union[str, Kernel]) -> Kernel:
+    def _get_kernel(self, kernel_str: str | Kernel) -> Kernel:
         """Get the kernel object based on the kernel string.
 
         Args:
@@ -90,7 +91,7 @@ class GPRegressorWrapper(BaseEstimator, RegressorMixin):
         else:
             raise ValueError(f"Unknown kernel: {kernel_str}")
 
-    def get_params(self, deep: bool = True) -> Dict[str, Any]:
+    def get_params(self, deep: bool = True) -> dict[str, Any]:
         """Get parameters for this estimator.
 
         Args:

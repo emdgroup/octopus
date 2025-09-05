@@ -214,11 +214,11 @@ class TabPFNClassifierModel:
 
 
 __all__ = [
-    "RandomForestClassifierModel",
-    "GradientBoostingClassifierModel",
-    "ExtraTreesClassifierModel",
-    "XGBClassifierModel",
     "CatBoostClassifierModel",
+    "ExtraTreesClassifierModel",
+    "GradientBoostingClassifierModel",
     "LogisticRegressionClassifierModel",
+    "RandomForestClassifierModel",
     "TabPFNClassifierModel",
+    "XGBClassifierModel",
 ]

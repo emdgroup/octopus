@@ -1,6 +1,6 @@
 """Model inventory."""
 
-from typing import Any, Dict, List
+from typing import Any
 
 import optuna
 from attrs import define, field
@@ -16,8 +16,8 @@ from .registry import ModelRegistry
 class ModelInventory:
     """Model inventory."""
 
-    models: Dict[str, Any] = field(factory=dict)
-    _model_configs: Dict[str, ModelConfig] = field(factory=dict)
+    models: dict[str, Any] = field(factory=dict)
+    _model_configs: dict[str, ModelConfig] = field(factory=dict)
 
     def __attrs_post_init__(self):
         self.models = ModelRegistry.get_all_models()
@@ -93,10 +93,10 @@ class ModelInventory:
         self,
         trial: optuna.trial.Trial,
         model_item: ModelConfig,
-        hyperparameters: List[Hyperparameter],
+        hyperparameters: list[Hyperparameter],
         n_jobs: int,
         model_seed: int,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Create optuna parameters."""
         params = {}
         for hp in hyperparameters:
@@ -113,7 +113,9 @@ class ModelInventory:
 
             elif hp.type == "float":
                 if hp.step is not None:
-                    params[parameter_name] = trial.suggest_float(name=unique_name, low=hp.low, high=hp.high, step=hp.step)
+                    params[parameter_name] = trial.suggest_float(
+                        name=unique_name, low=hp.low, high=hp.high, step=hp.step
+                    )
                 elif hp.log is not None:
                     params[parameter_name] = trial.suggest_float(name=unique_name, low=hp.low, high=hp.high, log=hp.log)
                 else:

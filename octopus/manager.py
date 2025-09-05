@@ -4,7 +4,6 @@ import copy
 import math
 from os import cpu_count
 from pathlib import Path
-from typing import Dict, List
 
 from attrs import define, field, validators
 from joblib import Parallel, delayed
@@ -22,7 +21,7 @@ logger = get_logger()
 class OctoManager:
     """Manages the execution of Octopus experiments."""
 
-    base_experiments: List[OctoExperiment] = field(
+    base_experiments: list[OctoExperiment] = field(
         validator=[validators.instance_of(list)],
     )
     configs: OctoConfig = field(
@@ -76,7 +75,10 @@ class OctoManager:
         num_workers = min(self.configs.study.n_folds_outer, cpu_count())
         logger.info(f"Starting parallel execution with {num_workers} workers")
         with Parallel(n_jobs=num_workers) as parallel:
-            parallel(delayed(self._execute_task)(base_experiment, index) for index, base_experiment in enumerate(self.base_experiments))
+            parallel(
+                delayed(self._execute_task)(base_experiment, index)
+                for index, base_experiment in enumerate(self.base_experiments)
+            )
 
     def _execute_task(self, base_experiment, index):
         logger.set_log_group(LogGroup.PROCESSING, f"EXP {index}")
@@ -86,11 +88,11 @@ class OctoManager:
             logger.set_log_group(LogGroup.PREPARE_EXECUTION, f"EXP {index}")
             logger.info("Completed successfully")
         except Exception as e:
-            logger.exception(f"Exception occurred while executing task {index}: {str(e)}")
+            logger.exception(f"Exception occurred while executing task {index}: {e!s}")
 
     def create_execute_mlmodules(self, base_experiment: OctoExperiment):
         """Create and execute ml modules."""
-        exp_path_dict: Dict[int, Path] = {}
+        exp_path_dict: dict[int, Path] = {}
 
         for element in self.configs.sequence.sequence_items:
             self._log_sequence_item_info(element)
@@ -168,7 +170,9 @@ class OctoManager:
 
             # save feature importance
             experiment.results["best"].create_feature_importance_df().to_parquet(
-                path_study_sequence.joinpath(f"feature-importance_{experiment.experiment_id}_{experiment.sequence_id}.parquet")
+                path_study_sequence.joinpath(
+                    f"feature-importance_{experiment.experiment_id}_{experiment.sequence_id}.parquet"
+                )
             )
 
         experiment.to_pickle(path_save)

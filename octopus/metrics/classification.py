@@ -1,7 +1,5 @@
 """Classification metrics."""
 
-from typing import Union
-
 import numpy as np
 from sklearn.metrics import (
     accuracy_score,
@@ -118,7 +116,7 @@ class NEGBRIERSCOREMetric:
 class AUCPRMetric:
     """AUCPR metric class."""
 
-    def _auc_pr(y_true: Union[np.ndarray, list], y_score: Union[np.ndarray, list]) -> float:
+    def _auc_pr(y_true: np.ndarray | list, y_score: np.ndarray | list) -> float:
         """Calculate the Area Under the Precision-Recall Curve (AUC-PR)."""
         # Compute precision-recall pairs for different probability thresholds
         precision, recall, _ = precision_recall_curve(y_true, y_score)
@@ -139,11 +137,11 @@ class AUCPRMetric:
 
 
 __all__ = [
-    "AUCROCMetric",
-    "ACCMetric",
     "ACCBALMetric",
-    "LOGLOSSMetric",
-    "F1Metric",
-    "NEGBRIERSCOREMetric",
+    "ACCMetric",
     "AUCPRMetric",
+    "AUCROCMetric",
+    "F1Metric",
+    "LOGLOSSMetric",
+    "NEGBRIERSCOREMetric",
 ]

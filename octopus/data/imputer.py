@@ -1,7 +1,5 @@
 """Impute data."""
 
-from typing import Optional
-
 import miceforest as mf
 import numpy as np
 import pandas as pd
@@ -15,7 +13,7 @@ class HalfMinImputer(BaseEstimator, TransformerMixin):
     def __init__(self):
         self.half_min_ = None
 
-    def fit(self, x: np.array, _y: Optional[np.ndarray] = None) -> "HalfMinImputer":
+    def fit(self, x: np.array, _y: np.ndarray | None = None) -> "HalfMinImputer":
         """Fit the imputer on x.
 
         Parameters:
@@ -119,7 +117,9 @@ def impute_simple(
     return imputed_train_df, imputed_test_df
 
 
-def impute_mice(train_df: pd.DataFrame, test_df: pd.DataFrame, feature_columns: list) -> tuple[pd.DataFrame, pd.DataFrame]:
+def impute_mice(
+    train_df: pd.DataFrame, test_df: pd.DataFrame, feature_columns: list
+) -> tuple[pd.DataFrame, pd.DataFrame]:
     """Impute datasets using the mice-forest algorithm.
 
     Impute training and test datasets using the mice-forest algorithm,

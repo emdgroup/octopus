@@ -200,7 +200,9 @@ class AGCore:
         else:
             self.num_cpus = min(self.experiment.num_assigned_cpus, self.experiment.ml_config.num_cpus)
 
-        logger.info(f"Resource allocation | CPUs | Available: {self.experiment.num_assigned_cpus} | Requested: {self.experiment.ml_config.num_cpus}")
+        logger.info(
+            f"Resource allocation | CPUs | Available: {self.experiment.num_assigned_cpus} | Requested: {self.experiment.ml_config.num_cpus}"
+        )
         logger.info(
             f"""CPU Resources | \
         Available: {self.experiment.num_assigned_cpus} | \
@@ -344,7 +346,9 @@ class AGCore:
             # Concatenate the list items
             fi["autogluon_permutation_test"] = pd.concat(combined_feature_importances)
 
-        fi["autogluon_permutation_test"] = fi["autogluon_permutation_test"].sort_values(by="importance", ascending=False)
+        fi["autogluon_permutation_test"] = fi["autogluon_permutation_test"].sort_values(
+            by="importance", ascending=False
+        )
 
         # SHAP feature importances
         print("Calculating SHAP feature importances...")

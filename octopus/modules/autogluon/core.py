@@ -210,7 +210,7 @@ class AGCore:
 
     def run_experiment(self):
         """Run experiment."""
-        from octopus._optional.autogluon import (
+        from octopus._optional.autogluon import (  # noqa: PLC0415
             TabularPredictor,
             accuracy,
             balanced_accuracy,

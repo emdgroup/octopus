@@ -1,4 +1,4 @@
-## Basic example for using Octopus Classification
+"""Basic example for using Octopus Classification."""
 
 # This example demonstrates how to use Octopus to create a machine learning classification model.
 # We will use the famous Titanic dataset for this purpose.

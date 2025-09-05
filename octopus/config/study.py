@@ -1,6 +1,6 @@
 """Config study."""
 
-from typing import Any, List
+from typing import Any
 
 from attrs import Factory, define, field, validators
 
@@ -67,7 +67,7 @@ class ConfigStudy:
     """Indicates whether the study can be overwritten. Defaults to False."""
 
     # is this really useful?
-    metrics: List = field(
+    metrics: list = field(
         default=Factory(lambda self: [self.target_metric], takes_self=True),
         validator=[validators.instance_of(list), validate_metric],
     )

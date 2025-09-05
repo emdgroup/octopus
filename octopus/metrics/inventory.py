@@ -1,6 +1,6 @@
 """Metric inventory."""
 
-from typing import Any, Dict, List, Type
+from typing import Any
 
 import pandas as pd
 from attrs import define, field
@@ -15,8 +15,8 @@ from .registry import MetricRegistry
 class MetricsInventory:
     """Metrics inventory."""
 
-    metrics: Dict[str, Any] = field(factory=dict)
-    _metric_configs: Dict[str, MetricConfig] = field(factory=dict)
+    metrics: dict[str, Any] = field(factory=dict)
+    _metric_configs: dict[str, MetricConfig] = field(factory=dict)
 
     def __attrs_post_init__(self):
         self.metrics = MetricRegistry.get_all_metrics()
@@ -63,9 +63,9 @@ class MetricsInventory:
         self,
         metric: str,
         target_assignments: dict,
-        model: Type,
+        model: type,
         data: pd.DataFrame,
-        feature_columns: List,
+        feature_columns: list,
     ) -> float:
         """Get performance score."""
         metric_config = self.get_metric_config(metric)

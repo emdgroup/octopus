@@ -1,7 +1,5 @@
 """OctaData Encoder."""
 
-from typing import Dict, List, Optional
-
 import numpy as np
 import pandas as pd
 from attrs import define
@@ -18,10 +16,10 @@ class DataEncoder:
     """Encodes categorical features in the data."""
 
     data: pd.DataFrame
-    feature_columns: List[str]
-    target_columns: List[str]
-    stratification_column: Optional[str]
-    target_assignments: Dict[str, str]
+    feature_columns: list[str]
+    target_columns: list[str]
+    stratification_column: str | None
+    target_assignments: dict[str, str]
 
     def encode(self):
         """Run all encoding steps."""
@@ -84,7 +82,9 @@ class DataEncoder:
             # Raise ValueError if there are problematic columns
             if problematic_columns:
                 logger.error("Disallowed characters found in columns: %s", problematic_columns)
-                raise ValueError(f"The following ordinal categorical columns have non-integer categories: {', '.join(problematic_columns)}")
+                raise ValueError(
+                    f"The following ordinal categorical columns have non-integer categories: {', '.join(problematic_columns)}"
+                )
 
     def _categorical_stratification_encoding(self):
         """Convert categorical stratification columns to int if needed."""

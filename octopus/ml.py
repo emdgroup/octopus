@@ -203,7 +203,9 @@ class OctoML:
 
         self.configs.to_pickle(config_path / "config.pkl")
 
-    def _impute_dataset(self, train_df: pd.DataFrame, test_df: pd.DataFrame, feature_columns: list) -> tuple[pd.DataFrame, pd.DataFrame]:
+    def _impute_dataset(
+        self, train_df: pd.DataFrame, test_df: pd.DataFrame, feature_columns: list
+    ) -> tuple[pd.DataFrame, pd.DataFrame]:
         """Impute dataset if missing values are present.
 
         Parameters:

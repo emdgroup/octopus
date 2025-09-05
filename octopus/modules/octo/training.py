@@ -132,7 +132,7 @@ class Training:
             duration = self.data_train[self.target_assignments["duration"]]
             event = self.data_train[self.target_assignments["event"]]
             return np.array(
-                list(zip(event, duration)),
+                list(zip(event, duration, strict=False)),
                 dtype={"names": ("c1", "c2"), "formats": ("bool", "f8")},
             )
         else:
@@ -145,7 +145,7 @@ class Training:
             duration = self.data_dev[self.target_assignments["duration"]]
             event = self.data_dev[self.target_assignments["event"]]
             return np.array(
-                list(zip(event, duration)),
+                list(zip(event, duration, strict=False)),
                 dtype={"names": ("c1", "c2"), "formats": ("bool", "f8")},
             )
         else:
@@ -158,7 +158,7 @@ class Training:
             duration = self.data_test[self.target_assignments["duration"]]
             event = self.data_test[self.target_assignments["event"]]
             return np.array(
-                list(zip(event, duration)),
+                list(zip(event, duration, strict=False)),
                 dtype={"names": ("c1", "c2"), "formats": ("bool", "f8")},
             )
         else:

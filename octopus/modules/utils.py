@@ -1,7 +1,6 @@
 """Helper functions."""
 
 import math
-from typing import Tuple
 
 import numpy as np
 import pandas as pd
@@ -177,7 +176,7 @@ def rdc(x, y, f=np.sin, k=20, s=1 / 6.0, n=5):
         eigs = np.linalg.eigvals(np.dot(np.dot(np.linalg.pinv(cxx), cxy), np.dot(np.linalg.pinv(cyy), cyx)))
 
         # Binary search if k is too large
-        if not (np.all(np.isreal(eigs)) and 0 <= np.min(eigs) and np.max(eigs) <= 1):
+        if not (np.all(np.isreal(eigs)) and np.min(eigs) >= 0 and np.max(eigs) <= 1):
             ub -= 1
             k = (ub + lb) // 2
             continue
@@ -389,7 +388,7 @@ def get_fi_shap(
     experiment: dict,
     data: pd.DataFrame,
     shap_type: str,
-) -> Tuple[pd.DataFrame, np.ndarray, pd.DataFrame]:
+) -> tuple[pd.DataFrame, np.ndarray, pd.DataFrame]:
     """Calculate SHAP feature importances.
 
     Args:
@@ -405,7 +404,6 @@ def get_fi_shap(
 
     Raises:
         ValueError: If shap_type is not one of 'exact', 'permutation', or 'kernel'.
-        ImportError: If required SHAP dependencies are not installed.
     """
     # experiment_id = experiment["id"]
     feature_columns = experiment["feature_columns"]

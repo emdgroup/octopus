@@ -1,6 +1,6 @@
 """Octo module."""
 
-from typing import ClassVar, List
+from typing import ClassVar
 
 from attrs import Factory, define, field, validators
 
@@ -14,7 +14,7 @@ logger = get_logger()
 class Octo(BaseSequenceItem):
     """Octofull sequence config."""
 
-    models: List = field(default=Factory(lambda: ["ExtraTreesClassifier"]))
+    models: list = field(default=Factory(lambda: ["ExtraTreesClassifier"]))
     """Models for ML."""
 
     module: ClassVar[str] = "octo"
@@ -23,7 +23,7 @@ class Octo(BaseSequenceItem):
     n_folds_inner: int = field(validator=[validators.instance_of(int)], default=Factory(lambda: 5))
     """Number of inner folds."""
 
-    datasplit_seeds_inner: List[int] = field(
+    datasplit_seeds_inner: list[int] = field(
         default=Factory(lambda: [0]),
         validator=validators.deep_iterable(
             member_validator=validators.instance_of(int),
@@ -39,13 +39,13 @@ class Octo(BaseSequenceItem):
     n_jobs: int = field(validator=[validators.instance_of(int)], default=Factory(lambda: 1))
     """Number of parallel jobs. Ideal if n_folds_inner * number of datasplit seeds."""
 
-    dim_red_methods: List = field(default=Factory(lambda: [""]))
+    dim_red_methods: list = field(default=Factory(lambda: [""]))
     """Methods for dimension reduction."""
 
     max_outl: int = field(validator=[validators.instance_of(int)], default=Factory(lambda: 3))
     """Maximum number of outliers, optimized by Optuna"""
 
-    fi_methods_bestbag: List[str] = field(
+    fi_methods_bestbag: list[str] = field(
         default=Factory(lambda: ["permutation"]),
         validator=validators.deep_iterable(
             member_validator=validators.in_(["permutation", "shap", "constant"]),

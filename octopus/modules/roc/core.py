@@ -123,11 +123,15 @@ class RocCore:
             print("Time2Event: Note, that the first group element is selected.")
         elif self.filter_type == "mutual_info":
             # set random state
-            values = filter_inventory[self.filter_type][self.ml_type](self.x_traindev, self.y_traindev.to_numpy().ravel(), random_state=0)
+            values = filter_inventory[self.filter_type][self.ml_type](
+                self.x_traindev, self.y_traindev.to_numpy().ravel(), random_state=0
+            )
             dependency = pd.Series(values, index=self.feature_columns)
         elif self.filter_type == "f_statistics":
             # ignoring p-values
-            values, _ = filter_inventory[self.filter_type][self.ml_type](self.x_traindev, self.y_traindev.to_numpy().ravel())
+            values, _ = filter_inventory[self.filter_type][self.ml_type](
+                self.x_traindev, self.y_traindev.to_numpy().ravel()
+            )
             dependency = pd.Series(values, index=self.feature_columns)
 
         print("Calculating feature groups.")
@@ -151,7 +155,9 @@ class RocCore:
                     g.add_edge(i, j)
 
         # Get connected components and sort them to ensure determinism
-        subgraphs = [g.subgraph(c).copy() for c in sorted(nx.connected_components(g), key=lambda x: (len(x), sorted(x)))]
+        subgraphs = [
+            g.subgraph(c).copy() for c in sorted(nx.connected_components(g), key=lambda x: (len(x), sorted(x)))
+        ]
 
         # Create groups of feature columns
         groups = []

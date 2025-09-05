@@ -206,7 +206,9 @@ class BorutaCore:
         boruta.fit(self.x_traindev, self.y_traindev.squeeze(axis=1))
 
         print("Feature Selection completed")
-        self.experiment.selected_features = [self.feature_columns[i] for i in range(len(boruta.support_)) if boruta.support_[i]]
+        self.experiment.selected_features = [
+            self.feature_columns[i] for i in range(len(boruta.support_)) if boruta.support_[i]
+        ]
         n_optimal_features = len(self.experiment.selected_features)
 
         print(f"Optimal number of features: {n_optimal_features}")

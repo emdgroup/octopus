@@ -1,5 +1,6 @@
 """Wrapper for Gaussian Process Regressor."""
 
+from collections.abc import Callable
 from typing import Any
 
 from sklearn.base import BaseEstimator, RegressorMixin
@@ -15,7 +16,7 @@ class GPRegressorWrapper(BaseEstimator, RegressorMixin):
         self,
         kernel: str | Kernel = "RBF",
         alpha: float = 1e-10,
-        optimizer: str | callable | None = "fmin_l_bfgs_b",
+        optimizer: str | Callable | None = "fmin_l_bfgs_b",
         n_restarts_optimizer: int = 0,
         normalize_y: bool = False,
         copy_X_train: bool = True,

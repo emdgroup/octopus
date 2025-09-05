@@ -1,28 +1,26 @@
 # Octopus
 
-Octopus is a lightweight AutoML library designed specifically for small datasets with high cardinality. It simplifies the process of model selection, hyperparameter tuning, and performance evaluation.
+Octopus is a lightweight AutoML framework specifically designed for small datasets (<1k samples) and with high dimensionality (number of features). The goal of Octopus is to speed up machine learning projects and to increase the reliability of results in the context of small datasets. 
 
 ## Installation
+
+Before installation please create a new environment, for example:
+
+    conda create -n "your_environment_name" python=3.12
 
 The package can be installed via
 
     pip install -e "."
 
-If you need to install additional packages (extras), you can specify them like so
+If you need to install additional packages (extras), you can specify them like
 
     pip install .[extra_package]
 
-
-## Installation for Development
-
-Installation of an environment, for example:
-
-    conda create -n "octo" python=3.12 
-
-Then install development setup
-
-    pip install -e "." octopus[dev]
-
+Available extra packages are:
+- autogluon (inclusion of Autogluon, as a reference)
+- tabpfn (inclusion of TabPFN model, as a reference)
+- boruta (Boruta feature selection module)
+- dev (all packages + dependencies required for development)
 
 ### Note for macOS Users
 

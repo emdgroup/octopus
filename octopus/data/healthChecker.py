@@ -2,7 +2,6 @@
 
 import re
 from itertools import combinations
-from typing import Dict, List, Optional
 
 import numpy as np
 import pandas as pd
@@ -15,19 +14,19 @@ class OctoDataHealthChecker:
     """OctoDataHealthChecker."""
 
     data: pd.DataFrame
-    feature_columns: Optional[List[str]]
-    target_columns: Optional[List[str]]
-    row_id: Optional[str]
-    sample_id: Optional[str]
-    stratification_column: Optional[str]
+    feature_columns: list[str] | None
+    target_columns: list[str] | None
+    row_id: str | None
+    sample_id: str | None
+    stratification_column: str | None
 
-    issues: List[Dict] = field(factory=list)
+    issues: list[dict] = field(factory=list)
 
     def add_issue(
         self,
         category: str,
         issue_type: str,
-        affected_items: List[str],
+        affected_items: list[str],
         severity: str,
         description: str,
         action: str,
@@ -115,7 +114,7 @@ class OctoDataHealthChecker:
         missing_value_share_row = self.data.isnull().mean(axis=1)
 
         high_missing_rows = missing_value_share_row[missing_value_share_row > 0.5]
-        low_missing_rows = missing_value_share_row[(0 < missing_value_share_row) & (missing_value_share_row <= 0.5)]
+        low_missing_rows = missing_value_share_row[(missing_value_share_row > 0) & (missing_value_share_row <= 0.5)]
 
         if not high_missing_rows.empty:
             self.add_issue(
@@ -152,8 +151,12 @@ class OctoDataHealthChecker:
                 issue_type="int_columns_with_few_uniques",
                 affected_items=affected_items,
                 severity="Warning",
-                description=(f"These integer columns have between 3 and {threshold} unique values: {', '.join(affected_items)}"),
-                action=("Consider converting these columns to categorical variables or investigate if they should be ordinal features."),
+                description=(
+                    f"These integer columns have between 3 and {threshold} unique values: {', '.join(affected_items)}"
+                ),
+                action=(
+                    "Consider converting these columns to categorical variables or investigate if they should be ordinal features."
+                ),
             )
 
     def _check_duplicated_features(self):
@@ -258,7 +261,9 @@ class OctoDataHealthChecker:
                 issue_type="identical_features",
                 affected_items=[feature] + identical_list,
                 severity="Warning",
-                description=(f"The feature '{feature}' is identical to the following feature(s): {{', '.join(identical_list)}}"),
+                description=(
+                    f"The feature '{feature}' is identical to the following feature(s): {{', '.join(identical_list)}}"
+                ),
                 action=("Consider removing redundant features to simplify the dataset and improve model performance."),
             )
 
@@ -275,7 +280,9 @@ class OctoDataHealthChecker:
                 affected_items=[str(idx) for idx in duplicated_rows.index],
                 severity="Warning",
                 description=f"Found {num_duplicates} duplicated row(s) in the dataset.",
-                action=("Investigate these duplicates and consider removing or consolidating them based on your data requirements."),
+                action=(
+                    "Investigate these duplicates and consider removing or consolidating them based on your data requirements."
+                ),
             )
 
     def _check_infinity_values(self):
@@ -352,7 +359,11 @@ class OctoDataHealthChecker:
                                 threshold = determine_threshold(len(value))
                                 # Find all similar strings to the current value,
                                 # excluding identical strings
-                                similar = set(other for other in column_values if value != other and fuzz.ratio(value, other) >= threshold)
+                                similar = {
+                                    other
+                                    for other in column_values
+                                    if value != other and fuzz.ratio(value, other) >= threshold
+                                }
                                 if similar:
                                     similar.add(value)
                                     similar_groups.append(list(similar))
@@ -364,7 +375,9 @@ class OctoDataHealthChecker:
 
         if string_mismatch:
             for column, similar_groups in string_mismatch.items():
-                description = f"Column '{column}' contains similar strings that might be misspellings or inconsistencies:\n"
+                description = (
+                    f"Column '{column}' contains similar strings that might be misspellings or inconsistencies:\n"
+                )
                 for group in similar_groups:
                     description += f"- {', '.join(group)}\n"
 
@@ -374,7 +387,9 @@ class OctoDataHealthChecker:
                     affected_items=[column],
                     severity="Warning",
                     description=description.strip(),
-                    action=("Review these similar strings and consider standardizing them to improve data consistency."),
+                    action=(
+                        "Review these similar strings and consider standardizing them to improve data consistency."
+                    ),
                 )
 
     def _check_string_out_of_bounds(self, length_threshold_factor=2):
@@ -389,7 +404,9 @@ class OctoDataHealthChecker:
                     avg_length = sum(len(str(value)) for value in column_values) / len(column_values)
 
                     # Identify strings that are significantly longer than the average
-                    long_strings = [value for value in column_values if len(str(value)) > length_threshold_factor * avg_length]
+                    long_strings = [
+                        value for value in column_values if len(str(value)) > length_threshold_factor * avg_length
+                    ]
                     if long_strings:
                         long_string[column] = long_strings
                 except:  # noqa: E722
@@ -397,7 +414,9 @@ class OctoDataHealthChecker:
 
         if long_string:
             for column, long_strings in long_string.items():
-                description = f"Column '{column}' contains strings that are significantly longer than the average length:\n"
+                description = (
+                    f"Column '{column}' contains strings that are significantly longer than the average length:\n"
+                )
                 for value in long_strings[:5]:  # Limit to first 5 for brevity
                     description += f"- {value[:50]}{'...' if len(value) > 50 else ''}\n"
                 if len(long_strings) > 5:
@@ -409,5 +428,7 @@ class OctoDataHealthChecker:
                     affected_items=[column],
                     severity="Warning",
                     description=description.strip(),
-                    action=("Review these unusually long strings and consider if they are valid or if they need cleaning or truncation."),
+                    action=(
+                        "Review these unusually long strings and consider if they are valid or if they need cleaning or truncation."
+                    ),
                 )

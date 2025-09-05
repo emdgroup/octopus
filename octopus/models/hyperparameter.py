@@ -1,6 +1,6 @@
 """Hyperparameter class."""
 
-from typing import Any, List
+from typing import Any
 
 from attrs import define, field, validators
 
@@ -14,7 +14,7 @@ class Hyperparameter:
     low: int | float | None = None
     high: int | float | None = None
     step: int | float | None = None
-    choices: List[Any] = field(factory=list)
+    choices: list[Any] = field(factory=list)
     log: bool = False
     value: Any = None
 

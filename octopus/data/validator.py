@@ -1,7 +1,6 @@
 """OctoData Validator."""
 
 import re
-from typing import Dict, List, Optional
 
 import pandas as pd
 from attrs import define
@@ -14,10 +13,10 @@ class OctoDataValidator:
     data: pd.DataFrame
     """DataFrame containing the dataset."""
 
-    feature_columns: List[str]
+    feature_columns: list[str]
     """List of all feature columns in the dataset."""
 
-    target_columns: List[str]
+    target_columns: list[str]
     """List of target columns in the dataset. For regression and classification,
     only one target is allowed. For time-to-event, two targets need to be provided.
     """
@@ -25,16 +24,16 @@ class OctoDataValidator:
     sample_id: str
     """Identifier for sample instances."""
 
-    row_id: Optional[str]
+    row_id: str | None
     """Unique row identifier."""
 
-    stratification_column: Optional[str]
+    stratification_column: str | None
     """List of columns used for stratification."""
 
-    target_assignments: Dict[str, str]
+    target_assignments: dict[str, str]
     """Mapping of target assignments."""
 
-    relevant_columns: List[str]
+    relevant_columns: list[str]
     """Relevant columns of the dataset."""
 
     def validate(self):
@@ -67,7 +66,7 @@ class OctoDataValidator:
             columns_to_check.append(self.row_id)
 
         # Check for duplicates
-        duplicates = set([col for col in columns_to_check if columns_to_check.count(col) > 1])
+        duplicates = {col for col in columns_to_check if columns_to_check.count(col) > 1}
 
         if duplicates:
             duplicates_str = ", ".join(duplicates)
@@ -88,7 +87,9 @@ class OctoDataValidator:
         """
         if len(self.target_columns) == 1:
             if self.target_assignments:
-                raise ValueError("Target assignments provided for a single target column. Assignments are only needed for multiple target columns.")
+                raise ValueError(
+                    "Target assignments provided for a single target column. Assignments are only needed for multiple target columns."
+                )
             return
 
         # Multiple target columns: validate assignments
@@ -120,7 +121,9 @@ class OctoDataValidator:
 
         # Check for duplicate assignments
         if len(set(self.target_assignments.values())) != len(self.target_assignments):
-            duplicate_values = [val for val in self.target_assignments.values() if list(self.target_assignments.values()).count(val) > 1]
+            duplicate_values = [
+                val for val in self.target_assignments.values() if list(self.target_assignments.values()).count(val) > 1
+            ]
             raise ValueError(
                 f"Duplicate assignment(s) found: {', '.join(set(duplicate_values))}. "
                 "Each target column must have a unique assignment. "
@@ -132,7 +135,9 @@ class OctoDataValidator:
         if len(self.target_columns) > 2:
             raise ValueError("More than two targets are not allowed")
         if len(self.target_columns) == 2 and not self.target_assignments:
-            raise ValueError("Target assignments are required when two targets are selected.This is only for ml_type = 'timetoevent'.")
+            raise ValueError(
+                "Target assignments are required when two targets are selected.This is only for ml_type = 'timetoevent'."
+            )
 
     def _validate_column_dtypes(self):
         """Validate that all relevant columns have correct dtypes."""

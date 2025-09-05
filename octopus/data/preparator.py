@@ -1,7 +1,5 @@
 """OctoData Preparator."""
 
-from typing import Dict, List, Optional
-
 import numpy as np
 import pandas as pd
 from attrs import define
@@ -21,10 +19,10 @@ class OctoDataPreparator:
     data: pd.DataFrame
     """DataFrame containing the dataset."""
 
-    feature_columns: List[str]
+    feature_columns: list[str]
     """List of all feature columns in the dataset."""
 
-    target_columns: List[str]
+    target_columns: list[str]
     """List of target columns in the dataset. For regression and classification,
     only one target is allowed. For time-to-event, two targets need to be provided.
     """
@@ -32,10 +30,10 @@ class OctoDataPreparator:
     sample_id: str
     """Identifier for sample instances."""
 
-    row_id: Optional[str]
+    row_id: str | None
     """Unique row identifier."""
 
-    target_assignments: Dict[str, str]
+    target_assignments: dict[str, str]
     """Mapping of target assignments."""
 
     def prepare(self):

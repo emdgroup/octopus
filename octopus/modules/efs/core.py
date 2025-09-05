@@ -319,7 +319,9 @@ class EfsCore:
                 cv_preds_df = pd.DataFrame()
                 cv_preds_df[self.row_column] = row_ids
                 cv_preds_df["predictions"] = cross_val_predict(best_model, x, y, cv=cv, method="predict")
-                cv_preds_df["probabilities"] = cross_val_predict(best_model, x, y, cv=cv, method="predict_proba")[:, 1]  # binary only
+                cv_preds_df["probabilities"] = cross_val_predict(best_model, x, y, cv=cv, method="predict_proba")[
+                    :, 1
+                ]  # binary only
             elif self.ml_type == "regression":
                 cv_preds_df = pd.DataFrame()
                 cv_preds_df[self.row_column] = row_ids

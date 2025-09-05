@@ -3,7 +3,6 @@
 import gzip
 import json
 import pickle
-from typing import Dict, List, Optional
 
 import pandas as pd
 from attrs import Factory, define, field, fields, validators
@@ -26,31 +25,33 @@ class OctoData:
     data: pd.DataFrame = field(validator=[validators.instance_of(pd.DataFrame)])
     """DataFrame containing the dataset."""
 
-    feature_columns: List[str] = field(validator=[validators.instance_of(list)])
+    feature_columns: list[str] = field(validator=[validators.instance_of(list)])
     """List of all feature columns in the dataset."""
 
-    target_columns: List[str] = field(validator=[validators.instance_of(list)])
+    target_columns: list[str] = field(validator=[validators.instance_of(list)])
     """List of target columns in the dataset. For regression and classification,
     only one target is allowed. For time-to-event, two targets need to be provided.
     """
 
-    datasplit_type: str = field(validator=[validators.in_([None, "sample", "group_features", "group_sample_and_features"])])
+    datasplit_type: str = field(
+        validator=[validators.in_([None, "sample", "group_features", "group_sample_and_features"])]
+    )
     """Type of datasplit. Allowed are `sample`, `group_features`
     and `group_sample_and_features`."""
 
     sample_id: str = field(validator=validators.instance_of(str))
     """Identifier for sample instances."""
 
-    row_id: Optional[str] = field(
+    row_id: str | None = field(
         default=Factory(lambda: None),
         validator=validators.optional(validators.instance_of(str)),
     )
     """Unique row identifier."""
 
-    target_assignments: Dict[str, str] = field(default=Factory(dict), validator=[validators.instance_of(dict)])
+    target_assignments: dict[str, str] = field(default=Factory(dict), validator=[validators.instance_of(dict)])
     """Mapping of target assignments."""
 
-    stratification_column: Optional[str] = field(
+    stratification_column: str | None = field(
         default=Factory(lambda: None),
         validator=validators.optional(validators.instance_of(str)),
     )

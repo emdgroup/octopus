@@ -24,6 +24,7 @@ except ModuleNotFoundError as ex:
     ) from ex
 
 __all__ = [
+    "TabularPredictor",
     "accuracy",
     "balanced_accuracy",
     "log_loss",
@@ -31,5 +32,4 @@ __all__ = [
     "r2",
     "roc_auc",
     "root_mean_squared_error",
-    "TabularPredictor",
 ]

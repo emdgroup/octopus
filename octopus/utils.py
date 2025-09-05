@@ -1,7 +1,6 @@
 """Utils."""
 
 import random
-from typing import Optional
 
 import numpy as np
 import pandas as pd
@@ -35,7 +34,7 @@ class DataSplit:
     )
     num_folds: int = field(validator=[validators.instance_of(int)])
     dataset: pd.DataFrame = field(validator=[validators.instance_of(pd.DataFrame)])
-    stratification_col: Optional[str] = field(
+    stratification_col: str | None = field(
         default=Factory(lambda: None),
         validator=validators.optional(validators.instance_of(str)),
     )

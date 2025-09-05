@@ -4,7 +4,6 @@ import gzip
 import logging
 import pickle
 from pathlib import Path
-from typing import Dict, List, Optional
 
 import networkx as nx
 import numpy as np
@@ -64,10 +63,10 @@ class OctoExperiment:
     row_column: str = field(validator=[validators.instance_of(str)])
     """Column name used as row identifier."""
 
-    feature_columns: List = field(validator=[validators.instance_of(list)])
+    feature_columns: list = field(validator=[validators.instance_of(list)])
     """List of column names used as features in the experiment."""
 
-    target_assignments: Dict = field(validator=[validators.instance_of(dict)])
+    target_assignments: dict = field(validator=[validators.instance_of(dict)])
     """Mapping of target variables to their assignments."""
 
     data_traindev: pd.DataFrame = field(validator=[validators.instance_of(pd.DataFrame)])
@@ -76,7 +75,7 @@ class OctoExperiment:
     data_test: pd.DataFrame = field(validator=[validators.instance_of(pd.DataFrame)])
     """DataFrame containing test data."""
 
-    stratification_column: Optional[str] = field(
+    stratification_column: str | None = field(
         default=Factory(lambda: None),
         validator=validators.optional(validators.instance_of(str)),
     )
@@ -89,19 +88,19 @@ class OctoExperiment:
     num_assigned_cpus: int = field(init=False, default=0, validator=[validators.instance_of(int)])
     """Number of CPUs assigned to the experiment."""
 
-    ml_config: Dict = field(init=False, default=None)
+    ml_config: dict = field(init=False, default=None)
     """Configuration settings for the machine learning module."""
 
-    selected_features: List = field(default=Factory(list), validator=[validators.instance_of(list)])
+    selected_features: list = field(default=Factory(list), validator=[validators.instance_of(list)])
     """List of features selected for the experiment."""
 
-    feature_groups: Dict = field(default=Factory(dict), validator=[validators.instance_of(dict)])
+    feature_groups: dict = field(default=Factory(dict), validator=[validators.instance_of(dict)])
     """Groupings of features based on correlation analysis."""
 
-    results: Dict = field(default=Factory(dict), validator=[validators.instance_of(dict)])
+    results: dict = field(default=Factory(dict), validator=[validators.instance_of(dict)])
     """Results of the experiment, keyed by result type."""
 
-    prior_results: Dict = field(default=Factory(dict), validator=[validators.instance_of(dict)])
+    prior_results: dict = field(default=Factory(dict), validator=[validators.instance_of(dict)])
     """Results of the experiment used as input, keyed by result type."""
 
     @property
@@ -139,7 +138,9 @@ class OctoExperiment:
                         g.add_edge(i, j)
 
             # Get connected components and sort them to ensure determinism
-            subgraphs = [g.subgraph(c).copy() for c in sorted(nx.connected_components(g), key=lambda x: (len(x), sorted(x)))]
+            subgraphs = [
+                g.subgraph(c).copy() for c in sorted(nx.connected_components(g), key=lambda x: (len(x), sorted(x)))
+            ]
             # Create groups of feature columns
             groups = []
             for sg in subgraphs:

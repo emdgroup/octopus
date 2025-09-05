@@ -39,29 +39,17 @@ class DataEncoder:
     def _categorical_feature_encoding(self):
         """Process categorical feature columns."""
         # Identify categorical columns in self.relevant_columns
-        categorical_columns = [
-            col
-            for col in self.feature_columns
-            if self.data[col].dtype.name == "category"
-        ]
+        categorical_columns = [col for col in self.feature_columns if self.data[col].dtype.name == "category"]
         # Split into ordinal and non-ordinal (nominal) categorical columns
-        ordinal_columns = [
-            col for col in categorical_columns if self.data[col].cat.ordered
-        ]
-        nominal_columns = [
-            col for col in categorical_columns if not self.data[col].cat.ordered
-        ]
+        ordinal_columns = [col for col in categorical_columns if self.data[col].cat.ordered]
+        nominal_columns = [col for col in categorical_columns if not self.data[col].cat.ordered]
         # Process non-ordinal categorical columns
         if nominal_columns:
             # (1) Count unique values and check for columns with more than 15 categories
-            columns_with_many_categories = [
-                col for col in nominal_columns if self.data[col].nunique() > 15
-            ]
+            columns_with_many_categories = [col for col in nominal_columns if self.data[col].nunique() > 15]
             if columns_with_many_categories:
                 raise ValueError(
-                    f"The following nominal categorical columns have more"
-                    f" than 15 unique categories: "
-                    f"{', '.join(columns_with_many_categories)}"
+                    f"The following nominal categorical columns have more than 15 unique categories: {', '.join(columns_with_many_categories)}"
                 )
 
             # (2) Perform dummy encoding
@@ -73,9 +61,7 @@ class DataEncoder:
 
             # Drop original nominal columns from feature_columns
             # we keep the nominal columns in the data
-            self.feature_columns = [
-                col for col in self.feature_columns if col not in nominal_columns
-            ]
+            self.feature_columns = [col for col in self.feature_columns if col not in nominal_columns]
 
             # Add dummy columns to data
             self.data = pd.concat([self.data, dummies], axis=1)
@@ -97,14 +83,8 @@ class DataEncoder:
 
             # Raise ValueError if there are problematic columns
             if problematic_columns:
-                logger.error(
-                    "Disallowed characters found in columns: %s", problematic_columns
-                )
-                raise ValueError(
-                    f"The following ordinal categorical columns have"
-                    f" non-integer categories: "
-                    f"{', '.join(problematic_columns)}"
-                )
+                logger.error("Disallowed characters found in columns: %s", problematic_columns)
+                raise ValueError(f"The following ordinal categorical columns have non-integer categories: {', '.join(problematic_columns)}")
 
     def _categorical_stratification_encoding(self):
         """Convert categorical stratification columns to int if needed."""
@@ -143,9 +123,7 @@ class DataEncoder:
             for key in self.target_assignments:
                 # Replace the original column with the new column
                 if self.target_assignments[key] == original_column:
-                    self.target_assignments[key] = (
-                        new_column  # Directly replace the value
-                    )
+                    self.target_assignments[key] = new_column  # Directly replace the value
 
                     logger.info("Updated target assignments.")
 

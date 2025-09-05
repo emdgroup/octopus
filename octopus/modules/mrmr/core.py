@@ -43,9 +43,7 @@ from octopus.modules.utils import rdc
 class MrmrCore:
     """MRMR module."""
 
-    experiment: OctoExperiment = field(
-        validator=[validators.instance_of(OctoExperiment)]
-    )
+    experiment: OctoExperiment = field(validator=[validators.instance_of(OctoExperiment)])
 
     @property
     def data_traindev(self) -> pd.DataFrame:
@@ -60,9 +58,7 @@ class MrmrCore:
     @property
     def y_traindev(self) -> pd.DataFrame:
         """y_traindev."""
-        return self.experiment.data_traindev[
-            self.experiment.target_assignments.values()
-        ]
+        return self.experiment.data_traindev[self.experiment.target_assignments.values()]
 
     @property
     def feature_columns(self) -> list:
@@ -126,9 +122,7 @@ class MrmrCore:
             # check if feature_importance key exists
             if self.feature_importance_key not in self.feature_importances:
                 raise ValueError(
-                    f"No feature importances available for "
-                    f"key {self.feature_importance_key} "
-                    f"Available keys: {self.feature_importances.keys()}"
+                    f"No feature importances available for key {self.feature_importance_key} Available keys: {self.feature_importances.keys()}"
                 )
 
     def run_experiment(self):
@@ -155,17 +149,12 @@ class MrmrCore:
             # reduce fi table to feature_columns (previous selected_features),
             # feature_columns do not contain any groups
             re_df = re_df[re_df["feature"].isin(self.feature_columns)]
-            print(
-                f"Number of features in fi table "
-                f"(based on previous selected features, no groups): {len(re_df)}"
-            )
+            print(f"Number of features in fi table (based on previous selected features, no groups): {len(re_df)}")
             # only keep positive importances
             re_df = re_df[re_df["importance"] > 0].reset_index()
             print("Number features with positive importance: ", len(re_df))
         elif self.relevance_type == "f-statistics":
-            re_df = relevance_fstats(
-                self.x_traindev, self.y_traindev, self.feature_columns, self.ml_type
-            )
+            re_df = relevance_fstats(self.x_traindev, self.y_traindev, self.feature_columns, self.ml_type)
         else:
             raise ValueError(f"Relevance type  {self.relevance_type} not supported.")
 
@@ -180,9 +169,7 @@ class MrmrCore:
         selected_mrmr_features = list(mrmr_dict.values())[0]
 
         # save features selected by mrmr
-        self.experiment.selected_features = sorted(
-            selected_mrmr_features, key=lambda s: (len(s), s)
-        )
+        self.experiment.selected_features = sorted(selected_mrmr_features, key=lambda s: (len(s), s))
         print("Selected features: ", self.experiment.selected_features)
 
         return self.experiment
@@ -235,9 +222,7 @@ def maxrminr(
     n_features_lst.append(len(fi_features))
 
     # make sure that elements in n_features_lst <= len(fi_features)
-    n_features_lst = [
-        x for x in n_features_lst if x <= min(max(n_features_lst), len(fi_features))
-    ]
+    n_features_lst = [x for x in n_features_lst if x <= min(max(n_features_lst), len(fi_features))]
     max_n_features = max(n_features_lst)
 
     # feature dataframe
@@ -267,13 +252,7 @@ def maxrminr(
 
             if correlation_type == "pearson":
                 # calculate correlation (pearson)
-                corr.loc[not_selected, last_selected] = (
-                    features_df[not_selected]
-                    .corrwith(features_df[last_selected])
-                    .fillna(FLOOR)
-                    .abs()
-                    .clip(FLOOR)
-                )
+                corr.loc[not_selected, last_selected] = features_df[not_selected].corrwith(features_df[last_selected]).fillna(FLOOR).abs().clip(FLOOR)
             elif correlation_type == "rdc":
                 # calculate  RDC correlation
                 # corr_rdc.loc[not_selected, last_selected] =
@@ -289,22 +268,13 @@ def maxrminr(
             elif correlation_type == "spearmanr":
                 # Calculate correlation (Spearman)
                 for col in not_selected:
-                    corr_value, _ = spearmanr(
-                        features_df[col], features_df[last_selected]
-                    )
-                    corr_value = max(
-                        abs(corr_value), FLOOR
-                    )  # Ensure non-negative correlation with a floor value
+                    corr_value, _ = spearmanr(features_df[col], features_df[last_selected])
+                    corr_value = max(abs(corr_value), FLOOR)  # Ensure non-negative correlation with a floor value
                     corr.loc[col, last_selected] = corr_value
             else:
                 raise ValueError(f"Correlation type {correlation_type} not supported.")
             # add "corr" column to score_df
-            score_df["corr"] = (
-                corr.loc[not_selected, selected]
-                .mean(axis=1)
-                .fillna(FLOOR)
-                .replace(1.0, float("Inf"))
-            ).to_numpy()
+            score_df["corr"] = (corr.loc[not_selected, selected].mean(axis=1).fillna(FLOOR).replace(1.0, float("Inf"))).to_numpy()
 
         else:
             # the selection of the first feature is only based on feature importance

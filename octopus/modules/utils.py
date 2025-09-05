@@ -3,12 +3,10 @@
 import math
 from typing import Tuple
 
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import scipy.stats
 import shap
-from matplotlib.backends.backend_pdf import PdfPages
 from scipy.stats import rankdata
 
 from octopus.metrics import metrics_inventory
@@ -41,19 +39,13 @@ from octopus.metrics import metrics_inventory
 #        )
 
 
-def get_performance(
-    model, data, feature_columns, target_metric, target_assignments, threshold=0.5
-) -> float:
+def get_performance(model, data, feature_columns, target_metric, target_assignments, threshold=0.5) -> float:
     """Calculate model performance score on dataset for given metric."""
     input_data = data[feature_columns]
 
     # Ensure input_data is not empty and contains the required feature columns
-    if input_data.empty or not all(
-        col in input_data.columns for col in feature_columns
-    ):
-        raise ValueError(
-            "Input data is empty or does not contain the required feature columns."
-        )
+    if input_data.empty or not all(col in input_data.columns for col in feature_columns):
+        raise ValueError("Input data is empty or does not contain the required feature columns.")
 
     # Get target column
     target_col = list(target_assignments.values())[0]
@@ -96,21 +88,15 @@ def get_performance(
         else:
             predictions = model.predict(input_data)
             if isinstance(predictions, pd.DataFrame):
-                predictions = (
-                    predictions.to_numpy()
-                )  # Convert to NumPy array if it's a DataFrame
+                predictions = predictions.to_numpy()  # Convert to NumPy array if it's a DataFrame
             performance = metric_function(target, predictions)
 
     return performance
 
 
-def get_performance_score(
-    model, data, feature_columns, target_metric, target_assignments
-) -> float:
+def get_performance_score(model, data, feature_columns, target_metric, target_assignments) -> float:
     """Calculate performance value for given metric."""
-    performance = get_performance(
-        model, data, feature_columns, target_metric, target_assignments
-    )
+    performance = get_performance(model, data, feature_columns, target_metric, target_assignments)
 
     # convert performance metric to score
     if metrics_inventory.get_direction(target_metric) == "maximize":
@@ -188,9 +174,7 @@ def rdc(x, y, f=np.sin, k=20, s=1 / 6.0, n=5):
         cxy = c[:k, k0 : k0 + k]
         cyx = c[k0 : k0 + k, :k]
 
-        eigs = np.linalg.eigvals(
-            np.dot(np.dot(np.linalg.pinv(cxx), cxy), np.dot(np.linalg.pinv(cyy), cyx))
-        )
+        eigs = np.linalg.eigvals(np.dot(np.dot(np.linalg.pinv(cxx), cxy), np.dot(np.linalg.pinv(cyy), cyx)))
 
         # Binary search if k is too large
         if not (np.all(np.isreal(eigs)) and 0 <= np.min(eigs) and np.max(eigs) <= 1):
@@ -248,9 +232,7 @@ def get_fi_permutation(experiment, n_repeat, data) -> pd.DataFrame:
     # MISSING
 
     # calculate baseline score
-    baseline_score = get_performance_score(
-        model, data, feature_columns, target_metric, target_assignments
-    )
+    baseline_score = get_performance_score(model, data, feature_columns, target_metric, target_assignments)
 
     # get all data select random feature values
     data_all = pd.concat([data_traindev, data], axis=0)
@@ -273,12 +255,8 @@ def get_fi_permutation(experiment, n_repeat, data) -> pd.DataFrame:
         for _ in range(n_repeat):
             # replace column with random selection from that column of data_all
             # we use data_all as the validation dataset may be small
-            data_pfi[feature] = np.random.choice(
-                data_all[feature], len(data_pfi), replace=False
-            )
-            pfi_score = get_performance_score(
-                model, data_pfi, feature_columns, target_metric, target_assignments
-            )
+            data_pfi[feature] = np.random.choice(data_all[feature], len(data_pfi), replace=False)
+            pfi_score = get_performance_score(model, data_pfi, feature_columns, target_metric, target_assignments)
             fi_lst.append(baseline_score - pfi_score)
 
         # calculate statistics
@@ -344,9 +322,7 @@ def get_fi_group_permutation(experiment, n_repeat, data) -> pd.DataFrame:
     features_dict = {**feature_columns_dict, **feature_groups}
 
     # calculate baseline score
-    baseline_score = get_performance_score(
-        model, data, feature_columns, target_metric, target_assignments
-    )
+    baseline_score = get_performance_score(model, data, feature_columns, target_metric, target_assignments)
 
     # get all data select random feature values
     data_all = pd.concat([data_traindev, data], axis=0)
@@ -371,12 +347,8 @@ def get_fi_group_permutation(experiment, n_repeat, data) -> pd.DataFrame:
             # replace column with random selection from that column of data_all
             # we use data_all as the validation dataset may be small
             for feat in feature:
-                data_pfi[feat] = np.random.choice(
-                    data_all[feat], len(data_pfi), replace=False
-                )
-            pfi_score = get_performance_score(
-                model, data_pfi, feature_columns, target_metric, target_assignments
-            )
+                data_pfi[feat] = np.random.choice(data_all[feat], len(data_pfi), replace=False)
+            pfi_score = get_performance_score(model, data_pfi, feature_columns, target_metric, target_assignments)
             fi_lst.append(baseline_score - pfi_score)
 
         # calculate statistics
@@ -489,9 +461,7 @@ def get_fi_shap(
     shap_fi_df = pd.DataFrame(shap_values, columns=data.columns)
     shap_fi_df = shap_fi_df.abs().mean().to_frame().reset_index()
     shap_fi_df.columns = ["feature", "importance"]
-    shap_fi_df = shap_fi_df.sort_values(by="importance", ascending=False).reset_index(
-        drop=True
-    )
+    shap_fi_df = shap_fi_df.sort_values(by="importance", ascending=False).reset_index(drop=True)
     # remove features with extremely small fi
     # shap feature importances are always non-zero due to round-off errors
     threshold = shap_fi_df["importance"].max() / 1000
@@ -567,9 +537,7 @@ def get_fi_group_shap(experiment, data, shap_type) -> pd.DataFrame:
     for group_name, features in feature_groups.items():
         # Ensure the features are in the data
         if not set(features).issubset(data.columns):
-            raise ValueError(
-                f"Features in group '{group_name}' are missing in provided dataset."
-            )
+            raise ValueError(f"Features in group '{group_name}' are missing in provided dataset.")
         # Create a boolean mask for the features in this group
         feature_mask = np.isin(data.columns, features)
         group_shap_value = np.sum(shap_values[:, feature_mask], axis=1)
@@ -579,9 +547,7 @@ def get_fi_group_shap(experiment, data, shap_type) -> pd.DataFrame:
     group_shap_df = pd.DataFrame(
         {
             "feature": list(group_shap.keys()),
-            "importance": [
-                np.mean(np.abs(feature_imp)) for _, feature_imp in group_shap.items()
-            ],
+            "importance": [np.mean(np.abs(feature_imp)) for _, feature_imp in group_shap.items()],
         }
     )
 
@@ -636,9 +602,7 @@ def get_fi_group_shap(experiment, data, shap_type) -> pd.DataFrame:
 
     # Combine individual and group SHAP values
     combined_shap_df = pd.concat([individual_shap, group_shap_df], ignore_index=True)
-    combined_shap_df = combined_shap_df.sort_values(
-        by="importance", ascending=False
-    ).reset_index(drop=True)
+    combined_shap_df = combined_shap_df.sort_values(by="importance", ascending=False).reset_index(drop=True)
 
     # Remove features with extremely small importance
     # threshold = combined_shap_df["importance"].max() / 1000

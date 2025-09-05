@@ -34,13 +34,7 @@ class OctoData:
     only one target is allowed. For time-to-event, two targets need to be provided.
     """
 
-    datasplit_type: str = field(
-        validator=[
-            validators.in_(
-                [None, "sample", "group_features", "group_sample_and_features"]
-            )
-        ]
-    )
+    datasplit_type: str = field(validator=[validators.in_([None, "sample", "group_features", "group_sample_and_features"])])
     """Type of datasplit. Allowed are `sample`, `group_features`
     and `group_sample_and_features`."""
 
@@ -53,9 +47,7 @@ class OctoData:
     )
     """Unique row identifier."""
 
-    target_assignments: Dict[str, str] = field(
-        default=Factory(dict), validator=[validators.instance_of(dict)]
-    )
+    target_assignments: Dict[str, str] = field(default=Factory(dict), validator=[validators.instance_of(dict)])
     """Mapping of target assignments."""
 
     stratification_column: Optional[str] = field(
@@ -74,9 +66,7 @@ class OctoData:
     def relevant_columns(self) -> list:
         """Relevant columns."""
         # Combine all necessary columns
-        relevant_columns = list(
-            set(self.feature_columns + self.target_columns + [self.sample_id])
-        )
+        relevant_columns = list(set(self.feature_columns + self.target_columns + [self.sample_id]))
 
         # Add optional columns if they exist
         if self.row_id:
@@ -129,9 +119,7 @@ class OctoData:
             row_id=self.row_id,
             target_assignments=self.target_assignments,
         )
-        self.data, self.feature_columns, self.row_id, self.target_assignments = (
-            preparator.prepare()
-        )
+        self.data, self.feature_columns, self.row_id, self.target_assignments = preparator.prepare()
 
     def _generate_health_report(self):
         """Generate the health report."""

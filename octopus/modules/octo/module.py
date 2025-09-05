@@ -20,9 +20,7 @@ class Octo(BaseSequenceItem):
     module: ClassVar[str] = "octo"
     """Module name."""
 
-    n_folds_inner: int = field(
-        validator=[validators.instance_of(int)], default=Factory(lambda: 5)
-    )
+    n_folds_inner: int = field(validator=[validators.instance_of(int)], default=Factory(lambda: 5))
     """Number of inner folds."""
 
     datasplit_seeds_inner: List[int] = field(
@@ -35,22 +33,16 @@ class Octo(BaseSequenceItem):
     """List of integers used as seeds for data splitting."""
     # model training
 
-    model_seed: int = field(
-        validator=[validators.instance_of(int)], default=Factory(lambda: 0)
-    )
+    model_seed: int = field(validator=[validators.instance_of(int)], default=Factory(lambda: 0))
     """Model seed."""
 
-    n_jobs: int = field(
-        validator=[validators.instance_of(int)], default=Factory(lambda: 1)
-    )
+    n_jobs: int = field(validator=[validators.instance_of(int)], default=Factory(lambda: 1))
     """Number of parallel jobs. Ideal if n_folds_inner * number of datasplit seeds."""
 
     dim_red_methods: List = field(default=Factory(lambda: [""]))
     """Methods for dimension reduction."""
 
-    max_outl: int = field(
-        validator=[validators.instance_of(int)], default=Factory(lambda: 3)
-    )
+    max_outl: int = field(validator=[validators.instance_of(int)], default=Factory(lambda: 3))
     """Maximum number of outliers, optimized by Optuna"""
 
     fi_methods_bestbag: List[str] = field(
@@ -61,67 +53,43 @@ class Octo(BaseSequenceItem):
         ),
     )
 
-    inner_parallelization: bool = field(
-        validator=[validators.instance_of(bool)], default=Factory(lambda: False)
-    )
+    inner_parallelization: bool = field(validator=[validators.instance_of(bool)], default=Factory(lambda: False))
     """Enable inner paralization. Defaults is False."""
 
     n_workers: int = field(default=Factory(lambda: None))
     """Number of workers."""
 
-    optuna_seed: int = field(
-        validator=[validators.instance_of(int)], default=Factory(lambda: 0)
-    )
+    optuna_seed: int = field(validator=[validators.instance_of(int)], default=Factory(lambda: 0))
     """Seed for Optuna TPESampler, default=0"""
 
-    n_optuna_startup_trials: int = field(
-        validator=[validators.instance_of(int)], default=Factory(lambda: 10)
-    )
+    n_optuna_startup_trials: int = field(validator=[validators.instance_of(int)], default=Factory(lambda: 10))
     """Number of Optuna startup trials (random sampler)"""
 
-    global_hyperparameter: bool = field(
-        validator=[validators.in_([True, False])], default=Factory(lambda: True)
-    )
+    global_hyperparameter: bool = field(validator=[validators.in_([True, False])], default=Factory(lambda: True))
     """Selection of hyperparameter set."""
 
-    ensemble_selection: bool = field(
-        validator=[validators.in_([True, False])], default=Factory(lambda: False)
-    )
+    ensemble_selection: bool = field(validator=[validators.in_([True, False])], default=Factory(lambda: False))
     """Whether to perform ensemble selection."""
 
-    ensel_n_save_trials: int = field(
-        validator=[validators.instance_of(int)], default=Factory(lambda: 50)
-    )
+    ensel_n_save_trials: int = field(validator=[validators.instance_of(int)], default=Factory(lambda: 50))
     """Number of top trials to be saved for ensemble selection (bags)."""
 
-    n_trials: int = field(
-        validator=[validators.instance_of(int)], default=Factory(lambda: 100)
-    )
+    n_trials: int = field(validator=[validators.instance_of(int)], default=Factory(lambda: 100))
     """Number of Optuna trials."""
 
-    hyperparameters: dict = field(
-        validator=[validators.instance_of(dict)], default=Factory(dict)
-    )
+    hyperparameters: dict = field(validator=[validators.instance_of(dict)], default=Factory(dict))
     """Bring own hyperparameter space."""
 
-    max_features: int = field(
-        validator=[validators.instance_of(int)], default=Factory(lambda: 0)
-    )
+    max_features: int = field(validator=[validators.instance_of(int)], default=Factory(lambda: 0))
     """Maximum features to constrain hyperparameter optimization."""
 
-    penalty_factor: float = field(
-        validator=[validators.instance_of(float)], default=Factory(lambda: 1.0)
-    )
+    penalty_factor: float = field(validator=[validators.instance_of(float)], default=Factory(lambda: 1.0))
     """Factor to penalyse optuna target related to feature constraint."""
 
-    mrmr_feature_numbers: list = field(
-        validator=[validators.instance_of(list)], default=Factory(list)
-    )
+    mrmr_feature_numbers: list = field(validator=[validators.instance_of(list)], default=Factory(list))
     """List of feature numbers to be investigated by mrmr."""
 
-    resume_optimization: bool = field(
-        validator=[validators.instance_of(bool)], default=Factory(lambda: False)
-    )
+    resume_optimization: bool = field(validator=[validators.instance_of(bool)], default=Factory(lambda: False))
     """Resume HPO, use existing optuna.db, don't delete optuna.db"""
 
     def __attrs_post_init__(self):
@@ -130,6 +98,5 @@ class Octo(BaseSequenceItem):
             self.n_workers = self.n_folds_inner
         if self.n_workers != self.n_folds_inner:
             logger.warning(
-                f"Octofull Warning: n_workers ({self.n_workers}) "
-                f"does not match n_folds_inner ({self.n_folds_inner})",
+                f"Octofull Warning: n_workers ({self.n_workers}) does not match n_folds_inner ({self.n_folds_inner})",
             )

@@ -68,46 +68,34 @@ def test_check_critical_column_missing_values(health_checker):
     """Test critical column missing values check."""
     health_checker.data.loc[0, "target"] = np.nan
     health_checker._check_critical_column_missing_values()
-    assert any(
-        issue["Issue Type"] == "critical_missing_values"
-        for issue in health_checker.issues
-    )
+    assert any(issue["Issue Type"] == "critical_missing_values" for issue in health_checker.issues)
 
 
 def test_check_feature_column_missing_values(health_checker):
     """Test feature column missing values check."""
     health_checker.data.loc[:25, "feature1"] = np.nan
     health_checker._check_feature_column_missing_values()
-    assert any(
-        issue["Issue Type"] == "high_missing_values" for issue in health_checker.issues
-    )
+    assert any(issue["Issue Type"] == "high_missing_values" for issue in health_checker.issues)
 
 
 def test_check_row_missing_values(health_checker):
     """Test row missing values check."""
     health_checker.data.iloc[0, 1:4] = np.nan
     health_checker._check_row_missing_values()
-    assert any(
-        issue["Issue Type"] == "low_missing_values" for issue in health_checker.issues
-    )
+    assert any(issue["Issue Type"] == "low_missing_values" for issue in health_checker.issues)
 
 
 def test_check_int_col_with_few_uniques(health_checker):
     """Test int with few uniques check."""
     health_checker._check_int_col_with_few_uniques()
-    assert any(
-        issue["Issue Type"] == "int_columns_with_few_uniques"
-        for issue in health_checker.issues
-    )
+    assert any(issue["Issue Type"] == "int_columns_with_few_uniques" for issue in health_checker.issues)
 
 
 def test_check_duplicated_features(health_checker):
     """Test duplicated features check."""
     health_checker.data = pd.concat([health_checker.data] * 2).reset_index(drop=True)
     health_checker._check_duplicated_features()
-    assert any(
-        issue["Issue Type"] == "duplicated_features" for issue in health_checker.issues
-    )
+    assert any(issue["Issue Type"] == "duplicated_features" for issue in health_checker.issues)
 
 
 def test_check_feature_feature_correlation(health_checker):
@@ -115,9 +103,7 @@ def test_check_feature_feature_correlation(health_checker):
     health_checker.data["feature4"] = health_checker.data["feature1"] * 2
     health_checker.feature_columns.append("feature4")
     health_checker._check_feature_feature_correlation()
-    assert any(
-        issue["Issue Type"] == "high_correlation" for issue in health_checker.issues
-    )
+    assert any(issue["Issue Type"] == "high_correlation" for issue in health_checker.issues)
 
 
 def test_check_identical_features(health_checker):
@@ -125,29 +111,21 @@ def test_check_identical_features(health_checker):
     health_checker.data["feature5"] = health_checker.data["feature1"]
     health_checker.feature_columns.append("feature5")
     health_checker._check_identical_features()
-    assert any(
-        issue["Issue Type"] == "identical_features" for issue in health_checker.issues
-    )
+    assert any(issue["Issue Type"] == "identical_features" for issue in health_checker.issues)
 
 
 def test_check_duplicated_rows(health_checker):
     """Test duplicated rows check."""
-    health_checker.data = pd.concat([health_checker.data.iloc[:5]] * 2).reset_index(
-        drop=True
-    )
+    health_checker.data = pd.concat([health_checker.data.iloc[:5]] * 2).reset_index(drop=True)
     health_checker._check_duplicated_rows()
-    assert any(
-        issue["Issue Type"] == "duplicated_rows" for issue in health_checker.issues
-    )
+    assert any(issue["Issue Type"] == "duplicated_rows" for issue in health_checker.issues)
 
 
 def test_check_infinity_values(health_checker):
     """Test infinity values check."""
     health_checker.data.loc[0, "feature1"] = np.inf
     health_checker._check_infinity_values()
-    assert any(
-        issue["Issue Type"] == "infinity_values" for issue in health_checker.issues
-    )
+    assert any(issue["Issue Type"] == "infinity_values" for issue in health_checker.issues)
 
 
 def test_check_string_mismatch(health_checker):
@@ -155,9 +133,7 @@ def test_check_string_mismatch(health_checker):
     health_checker.data["feature6"] = ["apple", "aple", "appl", "banana"] * 25
     health_checker.feature_columns.append("feature6")
     health_checker._check_string_mismatch()
-    assert any(
-        issue["Issue Type"] == "string_mismatch" for issue in health_checker.issues
-    )
+    assert any(issue["Issue Type"] == "string_mismatch" for issue in health_checker.issues)
 
 
 def test_check_string_out_of_bounds(health_checker):
@@ -169,6 +145,4 @@ def test_check_string_out_of_bounds(health_checker):
     ] * 33 + ["short"]
     health_checker.feature_columns.append("feature7")
     health_checker._check_string_out_of_bounds()
-    assert any(
-        issue["Issue Type"] == "string_out_of_bounds" for issue in health_checker.issues
-    )
+    assert any(issue["Issue Type"] == "string_out_of_bounds" for issue in health_checker.issues)

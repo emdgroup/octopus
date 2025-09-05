@@ -166,9 +166,7 @@ class Rfe2Core(OctoCore):
                 selected_row = filtered_df.loc[filtered_df["n_features"].idxmin()]
             else:
                 # take best value if no solution with less features can be found
-                selected_row = self.results.loc[
-                    self.results["performance_mean"].idxmax()
-                ]
+                selected_row = self.results.loc[self.results["performance_mean"].idxmax()]
 
         # save results to experiment
         best_model = selected_row["model"]
@@ -179,9 +177,7 @@ class Rfe2Core(OctoCore):
             feature_importances={
                 "dev": selected_row["feature_importances"],
             },
-            selected_features=best_model.get_selected_features(
-                fi_methods=[self.fi_method]
-            ),
+            selected_features=best_model.get_selected_features(fi_methods=[self.fi_method]),
         )
 
         print("RFE solution:")
@@ -267,9 +263,7 @@ class Rfe2Core(OctoCore):
         fi_avail_df = fi_df[~fi_df["protected"]]
 
         # get the feature with the lowest value in the selection column
-        lowest_feature = fi_avail_df.loc[
-            fi_avail_df[selection_column].idxmin(), "feature"
-        ]
+        lowest_feature = fi_avail_df.loc[fi_avail_df[selection_column].idxmin(), "feature"]
 
         # get all feature to be removed, including group members
         if lowest_feature in bag.feature_groups.keys():

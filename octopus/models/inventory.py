@@ -32,9 +32,7 @@ class ModelInventory:
                 self._model_configs[name] = config
             else:
                 raise UnknownModelError(
-                    f"Unknown model '{name}'. "
-                    f"Available models are: {', '.join(list(self.models.keys()))}. "
-                    "Please check the model name and try again."
+                    f"Unknown model '{name}'. Available models are: {', '.join(list(self.models.keys()))}. Please check the model name and try again."
                 )
         return self._model_configs[name]
 
@@ -107,36 +105,22 @@ class ModelInventory:
 
             if hp.type == "int":
                 if hp.step is not None:
-                    params[parameter_name] = trial.suggest_int(
-                        name=unique_name, low=hp.low, high=hp.high, step=hp.step
-                    )
+                    params[parameter_name] = trial.suggest_int(name=unique_name, low=hp.low, high=hp.high, step=hp.step)
                 elif hp.log is not None:
-                    params[parameter_name] = trial.suggest_int(
-                        name=unique_name, low=hp.low, high=hp.high, log=hp.log
-                    )
+                    params[parameter_name] = trial.suggest_int(name=unique_name, low=hp.low, high=hp.high, log=hp.log)
                 else:
-                    params[parameter_name] = trial.suggest_int(
-                        name=unique_name, low=hp.low, high=hp.high
-                    )
+                    params[parameter_name] = trial.suggest_int(name=unique_name, low=hp.low, high=hp.high)
 
             elif hp.type == "float":
                 if hp.step is not None:
-                    params[parameter_name] = trial.suggest_float(
-                        name=unique_name, low=hp.low, high=hp.high, step=hp.step
-                    )
+                    params[parameter_name] = trial.suggest_float(name=unique_name, low=hp.low, high=hp.high, step=hp.step)
                 elif hp.log is not None:
-                    params[parameter_name] = trial.suggest_float(
-                        name=unique_name, low=hp.low, high=hp.high, log=hp.log
-                    )
+                    params[parameter_name] = trial.suggest_float(name=unique_name, low=hp.low, high=hp.high, log=hp.log)
                 else:
-                    params[parameter_name] = trial.suggest_float(
-                        name=unique_name, low=hp.low, high=hp.high
-                    )
+                    params[parameter_name] = trial.suggest_float(name=unique_name, low=hp.low, high=hp.high)
 
             elif hp.type == "categorical":
-                params[parameter_name] = trial.suggest_categorical(
-                    name=unique_name, choices=hp.choices
-                )
+                params[parameter_name] = trial.suggest_categorical(name=unique_name, choices=hp.choices)
             elif hp.type == "fixed":
                 params[parameter_name] = hp.value
             else:

@@ -51,9 +51,7 @@ class OctoExperiment:
     """Identifier for the input sequence item."""
 
     path_sequence_item: Path = field(
-        validator=validators.optional(
-            validators.instance_of(Path)
-        )  # Allow None or Path
+        validator=validators.optional(validators.instance_of(Path))  # Allow None or Path
     )
     """File system path to the sequence item."""
 
@@ -72,9 +70,7 @@ class OctoExperiment:
     target_assignments: Dict = field(validator=[validators.instance_of(dict)])
     """Mapping of target variables to their assignments."""
 
-    data_traindev: pd.DataFrame = field(
-        validator=[validators.instance_of(pd.DataFrame)]
-    )
+    data_traindev: pd.DataFrame = field(validator=[validators.instance_of(pd.DataFrame)])
     """DataFrame containing training and development data."""
 
     data_test: pd.DataFrame = field(validator=[validators.instance_of(pd.DataFrame)])
@@ -86,38 +82,26 @@ class OctoExperiment:
     )
     "Column name used for stratification, if applicable."
 
-    ml_module: str = field(
-        init=False, default="", validator=[validators.instance_of(str)]
-    )
+    ml_module: str = field(init=False, default="", validator=[validators.instance_of(str)])
     """Name of the machine learning module used."""
 
     # number of cpus available for each experiment
-    num_assigned_cpus: int = field(
-        init=False, default=0, validator=[validators.instance_of(int)]
-    )
+    num_assigned_cpus: int = field(init=False, default=0, validator=[validators.instance_of(int)])
     """Number of CPUs assigned to the experiment."""
 
     ml_config: Dict = field(init=False, default=None)
     """Configuration settings for the machine learning module."""
 
-    selected_features: List = field(
-        default=Factory(list), validator=[validators.instance_of(list)]
-    )
+    selected_features: List = field(default=Factory(list), validator=[validators.instance_of(list)])
     """List of features selected for the experiment."""
 
-    feature_groups: Dict = field(
-        default=Factory(dict), validator=[validators.instance_of(dict)]
-    )
+    feature_groups: Dict = field(default=Factory(dict), validator=[validators.instance_of(dict)])
     """Groupings of features based on correlation analysis."""
 
-    results: Dict = field(
-        default=Factory(dict), validator=[validators.instance_of(dict)]
-    )
+    results: Dict = field(default=Factory(dict), validator=[validators.instance_of(dict)])
     """Results of the experiment, keyed by result type."""
 
-    prior_results: Dict = field(
-        default=Factory(dict), validator=[validators.instance_of(dict)]
-    )
+    prior_results: Dict = field(default=Factory(dict), validator=[validators.instance_of(dict)])
     """Results of the experiment used as input, keyed by result type."""
 
     @property
@@ -136,18 +120,14 @@ class OctoExperiment:
     def calculate_feature_groups(self, feature_columns) -> dict:
         """Calculate feature groups based on correlation thresholds."""
         if len(feature_columns) <= 2:
-            logging.warning(
-                "Not enough features to calculate correlations for feature groups."
-            )
+            logging.warning("Not enough features to calculate correlations for feature groups.")
             return {}
         logging.info("Calculating feature groups.")
 
         auto_group_thresholds = [0.7, 0.8, 0.9]
         auto_groups = list()
 
-        pos_corr_matrix, _ = scipy.stats.spearmanr(
-            np.nan_to_num(self.data_traindev[feature_columns].values)
-        )
+        pos_corr_matrix, _ = scipy.stats.spearmanr(np.nan_to_num(self.data_traindev[feature_columns].values))
         pos_corr_matrix = np.abs(pos_corr_matrix)
 
         # get groups depending on threshold
@@ -159,12 +139,7 @@ class OctoExperiment:
                         g.add_edge(i, j)
 
             # Get connected components and sort them to ensure determinism
-            subgraphs = [
-                g.subgraph(c).copy()
-                for c in sorted(
-                    nx.connected_components(g), key=lambda x: (len(x), sorted(x))
-                )
-            ]
+            subgraphs = [g.subgraph(c).copy() for c in sorted(nx.connected_components(g), key=lambda x: (len(x), sorted(x)))]
             # Create groups of feature columns
             groups = []
             for sg in subgraphs:

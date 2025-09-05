@@ -48,9 +48,7 @@ filter_inventory = {
 class RocCore:
     """Roc Module."""
 
-    experiment: OctoExperiment = field(
-        validator=[validators.instance_of(OctoExperiment)]
-    )
+    experiment: OctoExperiment = field(validator=[validators.instance_of(OctoExperiment)])
 
     feature_groups: list = field(init=False, validator=[validators.instance_of(list)])
 
@@ -72,9 +70,7 @@ class RocCore:
     @property
     def y_traindev(self) -> pd.DataFrame:
         """y_traindev."""
-        return self.experiment.data_traindev[
-            self.experiment.target_assignments.values()
-        ]
+        return self.experiment.data_traindev[self.experiment.target_assignments.values()]
 
     @property
     def feature_columns(self) -> list:
@@ -127,24 +123,18 @@ class RocCore:
             print("Time2Event: Note, that the first group element is selected.")
         elif self.filter_type == "mutual_info":
             # set random state
-            values = filter_inventory[self.filter_type][self.ml_type](
-                self.x_traindev, self.y_traindev.to_numpy().ravel(), random_state=0
-            )
+            values = filter_inventory[self.filter_type][self.ml_type](self.x_traindev, self.y_traindev.to_numpy().ravel(), random_state=0)
             dependency = pd.Series(values, index=self.feature_columns)
         elif self.filter_type == "f_statistics":
             # ignoring p-values
-            values, _ = filter_inventory[self.filter_type][self.ml_type](
-                self.x_traindev, self.y_traindev.to_numpy().ravel()
-            )
+            values, _ = filter_inventory[self.filter_type][self.ml_type](self.x_traindev, self.y_traindev.to_numpy().ravel())
             dependency = pd.Series(values, index=self.feature_columns)
 
         print("Calculating feature groups.")
         # correlation matrix
         if correlation_type == "spearmanr":
             # (A) spearmamr correlation matrix
-            pos_corr_matrix, _ = scipy.stats.spearmanr(
-                np.nan_to_num(self.x_traindev.values)
-            )
+            pos_corr_matrix, _ = scipy.stats.spearmanr(np.nan_to_num(self.x_traindev.values))
             pos_corr_matrix = np.abs(pos_corr_matrix)
         elif correlation_type == "rdc":
             # (B) RDC correlation matrix
@@ -161,12 +151,7 @@ class RocCore:
                     g.add_edge(i, j)
 
         # Get connected components and sort them to ensure determinism
-        subgraphs = [
-            g.subgraph(c).copy()
-            for c in sorted(
-                nx.connected_components(g), key=lambda x: (len(x), sorted(x))
-            )
-        ]
+        subgraphs = [g.subgraph(c).copy() for c in sorted(nx.connected_components(g), key=lambda x: (len(x), sorted(x)))]
 
         # Create groups of feature columns
         groups = []
@@ -215,15 +200,11 @@ class RocCore:
 
         print("remaining features:", remaining_features)
 
-        print(
-            "Number of features before correlation removal:", len(self.feature_columns)
-        )
+        print("Number of features before correlation removal:", len(self.feature_columns))
         print("Number of features after correlation removal:", len(remaining_features))
 
         # save features selected by ROC
-        self.experiment.selected_features = sorted(
-            remaining_features, key=lambda x: (len(x), sorted(x))
-        )
+        self.experiment.selected_features = sorted(remaining_features, key=lambda x: (len(x), sorted(x)))
 
         print("ROC completed")
 

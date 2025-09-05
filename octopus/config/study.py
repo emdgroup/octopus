@@ -24,9 +24,7 @@ def validate_metric(instance: "ConfigStudy", attribute: Any, value: str) -> None
         metric_ml_type = metrics_inventory.get_metric_config(metric).ml_type
 
         if metric_ml_type != instance.ml_type:
-            raise ValueError(
-                f"Invalid target metric '{metric}' for ml_type '{instance.ml_type}'."
-            )
+            raise ValueError(f"Invalid target metric '{metric}' for ml_type '{instance.ml_type}'.")
 
 
 @define
@@ -50,16 +48,12 @@ class ConfigStudy:
     path: str = field(default="./studies/")
     """The path where study outputs are saved. Defaults to "./studies/"."""
 
-    start_with_empty_study: bool = field(
-        default=True, validator=[validators.instance_of(bool)]
-    )
+    start_with_empty_study: bool = field(default=True, validator=[validators.instance_of(bool)])
 
     n_folds_outer: int = field(default=5, validator=[validators.instance_of(int)])
     """The number of outer folds for cross-validation. Defaults to 5."""
 
-    datasplit_seed_outer: int = field(
-        default=0, validator=[validators.instance_of(int)]
-    )
+    datasplit_seed_outer: int = field(default=0, validator=[validators.instance_of(int)])
     """The seed used for data splitting in outer cross-validation. Defaults to 0."""
 
     imputation_method: str = field(
@@ -69,9 +63,7 @@ class ConfigStudy:
         ],
     )
 
-    silently_overwrite_study: bool = field(
-        default=Factory(lambda: False), validator=[validators.instance_of(bool)]
-    )
+    silently_overwrite_study: bool = field(default=Factory(lambda: False), validator=[validators.instance_of(bool)])
     """Indicates whether the study can be overwritten. Defaults to False."""
 
     # is this really useful?
@@ -82,7 +74,5 @@ class ConfigStudy:
     """A list of metrics to be calculated.
     Defaults to target_metric value."""
 
-    ignore_data_health_warning: bool = field(
-        default=Factory(lambda: False), validator=[validators.instance_of(bool)]
-    )
+    ignore_data_health_warning: bool = field(default=Factory(lambda: False), validator=[validators.instance_of(bool)])
     """Ignore data health checks warning and run machine learning workflow."""

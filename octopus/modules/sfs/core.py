@@ -85,9 +85,7 @@ def get_param_grid(model_type):
 class SfsCore:
     """SFS Module."""
 
-    experiment: OctoExperiment = field(
-        validator=[validators.instance_of(OctoExperiment)]
-    )
+    experiment: OctoExperiment = field(validator=[validators.instance_of(OctoExperiment)])
 
     @property
     def path_module(self) -> Path:
@@ -107,9 +105,7 @@ class SfsCore:
     @property
     def y_traindev(self) -> pd.DataFrame:
         """y_train."""
-        return self.experiment.data_traindev[
-            self.experiment.target_assignments.values()
-        ]
+        return self.experiment.data_traindev[self.experiment.target_assignments.values()]
 
     @property
     def data_test(self) -> pd.DataFrame:

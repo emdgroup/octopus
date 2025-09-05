@@ -7,9 +7,7 @@ from octopus.config import ConfigStudy
 
 def test_config_study_defaults():
     """Test default values."""
-    config = ConfigStudy(
-        name="Test_study", ml_type="classification", target_metric="AUCROC"
-    )
+    config = ConfigStudy(name="Test_study", ml_type="classification", target_metric="AUCROC")
     assert config.name == "Test_study"
     assert config.ml_type == "classification"
     assert config.target_metric == "AUCROC"

@@ -18,9 +18,7 @@ from octopus.modules import Mrmr, Octo
 # https://automl.github.io/auto-sklearn/master/examples/20_basic/example_regression.html
 
 # load data from csv and perform pre-processing
-data_df = pd.read_csv(
-    os.path.join(os.getcwd(), "datasets", "diabetes.csv"), index_col=0
-)
+data_df = pd.read_csv(os.path.join(os.getcwd(), "datasets", "diabetes.csv"), index_col=0)
 
 ### Create OctoData Object
 

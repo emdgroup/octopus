@@ -14,9 +14,7 @@ class Mrmr(BaseSequenceItem):
     module: ClassVar[str] = "mrmr"
     """Module name."""
 
-    n_features: int = field(
-        validator=[validators.instance_of(int)], default=Factory(lambda: 30)
-    )
+    n_features: int = field(validator=[validators.instance_of(int)], default=Factory(lambda: 30))
     """Number of features selected by MRMR."""
 
     correlation_type: str = field(
@@ -37,9 +35,7 @@ class Mrmr(BaseSequenceItem):
     )
     """Selection of model from with feature importances were created."""
 
-    feature_importance_type: str = field(
-        validator=[validators.in_(["mean", "count"])], default=Factory(lambda: "mean")
-    )
+    feature_importance_type: str = field(validator=[validators.in_(["mean", "count"])], default=Factory(lambda: "mean"))
     """Selection of feature importance type."""
 
     feature_importance_method: str = field(

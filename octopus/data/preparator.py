@@ -55,9 +55,7 @@ class OctoDataPreparator:
 
         This ensures that the results are always the same, preventing minor differences.
         """
-        self.feature_columns = sorted(
-            map(str, self.feature_columns), key=lambda x: (len(x), x)
-        )
+        self.feature_columns = sorted(map(str, self.feature_columns), key=lambda x: (len(x), x))
         logger.info("Sorted features.")
 
     def _set_target_assignments(self):
@@ -76,11 +74,7 @@ class OctoDataPreparator:
         """Remove features that contain only a single unique value."""
         num_original_features = len(self.feature_columns)
 
-        self.feature_columns = [
-            feature
-            for feature in self.feature_columns
-            if self.data[feature].nunique() > 1
-        ]
+        self.feature_columns = [feature for feature in self.feature_columns if self.data[feature].nunique() > 1]
         num_new_features = len(self.feature_columns)
 
         if num_original_features > num_new_features:
@@ -137,9 +131,7 @@ class OctoDataPreparator:
 
             # Convert infinite values to strings for consistent grouping
             for col in df_for_grouping.select_dtypes(include=[np.number]).columns:
-                df_for_grouping[col] = df_for_grouping[col].replace(
-                    [np.inf, -np.inf], ["inf", "-inf"]
-                )
+                df_for_grouping[col] = df_for_grouping[col].replace([np.inf, -np.inf], ["inf", "-inf"])
 
             # Perform the groupby operation
             return df_for_grouping.groupby(columns).ngroup()
@@ -147,9 +139,7 @@ class OctoDataPreparator:
         self.data = (
             self.data
             # Create group with the same features
-            .assign(
-                group_features=lambda df_: custom_groupby(df_, self.feature_columns)
-            )
+            .assign(group_features=lambda df_: custom_groupby(df_, self.feature_columns))
             # Create group with the same features and/or the same sample_id
             .assign(
                 group_sample_and_features=lambda df_: df_.apply(
@@ -161,7 +151,8 @@ class OctoDataPreparator:
                     ).index.min(),
                     axis=1,
                 )
-            ).reset_index(drop=True)
+            )
+            .reset_index(drop=True)
         )
         logger.info("Added `group_feaures` and `group_sample_features`")
 
@@ -193,9 +184,7 @@ class OctoDataPreparator:
             if isinstance(x, str):
                 if x.strip().lower() in infinity_values_case_insensitive:
                     return np.inf
-                elif x.strip().lower() in {
-                    f"-{val}" for val in infinity_values_case_insensitive
-                }:
+                elif x.strip().lower() in {f"-{val}" for val in infinity_values_case_insensitive}:
                     return -np.inf
             return x
 

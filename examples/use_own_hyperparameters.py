@@ -90,9 +90,7 @@ config_sequence = ConfigSequence(
             hyperparameters={
                 "RandomForestRegressor": [
                     Hyperparameter(type="int", name="max_depth", low=2, high=32),
-                    Hyperparameter(
-                        type="int", name="min_samples_split", low=2, high=100
-                    ),
+                    Hyperparameter(type="int", name="min_samples_split", low=2, high=100),
                 ]
             },
         ),

@@ -31,9 +31,7 @@ class ExtraTreesClassifierModel:
                 Hyperparameter(type="int", name="min_samples_split", low=2, high=100),
                 Hyperparameter(type="int", name="min_samples_leaf", low=1, high=50),
                 Hyperparameter(type="float", name="max_features", low=0.1, high=1),
-                Hyperparameter(
-                    type="int", name="n_estimators", low=100, high=500, log=False
-                ),
+                Hyperparameter(type="int", name="n_estimators", low=100, high=500, log=False),
                 Hyperparameter(
                     type="categorical",
                     name="class_weight",
@@ -60,9 +58,7 @@ class GradientBoostingClassifierModel:
             ml_type="classification",
             feature_method="internal",
             hyperparameters=[
-                Hyperparameter(
-                    type="float", name="learning_rate", low=0.01, high=1, log=True
-                ),
+                Hyperparameter(type="float", name="learning_rate", low=0.01, high=1, log=True),
                 Hyperparameter(type="int", name="min_samples_leaf", low=1, high=200),
                 Hyperparameter(type="int", name="max_leaf_nodes", low=3, high=2047),
                 Hyperparameter(type="int", name="max_depth", low=3, high=9, step=2),
@@ -92,12 +88,8 @@ class RandomForestClassifierModel:
                 Hyperparameter(type="int", name="min_samples_split", low=2, high=100),
                 Hyperparameter(type="int", name="min_samples_leaf", low=1, high=50),
                 Hyperparameter(type="float", name="max_features", low=0.1, high=1),
-                Hyperparameter(
-                    type="int", name="n_estimators", low=100, high=500, log=False
-                ),
-                Hyperparameter(
-                    type="categorical", name="class_weight", choices=[None, "balanced"]
-                ),
+                Hyperparameter(type="int", name="n_estimators", low=100, high=500, log=False),
+                Hyperparameter(type="categorical", name="class_weight", choices=[None, "balanced"]),
             ],
             n_jobs="n_jobs",
             model_seed="random_state",
@@ -117,9 +109,7 @@ class XGBClassifierModel:
             ml_type="classification",
             feature_method="internal",
             hyperparameters=[
-                Hyperparameter(
-                    type="float", name="learning_rate", low=1e-4, high=0.3, log=True
-                ),
+                Hyperparameter(type="float", name="learning_rate", low=1e-4, high=0.3, log=True),
                 Hyperparameter(type="int", name="min_child_weight", low=2, high=15),
                 Hyperparameter(type="float", name="subsample", low=0.15, high=1.0),
                 Hyperparameter(type="int", name="n_estimators", low=30, high=200),
@@ -144,9 +134,7 @@ class CatBoostClassifierModel:
             ml_type="classification",
             feature_method="internal",
             hyperparameters=[
-                Hyperparameter(
-                    type="float", name="learning_rate", low=1e-2, high=1e-1, log=True
-                ),
+                Hyperparameter(type="float", name="learning_rate", low=1e-2, high=1e-1, log=True),
                 Hyperparameter(type="int", name="depth", low=3, high=10),
                 Hyperparameter(type="float", name="l2_leaf_reg", low=2, high=10),
                 Hyperparameter(type="float", name="random_strength", low=2, high=10),
@@ -185,15 +173,9 @@ class LogisticRegressionClassifierModel:
                 Hyperparameter(type="int", name="max_iter", low=100, high=500),
                 Hyperparameter(type="float", name="C", low=1e-2, high=100, log=True),
                 Hyperparameter(type="float", name="tol", low=1e-4, high=1e-2, log=True),
-                Hyperparameter(
-                    type="categorical", name="penalty", choices=["l2", None]
-                ),
-                Hyperparameter(
-                    type="categorical", name="fit_intercept", choices=[True, False]
-                ),
-                Hyperparameter(
-                    type="categorical", name="class_weight", choices=[None, "balanced"]
-                ),
+                Hyperparameter(type="categorical", name="penalty", choices=["l2", None]),
+                Hyperparameter(type="categorical", name="fit_intercept", choices=[True, False]),
+                Hyperparameter(type="categorical", name="class_weight", choices=[None, "balanced"]),
                 Hyperparameter(type="fixed", name="solver", value="lbfgs"),
             ],
             n_jobs="n_jobs",
@@ -220,16 +202,10 @@ class TabPFNClassifierModel:
                 Hyperparameter(type="fixed", name="n_estimators", value=4),
                 Hyperparameter(type="fixed", name="softmax_temperature", value=0.9),
                 Hyperparameter(type="fixed", name="balance_probabilities", value=True),
-                Hyperparameter(
-                    type="fixed", name="average_before_softmax", value=False
-                ),
+                Hyperparameter(type="fixed", name="average_before_softmax", value=False),
                 Hyperparameter(type="fixed", name="device", value="cpu"),
-                Hyperparameter(
-                    type="fixed", name="ignore_pretraining_limits", value=False
-                ),
-                Hyperparameter(
-                    type="fixed", name="fit_mode", value="fit_preprocessors"
-                ),
+                Hyperparameter(type="fixed", name="ignore_pretraining_limits", value=False),
+                Hyperparameter(type="fixed", name="fit_mode", value="fit_preprocessors"),
                 Hyperparameter(type="fixed", name="memory_saving_mode", value="auto"),
             ],
             n_jobs="n_jobs",

@@ -112,9 +112,7 @@ class DataFrameGenerator:
         rng = np.random.default_rng(self.random_state)
         for col_name in column_names:
             random_numbers = rng.random(size=len(self.df))
-            formatted_numbers = [
-                Decimal(f"{num:.{precision}f}") for num in random_numbers
-            ]
+            formatted_numbers = [Decimal(f"{num:.{precision}f}") for num in random_numbers]
             self.df[col_name] = formatted_numbers
 
     def add_inf_columns(self, column_names=["inf_col"], num_inf=10):
@@ -136,9 +134,7 @@ class DataFrameGenerator:
         # Assign to the DataFrame, trimming to the correct length
         self.df[column_name] = repeated_values[: len(self.df)]
 
-    def add_string_mismatch_column(
-        self, column_name="mismatch_col", base_string="sample", error_rate=0.1
-    ):
+    def add_string_mismatch_column(self, column_name="mismatch_col", base_string="sample", error_rate=0.1):
         """Add a column with strings that contain random typos or mismatches, and convert it to categorical."""
 
         def introduce_typo(s):
@@ -149,9 +145,7 @@ class DataFrameGenerator:
             return s
 
         # Generate the column with potential typos
-        self.df[column_name] = [
-            introduce_typo(base_string) for _ in range(len(self.df))
-        ]
+        self.df[column_name] = [introduce_typo(base_string) for _ in range(len(self.df))]
 
         # Convert the column to categorical type
         self.df[column_name] = self.df[column_name].astype("category")
@@ -170,9 +164,7 @@ generator_errors = DataFrameGenerator(random_state=42)
 generator_errors.add_nan_to_features()
 generator_errors.add_nan_to_target(num_nan=10)
 generator_errors.add_id_column(unique=True, include_nans=True)
-generator_errors.add_id_column(
-    column_name="sample_id", prefix="Sample", unique=True, include_nans=True
-)
+generator_errors.add_id_column(column_name="sample_id", prefix="Sample", unique=True, include_nans=True)
 generator_errors.add_id_column(
     column_name="stratification",
     prefix="Strat_",
@@ -189,9 +181,7 @@ df_error = generator_errors.get_dataframe()
 generator_warnings = DataFrameGenerator(random_state=42)
 generator_warnings.add_fixed_unique_values_column()
 generator_warnings.add_id_column(unique=True, include_nans=False)
-generator_warnings.add_id_column(
-    column_name="sample_id", prefix="Sample", unique=True, include_nans=False
-)
+generator_warnings.add_id_column(column_name="sample_id", prefix="Sample", unique=True, include_nans=False)
 generator_warnings.add_id_column(
     column_name="stratification",
     prefix=None,
@@ -207,11 +197,7 @@ print(df_warnings)
 octo_data = OctoData(
     data=df_warnings,
     target_columns=["target"],
-    feature_columns=df_warnings.columns.drop("target")
-    .drop("id")
-    .drop("sample_id")
-    .drop("stratification")
-    .tolist(),
+    feature_columns=df_warnings.columns.drop("target").drop("id").drop("sample_id").drop("stratification").tolist(),
     # row_id="id",
     sample_id="sample_id",
     datasplit_type="group_sample_and_features",

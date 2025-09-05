@@ -126,9 +126,18 @@ def test_add_group_features(octo_preparator):
     # Check group_sample_and_features
     # Rows with the same sample_id OR the same features should have the
     # same group_sample_and_features value
-    assert octo_preparator.data.loc[0, "group_sample_and_features"] == octo_preparator.data.loc[2, "group_sample_and_features"]
-    assert octo_preparator.data.loc[4, "group_sample_and_features"] == octo_preparator.data.loc[5, "group_sample_and_features"]
-    assert octo_preparator.data.loc[6, "group_sample_and_features"] == octo_preparator.data.loc[7, "group_sample_and_features"]
+    assert (
+        octo_preparator.data.loc[0, "group_sample_and_features"]
+        == octo_preparator.data.loc[2, "group_sample_and_features"]
+    )
+    assert (
+        octo_preparator.data.loc[4, "group_sample_and_features"]
+        == octo_preparator.data.loc[5, "group_sample_and_features"]
+    )
+    assert (
+        octo_preparator.data.loc[6, "group_sample_and_features"]
+        == octo_preparator.data.loc[7, "group_sample_and_features"]
+    )
 
     # There should be 6 unique group_sample_and_features
     # (s1/s3, s2/s4, s5, s6 - where s1/s3 and s2/s4 are grouped due to
@@ -141,13 +150,19 @@ def test_add_group_features(octo_preparator):
     # Additional checks
     # Verify that rows with different features but same sample_id
     # have the same group_sample_and_features but different group_features
-    assert octo_preparator.data.loc[6, "group_sample_and_features"] == octo_preparator.data.loc[7, "group_sample_and_features"]
+    assert (
+        octo_preparator.data.loc[6, "group_sample_and_features"]
+        == octo_preparator.data.loc[7, "group_sample_and_features"]
+    )
     assert octo_preparator.data.loc[6, "group_features"] != octo_preparator.data.loc[7, "group_features"]
 
     # Verify that rows with the same features but different sample_id
     # have the same group_features and group_sample_and_features
     assert octo_preparator.data.loc[0, "group_features"] == octo_preparator.data.loc[2, "group_features"]
-    assert octo_preparator.data.loc[0, "group_sample_and_features"] == octo_preparator.data.loc[2, "group_sample_and_features"]
+    assert (
+        octo_preparator.data.loc[0, "group_sample_and_features"]
+        == octo_preparator.data.loc[2, "group_sample_and_features"]
+    )
 
 
 def test_standardize_null_values(octo_preparator):

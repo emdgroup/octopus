@@ -1,13 +1,13 @@
 """Config sequence."""
 
-from typing import Any, List
+from typing import Any
 
 from attrs import Factory, define, field, validators
 
 from octopus.config.base_sequence_item import BaseSequenceItem
 
 
-def validate_sequence_items(_instance: Any, attribute: Any, value: List[BaseSequenceItem]) -> None:
+def validate_sequence_items(_instance: Any, attribute: Any, value: list[BaseSequenceItem]) -> None:
     """Validate the `sequence_items` attribute.
 
     Ensures that the value is a non-empty list where each item is an
@@ -42,11 +42,15 @@ def validate_sequence_items(_instance: Any, attribute: Any, value: List[BaseSequ
     # Condition 2: All Items are Instances of BaseSequenceItem
     for item in value:
         if not isinstance(item, BaseSequenceItem):
-            raise TypeError(f"Each item in '{attribute.name}' must be an instance of 'BaseSequenceItem', but got '{type(item).__name__}'.")
+            raise TypeError(
+                f"Each item in '{attribute.name}' must be an instance of 'BaseSequenceItem', but got '{type(item).__name__}'."
+            )
 
     # Condition 2.5: First Item Must Have sequence_id=0
     if value[0].sequence_id != 0:
-        raise ValueError(f"The first sequence item must have 'sequence_id=0', but got 'sequence_id={value[0].sequence_id}'.")
+        raise ValueError(
+            f"The first sequence item must have 'sequence_id=0', but got 'sequence_id={value[0].sequence_id}'."
+        )
 
     # Build mapping of sequence_id to index and collect item_ids
     item_id_to_index = {}
@@ -126,7 +130,7 @@ class ConfigSequence:
         sequence_items (List[BaseSequenceItem]):
     """
 
-    sequence_items: List[BaseSequenceItem] = field(
+    sequence_items: list[BaseSequenceItem] = field(
         default=Factory(list),
         validator=[validators.instance_of(list), validate_sequence_items],
     )

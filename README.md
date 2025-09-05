@@ -12,6 +12,18 @@ If you need to install additional packages (extras), you can specify them like s
 
     pip install .[extra_package]
 
+
+## Installation for Development
+
+Installation of an environment, for example:
+
+    conda create -n "octo" python=3.12 
+
+Then install development setup
+
+    pip install -e "." octopus[dev]
+
+
 ### Note for macOS Users
 
 For installing LightGBM on macOS, it is recommended to use Homebrew. Run the following command:

@@ -77,7 +77,9 @@ class Bag:
             # Using joblib's Parallel and delayed functionalities
             # default backend is 'loky'
             with Parallel(n_jobs=self.num_workers) as parallel:
-                self.trainings = parallel(delayed(execute_training)(training, idx) for idx, training in enumerate(self.trainings))
+                self.trainings = parallel(
+                    delayed(execute_training)(training, idx) for idx, training in enumerate(self.trainings)
+                )
 
             # (B) altern. ProcessPoolExecutor code, incompatible with xgboost, issue46
             ## max_tasks_per_child=1 requires Python3.11
@@ -117,7 +119,9 @@ class Bag:
             for training in self.trainings:
                 try:
                     training.fit()
-                    logger.info(f"Inner sequential training completed for bag_id {self.bag_id} and training id {training.training_id}")
+                    logger.info(
+                        f"Inner sequential training completed for bag_id {self.bag_id} and training id {training.training_id}"
+                    )
                 except Exception as e:  # pylint: disable=broad-except
                     logger.info(f"Error during training {training}: {e}, type: {type(e).__name__}")
 
@@ -368,7 +372,9 @@ class Bag:
             all_features.update(non_zero_importances)
             all_features = all_features.reset_index()
             # Sort and reset index
-            self.feature_importances[method_str + "_count"] = all_features.sort_values(by="importance", ascending=False).reset_index(drop=True)
+            self.feature_importances[method_str + "_count"] = all_features.sort_values(
+                by="importance", ascending=False
+            ).reset_index(drop=True)
 
         return self.feature_importances
 

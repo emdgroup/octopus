@@ -54,4 +54,4 @@ class MSEMetric:
         )
 
 
-__all__ = ["R2Metric", "MAEMetric", "MSEMetric"]
+__all__ = ["MAEMetric", "MSEMetric", "R2Metric"]

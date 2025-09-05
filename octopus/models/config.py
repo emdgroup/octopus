@@ -1,13 +1,11 @@
 """Machine learning models config."""
 
-from typing import List, Type
-
 from attrs import define, field, validators
 
 from octopus.models.hyperparameter import Hyperparameter
 
 
-def validate_hyperparameters(instance: "ModelConfig", attribute: str, value: List[Hyperparameter]) -> None:
+def validate_hyperparameters(instance: "ModelConfig", attribute: str, value: list[Hyperparameter]) -> None:
     """Validate hyperparameters.
 
     Make sure that the hyperparameters do not contain names
@@ -25,9 +23,7 @@ def validate_hyperparameters(instance: "ModelConfig", attribute: str, value: Lis
 
     for hyperparameter in value:
         if hyperparameter.name in forbidden_names:
-            raise ValueError(
-                f"""Hyperparameter '{hyperparameter.name}' is not allowed in 'hyperparameters'."""  # noqa: E501
-            )
+            raise ValueError(f"""Hyperparameter '{hyperparameter.name}' is not allowed in 'hyperparameters'.""")
 
 
 @define
@@ -35,10 +31,10 @@ class ModelConfig:
     """Create model config."""
 
     name: str
-    model_class: Type
+    model_class: type
     feature_method: str
     ml_type: str = field(validator=validators.in_(["regression", "classification", "timetoevent"]))
-    hyperparameters: List[Hyperparameter] = field(validator=validate_hyperparameters)
+    hyperparameters: list[Hyperparameter] = field(validator=validate_hyperparameters)
     n_repeats: None | int = field(factory=lambda: None)
     n_jobs: None | str = field(factory=lambda: "n_jobs")
     model_seed: None | str = field(factory=lambda: "model_seed")

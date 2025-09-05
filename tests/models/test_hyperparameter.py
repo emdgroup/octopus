@@ -44,9 +44,7 @@ from octopus.models.hyperparameter import Hyperparameter
         ("unknown", "para1", None, None, None, [], False, None, ValueError),
     ],
 )
-def test_validate_hyperparameters(
-    type, name, low, high, step, choices, log, value, expected_exception
-):
+def test_validate_hyperparameters(type, name, low, high, step, choices, log, value, expected_exception):
     """Test validate hyperparameters."""
     if expected_exception:
         with pytest.raises(expected_exception):

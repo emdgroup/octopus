@@ -9,9 +9,7 @@ from attrs import define, field, validators
 class Hyperparameter:
     """Class to create hyperparameter space."""
 
-    type: str = field(
-        validator=validators.in_(["int", "float", "categorical", "fixed"])
-    )
+    type: str = field(validator=validators.in_(["int", "float", "categorical", "fixed"]))
     name: str
     low: int | float | None = None
     high: int | float | None = None
@@ -36,9 +34,7 @@ class Hyperparameter:
         # Validate int and float types
         if self.type in {"int", "float"}:
             if self.low is None or self.high is None:
-                raise ValueError(
-                    "low and high must be provided for int and float types."
-                )
+                raise ValueError("low and high must be provided for int and float types.")
             if not isinstance(self.low, (int, float)):
                 raise_type_error("low", "int or float")
             if not isinstance(self.high, (int, float)):
@@ -51,13 +47,9 @@ class Hyperparameter:
                 if self.step <= 0:
                     raise ValueError("step must be greater than 0.")
             if self.choices:
-                raise ValueError(
-                    "choices should not be provided for int or float types."
-                )
+                raise ValueError("choices should not be provided for int or float types.")
             if self.step is not None and self.log is True:
-                raise ValueError(
-                    "Both step and log cannot be selected at the same time."
-                )
+                raise ValueError("Both step and log cannot be selected at the same time.")
 
         # Validate categorical type
         elif self.type == "categorical":
@@ -80,6 +72,4 @@ class Hyperparameter:
             if self.type == "float" and not isinstance(self.value, float):
                 raise_type_error("value", "float")
             if self.type == "categorical" and self.value not in self.choices:
-                raise ValueError(
-                    f"value must be one of {self.choices}, got {self.value}."
-                )
+                raise ValueError(f"value must be one of {self.choices}, got {self.value}.")

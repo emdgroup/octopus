@@ -12,9 +12,7 @@ from octopus.modules import Octo
 def test_basic_classification():
     """Test basic regression."""
     data_df = (
-        pd.read_csv(
-            os.path.join(os.getcwd(), "datasets", "titanic_openml.csv"), index_col=0
-        )
+        pd.read_csv(os.path.join(os.getcwd(), "datasets", "titanic_openml.csv"), index_col=0)
         .astype({"age": float})
         .assign(
             age=lambda df_: df_["age"].fillna(df_["age"].median()).astype(int),
@@ -22,16 +20,8 @@ def test_basic_classification():
             fare=lambda df_: df_["fare"].fillna(df_["fare"].median()),
         )
         .astype({"survived": bool})
-        .pipe(
-            lambda df_: df_.reindex(
-                columns=["survived"] + list([a for a in df_.columns if a != "survived"])
-            )
-        )
-        .pipe(
-            lambda df_: df_.reindex(
-                columns=["name"] + list([a for a in df_.columns if a != "name"])
-            )
-        )
+        .pipe(lambda df_: df_.reindex(columns=["survived"] + list([a for a in df_.columns if a != "survived"])))
+        .pipe(lambda df_: df_.reindex(columns=["name"] + list([a for a in df_.columns if a != "name"])))
         .pipe(pd.get_dummies, columns=["embarked", "sex"], drop_first=True, dtype=int)
         .loc[0:100, :]
     )
@@ -62,9 +52,7 @@ def test_basic_classification():
         ignore_data_health_warning=True,
     )
 
-    config_manager = ConfigManager(
-        outer_parallelization=False, run_single_experiment_num=0
-    )
+    config_manager = ConfigManager(outer_parallelization=False, run_single_experiment_num=0)
 
     config_sequence = ConfigSequence(
         sequence_items=[

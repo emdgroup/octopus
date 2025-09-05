@@ -12,9 +12,7 @@ from octopus.modules import Octo
 def test_basic_regression():
     """Test basic regression."""
     data_df = (
-        pd.read_csv(
-            os.path.join(os.getcwd(), "datasets", "california_housing_prices.csv")
-        )
+        pd.read_csv(os.path.join(os.getcwd(), "datasets", "california_housing_prices.csv"))
         .reset_index()
         .astype(
             {
@@ -53,9 +51,7 @@ def test_basic_regression():
         ignore_data_health_warning=True,
     )
 
-    config_manager = ConfigManager(
-        outer_parallelization=False, run_single_experiment_num=0
-    )
+    config_manager = ConfigManager(outer_parallelization=False, run_single_experiment_num=0)
 
     config_sequence = ConfigSequence(
         [

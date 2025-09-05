@@ -52,9 +52,7 @@ class OctoDataValidator:
     def _validate_columns_exist(self):
         """Validate that all columns exists in the dataframe."""
         # Identify missing columns
-        missing_columns = [
-            col for col in self.relevant_columns if col not in self.data.columns
-        ]
+        missing_columns = [col for col in self.relevant_columns if col not in self.data.columns]
 
         # Raise error if any columns are missing
         if missing_columns:
@@ -69,9 +67,7 @@ class OctoDataValidator:
             columns_to_check.append(self.row_id)
 
         # Check for duplicates
-        duplicates = set(
-            [col for col in columns_to_check if columns_to_check.count(col) > 1]
-        )
+        duplicates = set([col for col in columns_to_check if columns_to_check.count(col) > 1])
 
         if duplicates:
             duplicates_str = ", ".join(duplicates)
@@ -83,9 +79,7 @@ class OctoDataValidator:
             self.sample_id,
             self.row_id,
         ]:
-            raise ValueError(
-                "Stratification column cannot be the same as sample_id or row_id"
-            )
+            raise ValueError("Stratification column cannot be the same as sample_id or row_id")
 
     def _validate_target_assignments(self):
         """Validate target_assignments.
@@ -94,10 +88,7 @@ class OctoDataValidator:
         """
         if len(self.target_columns) == 1:
             if self.target_assignments:
-                raise ValueError(
-                    "Target assignments provided for a single target column. "
-                    "Assignments are only needed for multiple target columns."
-                )
+                raise ValueError("Target assignments provided for a single target column. Assignments are only needed for multiple target columns.")
             return
 
         # Multiple target columns: validate assignments
@@ -109,9 +100,7 @@ class OctoDataValidator:
             )
 
         # Check if all target columns are assigned
-        missing_assignments = set(self.target_columns) - set(
-            self.target_assignments.values()
-        )
+        missing_assignments = set(self.target_columns) - set(self.target_assignments.values())
         if missing_assignments:
             raise ValueError(
                 "Missing assignments for target column(s): "
@@ -121,9 +110,7 @@ class OctoDataValidator:
             )
 
         # Check if all assignments are valid target columns
-        invalid_assignments = set(self.target_assignments.values()) - set(
-            self.target_columns
-        )
+        invalid_assignments = set(self.target_assignments.values()) - set(self.target_columns)
         if invalid_assignments:
             raise ValueError(
                 "Invalid assignment key(s) detected: "
@@ -133,11 +120,7 @@ class OctoDataValidator:
 
         # Check for duplicate assignments
         if len(set(self.target_assignments.values())) != len(self.target_assignments):
-            duplicate_values = [
-                val
-                for val in self.target_assignments.values()
-                if list(self.target_assignments.values()).count(val) > 1
-            ]
+            duplicate_values = [val for val in self.target_assignments.values() if list(self.target_assignments.values()).count(val) > 1]
             raise ValueError(
                 f"Duplicate assignment(s) found: {', '.join(set(duplicate_values))}. "
                 "Each target column must have a unique assignment. "
@@ -149,21 +132,14 @@ class OctoDataValidator:
         if len(self.target_columns) > 2:
             raise ValueError("More than two targets are not allowed")
         if len(self.target_columns) == 2 and not self.target_assignments:
-            raise ValueError(
-                "Target assignments are required when two targets are selected."
-                "This is only for ml_type = 'timetoevent'."
-            )
+            raise ValueError("Target assignments are required when two targets are selected.This is only for ml_type = 'timetoevent'.")
 
     def _validate_column_dtypes(self):
         """Validate that all relevant columns have correct dtypes."""
         non_matching_columns = []
 
         if self.stratification_column:
-            columns_to_check = (
-                self.feature_columns
-                + self.target_columns
-                + [self.stratification_column]
-            )
+            columns_to_check = self.feature_columns + self.target_columns + [self.stratification_column]
         else:
             columns_to_check = self.feature_columns + self.target_columns
 
@@ -189,9 +165,7 @@ class OctoDataValidator:
         # This requirement comes from miceforest/lightGBM.
         disallowed_chars_pattern = re.compile(r'[",:$$ \ $${}]')
         # Find columns with disallowed characters
-        problematic_columns = [
-            col for col in self.relevant_columns if disallowed_chars_pattern.search(col)
-        ]
+        problematic_columns = [col for col in self.relevant_columns if disallowed_chars_pattern.search(col)]
         # Raise an error if any problematic columns are found
         if problematic_columns:
             raise ValueError(
@@ -204,15 +178,10 @@ class OctoDataValidator:
         """Validate not allowed column names."""
         columns_not_allowed = ["group_features", "group_sample_and_features"]
 
-        problematic_columns = [
-            col for col in columns_not_allowed if col in self.data.columns
-        ]
+        problematic_columns = [col for col in columns_not_allowed if col in self.data.columns]
 
         if problematic_columns:
-            raise ValueError(
-                f"The following columns names are not allowed "
-                f" {', '.join(problematic_columns)}.\n"
-            )
+            raise ValueError(f"The following columns names are not allowed  {', '.join(problematic_columns)}.\n")
 
     def _validate_row_id_unique(self):
         if self.row_id and not self.data[self.row_id].is_unique:

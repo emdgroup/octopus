@@ -70,14 +70,10 @@ def impute_simple(
         ValueError: If an unknown imputation method is specified.
     """
     # Identify columns with missing values in the training dataset
-    train_missing_columns = train_df[feature_columns].columns[
-        train_df[feature_columns].isnull().any()
-    ]
+    train_missing_columns = train_df[feature_columns].columns[train_df[feature_columns].isnull().any()]
 
     # Identify columns with missing values in the test dataset
-    test_missing_columns = test_df[feature_columns].columns[
-        test_df[feature_columns].isnull().any()
-    ]
+    test_missing_columns = test_df[feature_columns].columns[test_df[feature_columns].isnull().any()]
 
     # Find common columns with missing values in both datasets
     common_missing_columns = train_missing_columns.union(test_missing_columns)
@@ -115,21 +111,15 @@ def impute_simple(
     imputed_test_df[common_missing_columns] = imputed_test_features
 
     # Check for NaNs in the imputed test dataframe
-    assert not imputed_train_df[feature_columns].isnull().any().any(), (
-        "NaNs present in imputed train_df"
-    )
+    assert not imputed_train_df[feature_columns].isnull().any().any(), "NaNs present in imputed train_df"
 
     # Check for NaNs in the imputed test dataframe
-    assert not imputed_test_df[feature_columns].isnull().any().any(), (
-        "NaNs present in imputed test_df"
-    )
+    assert not imputed_test_df[feature_columns].isnull().any().any(), "NaNs present in imputed test_df"
 
     return imputed_train_df, imputed_test_df
 
 
-def impute_mice(
-    train_df: pd.DataFrame, test_df: pd.DataFrame, feature_columns: list
-) -> tuple[pd.DataFrame, pd.DataFrame]:
+def impute_mice(train_df: pd.DataFrame, test_df: pd.DataFrame, feature_columns: list) -> tuple[pd.DataFrame, pd.DataFrame]:
     """Impute datasets using the mice-forest algorithm.
 
     Impute training and test datasets using the mice-forest algorithm,
@@ -165,9 +155,7 @@ def impute_mice(
     train_data = train_df[feature_columns].copy()
 
     # Create the variable schema, excluding the variable itself from its predictors
-    variable_schema = {
-        var: [col for col in feature_columns if col != var] for var in vars_with_missing
-    }
+    variable_schema = {var: [col for col in feature_columns if col != var] for var in vars_with_missing}
 
     # Initialize the imputation kernel
     kernel = mf.ImputationKernel(

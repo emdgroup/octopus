@@ -7,9 +7,7 @@ from attrs import Factory, define, field, validators
 from octopus.config.base_sequence_item import BaseSequenceItem
 
 
-def validate_sequence_items(
-    _instance: Any, attribute: Any, value: List[BaseSequenceItem]
-) -> None:
+def validate_sequence_items(_instance: Any, attribute: Any, value: List[BaseSequenceItem]) -> None:
     """Validate the `sequence_items` attribute.
 
     Ensures that the value is a non-empty list where each item is an
@@ -39,25 +37,16 @@ def validate_sequence_items(
     """
     # Condition 1: Non-Empty List
     if not value:
-        raise ValueError(
-            f"'{attribute.name}' must contain at least one instance of "
-            f"'BaseSequenceItem'."
-        )
+        raise ValueError(f"'{attribute.name}' must contain at least one instance of 'BaseSequenceItem'.")
 
     # Condition 2: All Items are Instances of BaseSequenceItem
     for item in value:
         if not isinstance(item, BaseSequenceItem):
-            raise TypeError(
-                f"Each item in '{attribute.name}' must be an instance of "
-                f"'BaseSequenceItem', but got '{type(item).__name__}'."
-            )
+            raise TypeError(f"Each item in '{attribute.name}' must be an instance of 'BaseSequenceItem', but got '{type(item).__name__}'.")
 
     # Condition 2.5: First Item Must Have sequence_id=0
     if value[0].sequence_id != 0:
-        raise ValueError(
-            f"The first sequence item must have 'sequence_id=0', but got "
-            f"'sequence_id={value[0].sequence_id}'."
-        )
+        raise ValueError(f"The first sequence item must have 'sequence_id=0', but got 'sequence_id={value[0].sequence_id}'.")
 
     # Build mapping of sequence_id to index and collect item_ids
     item_id_to_index = {}
@@ -75,9 +64,7 @@ def validate_sequence_items(
         previous_item_id = item.sequence_id
 
         if item.sequence_id in item_id_to_index:
-            raise ValueError(
-                f"Duplicate 'sequence_id' {item.sequence_id} found in the sequence."
-            )
+            raise ValueError(f"Duplicate 'sequence_id' {item.sequence_id} found in the sequence.")
         item_id_to_index[item.sequence_id] = idx
         item_ids.append(item.sequence_id)
 
@@ -90,10 +77,7 @@ def validate_sequence_items(
     if expected_item_ids != actual_item_ids:
         missing_ids = expected_item_ids - actual_item_ids
         extra_ids = actual_item_ids - expected_item_ids
-        message = (
-            "All 'sequence_id's must form a complete integer sequence with no missing "
-            "values between the minimum and maximum 'sequence_id'."
-        )
+        message = "All 'sequence_id's must form a complete integer sequence with no missing values between the minimum and maximum 'sequence_id'."
         if missing_ids:
             message += f" Missing item_ids: {sorted(missing_ids)}."
         if extra_ids:

@@ -37,9 +37,7 @@ def octo_experiment(sample_data):
             )
         ]
     )
-    config = OctoConfig(
-        study=config_study, manager=ConfigManager(), sequence=config_sequence
-    )
+    config = OctoConfig(study=config_study, manager=ConfigManager(), sequence=config_sequence)
     return OctoExperiment(
         id="experiment_1",
         experiment_id=1,
@@ -73,18 +71,14 @@ def test_initialization(octo_experiment):
 
 def test_calculate_feature_groups(octo_experiment):
     """Test the feature group calculation."""
-    feature_groups = octo_experiment.calculate_feature_groups(
-        octo_experiment.feature_columns
-    )
+    feature_groups = octo_experiment.calculate_feature_groups(octo_experiment.feature_columns)
     assert isinstance(feature_groups, dict)
     assert len(feature_groups) > 0
 
 
 def test_path_study(octo_experiment):
     """Test the path_study property."""
-    expected_path = Path(
-        octo_experiment.configs.study.path, octo_experiment.configs.study.name
-    )
+    expected_path = Path(octo_experiment.configs.study.path, octo_experiment.configs.study.name)
     assert octo_experiment.path_study == expected_path
 
 

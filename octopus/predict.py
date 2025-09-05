@@ -53,9 +53,7 @@ class OctoPredict:
     experiments: dict = field(init=False, validator=[validators.instance_of(dict)])
     """Dictionary containing model and corresponding test_dataset."""
 
-    results: dict = field(
-        default=Factory(dict), validator=[validators.instance_of(dict)]
-    )
+    results: dict = field(default=Factory(dict), validator=[validators.instance_of(dict)])
     """Results."""
 
     @property
@@ -94,8 +92,7 @@ class OctoPredict:
                 # check if results_key exists
                 if self.results_key not in experiment.results:
                     raise ValueError(
-                        f"Specified results key not found: {self.results_key}. "
-                        f"Available results keys: {list(experiment.results.keys())}"
+                        f"Specified results key not found: {self.results_key}. Available results keys: {list(experiment.results.keys())}"
                     )
 
                 experiments[experiment_id] = {
@@ -152,9 +149,7 @@ class OctoPredict:
             else:
                 raise ValueError("Features missing in provided dataset.")
 
-        grouped_df = (
-            pd.concat(preds_lst, axis=0).groupby("row_id").agg(["mean", "std", "count"])
-        )
+        grouped_df = pd.concat(preds_lst, axis=0).groupby("row_id").agg(["mean", "std", "count"])
         if return_df is True:
             return grouped_df
         else:
@@ -196,9 +191,7 @@ class OctoPredict:
             df = pd.DataFrame(columns=["row_id", "probability"])
             df["row_id"] = data_test[row_column]
             # only binary classification!!
-            df["probability"] = experiment["model"].predict_proba(
-                data_test[feature_columns]
-            )[:, 1]
+            df["probability"] = experiment["model"].predict_proba(data_test[feature_columns])[:, 1]
             preds_lst.append(df)
 
         grouped_df = (
@@ -240,9 +233,7 @@ class OctoPredict:
                 results_df = get_fi_shap(experiment, data=data, shap_type=shap_type)
                 self.results[f"fi_table_shap_exp{exp_id}"] = results_df
             elif fi_type == "group_shap":
-                results_df = get_fi_group_shap(
-                    experiment, data=data, shap_type=shap_type
-                )
+                results_df = get_fi_group_shap(experiment, data=data, shap_type=shap_type)
                 self.results[f"fi_table_group_shap_exp{exp_id}"] = results_df
             else:
                 raise ValueError("Feature Importance type not supported")
@@ -258,9 +249,7 @@ class OctoPredict:
         exp_combined = {
             "id": "_all",
             "model": self,
-            "data_traindev": pd.concat(
-                [experiment["data_traindev"], experiment["data_test"]], axis=0
-            ),
+            "data_traindev": pd.concat([experiment["data_traindev"], experiment["data_test"]], axis=0),
             "feature_columns": list(set(feature_col_lst)),
             # same for all experiments
             "data_test": experiment["data_test"],  # not used
@@ -299,9 +288,7 @@ class OctoPredict:
         print("Calculating feature importances for every experiment/model.")
 
         # Filter experiments based on experiment_id
-        experiments_to_process = [
-            exp for exp in self.experiments.values() if experiment_id in (-1, exp["id"])
-        ]
+        experiments_to_process = [exp for exp in self.experiments.values() if experiment_id in (-1, exp["id"])]
 
         # Define a helper function for processing an experiment
         def _process_experiment(exp):
@@ -315,9 +302,7 @@ class OctoPredict:
                 key = f"fi_table_group_permutation_exp{exp_id}"
                 self._plot_permutation_fi(exp_id, results_df)
             elif fi_type == "shap":
-                results_df, shap_values, shap_data = get_fi_shap(
-                    exp, data=None, shap_type=shap_type
-                )
+                results_df, shap_values, shap_data = get_fi_shap(exp, data=None, shap_type=shap_type)
                 self._plot_shap_fi(exp_id, results_df, shap_values, shap_data)
                 key = f"fi_table_shap_exp{exp_id}"
             elif fi_type == "group_shap":
@@ -328,9 +313,7 @@ class OctoPredict:
             return key, results_df
 
         # Use joblib to parallelize the processing of experiments
-        results = Parallel(n_jobs=-1)(
-            delayed(_process_experiment)(exp) for exp in experiments_to_process
-        )
+        results = Parallel(n_jobs=-1)(delayed(_process_experiment)(exp) for exp in experiments_to_process)
 
         # Update shared resources in the main thread
         for key, results_df in results:

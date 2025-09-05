@@ -63,7 +63,7 @@ octo_data = OctoData(
 # we use one sequence with the `RandomForestClassifier` model.
 
 config_study = ConfigStudy(
-    name=f"20250826A_octo_intro",
+    name="20250826A_octo_intro",
     ml_type="classification",
     target_metric="ACCBAL",
     metrics=["AUCROC", "ACCBAL", "ACC", "LOGLOSS"],

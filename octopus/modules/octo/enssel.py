@@ -41,9 +41,7 @@ class EnSel:
         validator=[validators.instance_of(pd.DataFrame)],
     )
     start_ensemble: dict = field(init=False, validator=[validators.instance_of(dict)])
-    optimized_ensemble: dict = field(
-        init=False, validator=[validators.instance_of(dict)]
-    )
+    optimized_ensemble: dict = field(init=False, validator=[validators.instance_of(dict)])
     bags: dict = field(init=False, validator=[validators.instance_of(dict)])
 
     @property
@@ -73,11 +71,7 @@ class EnSel:
     def _collect_trials(self):
         """Get all trials save in path_trials and store properties in self.bags."""
         # Get all .pkl files in the directory
-        pkl_files = [
-            file
-            for file in self.path_trials.iterdir()
-            if file.is_file() and file.suffix == ".pkl"
-        ]
+        pkl_files = [file for file in self.path_trials.iterdir() if file.is_file() and file.suffix == ".pkl"]
 
         # fill bags dict
         for file in pkl_files:
@@ -115,9 +109,7 @@ class EnSel:
         else:
             ascending = True
 
-        self.model_table = self.model_table.sort_values(
-            by=self.score_type, ascending=ascending
-        ).reset_index(drop=True)
+        self.model_table = self.model_table.sort_values(by=self.score_type, ascending=ascending).reset_index(drop=True)
 
     def _ensemble_models(self, bag_keys):
         """Esemble using all bags and their corresponding models provided by input."""
@@ -136,9 +128,7 @@ class EnSel:
 
         # average all predictions (inner models, bags)
         for part, pool_value in pool.items():
-            pool[part] = (
-                pd.concat(pool_value, axis=0).groupby(by=self.row_column).mean()
-            )
+            pool[part] = pd.concat(pool_value, axis=0).groupby(by=self.row_column).mean()
 
         # calculate pooling scores (soft and hard)
         add_pooling_scores(pool, scores, self.target_metric, self.target_assignments)
@@ -158,9 +148,7 @@ class EnSel:
                 ]
             )
         else:
-            self.scan_table = pd.DataFrame(
-                columns=["#models", "dev_pool_hard", "test_pool_hard"]
-            )
+            self.scan_table = pd.DataFrame(columns=["#models", "dev_pool_hard", "test_pool_hard"])
 
         for i in range(len(self.model_table)):
             bag_keys = self.model_table[: i + 1]["path"].tolist()

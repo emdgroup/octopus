@@ -106,9 +106,7 @@ def test_load_existing_experiment(octo_manager, mock_experiment):
         patch.object(Path, "exists", return_value=True),
         patch.object(OctoExperiment, "from_pickle", return_value=mock_experiment),
     ):
-        loaded_experiment = octo_manager._load_existing_experiment(
-            mock_experiment, element
-        )
+        loaded_experiment = octo_manager._load_existing_experiment(mock_experiment, element)
         assert loaded_experiment == mock_experiment
 
 

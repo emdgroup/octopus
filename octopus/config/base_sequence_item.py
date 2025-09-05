@@ -16,12 +16,8 @@ class BaseSequenceItem:
     sequence_id: int = field(validator=[validators.instance_of(int), validators.ge(0)])
     """Sequence item ID, greater or equal than 0."""
 
-    input_sequence_id: int = field(
-        default=-1, validator=[validators.instance_of(int), validators.ge(-1)]
-    )
+    input_sequence_id: int = field(default=-1, validator=[validators.instance_of(int), validators.ge(-1)])
     """Specify ID of input item. Input ID of start item: -1."""
 
-    load_sequence_item: bool = field(
-        default=False, validator=[validators.instance_of(bool)]
-    )
+    load_sequence_item: bool = field(default=False, validator=[validators.instance_of(bool)])
     """Whether to load the sequence item."""

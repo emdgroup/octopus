@@ -14,9 +14,7 @@ class AutoGluon(BaseSequenceItem):
     module: ClassVar[str] = "autogluon"
     """Module name."""
 
-    description: Optional[str] = field(
-        default="", validator=validators.instance_of(str)
-    )
+    description: Optional[str] = field(default="", validator=validators.instance_of(str))
     """Description."""
 
     verbosity: int = field(default=2, validator=validators.instance_of(int))
@@ -27,27 +25,19 @@ class AutoGluon(BaseSequenceItem):
     # 3: Verbose logging (ex: log validation score every 50 iterations)
     # 4: Maximally verbose logging (ex: log validation score every iteration)
 
-    time_limit: Optional[int] = field(
-        default=None, validator=validators.optional(validators.instance_of(int))
-    )
+    time_limit: Optional[int] = field(default=None, validator=validators.optional(validators.instance_of(int)))
     """Approximately, how long a fit should run, in seconds. Default: No limit."""
 
-    infer_limit: Optional[int] = field(
-        default=None, validator=validators.optional(validators.instance_of(int))
-    )
+    infer_limit: Optional[int] = field(default=None, validator=validators.optional(validators.instance_of(int)))
     """ Inference time limit in seconds per row to adhere to during fit."""
 
     memory_limit: Union[float, Literal["auto"]] = field(
         default="auto",
-        validator=validators.optional(
-            validators.or_(validators.instance_of(float), validators.in_(["auto"]))
-        ),
+        validator=validators.optional(validators.or_(validators.instance_of(float), validators.in_(["auto"]))),
     )
     """Amount of memory in GB you want AutoGluon predictor to use."""
 
-    fit_strategy: Literal["sequential"] = field(
-        default="sequential", validator=validators.in_(["sequential", "parallel"])
-    )
+    fit_strategy: Literal["sequential"] = field(default="sequential", validator=validators.in_(["sequential", "parallel"]))
     """The strategy used to fit models."""
 
     presets: List[str] = field(
@@ -83,15 +73,11 @@ class AutoGluon(BaseSequenceItem):
 
     num_cpus: Union[int, Literal["auto"]] = field(
         default="auto",
-        validator=validators.optional(
-            validators.or_(validators.instance_of(int), validators.in_(["auto"]))
-        ),
+        validator=validators.optional(validators.or_(validators.instance_of(int), validators.in_(["auto"]))),
     )
     """Number of CPUs used by Autogluon instance. Can be an integer or "auto"."""
 
-    num_bag_folds: int = field(
-        default=5, validator=[validators.instance_of(int), validators.gt(1)]
-    )
+    num_bag_folds: int = field(default=5, validator=[validators.instance_of(int), validators.gt(1)])
     """Number of cross validation folds."""
 
     included_model_types: Optional[list[str]] = field(

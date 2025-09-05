@@ -87,9 +87,7 @@ def get_param_grid(model_type):
 class SfsCore:
     """SFS Module."""
 
-    experiment: OctoExperiment = field(
-        validator=[validators.instance_of(OctoExperiment)]
-    )
+    experiment: OctoExperiment = field(validator=[validators.instance_of(OctoExperiment)])
 
     @property
     def path_module(self) -> Path:
@@ -109,9 +107,7 @@ class SfsCore:
     @property
     def y_traindev(self) -> pd.DataFrame:
         """y_train."""
-        return self.experiment.data_traindev[
-            self.experiment.target_assignments.values()
-        ]
+        return self.experiment.data_traindev[self.experiment.target_assignments.values()]
 
     @property
     def data_test(self) -> pd.DataFrame:
@@ -242,9 +238,7 @@ class SfsCore:
         sfs.fit(self.x_traindev, self.y_traindev.squeeze(axis=1))
         n_optimal_features = len(sfs.k_feature_idx_)
         selected_features = list(sfs.k_feature_names_)
-        self.experiment.selected_features = sorted(
-            selected_features, key=lambda x: (len(x), sorted(x))
-        )
+        self.experiment.selected_features = sorted(selected_features, key=lambda x: (len(x), sorted(x)))
 
         print("SFS completed")
         # print(sfs.subsets_)
@@ -257,9 +251,7 @@ class SfsCore:
         x_traindev_sfs = sfs.transform(self.x_traindev)
         x_test_sfs = sfs.transform(self.x_test)
 
-        cv_score = cross_val_score(
-            best_model, x_test_sfs, self.y_test, scoring=scoring_type, cv=cv
-        )
+        cv_score = cross_val_score(best_model, x_test_sfs, self.y_test, scoring=scoring_type, cv=cv)
         test_score_cv = np.mean(cv_score)
         print(f"Test set (cv) performance : {test_score_cv:.3f}")
 

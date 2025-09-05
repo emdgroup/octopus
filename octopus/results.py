@@ -14,29 +14,19 @@ class ModuleResults:
     model = field(default="")
     """Saved Model."""
 
-    scores: dict = field(
-        default=Factory(dict), validator=[validators.instance_of(dict)]
-    )
+    scores: dict = field(default=Factory(dict), validator=[validators.instance_of(dict)])
     """Scores, dictionary."""
 
-    predictions: dict = field(
-        default=Factory(dict), validator=[validators.instance_of(dict)]
-    )
+    predictions: dict = field(default=Factory(dict), validator=[validators.instance_of(dict)])
     """Predictions, dictionary."""
 
-    feature_importances: dict = field(
-        default=Factory(dict), validator=[validators.instance_of(dict)]
-    )
+    feature_importances: dict = field(default=Factory(dict), validator=[validators.instance_of(dict)])
     """Feature importances, dictionary."""
 
-    selected_features: list = field(
-        default=Factory(list), validator=[validators.instance_of(list)]
-    )
+    selected_features: list = field(default=Factory(list), validator=[validators.instance_of(list)])
     """Feature importances, dictionary."""
 
-    results: dict = field(
-        default=Factory(dict), validator=[validators.instance_of(dict)]
-    )
+    results: dict = field(default=Factory(dict), validator=[validators.instance_of(dict)])
     """Other results, dictionary."""
 
     def create_prediction_df(self):
@@ -50,9 +40,7 @@ class ModuleResults:
                     temp_df = df.copy()
                     temp_df["split_id"] = split_id
                     temp_df["split"] = split
-                    df_prediction = pd.concat(
-                        [df_prediction, temp_df], ignore_index=True
-                    )
+                    df_prediction = pd.concat([df_prediction, temp_df], ignore_index=True)
             elif key == "ensemble":
                 # ensemble
                 temp_df = value["test"].copy()
@@ -81,7 +69,5 @@ class ModuleResults:
                     temp_df["sequence_id"] = sequence_id
                     temp_df["split_id"] = split_id
 
-                    df_feature_importance = pd.concat(
-                        [df_feature_importance, temp_df], ignore_index=True
-                    )
+                    df_feature_importance = pd.concat([df_feature_importance, temp_df], ignore_index=True)
         return df_feature_importance

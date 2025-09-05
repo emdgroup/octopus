@@ -15,9 +15,7 @@ def validate_config_study(instance, attribute, value):
     if value.start_with_empty_study:
         for item in instance.sequence.sequence_items:
             if item.load_sequence_item:
-                raise ValueError(
-                    "Loading sequence items requires start_with_empty_study=False"
-                )
+                raise ValueError("Loading sequence items requires start_with_empty_study=False")
 
 
 @define
@@ -30,14 +28,10 @@ class OctoConfig:
     )
     """Configuration for study parameters."""
 
-    manager: ConfigManager = field(
-        factory=ConfigManager, validator=[validators.instance_of(ConfigManager)]
-    )
+    manager: ConfigManager = field(factory=ConfigManager, validator=[validators.instance_of(ConfigManager)])
     """Configuration for manager parameters."""
 
-    sequence: ConfigSequence = field(
-        factory=ConfigSequence, validator=[validators.instance_of(ConfigSequence)]
-    )
+    sequence: ConfigSequence = field(factory=ConfigSequence, validator=[validators.instance_of(ConfigSequence)])
     """Configuration for sequence parameters."""
 
     def to_pickle(self, file_path: str) -> None:

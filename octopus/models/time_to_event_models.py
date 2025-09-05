@@ -25,9 +25,7 @@ class ExtraTreesSurvModel:
                 Hyperparameter(type="int", name="min_samples_split", low=2, high=100),
                 Hyperparameter(type="int", name="min_samples_leaf", low=1, high=50),
                 Hyperparameter(type="float", name="max_features", low=0.1, high=1),
-                Hyperparameter(
-                    type="int", name="n_estimators", low=100, high=500, log=False
-                ),
+                Hyperparameter(type="int", name="n_estimators", low=100, high=500, log=False),
             ],
             n_jobs="n_jobs",
             model_seed="random_state",

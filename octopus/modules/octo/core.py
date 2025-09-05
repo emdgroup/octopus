@@ -58,25 +58,15 @@ class OctoCore:
         is incorporated to manage any discrepancies during the experiment phases.
     """
 
-    experiment: OctoExperiment = field(
-        validator=[validators.instance_of(OctoExperiment)]
-    )
+    experiment: OctoExperiment = field(validator=[validators.instance_of(OctoExperiment)])
     # model = field(default=None)
-    data_splits: dict = field(
-        default=Factory(dict), validator=[validators.instance_of(dict)]
-    )
+    data_splits: dict = field(default=Factory(dict), validator=[validators.instance_of(dict)])
 
-    paths_optuna_db: dict = field(
-        default=Factory(dict), validator=[validators.instance_of(dict)]
-    )
+    paths_optuna_db: dict = field(default=Factory(dict), validator=[validators.instance_of(dict)])
 
-    top_trials: list = field(
-        default=Factory(list), validator=[validators.instance_of(list)]
-    )
+    top_trials: list = field(default=Factory(list), validator=[validators.instance_of(list)])
 
-    mrmr_features: dict = field(
-        default=Factory(dict), validator=[validators.instance_of(dict)]
-    )
+    mrmr_features: dict = field(default=Factory(dict), validator=[validators.instance_of(dict)])
 
     @property
     def path_module(self) -> Path:
@@ -126,25 +116,17 @@ class OctoCore:
         logger.info("Calculating MRMR feature sets...")
         # remove duplicates and cap max number
         feature_numbers = list(set(self.experiment.ml_config.mrmr_feature_numbers))
-        feature_numbers = [
-            x
-            for x in feature_numbers
-            if isinstance(x, int) and x <= len(self.experiment.feature_columns)
-        ]
+        feature_numbers = [x for x in feature_numbers if isinstance(x, int) and x <= len(self.experiment.feature_columns)]
         # if no mrmr features are requested, only add original features
         if not feature_numbers:
             # add original features
-            self.mrmr_features[len(self.experiment.feature_columns)] = (
-                self.experiment.feature_columns
-            )
+            self.mrmr_features[len(self.experiment.feature_columns)] = self.experiment.feature_columns
             return
 
         # prepare inputs
         feature_columns = self.experiment.feature_columns
         features = self.experiment.data_traindev[feature_columns]
-        target = self.experiment.data_traindev[
-            self.experiment.target_assignments.values()
-        ]
+        target = self.experiment.data_traindev[self.experiment.target_assignments.values()]
 
         # create relevance information
         re_df = relevance_fstats(
@@ -162,20 +144,14 @@ class OctoCore:
             correlation_type="spearmanr",
         )
         # add original features
-        self.mrmr_features[len(self.experiment.feature_columns)] = (
-            self.experiment.feature_columns
-        )
+        self.mrmr_features[len(self.experiment.feature_columns)] = self.experiment.feature_columns
 
     def _check_resources(self):
         """Check resources, assigned vs requested."""
-        logger.set_log_group(
-            LogGroup.PREPARE_EXECUTION, f"EXP {self.experiment.experiment_id} SQE TBD"
-        )
+        logger.set_log_group(LogGroup.PREPARE_EXECUTION, f"EXP {self.experiment.experiment_id} SQE TBD")
 
         if self.experiment.ml_config.inner_parallelization is True:
-            num_requested_cpus = (
-                self.experiment.ml_config.n_workers * self.experiment.ml_config.n_jobs
-            )
+            num_requested_cpus = self.experiment.ml_config.n_workers * self.experiment.ml_config.n_jobs
         else:
             num_requested_cpus = self.experiment.ml_config.n_jobs
         logger.info(
@@ -198,10 +174,7 @@ class OctoCore:
         self._create_best_bag()
 
         # (2) ensemble selection, only globalhp scenario is supported
-        if (
-            self.experiment.ml_config.global_hyperparameter
-            & self.experiment.ml_config.ensemble_selection
-        ):
+        if self.experiment.ml_config.global_hyperparameter & self.experiment.ml_config.ensemble_selection:
             self._run_ensemble_selection()
 
         return self.experiment
@@ -285,9 +258,7 @@ class OctoCore:
         # calculate feature importances of best bag
         # fi_methods = self.experiment.ml_config.fi_methods_bestbag
         fi_methods = []  # disable calculation of pfi for ensel_bag
-        ensel_bag_fi = ensel_bag.calculate_feature_importances(
-            fi_methods, partitions=["dev"]
-        )
+        ensel_bag_fi = ensel_bag.calculate_feature_importances(fi_methods, partitions=["dev"])
 
         # calculate selected features
         selected_features = ensel_bag.get_selected_features(fi_methods)
@@ -361,16 +332,12 @@ class OctoCore:
                 f"Test {best_bag_scores['test_pool_soft']:.3f}"
             )
 
-        with open(
-            self.path_results.joinpath("best_bag_scores.json"), "w", encoding="utf-8"
-        ) as f:
+        with open(self.path_results.joinpath("best_bag_scores.json"), "w", encoding="utf-8") as f:
             json.dump(best_bag_scores, f)
 
         # calculate feature importances of best bag
         fi_methods = self.experiment.ml_config.fi_methods_bestbag
-        best_bag_fi = best_bag.calculate_feature_importances(
-            fi_methods, partitions=["dev"]
-        )
+        best_bag_fi = best_bag.calculate_feature_importances(fi_methods, partitions=["dev"])
 
         # calculate selected features
         selected_features = best_bag.get_selected_features(fi_methods)
@@ -391,10 +358,7 @@ class OctoCore:
         self.experiment.selected_features = selected_features
         print("Number of selected features:", len(self.experiment.selected_features))
         if len(self.experiment.selected_features) == 0:
-            print(
-                "Warning: Best bag - all feature importances values are zero."
-                "This hints at a model related problem."
-            )
+            print("Warning: Best bag - all feature importances values are zero.This hints at a model related problem.")
 
     def _run_globalhp_optimization(self):
         """Optimization run with a global HP set over all inner folds."""
@@ -429,17 +393,12 @@ class OctoCore:
                     self._optimize_splits(split)
                     print(f"Optimization of split {split_index} completed")
                 except Exception as e:  # pylint: disable=broad-except
-                    print(
-                        f"Exception occurred while optimizing split {split_index}: {e}"
-                    )
+                    print(f"Exception occurred while optimizing split {split_index}: {e}")
                     print(f"Exception type: {type(e).__name__}")
 
             print("Parallel execution of Optuna optimizations for individual HPs")
             with Parallel(n_jobs=self.experiment.ml_config.n_workers) as parallel:
-                parallel(
-                    delayed(optimize_split)(split, idx)
-                    for idx, split in enumerate(splits)
-                )
+                parallel(delayed(optimize_split)(split, idx) for idx, split in enumerate(splits))
 
             # (B) Alternative with xbgoost issue, issue46
             #    print("Parallel execution of Optuna optimizations for individual HPs")
@@ -468,10 +427,7 @@ class OctoCore:
                     self._optimize_splits(split)
                     print(f"Optimization of split:{split.keys()} completed")
                 except Exception as e:  # pylint: disable=broad-except
-                    print(
-                        f"Error during optimizatio of split:{split.keys()}: {e},"
-                        f" type: {type(e).__name__}"
-                    )
+                    print(f"Error during optimizatio of split:{split.keys()}: {e}, type: {type(e).__name__}")
 
     def _optimize_splits(self, splits):
         """Optimize splits.
@@ -479,9 +435,7 @@ class OctoCore:
         Works if splits contain several splits as well as
         when splits only contains a single split
         """
-        study_name = (
-            f"optuna_{self.experiment.experiment_id}_{self.experiment.sequence_id}"
-        )
+        study_name = f"optuna_{self.experiment.experiment_id}_{self.experiment.sequence_id}"
 
         # set up Optuna study
         objective = ObjectiveOptuna(
@@ -517,10 +471,7 @@ class OctoCore:
         def logging_callback(study, trial):
             logger.set_log_group(LogGroup.OPTUNA)
             if trial.state == TrialState.COMPLETE:
-                logger.info(
-                    f"Trial {trial.number} finished with value: "
-                    f"{trial.value} and parameters: {trial.params}"
-                )
+                logger.info(f"Trial {trial.number} finished with value: {trial.value} and parameters: {trial.params}")
             elif trial.state == TrialState.PRUNED:
                 logger.info(f"Trial {trial.number} pruned.")
             elif trial.state == TrialState.FAIL:
@@ -543,9 +494,7 @@ class OctoCore:
         # shutil.copy(source, self.path_results / source.name)
 
         # display results
-        logger.set_log_group(
-            LogGroup.SCORES, f"EXP {self.experiment.experiment_id} SQE TBD"
-        )
+        logger.set_log_group(LogGroup.SCORES, f"EXP {self.experiment.experiment_id} SQE TBD")
         logger.info("Optimization results: ")
         # print("Best trial:", study.best_trial) #full info
         logger.info(
@@ -553,9 +502,7 @@ class OctoCore:
         )
         logger.info(f"Best target value {study.best_value}")
         user_attrs = study.best_trial.user_attrs
-        performance_info = {
-            key: v for key, v in user_attrs.items() if key not in ["config_training"]
-        }
+        performance_info = {key: v for key, v in user_attrs.items() if key not in ["config_training"]}
         logger.info(f"Best parameters {user_attrs['config_training']}")
         logger.info(f"Performance Info: {performance_info}")
 
@@ -598,11 +545,7 @@ class OctoCore:
         # train all models in best_bag
         best_bag.fit()
         # save best bag
-        best_bag.to_pickle(
-            self.path_results.joinpath(
-                f"{study_name}_trial{study.best_trial.number}_bag.pkl"
-            )
-        )
+        best_bag.to_pickle(self.path_results.joinpath(f"{study_name}_trial{study.best_trial.number}_bag.pkl"))
 
         # print best_bag scores for verification
         best_bag_scores = best_bag.get_scores()
@@ -631,7 +574,5 @@ class OctoCore:
                         "param_value": str(trial.params[name]),
                     }
                 )
-        pd.DataFrame(dict_optuna).to_parquet(
-            self.path_module.joinpath(f"{study_name}.parquet")
-        )
+        pd.DataFrame(dict_optuna).to_parquet(self.path_module.joinpath(f"{study_name}.parquet"))
         return True

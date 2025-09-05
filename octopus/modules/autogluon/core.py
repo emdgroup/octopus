@@ -58,16 +58,12 @@ class SklearnClassifier(BaseEstimator, ClassifierMixin):
 
     def predict_proba(self, x):
         """Predict proba."""
-        probabilities = self.predictor.predict_proba(
-            x, as_pandas=False, as_multiclass=True
-        )
+        probabilities = self.predictor.predict_proba(x, as_pandas=False, as_multiclass=True)
         return probabilities  # Return as NumPy array
 
     def fit(self, x, y):
         """Fit."""
-        raise NotImplementedError(
-            "This classifier is already fitted. Only for inference use."
-        )
+        raise NotImplementedError("This classifier is already fitted. Only for inference use.")
 
 
 class SklearnRegressor(BaseEstimator, RegressorMixin):
@@ -87,9 +83,7 @@ class SklearnRegressor(BaseEstimator, RegressorMixin):
 
     def fit(self, x, y):
         """Fit."""
-        raise NotImplementedError(
-            "This regressor is already fitted. Only for inference use."
-        )
+        raise NotImplementedError("This regressor is already fitted. Only for inference use.")
 
 
 # mapping of metrics
@@ -117,9 +111,7 @@ except Exception as e:  # pylint: disable=W0718 # noqa: F841
 class AGCore:
     """Autogluon."""
 
-    experiment: OctoExperiment = field(
-        validator=[validators.instance_of(OctoExperiment)]
-    )
+    experiment: OctoExperiment = field(validator=[validators.instance_of(OctoExperiment)])
     model = field(init=False)
     num_cpus = field(init=False)
 
@@ -141,9 +133,7 @@ class AGCore:
     @property
     def y_traindev(self) -> pd.DataFrame:
         """y_train."""
-        return self.experiment.data_traindev[
-            self.experiment.target_assignments.values()
-        ]
+        return self.experiment.data_traindev[self.experiment.target_assignments.values()]
 
     @property
     def x_test(self) -> pd.DataFrame:
@@ -208,15 +198,9 @@ class AGCore:
         if self.experiment.ml_config.num_cpus == "auto":
             self.num_cpus = self.experiment.num_assigned_cpus
         else:
-            self.num_cpus = min(
-                self.experiment.num_assigned_cpus, self.experiment.ml_config.num_cpus
-            )
+            self.num_cpus = min(self.experiment.num_assigned_cpus, self.experiment.ml_config.num_cpus)
 
-        logger.info(
-            f"Resource allocation | CPUs | "
-            f"Available: {self.experiment.num_assigned_cpus} | "
-            f"Requested: {self.experiment.ml_config.num_cpus}"
-        )
+        logger.info(f"Resource allocation | CPUs | Available: {self.experiment.num_assigned_cpus} | Requested: {self.experiment.ml_config.num_cpus}")
         logger.info(
             f"""CPU Resources | \
         Available: {self.experiment.num_assigned_cpus} | \
@@ -254,9 +238,7 @@ class AGCore:
         if len(self.target_assignments) == 1:
             target = next(iter(self.target_assignments.values()))
         else:
-            raise ValueError(
-                f"Single target expected. Got keys: {self.target_assignments.keys()} "
-            )
+            raise ValueError(f"Single target expected. Got keys: {self.target_assignments.keys()} ")
 
         # set up model and scoring type
         scoring_type = metrics_inventory_autogluon[self.target_metric]
@@ -283,9 +265,7 @@ class AGCore:
         print("fitting completed")
 
         # save failure info in case of crashes
-        with open(
-            self.path_results.joinpath("debug_info.txt"), "w", encoding="utf-8"
-        ) as text_file:
+        with open(self.path_results.joinpath("debug_info.txt"), "w", encoding="utf-8") as text_file:
             print(self.model.model_failures(), file=text_file)
 
         # save leaderboard and model information
@@ -333,10 +313,7 @@ class AGCore:
         )
 
         # Calculate group feature importances using feature_groups
-        if (
-            hasattr(self.experiment, "feature_groups")
-            and self.experiment.feature_groups
-        ):
+        if hasattr(self.experiment, "feature_groups") and self.experiment.feature_groups:
             group_importances = {}
             for group_name, features in self.experiment.feature_groups.items():
                 # Calculate feature importance for the current group
@@ -367,16 +344,11 @@ class AGCore:
             # Concatenate the list items
             fi["autogluon_permutation_test"] = pd.concat(combined_feature_importances)
 
-        fi["autogluon_permutation_test"] = fi["autogluon_permutation_test"].sort_values(
-            by="importance", ascending=False
-        )
+        fi["autogluon_permutation_test"] = fi["autogluon_permutation_test"].sort_values(by="importance", ascending=False)
 
         # SHAP feature importances
         print("Calculating SHAP feature importances...")
-        if (
-            hasattr(self.experiment, "feature_groups")
-            and self.experiment.feature_groups
-        ):
+        if hasattr(self.experiment, "feature_groups") and self.experiment.feature_groups:
             # Group SHAP feature importances
             fi["octopus_shap_test"] = get_fi_group_shap(
                 experiment={
@@ -406,9 +378,7 @@ class AGCore:
 
         # Combine all feature importances into a single dictionary
         combined_importances = {
-            "autogluon_permutation": fi["autogluon_permutation_test"].to_dict(
-                orient="index"
-            ),
+            "autogluon_permutation": fi["autogluon_permutation_test"].to_dict(orient="index"),
             "octopus_shap": fi["octopus_shap_test"].to_dict(orient="records"),
         }
 
@@ -425,34 +395,20 @@ class AGCore:
     def _get_scores(self):
         """Get train/dev/test scores."""
         # Evaluate the model on the test set
-        test_performance = self.model.evaluate(
-            self.ag_test_data, detailed_report=True, silent=True
-        )
-        test_performance_with_suffix = {
-            f"{key}_test": value for key, value in test_performance.items()
-        }
+        test_performance = self.model.evaluate(self.ag_test_data, detailed_report=True, silent=True)
+        test_performance_with_suffix = {f"{key}_test": value for key, value in test_performance.items()}
 
         # Extract the best model's validation performance
         leaderboard = self.model.leaderboard(silent=True)
         best_model_info = leaderboard.iloc[0].to_dict()
-        dev_performance = {
-            key: value
-            for key, value in best_model_info.items()
-            if "val" in key or "score" in key
-        }
-        dev_performance_with_suffix = {
-            f"{key}_dev": value for key, value in dev_performance.items()
-        }
+        dev_performance = {key: value for key, value in best_model_info.items() if "val" in key or "score" in key}
+        dev_performance_with_suffix = {f"{key}_dev": value for key, value in dev_performance.items()}
 
         # Evaluate the model on the training set to get training performance
-        train_performance = self.model.evaluate(
-            self.ag_train_data, detailed_report=True, silent=True
-        )
+        train_performance = self.model.evaluate(self.ag_train_data, detailed_report=True, silent=True)
 
         # Modify the keys to add "_train" suffix for training performance
-        train_performance_with_suffix = {
-            f"{key}_train": value for key, value in train_performance.items()
-        }
+        train_performance_with_suffix = {f"{key}_train": value for key, value in train_performance.items()}
 
         # test scores calculated by octo method, for comparison
         all_metrics = list(dict.fromkeys(self.metrics + [self.target_metric]))
@@ -508,18 +464,14 @@ class AGCore:
 
         # save model info
         model_info = self.model.info()
-        with open(
-            self.path_results.joinpath("model_info.json"), "w", encoding="utf-8"
-        ) as f:
+        with open(self.path_results.joinpath("model_info.json"), "w", encoding="utf-8") as f:
             json.dump(model_info, f, default=str, indent=4)
 
         # show and save model summary
         fit_summary = self.model.fit_summary(
             # show_plot=True
         )
-        with open(
-            self.path_results.joinpath("model_stats.txt"), "w", encoding="utf-8"
-        ) as text_file:
+        with open(self.path_results.joinpath("model_stats.txt"), "w", encoding="utf-8") as text_file:
             print(fit_summary, file=text_file)
 
     def _get_predictions(self):
@@ -557,9 +509,7 @@ class AGCore:
 
         # (B) validation predictions
         # DataFrame with 'row_id' from validation data
-        rowid_val = pd.DataFrame(
-            {row_column: self.experiment.data_traindev[row_column]}
-        )
+        rowid_val = pd.DataFrame({row_column: self.experiment.data_traindev[row_column]})
 
         if problem_type == "regression":
             # Out-of-fold (OOF) predictions for regression

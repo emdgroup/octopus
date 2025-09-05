@@ -75,24 +75,16 @@ class Training:
     model = field(default=None)
     """Model."""
 
-    predictions: dict = field(
-        default=Factory(dict), validator=[validators.instance_of(dict)]
-    )
+    predictions: dict = field(default=Factory(dict), validator=[validators.instance_of(dict)])
     """Model predictions."""
 
-    feature_importances: dict = field(
-        default=Factory(dict), validator=[validators.instance_of(dict)]
-    )
+    feature_importances: dict = field(default=Factory(dict), validator=[validators.instance_of(dict)])
     """Feature importances."""
 
-    features_used: list = field(
-        default=Factory(list), validator=[validators.instance_of(list)]
-    )
+    features_used: list = field(default=Factory(list), validator=[validators.instance_of(list)])
     """Features used."""
 
-    outlier_samples: list = field(
-        default=Factory(list), validator=[validators.instance_of(list)]
-    )
+    outlier_samples: list = field(default=Factory(list), validator=[validators.instance_of(list)])
     """Outlie samples identified."""
 
     scaler = field(init=False)
@@ -214,9 +206,7 @@ class Training:
             # print("Number of outliers found:", np.sum(outlier_pred == -1))
 
             # identify outlier samples
-            self.outlier_samples = data_train[outlier_pred == -1][
-                self.row_column
-            ].tolist()
+            self.outlier_samples = data_train[outlier_pred == -1][self.row_column].tolist()
             # print("Outlier samples:", self.outlier_samples)
 
             # Remove outliers from data_train, x_train, y_train
@@ -238,9 +228,7 @@ class Training:
         #     **self.ml_model_params
         # )
 
-        self.model = ModelInventory().get_model_instance(
-            self.ml_model_type, self.ml_model_params
-        )
+        self.model = ModelInventory().get_model_instance(self.ml_model_type, self.ml_model_params)
 
         if len(self.target_assignments) == 1:
             # standard sklearn single target models
@@ -318,9 +306,7 @@ class Training:
             self.calculate_fi_featuresused_shap(partition="dev")
             fi_df = self.feature_importances["shap_dev"]
         elif feature_method == "permutation":
-            self.calculate_fi_permutation(
-                partition="dev", n_repeats=2
-            )  # only 2 repeats!
+            self.calculate_fi_permutation(partition="dev", n_repeats=2)  # only 2 repeats!
             fi_df = self.feature_importances["permutation_dev"]
         elif feature_method == "constant":
             self.calculate_fi_constant()
@@ -358,11 +344,8 @@ class Training:
         """Permutation feature importance, group version."""
         logger.set_log_group(LogGroup.TRAINING, f"{self.training_id}")
 
-        logger.info(
-            f"Calculating permutation feature importances ({partition})"
-            ". This may take a while..."
-        )
-        np.random.seed(42)  # reproduceability
+        logger.info(f"Calculating permutation feature importances ({partition}). This may take a while...")
+        np.random.seed(42)  # reproducibility
         # fixed confidence level
         confidence_level = 0.95
         feature_columns = self.feature_columns
@@ -388,9 +371,7 @@ class Training:
         features_dict = {**feature_columns_dict, **feature_groups}
 
         # calculate baseline score
-        baseline_score = get_performance_score(
-            model, data, feature_columns, target_metric, target_assignments
-        )
+        baseline_score = get_performance_score(model, data, feature_columns, target_metric, target_assignments)
 
         results_df = pd.DataFrame(
             columns=[
@@ -412,12 +393,8 @@ class Training:
                 # replace column with random selection from that column of data_all
                 # we use data_all as the validation dataset may be small
                 for feat in feature:
-                    data_pfi[feat] = np.random.choice(
-                        data[feat], len(data_pfi), replace=False
-                    )
-                pfi_score = get_performance_score(
-                    model, data_pfi, feature_columns, target_metric, target_assignments
-                )
+                    data_pfi[feat] = np.random.choice(data[feat], len(data_pfi), replace=False)
+                pfi_score = get_performance_score(model, data_pfi, feature_columns, target_metric, target_assignments)
                 fi_lst.append(baseline_score - pfi_score)
 
             # calculate statistics
@@ -432,7 +409,7 @@ class Training:
                 p_value = 0.5
 
             # calculate confidence intervals
-            if any(map(np.isnan, (stddev, n, pfi_mean))) or n == 1:
+            if any(np.isnan(val) for val in [stddev, n, pfi_mean]) or n == 1:
                 ci_high = np.nan
                 ci_low = np.nan
             else:
@@ -456,11 +433,8 @@ class Training:
 
     def calculate_fi_permutation(self, partition="dev", n_repeats=10):
         """Permutation feature importance."""
-        logger.info(
-            f"Calculating permutation feature importances ({partition})"
-            ". This may take a while..."
-        )
-        np.random.seed(42)  # reproduceability
+        logger.info(f"Calculating permutation feature importances ({partition}). This may take a while...")
+        np.random.seed(42)  # reproducibility
         if self.ml_type == "timetoevent":
             # sksurv models only provide inbuilt scorer (CI)
             # more work needed to support other metrics
@@ -492,7 +466,7 @@ class Training:
 
     def calculate_fi_lofo(self):
         """LOFO feature importance."""
-        np.random.seed(42)  # reproduceability
+        np.random.seed(42)  # reproducibility
         logger.info("Calculating LOFO feature importance. This may take a while...")
         # first, dev only
         feature_columns = self.feature_columns
@@ -589,9 +563,7 @@ class Training:
         elif isinstance(shap_values, np.ndarray):  # shap v. >= 0.45 or single output
             if shap_values.ndim == 2:  # single output
                 feature_importances = np.abs(shap_values).mean(axis=0)
-            elif (
-                shap_values.ndim == 3
-            ):  # multi-output (e.g. 2 classes) for shap >= 0.45
+            elif shap_values.ndim == 3:  # multi-output (e.g. 2 classes) for shap >= 0.45
                 feature_importances = np.abs(shap_values[:, :, 0]).mean(axis=0)
             else:
                 raise TypeError("Type error shape_value")
@@ -607,10 +579,7 @@ class Training:
 
     def calculate_fi_shap(self, partition="dev", shap_type="kernel"):
         """Shap feature importance."""
-        logger.info(
-            f"Calculating shape feature importances ({partition})"
-            ". This may take a while..."
-        )
+        logger.info(f"Calculating shape feature importances ({partition}). This may take a while...")
         # here we use model agnostic methods to estimate shap values
         # methods: (a) kernel (b) permutation (c) exact
 
@@ -646,9 +615,7 @@ class Training:
         elif isinstance(shap_values, np.ndarray):  # shap v. >= 0.45 or single output
             if shap_values.ndim == 2:  # single output
                 feature_importances = np.abs(shap_values).mean(axis=0)
-            elif (
-                shap_values.ndim == 3
-            ):  # multi-output (e.g. 2 classes) for shap v. >= 0.45
+            elif shap_values.ndim == 3:  # multi-output (e.g. 2 classes) for shap v. >= 0.45
                 feature_importances = np.abs(shap_values[:, :, 0]).mean(axis=0)
             else:
                 raise TypeError("Type error shape_value")

@@ -36,12 +36,8 @@ class OctoML:
 
     data: OctoData = field(validator=[validators.instance_of(OctoData)])
     config_study: ConfigStudy = field(validator=[validators.instance_of(ConfigStudy)])
-    config_manager: ConfigManager = field(
-        validator=[validators.instance_of(ConfigManager)]
-    )
-    config_sequence: ConfigSequence = field(
-        validator=[validators.instance_of(ConfigSequence)]
-    )
+    config_manager: ConfigManager = field(validator=[validators.instance_of(ConfigManager)])
+    config_sequence: ConfigSequence = field(validator=[validators.instance_of(ConfigSequence)])
     configs: OctoConfig = field(default=None)
     experiments: list = field(default=Factory(list))
     manager: OctoManager = field(init=False, default=None)
@@ -82,11 +78,7 @@ class OctoML:
         # data_clean_df = self._get_dataset_with_relevant_columns()
         data_clean_df = self.data.data[self.data.relevant_columns]
         # get datasplit column
-        datasplit_col = (
-            self.data.sample_id
-            if self.data.datasplit_type == "sample"
-            else self.data.datasplit_type
-        )
+        datasplit_col = self.data.sample_id if self.data.datasplit_type == "sample" else self.data.datasplit_type
 
         # create datasplits for outer experiments
         data_splits = DataSplit(
@@ -114,9 +106,7 @@ class OctoML:
 
         df_sorted = self.data.report.sort_values(
             "Severity",
-            key=lambda x: pd.Categorical(
-                x, categories=["Info", "Warning", "Critical"], ordered=True
-            ),
+            key=lambda x: pd.Categorical(x, categories=["Info", "Warning", "Critical"], ordered=True),
         )
 
         for _, issue in df_sorted.iterrows():
@@ -157,16 +147,17 @@ class OctoML:
         """
         if path_study.exists():
             if not self.configs.study.silently_overwrite_study:
-                confirmation = input(
-                    "Study exists, do you want to continue (resume)? (yes/no): "
-                )
+                confirmation = input("Study exists, do you want to continue? (yes/no): ")
                 if confirmation.strip().lower() != "yes":
                     print("Exiting...")
                     sys.exit()
                 print("Continuing...")
 
             if self.configs.study.start_with_empty_study:
+                print("Overwriting existing study....")
                 shutil.rmtree(path_study)
+            else:
+                print("Resume existing study....")
 
     def _create_folders(self, path_study: Path) -> None:
         """Create study folder and subdirectories.
@@ -212,9 +203,7 @@ class OctoML:
 
         self.configs.to_pickle(config_path / "config.pkl")
 
-    def _impute_dataset(
-        self, train_df: pd.DataFrame, test_df: pd.DataFrame, feature_columns: list
-    ) -> tuple[pd.DataFrame, pd.DataFrame]:
+    def _impute_dataset(self, train_df: pd.DataFrame, test_df: pd.DataFrame, feature_columns: list) -> tuple[pd.DataFrame, pd.DataFrame]:
         """Impute dataset if missing values are present.
 
         Parameters:
@@ -239,28 +228,18 @@ class OctoML:
         # Perform imputation if missing values are present
         if imputation_method == "mice":
             logger.info("MICE imputation")
-            imputed_train_df, imputed_test_df = impute_mice(
-                train_df, test_df, feature_columns
-            )
+            imputed_train_df, imputed_test_df = impute_mice(train_df, test_df, feature_columns)
         else:
             logger.info("Simple imputation")
-            imputed_train_df, imputed_test_df = impute_simple(
-                train_df, test_df, feature_columns, imputation_method
-            )
+            imputed_train_df, imputed_test_df = impute_simple(train_df, test_df, feature_columns, imputation_method)
 
         # Assert that there are no NaNs in the imputed data
-        assert not imputed_train_df[feature_columns].isna().any().any(), (
-            "NaNs present in imputed train_df"
-        )
-        assert not imputed_test_df[feature_columns].isna().any().any(), (
-            "NaNs present in imputed test_df"
-        )
+        assert not imputed_train_df[feature_columns].isna().any().any(), "NaNs present in imputed train_df"
+        assert not imputed_test_df[feature_columns].isna().any().any(), "NaNs present in imputed test_df"
 
         return imputed_train_df, imputed_test_df
 
-    def _create_experiments(
-        self, path_study: Path, data_splits: dict, datasplit_col: str
-    ) -> None:
+    def _create_experiments(self, path_study: Path, data_splits: dict, datasplit_col: str) -> None:
         """Create the experiments based on the data splits.
 
         Args:
@@ -273,9 +252,7 @@ class OctoML:
             path_study.joinpath(path_experiment).mkdir(parents=True, exist_ok=True)
             # impute datasets
             feature_columns = self.data.feature_columns
-            traindev_df, test_df = self._impute_dataset(
-                value["train"], value["test"], feature_columns
-            )
+            traindev_df, test_df = self._impute_dataset(value["train"], value["test"], feature_columns)
 
             self.experiments.append(
                 OctoExperiment(

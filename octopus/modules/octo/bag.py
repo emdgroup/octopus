@@ -40,12 +40,8 @@ class Bag:
     train_status: bool = field(default=False)
 
     # bag training outputs, initialized in post_init
-    feature_importances: dict = field(
-        init=False, validator=[validators.instance_of(dict)]
-    )
-    n_features_used_mean: float = field(
-        init=False, validator=[validators.instance_of(float)]
-    )
+    feature_importances: dict = field(init=False, validator=[validators.instance_of(dict)])
+    n_features_used_mean: float = field(init=False, validator=[validators.instance_of(float)])
 
     @property
     def feature_groups(self) -> dict:
@@ -81,10 +77,7 @@ class Bag:
             # Using joblib's Parallel and delayed functionalities
             # default backend is 'loky'
             with Parallel(n_jobs=self.num_workers) as parallel:
-                self.trainings = parallel(
-                    delayed(execute_training)(training, idx)
-                    for idx, training in enumerate(self.trainings)
-                )
+                self.trainings = parallel(delayed(execute_training)(training, idx) for idx, training in enumerate(self.trainings))
 
             # (B) altern. ProcessPoolExecutor code, incompatible with xgboost, issue46
             ## max_tasks_per_child=1 requires Python3.11
@@ -124,15 +117,9 @@ class Bag:
             for training in self.trainings:
                 try:
                     training.fit()
-                    logger.info(
-                        f"Inner sequential training completed for bag_id {self.bag_id} "
-                        f"and training id {training.training_id}"
-                    )
+                    logger.info(f"Inner sequential training completed for bag_id {self.bag_id} and training id {training.training_id}")
                 except Exception as e:  # pylint: disable=broad-except
-                    logger.info(
-                        f"Error during training {training}: {e},"
-                        f" type: {type(e).__name__}"
-                    )
+                    logger.info(f"Error during training {training}: {e}, type: {type(e).__name__}")
 
         self.train_status = (True,)
 
@@ -160,9 +147,7 @@ class Bag:
 
         # set correct dtype for target columns
         for column in list(self.target_assignments.values()):
-            ensemble[column] = ensemble[column].astype(
-                self.trainings[0].data_train[column].dtype
-            )
+            ensemble[column] = ensemble[column].astype(self.trainings[0].data_train[column].dtype)
 
         predictions["ensemble"] = {"test": ensemble}
 
@@ -187,12 +172,8 @@ class Bag:
             if ml_type == "timetoevent":
                 for part, storage_value in storage.items():
                     estimate = training.predictions[part]["prediction"]
-                    event_time = training.predictions[part][
-                        self.target_assignments["duration"]
-                    ].astype(float)
-                    event_indicator = training.predictions[part][
-                        self.target_assignments["event"]
-                    ].astype(bool)
+                    event_time = training.predictions[part][self.target_assignments["duration"]].astype(float)
+                    event_indicator = training.predictions[part][self.target_assignments["event"]].astype(bool)
                     ci = metric_method(event_indicator, event_time, estimate)[0]
                     storage_value.append(float(ci))
 
@@ -211,9 +192,7 @@ class Bag:
                 else:
                     for part, storage_value in storage.items():
                         target_col = list(self.target_assignments.values())[0]
-                        predictions = training.predictions[part]["prediction"].astype(
-                            int
-                        )
+                        predictions = training.predictions[part]["prediction"].astype(int)
                         target = training.predictions[part][target_col]
                         storage_value.append(metric_method(target, predictions))
 
@@ -223,9 +202,7 @@ class Bag:
                 else:
                     for part, storage_value in storage.items():
                         target_col = list(self.target_assignments.values())[0]
-                        predictions = training.predictions[part]["prediction"].astype(
-                            int
-                        )
+                        predictions = training.predictions[part]["prediction"].astype(int)
                         target = training.predictions[part][target_col]
                         storage_value.append(metric_method(target, predictions))
 
@@ -313,9 +290,7 @@ class Bag:
                     # Find the feature with the highest importance in fi_df
                     feature_importances = fi_df[fi_df["feature"].isin(features)]
                     if not feature_importances.empty:
-                        best_feature = feature_importances.loc[
-                            feature_importances["importance"].idxmax(), "feature"
-                        ]
+                        best_feature = feature_importances.loc[feature_importances["importance"].idxmax(), "feature"]
                         feat_additional.append(best_feature)
 
         # Add the additional features to feat_single and remove duplicates
@@ -356,9 +331,7 @@ class Bag:
 
         # save feature importances for every training in bag
         for training in self.trainings:
-            self.feature_importances[training.training_id] = (
-                training.feature_importances
-            )
+            self.feature_importances[training.training_id] = training.feature_importances
 
         # summary feature importances for all trainings (mean + count)
         # internal, permutation_dev, shap_dev only
@@ -386,11 +359,7 @@ class Bag:
             )
 
             # calculate count feature importances, keep zero entries
-            non_zero_importances = (
-                fi[fi["importance"] != 0][["feature", "importance"]]
-                .groupby(by="feature")
-                .count()
-            )
+            non_zero_importances = fi[fi["importance"] != 0][["feature", "importance"]].groupby(by="feature").count()
             # Create a DataFrame with all features, init importance counts to zero
             all_features = pd.DataFrame(fi["feature"].unique(), columns=["feature"])
             all_features["importance"] = 0
@@ -399,9 +368,7 @@ class Bag:
             all_features.update(non_zero_importances)
             all_features = all_features.reset_index()
             # Sort and reset index
-            self.feature_importances[method_str + "_count"] = all_features.sort_values(
-                by="importance", ascending=False
-            ).reset_index(drop=True)
+            self.feature_importances[method_str + "_count"] = all_features.sort_values(by="importance", ascending=False).reset_index(drop=True)
 
         return self.feature_importances
 

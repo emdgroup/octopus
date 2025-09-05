@@ -115,9 +115,7 @@ def get_param_grid(model_type):
 class RfeCore:
     """RFE Module."""
 
-    experiment: OctoExperiment = field(
-        validator=[validators.instance_of(OctoExperiment)]
-    )
+    experiment: OctoExperiment = field(validator=[validators.instance_of(OctoExperiment)])
 
     @property
     def path_module(self) -> Path:
@@ -137,9 +135,7 @@ class RfeCore:
     @property
     def y_traindev(self) -> pd.DataFrame:
         """y_train."""
-        return self.experiment.data_traindev[
-            self.experiment.target_assignments.values()
-        ]
+        return self.experiment.data_traindev[self.experiment.target_assignments.values()]
 
     @property
     def x_test(self) -> pd.DataFrame:
@@ -268,14 +264,8 @@ class RfeCore:
 
         rfecv.fit(self.x_traindev, self.y_traindev.squeeze(axis=1))
         optimal_features = rfecv.n_features_
-        selected_features = [
-            self.feature_columns[i]
-            for i in range(len(rfecv.support_))
-            if rfecv.support_[i]
-        ]
-        self.experiment.selected_features = sorted(
-            selected_features, key=lambda x: (len(x), sorted(x))
-        )
+        selected_features = [self.feature_columns[i] for i in range(len(rfecv.support_)) if rfecv.support_[i]]
+        self.experiment.selected_features = sorted(selected_features, key=lambda x: (len(x), sorted(x)))
 
         print("RFE completed")
         # print(f"CV Results: {rfecv.cv_results_}")

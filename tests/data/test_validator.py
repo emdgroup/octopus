@@ -140,9 +140,7 @@ def test_validate_column_dtypes(valid_validator):
     valid_validator._validate_column_dtypes()
 
     invalid_validator = valid_validator
-    invalid_validator.data["feature1"] = invalid_validator.data["feature1"].astype(
-        "object"
-    )
+    invalid_validator.data["feature1"] = invalid_validator.data["feature1"].astype("object")
     with pytest.raises(ValueError):
         invalid_validator._validate_column_dtypes()
 

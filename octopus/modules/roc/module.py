@@ -20,9 +20,7 @@ class Roc(BaseSequenceItem):
     threshold: float = field(validator=[validators.instance_of(float)], default=0.8)
     """Threshold for feature removal."""
 
-    correlation_type: str = field(
-        validator=[validators.in_(["spearmanr", "rdc"])], default="spearmanr"
-    )
+    correlation_type: str = field(validator=[validators.in_(["spearmanr", "rdc"])], default="spearmanr")
     """Selection of correlation type."""
 
     filter_type: str = field(

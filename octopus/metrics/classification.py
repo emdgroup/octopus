@@ -118,9 +118,7 @@ class NEGBRIERSCOREMetric:
 class AUCPRMetric:
     """AUCPR metric class."""
 
-    def _auc_pr(
-        y_true: Union[np.ndarray, list], y_score: Union[np.ndarray, list]
-    ) -> float:
+    def _auc_pr(y_true: Union[np.ndarray, list], y_score: Union[np.ndarray, list]) -> float:
         """Calculate the Area Under the Precision-Recall Curve (AUC-PR)."""
         # Compute precision-recall pairs for different probability thresholds
         precision, recall, _ = precision_recall_curve(y_true, y_score)

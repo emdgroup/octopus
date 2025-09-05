@@ -1,4 +1,4 @@
-## Basic example for using Octopus regression
+"""Basic example for using Octopus regression."""
 
 # This example demonstrates how to use Octopus to create a machine learning regression model.
 # We will use the famous California housing dataset for this purpose.

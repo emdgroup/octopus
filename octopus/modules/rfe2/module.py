@@ -17,19 +17,13 @@ class Rfe2(Octo):
     # step: int = field(validator=[validators.instance_of(int)], default=1)
     # """Number of features to remove at each iteration."""
 
-    min_features_to_select: int = field(
-        validator=[validators.instance_of(int)], default=1
-    )
+    min_features_to_select: int = field(validator=[validators.instance_of(int)], default=1)
     """Minimum number of features to be selected."""
 
-    fi_method_rfe: str = field(
-        validator=[validators.in_(["permutation", "shap"])], default="permutation"
-    )
+    fi_method_rfe: str = field(validator=[validators.in_(["permutation", "shap"])], default="permutation")
     """Feature importance method for RFE."""
 
-    selection_method: str = field(
-        validator=[validators.in_(["best", "parsimonious"])], default="best"
-    )
+    selection_method: str = field(validator=[validators.in_(["best", "parsimonious"])], default="best")
     """Method to select best solution. Parimonious: smallest solutions within sem."""
 
     abs_on_fi: bool = field(validator=[validators.instance_of(bool)], default=False)

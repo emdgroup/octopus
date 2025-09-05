@@ -21,11 +21,7 @@ class Sfs(BaseSequenceItem):
     """Number of CV folds for RFE_CV."""
 
     sfs_type: str = field(
-        validator=[
-            validators.in_(
-                ["forward", "backward", "floating_forward", "floating_backward"]
-            )
-        ],
+        validator=[validators.in_(["forward", "backward", "floating_forward", "floating_backward"])],
         default="backward",
     )
     """Sfs type used."""

@@ -84,6 +84,7 @@ lint = [
 test = [
     "pytest>=7.2.0",
     "pytest-cov>=6.1.1",
+    "octopus[autogluon]",
 ]
 
 [build-system]

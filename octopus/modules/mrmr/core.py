@@ -22,9 +22,7 @@ logger = get_logger()
 class MrmrCore:
     """MRMR module."""
 
-    experiment: OctoExperiment = field(
-        validator=[validators.instance_of(OctoExperiment)]
-    )
+    experiment: OctoExperiment = field(validator=[validators.instance_of(OctoExperiment)])
 
     @property
     def data_traindev(self) -> pd.DataFrame:
@@ -39,9 +37,7 @@ class MrmrCore:
     @property
     def y_traindev(self) -> pd.DataFrame:
         """y_traindev."""
-        return self.experiment.data_traindev[
-            self.experiment.target_assignments.values()
-        ]
+        return self.experiment.data_traindev[self.experiment.target_assignments.values()]
 
     @property
     def feature_columns(self) -> list:
@@ -83,9 +79,7 @@ class MrmrCore:
         """Feature importance key."""
         fi_type = self.experiment.ml_config.feature_importance_type
         fi_method = self.experiment.ml_config.feature_importance_method
-        return (
-            f"{'internal' if fi_method == 'internal' else fi_method + '_dev'}_{fi_type}"
-        )
+        return f"{'internal' if fi_method == 'internal' else fi_method + '_dev'}_{fi_type}"
 
     def __attrs_post_init__(self):
         logger.set_log_group(LogGroup.PROCESSING, "MRMR")
@@ -110,9 +104,7 @@ class MrmrCore:
                 )
             if self.feature_importance_key not in self.feature_importances:
                 raise ValueError(
-                    "No feature importances available for "
-                    f"key {self.feature_importance_key}."
-                    f"Available keys: {self.feature_importances.keys()}"
+                    f"No feature importances available for key {self.feature_importance_key}.Available keys: {self.feature_importances.keys()}"
                 )
 
     def run_experiment(self):
@@ -126,9 +118,7 @@ class MrmrCore:
         selected_mrmr_features = list(mrmr_dict.values())[0]
 
         # save features selected by mrmr
-        self.experiment.selected_features = sorted(
-            selected_mrmr_features, key=lambda s: (len(s), s)
-        )
+        self.experiment.selected_features = sorted(selected_mrmr_features, key=lambda s: (len(s), s))
         logger.info(f"Selected features: {self.experiment.selected_features}")
 
         return self.experiment
@@ -142,9 +132,7 @@ class MrmrCore:
         logger.info(f"Correlation type used by MRMR: {self.correlation_type}")
         logger.info(f"Relevance type used by MRMR: {self.relevance_type}")
         logger.info(f"Specified results key: {self.results_key}")
-        logger.info(
-            f"Available results keys: {list(self.experiment.prior_results.keys())}"
-        )
+        logger.info(f"Available results keys: {list(self.experiment.prior_results.keys())}")
 
     def _get_relevance_data(self):
         if self.relevance_type == "permutation":
@@ -152,9 +140,7 @@ class MrmrCore:
         elif self.relevance_type == "f-statistics":
             return self._get_fstats_relevance()
         else:
-            raise ValueError(
-                f"Relevance type {self.relevance_type} not supported for MRMR."
-            )
+            raise ValueError(f"Relevance type {self.relevance_type} not supported for MRMR.")
 
     def _get_permutation_relevance(self):
         """Get permutation relevance.
@@ -165,19 +151,14 @@ class MrmrCore:
         """
         re_df = self.feature_importances[self.feature_importance_key]
         re_df = re_df[re_df["feature"].isin(self.feature_columns)]
-        logger.info(
-            f"Number of features in fi table "
-            f"(based on previous selected features, no groups): {len(re_df)}"
-        )
+        logger.info(f"Number of features in fi table (based on previous selected features, no groups): {len(re_df)}")
         re_df = re_df[re_df["importance"] > 0].reset_index(drop=True)
         logger.info(f"Number features with positive importance: {len(re_df)}")
         return re_df
 
     def _get_fstats_relevance(self):
         """Get fstats relevance."""
-        return relevance_fstats(
-            self.x_traindev, self.y_traindev, self.feature_columns, self.ml_type
-        )
+        return relevance_fstats(self.x_traindev, self.y_traindev, self.feature_columns, self.ml_type)
 
     def _calculate_mrmr_features(self, relevance_df):
         """Calculate MRMR features."""
@@ -284,9 +265,7 @@ def maxrminr(
 
     # Validate correlation type
     if correlation_type not in ["pearson", "spearman", "rdc"]:
-        raise ValueError(
-            "Correlation_type must be one of {'pearson', 'spearman', 'rdc'}"
-        )
+        raise ValueError("Correlation_type must be one of {'pearson', 'spearman', 'rdc'}")
 
     # Validate method
     if method not in ["ratio", "difference"]:
@@ -295,9 +274,7 @@ def maxrminr(
     # Extract relevant features
     relevant_features = relevance["feature"].unique().tolist()
     max_relevant_features = len(relevant_features)
-    requested_feature_counts = _adjust_counts(
-        max_relevant_features, requested_feature_counts
-    )
+    requested_feature_counts = _adjust_counts(max_relevant_features, requested_feature_counts)
 
     # Convert features DataFrame to only relevant columns
     features_df = features[relevant_features].copy()
@@ -334,22 +311,14 @@ def maxrminr(
             # set lower boundary to avoid divide-by-zero
             candidate_features = candidate_df["feature"].values
             candidate_corrs = corr_matrix.loc[candidate_features, selected_features]
-            mean_redundancies = (
-                candidate_corrs.replace(1.0, float("Inf"))
-                .mean(axis=1)
-                .clip(lower=0.001)
-            )
+            mean_redundancies = candidate_corrs.replace(1.0, float("Inf")).mean(axis=1).clip(lower=0.001)
             candidate_df["redundancy"] = mean_redundancies.values
 
             # calculate score
             if method == "ratio":
-                candidate_df["score"] = (
-                    candidate_df["importance"] / candidate_df["redundancy"]
-                )
+                candidate_df["score"] = candidate_df["importance"] / candidate_df["redundancy"]
             else:  # "difference"
-                candidate_df["score"] = (
-                    candidate_df["importance"] - candidate_df["redundancy"]
-                )
+                candidate_df["score"] = candidate_df["importance"] - candidate_df["redundancy"]
 
         # Select best feature by score
         best_feature = candidate_df.loc[candidate_df["score"].idxmax(), "feature"]

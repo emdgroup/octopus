@@ -11,9 +11,7 @@ from octopus.modules.mrmr.core import maxrminr
 def generate_sample_data(n_samples, n_features, random_state):
     """Generate sample data."""
     np.random.seed(42)
-    X, y = make_regression(
-        n_samples=n_samples, n_features=n_features, random_state=random_state
-    )
+    X, y = make_regression(n_samples=n_samples, n_features=n_features, random_state=random_state)
     df_features = pd.DataFrame(X, columns=[f"feature_{i}" for i in range(n_features)])
     df_feature_importances = pd.DataFrame(
         {
@@ -42,15 +40,9 @@ def test_mrmr_feature_selection_order(sample_data):
     (df_features, df_feature_importances), data_name = sample_data
 
     results = {
-        "pearson": maxrminr(
-            df_features, df_feature_importances, [5], correlation_type="pearson"
-        ),
-        "spearman": maxrminr(
-            df_features, df_feature_importances, [5], correlation_type="spearman"
-        ),
-        "rdc": maxrminr(
-            df_features, df_feature_importances, [5], correlation_type="rdc"
-        ),
+        "pearson": maxrminr(df_features, df_feature_importances, [5], correlation_type="pearson"),
+        "spearman": maxrminr(df_features, df_feature_importances, [5], correlation_type="spearman"),
+        "rdc": maxrminr(df_features, df_feature_importances, [5], correlation_type="rdc"),
     }
 
     if data_name == "sample_data_1":

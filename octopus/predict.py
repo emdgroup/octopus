@@ -393,4 +393,3 @@ class OctoPredict:
 
             pdf.savefig(plt.gcf(), orientation="portrait")
             plt.close()
-

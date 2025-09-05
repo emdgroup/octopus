@@ -261,7 +261,7 @@ class TabPFNRegressorModel:
     @staticmethod
     def get_model_config():
         """Get model config."""
-        from octopus._optional.tabpfn import TabPFNRegressor
+        from octopus._optional.tabpfn import TabPFNRegressor  # noqa: PLC0415
 
         return ModelConfig(
             name="TabPFNRegressor",

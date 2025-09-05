@@ -345,7 +345,7 @@ class Training:
         logger.set_log_group(LogGroup.TRAINING, f"{self.training_id}")
 
         logger.info(f"Calculating permutation feature importances ({partition}). This may take a while...")
-        np.random.seed(42)  # reproduceability
+        np.random.seed(42)  # reproducibility
         # fixed confidence level
         confidence_level = 0.95
         feature_columns = self.feature_columns
@@ -409,7 +409,7 @@ class Training:
                 p_value = 0.5
 
             # calculate confidence intervals
-            if np.nan in (stddev, n, pfi_mean) or n == 1:
+            if any(np.isnan(val) for val in [stddev, n, pfi_mean]) or n == 1:
                 ci_high = np.nan
                 ci_low = np.nan
             else:
@@ -434,7 +434,7 @@ class Training:
     def calculate_fi_permutation(self, partition="dev", n_repeats=10):
         """Permutation feature importance."""
         logger.info(f"Calculating permutation feature importances ({partition}). This may take a while...")
-        np.random.seed(42)  # reproduceability
+        np.random.seed(42)  # reproducibility
         if self.ml_type == "timetoevent":
             # sksurv models only provide inbuilt scorer (CI)
             # more work needed to support other metrics
@@ -466,7 +466,7 @@ class Training:
 
     def calculate_fi_lofo(self):
         """LOFO feature importance."""
-        np.random.seed(42)  # reproduceability
+        np.random.seed(42)  # reproducibility
         logger.info("Calculating LOFO feature importance. This may take a while...")
         # first, dev only
         feature_columns = self.feature_columns

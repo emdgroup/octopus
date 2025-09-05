@@ -153,7 +153,7 @@ class SfsCore:
 
     def run_experiment(self):
         """Run SFS module on experiment."""
-        from octopus._optional.modules.sfs import SFS
+        from octopus._optional.modules.sfs import SFS  # noqa: PLC0415
 
         # run experiment and return updated experiment object
         # Configuration, define default model

@@ -190,7 +190,7 @@ class TabPFNClassifierModel:
     @staticmethod
     def get_model_config():
         """Get model config."""
-        from octopus._optional.tabpfn import TabPFNClassifier
+        from octopus._optional.tabpfn import TabPFNClassifier  # noqa: PLC0415
 
         ModelConfig(
             name="TabPFNClassifier",

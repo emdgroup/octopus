@@ -144,7 +144,7 @@ class BorutaCore:
 
     def run_experiment(self):
         """Run Boruta module on experiment."""
-        from octopus._optional.burota import BorutaPy
+        from octopus._optional.burota import BorutaPy  # noqa: PLC0415
 
         # run experiment and return updated experiment object
         # Configuration, define default model

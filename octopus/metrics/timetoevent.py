@@ -11,7 +11,7 @@ class CIMetric:
     @staticmethod
     def get_metric_config():
         """Get metric config."""
-        from sksurv.metrics import concordance_index_censored
+        from sksurv.metrics import concordance_index_censored  # noqa: PLC0415
 
         return MetricConfig(
             name="CI",

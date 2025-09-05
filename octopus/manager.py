@@ -76,7 +76,10 @@ class OctoManager:
         num_workers = min(self.configs.study.n_folds_outer, cpu_count())
         logger.info(f"Starting parallel execution with {num_workers} workers")
         with Parallel(n_jobs=num_workers) as parallel:
-            parallel(delayed(self._execute_task)(base_experiment, index) for index, base_experiment in enumerate(self.base_experiments))
+            parallel(
+                delayed(self._execute_task)(base_experiment, index)
+                for index, base_experiment in enumerate(self.base_experiments)
+            )
 
     def _execute_task(self, base_experiment, index):
         logger.set_log_group(LogGroup.PROCESSING, f"EXP {index}")
@@ -86,7 +89,9 @@ class OctoManager:
             logger.set_log_group(LogGroup.PREPARE_EXECUTION, f"EXP {index}")
             logger.info("Completed successfully")
         except Exception as e:
-            logger.exception(f"Exception occurred while executing task {index}: {str(e)}")
+            logger.exception(
+                f"Exception occurred while executing task {index}: {str(e)}"
+            )
 
     def create_execute_mlmodules(self, base_experiment: OctoExperiment):
         """Create and execute ml modules."""
@@ -106,7 +111,9 @@ class OctoManager:
                 exp_path_dict[experiment.sequence_id] = path_save
 
                 self._update_experiment_if_needed(experiment, exp_path_dict)
-                self._run_and_save_experiment(experiment, path_study_sequence, path_save)
+                self._run_and_save_experiment(
+                    experiment, path_study_sequence, path_save
+                )
 
     def _log_sequence_item_info(self, element):
         logger.info(
@@ -124,7 +131,9 @@ class OctoManager:
         experiment.id = f"{experiment.id}_{element.sequence_id}"
         experiment.sequence_id = element.sequence_id
         experiment.input_sequence_id = element.input_sequence_id
-        experiment.path_sequence_item = Path(f"experiment{experiment.experiment_id}", f"sequence{element.sequence_id}")
+        experiment.path_sequence_item = Path(
+            f"experiment{experiment.experiment_id}", f"sequence{element.sequence_id}"
+        )
         experiment.num_assigned_cpus = self._calculate_assigned_cpus()
         return experiment
 
@@ -137,12 +146,16 @@ class OctoManager:
             return cpu_count()
 
     def _create_sequence_directory(self, experiment):
-        path_study_sequence = experiment.path_study.joinpath(experiment.path_sequence_item)
+        path_study_sequence = experiment.path_study.joinpath(
+            experiment.path_sequence_item
+        )
         path_study_sequence.mkdir(parents=True, exist_ok=True)
         return path_study_sequence
 
     def _get_save_path(self, path_study_sequence, experiment):
-        return path_study_sequence.joinpath(f"exp{experiment.experiment_id}_{experiment.sequence_id}.pkl")
+        return path_study_sequence.joinpath(
+            f"exp{experiment.experiment_id}_{experiment.sequence_id}.pkl"
+        )
 
     def _update_experiment_if_needed(self, experiment, exp_path_dict):
         """Update from input item.
@@ -151,7 +164,9 @@ class OctoManager:
         """
         if experiment.input_sequence_id >= 0:
             self._update_from_input_item(experiment, exp_path_dict)
-        experiment.feature_groups = experiment.calculate_feature_groups(experiment.feature_columns)
+        experiment.feature_groups = experiment.calculate_feature_groups(
+            experiment.feature_columns
+        )
 
     def _run_and_save_experiment(self, experiment, path_study_sequence, path_save):
         logger.info(f"Running experiment: {experiment.id}")
@@ -160,15 +175,20 @@ class OctoManager:
         module = self._get_ml_module(experiment)
         experiment = module.run_experiment()
 
-        # save predictions
-        experiment.results["best"].create_prediction_df().to_parquet(
-            path_study_sequence.joinpath(f"predictions_{experiment.experiment_id}_{experiment.sequence_id}.parquet")
-        )
+        if experiment.results:
+            # save predictions
+            experiment.results["best"].create_prediction_df().to_parquet(
+                path_study_sequence.joinpath(
+                    f"predictions_{experiment.experiment_id}_{experiment.sequence_id}.parquet"
+                )
+            )
 
-        # save feature importances
-        experiment.results["best"].create_feature_importance_df().to_parquet(
-            path_study_sequence.joinpath(f"feature-importance_{experiment.experiment_id}_{experiment.sequence_id}.parquet")
-        )
+            # save feature importance
+            experiment.results["best"].create_feature_importance_df().to_parquet(
+                path_study_sequence.joinpath(
+                    f"feature-importance_{experiment.experiment_id}_{experiment.sequence_id}.parquet"
+                )
+            )
 
         experiment.to_pickle(path_save)
 
@@ -183,7 +203,9 @@ class OctoManager:
             f"experiment{base_experiment.experiment_id}",
             f"sequence{element.sequence_id}",
         )
-        path_load = path_study_sequence.joinpath(f"exp{base_experiment.experiment_id}_{element.sequence_id}.pkl")
+        path_load = path_study_sequence.joinpath(
+            f"exp{base_experiment.experiment_id}_{element.sequence_id}.pkl"
+        )
 
         if not path_load.exists():
             raise FileNotFoundError("Sequence item to be loaded does not exist")
@@ -209,4 +231,4 @@ class OctoManager:
         experiment.feature_columns = input_experiment.selected_features
         experiment.prior_results = input_experiment.results
 
-        print("Prior results keys: ", input_experiment.prior_results.keys())
+        logger.info(f"Prior results keys: {input_experiment.prior_results.keys()}")

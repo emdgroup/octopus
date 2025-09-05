@@ -141,7 +141,7 @@ class OctoCore:
             features=features,
             fi_df=re_df,
             n_features_lst=feature_numbers,
-            correlation_type="spearmanr",
+            correlation_type="spearman",
         )
         # add original features
         self.mrmr_features[len(self.experiment.feature_columns)] = self.experiment.feature_columns

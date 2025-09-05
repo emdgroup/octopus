@@ -60,7 +60,7 @@ boruta = [
     "boruta==0.4.3",
 ]
 autogluon = [
-    "autogluon>=1.4",
+    "autogluon>=1.2",
 ]
 survival = [
     "scikit-survival>0.23"

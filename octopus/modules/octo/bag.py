@@ -1,4 +1,4 @@
-"""OctoFull Bags."""
+"""Octo Bags."""
 
 # import concurrent.futures
 # import logging
@@ -10,10 +10,14 @@ import lz4.frame
 import numpy as np
 import pandas as pd
 from attrs import define, field, validators
-from joblib import Parallel, delayed
 
 from octopus.logger import LogGroup, get_logger
 from octopus.metrics import metrics_inventory
+
+# Adjust this import path as needed depending on your package layout
+from octopus.modules.octo.ray_parallel import (
+    run_parallel_trainings,
+)
 from octopus.modules.octo.scores import add_pooling_scores
 
 logger = get_logger()
@@ -40,8 +44,12 @@ class Bag:
     train_status: bool = field(default=False)
 
     # bag training outputs, initialized in post_init
-    feature_importances: dict = field(init=False, validator=[validators.instance_of(dict)])
-    n_features_used_mean: float = field(init=False, validator=[validators.instance_of(float)])
+    feature_importances: dict = field(
+        init=False, validator=[validators.instance_of(dict)]
+    )
+    n_features_used_mean: float = field(
+        init=False, validator=[validators.instance_of(float)]
+    )
 
     @property
     def feature_groups(self) -> dict:
@@ -54,76 +62,33 @@ class Bag:
         self.feature_importances = dict()
         self.n_features_used_mean = 0.0
 
+    def _train_parallel(self):
+        """Run trainings in parallel using Ray (delegated to parallel_ray)."""
+        # Only Ray-related wiring is here; all Ray logic is in parallel_ray.py
+        self.trainings = run_parallel_trainings(self.trainings)
+
+    def _train_sequential(self):
+        """Run trainings sequentially in the current process."""
+        successful_trainings = []
+        for idx, training in enumerate(self.trainings):
+            try:
+                training.fit()
+                successful_trainings.append(training)
+                logger.info(
+                    f"Inner sequential training completed for bag_id {self.bag_id} and training id {getattr(training, 'training_id', idx)}"
+                )
+            except Exception as e:  # pylint: disable=broad-except
+                logger.info(
+                    f"Error during training {getattr(training, 'training_id', idx)}: {e}, type: {type(e).__name__}"
+                )
+        self.trainings = successful_trainings
+
     def fit(self):
         """Run all available trainings."""
         if self.parallel_execution is True:
-            # (A) joblib based code that works xgboost, solves issue 46
-            # Function to execute each training
-            def execute_training(training, idx):
-                try:
-                    result = training.fit()
-                    logger.info(f"Training {idx} completed successfully.")
-                    # logging.info(f"Training {idx} completed successfully.")
-                    return result
-                except Exception as e:  # pylint: disable=broad-except
-                    print(f"Exception during training{idx}: {e}")
-                    print(f"Exception type: {type(e).__name__}")
-                    # logging.error(
-                    #    f"Training {idx} failed or returned None. Exception: {e}",
-                    #    exc_info=True,
-                    # )
-                    return None
-
-            # Using joblib's Parallel and delayed functionalities
-            # default backend is 'loky'
-            with Parallel(n_jobs=self.num_workers) as parallel:
-                self.trainings = parallel(
-                    delayed(execute_training)(training, idx) for idx, training in enumerate(self.trainings)
-                )
-
-            # (B) altern. ProcessPoolExecutor code, incompatible with xgboost, issue46
-            ## max_tasks_per_child=1 requires Python3.11
-            # with concurrent.futures.ProcessPoolExecutor(
-            #    max_workers=self.num_workers
-            # ) as executor:
-            #    # Map each training to a future and keep an index to retain order
-            #    futures = {
-            #        executor.submit(training.fit): i
-            #        for i, training in enumerate(self.trainings)
-            #    }
-            #    train_results = [None] * len(
-            #        self.trainings
-            #    )  # List to hold results in order
-            #
-            #    # Process completed training tasks as they complete
-            #    for future in concurrent.futures.as_completed(futures):
-            #        index = futures[future]
-            #        try:
-            #            result = future.result()
-            #            train_results[index] = result
-            #            print(f"Training {index} completed successfully.")
-            #            logging.info(f"Training {index} completed successfully.")
-            #        except Exception as e:
-            #            print(f"Exception during training {index}: {e}")
-            #            print(f"Exception type: {type(e).__name__}")
-            #            logging.error(
-            #                f"Exception during training {index}: {str(e)}",
-            #                exc_info=True,
-            #            )
-            #            train_results[index] = None
-            # Update trainings with the results
-            # self.trainings=[result for result in train_results if result is not None]
-
+            self._train_parallel()
         else:
-            # Running training sequentially in the current process
-            for training in self.trainings:
-                try:
-                    training.fit()
-                    logger.info(
-                        f"Inner sequential training completed for bag_id {self.bag_id} and training id {training.training_id}"
-                    )
-                except Exception as e:  # pylint: disable=broad-except
-                    logger.info(f"Error during training {training}: {e}, type: {type(e).__name__}")
+            self._train_sequential()
 
         self.train_status = (True,)
 
@@ -151,7 +116,9 @@ class Bag:
 
         # set correct dtype for target columns
         for column in list(self.target_assignments.values()):
-            ensemble[column] = ensemble[column].astype(self.trainings[0].data_train[column].dtype)
+            ensemble[column] = ensemble[column].astype(
+                self.trainings[0].data_train[column].dtype
+            )
 
         predictions["ensemble"] = {"test": ensemble}
 
@@ -176,8 +143,12 @@ class Bag:
             if ml_type == "timetoevent":
                 for part, storage_value in storage.items():
                     estimate = training.predictions[part]["prediction"]
-                    event_time = training.predictions[part][self.target_assignments["duration"]].astype(float)
-                    event_indicator = training.predictions[part][self.target_assignments["event"]].astype(bool)
+                    event_time = training.predictions[part][
+                        self.target_assignments["duration"]
+                    ].astype(float)
+                    event_indicator = training.predictions[part][
+                        self.target_assignments["event"]
+                    ].astype(bool)
                     ci = metric_method(event_indicator, event_time, estimate)[0]
                     storage_value.append(float(ci))
 
@@ -196,7 +167,9 @@ class Bag:
                 else:
                     for part, storage_value in storage.items():
                         target_col = list(self.target_assignments.values())[0]
-                        predictions = training.predictions[part]["prediction"].astype(int)
+                        predictions = training.predictions[part]["prediction"].astype(
+                            int
+                        )
                         target = training.predictions[part][target_col]
                         storage_value.append(metric_method(target, predictions))
 
@@ -206,7 +179,9 @@ class Bag:
                 else:
                     for part, storage_value in storage.items():
                         target_col = list(self.target_assignments.values())[0]
-                        predictions = training.predictions[part]["prediction"].astype(int)
+                        predictions = training.predictions[part]["prediction"].astype(
+                            int
+                        )
                         target = training.predictions[part][target_col]
                         storage_value.append(metric_method(target, predictions))
 
@@ -294,7 +269,9 @@ class Bag:
                     # Find the feature with the highest importance in fi_df
                     feature_importances = fi_df[fi_df["feature"].isin(features)]
                     if not feature_importances.empty:
-                        best_feature = feature_importances.loc[feature_importances["importance"].idxmax(), "feature"]
+                        best_feature = feature_importances.loc[
+                            feature_importances["importance"].idxmax(), "feature"
+                        ]
                         feat_additional.append(best_feature)
 
         # Add the additional features to feat_single and remove duplicates
@@ -335,7 +312,9 @@ class Bag:
 
         # save feature importances for every training in bag
         for training in self.trainings:
-            self.feature_importances[training.training_id] = training.feature_importances
+            self.feature_importances[training.training_id] = (
+                training.feature_importances
+            )
 
         # summary feature importances for all trainings (mean + count)
         # internal, permutation_dev, shap_dev only
@@ -363,7 +342,11 @@ class Bag:
             )
 
             # calculate count feature importances, keep zero entries
-            non_zero_importances = fi[fi["importance"] != 0][["feature", "importance"]].groupby(by="feature").count()
+            non_zero_importances = (
+                fi[fi["importance"] != 0][["feature", "importance"]]
+                .groupby(by="feature")
+                .count()
+            )
             # Create a DataFrame with all features, init importance counts to zero
             all_features = pd.DataFrame(fi["feature"].unique(), columns=["feature"])
             all_features["importance"] = 0

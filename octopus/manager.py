@@ -11,6 +11,7 @@ from joblib import Parallel, delayed
 from octopus.config.core import OctoConfig
 from octopus.experiment import OctoExperiment
 from octopus.modules import modules_inventory
+from octopus.modules.octo.ray_parallel import init_ray, shutdown_ray
 
 from .logger import LogGroup, get_logger
 
@@ -30,6 +31,8 @@ class OctoManager:
 
     def run_outer_experiments(self):
         """Run outer experiments."""
+        # start local ray instance
+        self._init_ray()
         self._log_execution_info()
         self._validate_experiments()
 
@@ -44,13 +47,29 @@ class OctoManager:
         else:
             self._run_sequential()
 
+        # close manager
+        self._close()
+
+    def _init_ray(self):
+        """Initialize ray."""
+        # reserve num_workers for outer processes
+        num_workers = min(self.configs.study.n_folds_outer, cpu_count())
+        if self.configs.manager.run_single_experiment_num != -1:
+            num_workers = 1
+        # initialize ray
+        init_ray(num_cpus=cpu_count() - num_workers)
+
+    def _close(self):
+        # shutdown ray instance
+        shutdown_ray()
+
     def _log_execution_info(self):
         num_workers = min(self.configs.study.n_folds_outer, cpu_count())
         logger.info(
             f"Preparing execution of experiments | "
             f"Outer parallelization: {self.configs.manager.outer_parallelization} | "
             f"Run single experiment: {self.configs.manager.run_single_experiment_num} |"
-            f" Number of outer folds: {self.configs.study.n_folds_outer} | "
+            f"Number of outer folds: {self.configs.study.n_folds_outer} | "
             f"Number of logical CPUs: {cpu_count()} | "
             f"Number of outer fold workers: {num_workers}"
         )
@@ -72,9 +91,10 @@ class OctoManager:
             self.create_execute_mlmodules(base_experiment)
 
     def _run_parallel(self):
+        # Create a separate multiprocessing context for outer processes
         num_workers = min(self.configs.study.n_folds_outer, cpu_count())
         logger.info(f"Starting parallel execution with {num_workers} workers")
-        with Parallel(n_jobs=num_workers) as parallel:
+        with Parallel(n_jobs=num_workers, backend="loky") as parallel:
             parallel(
                 delayed(self._execute_task)(base_experiment, index)
                 for index, base_experiment in enumerate(self.base_experiments)
@@ -108,7 +128,9 @@ class OctoManager:
                 exp_path_dict[experiment.sequence_id] = path_save
 
                 self._update_experiment_if_needed(experiment, exp_path_dict)
-                self._run_and_save_experiment(experiment, path_study_sequence, path_save)
+                self._run_and_save_experiment(
+                    experiment, path_study_sequence, path_save
+                )
 
     def _log_sequence_item_info(self, element):
         logger.info(
@@ -126,25 +148,32 @@ class OctoManager:
         experiment.id = f"{experiment.id}_{element.sequence_id}"
         experiment.sequence_id = element.sequence_id
         experiment.input_sequence_id = element.input_sequence_id
-        experiment.path_sequence_item = Path(f"experiment{experiment.experiment_id}", f"sequence{element.sequence_id}")
+        experiment.path_sequence_item = Path(
+            f"experiment{experiment.experiment_id}", f"sequence{element.sequence_id}"
+        )
         experiment.num_assigned_cpus = self._calculate_assigned_cpus()
         return experiment
 
     def _calculate_assigned_cpus(self):
         if self.configs.manager.outer_parallelization:
-            return math.floor(cpu_count() / self.configs.study.n_folds_outer)
+            n_outer = self.configs.study.n_folds_outer
+            return math.floor((cpu_count() - n_outer) / n_outer)
         elif self.configs.manager.run_single_experiment_num != -1:
-            return cpu_count()
+            return cpu_count() - 1
         else:
-            return cpu_count()
+            return cpu_count() - 1
 
     def _create_sequence_directory(self, experiment):
-        path_study_sequence = experiment.path_study.joinpath(experiment.path_sequence_item)
+        path_study_sequence = experiment.path_study.joinpath(
+            experiment.path_sequence_item
+        )
         path_study_sequence.mkdir(parents=True, exist_ok=True)
         return path_study_sequence
 
     def _get_save_path(self, path_study_sequence, experiment):
-        return path_study_sequence.joinpath(f"exp{experiment.experiment_id}_{experiment.sequence_id}.pkl")
+        return path_study_sequence.joinpath(
+            f"exp{experiment.experiment_id}_{experiment.sequence_id}.pkl"
+        )
 
     def _update_experiment_if_needed(self, experiment, exp_path_dict):
         """Update from input item.
@@ -153,7 +182,9 @@ class OctoManager:
         """
         if experiment.input_sequence_id >= 0:
             self._update_from_input_item(experiment, exp_path_dict)
-        experiment.feature_groups = experiment.calculate_feature_groups(experiment.feature_columns)
+        experiment.feature_groups = experiment.calculate_feature_groups(
+            experiment.feature_columns
+        )
 
     def _run_and_save_experiment(self, experiment, path_study_sequence, path_save):
         logger.info(f"Running experiment: {experiment.id}")
@@ -165,7 +196,9 @@ class OctoManager:
         if experiment.results:
             # save predictions
             experiment.results["best"].create_prediction_df().to_parquet(
-                path_study_sequence.joinpath(f"predictions_{experiment.experiment_id}_{experiment.sequence_id}.parquet")
+                path_study_sequence.joinpath(
+                    f"predictions_{experiment.experiment_id}_{experiment.sequence_id}.parquet"
+                )
             )
 
             # save feature importance
@@ -188,7 +221,9 @@ class OctoManager:
             f"experiment{base_experiment.experiment_id}",
             f"sequence{element.sequence_id}",
         )
-        path_load = path_study_sequence.joinpath(f"exp{base_experiment.experiment_id}_{element.sequence_id}.pkl")
+        path_load = path_study_sequence.joinpath(
+            f"exp{base_experiment.experiment_id}_{element.sequence_id}.pkl"
+        )
 
         if not path_load.exists():
             raise FileNotFoundError("Sequence item to be loaded does not exist")

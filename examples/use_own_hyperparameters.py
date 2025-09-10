@@ -108,9 +108,7 @@ octo_ml = OctoML(
     config_manager=config_manager,
     config_sequence=config_sequence,
 )
-
-octo_ml.create_outer_experiments()
-octo_ml.run_outer_experiments()
+octo_ml.run_study()
 
 # This completes the basic example for using Octopus regression
 # with the Calfifornia housing dataset. The workflow involves loading and preprocessing

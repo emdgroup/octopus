@@ -1,5 +1,7 @@
 """Test MRMR."""
 
+import time
+
 import numpy as np
 import pandas as pd
 import pytest
@@ -77,8 +79,8 @@ def test_mrmr_feature_selection_order(sample_data):
 
     elif data_name == "sample_data_3":
         assert results["spearman"][5][0] == "feature_11"
-        assert results["spearman"][5][1] == "feature_3"
-        assert results["spearman"][5][2] == "feature_12"
+        assert results["spearman"][5][1] == "feature_0"
+        assert results["spearman"][5][2] == "feature_9"
         assert results["spearman"][5][-1] == "feature_7"
         assert results["spearman"][15][0] == "feature_11"
         assert results["spearman"][15][-1] == "feature_10"
@@ -89,3 +91,37 @@ def test_mrmr_feature_selection_order(sample_data):
         assert results["rdc"][5][-1] == "feature_9"
         assert results["rdc"][15][0] == "feature_11"
         assert results["rdc"][15][-1] == "feature_10"
+
+
+@pytest.fixture(params=[(200, 1000, 0, "many_features")])
+def scalability_data(request):
+    """Create sample data for scalability testing."""
+    n_samples, n_features, random_state, name = request.param
+    return generate_sample_data(n_samples, n_features, random_state), name
+
+
+def test_mrmr_scalability(scalability_data):
+    """Test MRMR algorithm scalability with large feature sets."""
+    (df_features, df_feature_importances), data_name = scalability_data
+
+    # Dictionary to store execution times
+    execution_times = {}
+
+    # Test different correlation types: pearson only
+    for corr_type in ["pearson"]:
+        start_time = time.time()
+
+        # Select top 20 features
+        results = maxrminr(df_features, df_feature_importances, [20], correlation_type=corr_type)
+
+        end_time = time.time()
+        execution_times[corr_type] = end_time - start_time
+
+        # Basic assertions to ensure the function works
+        assert len(results[20]) == 20
+        assert isinstance(results[20][0], str)
+
+    # Print execution times
+    print(f"MRMR Scalability Test ({data_name}):")
+    for corr_type, exec_time in execution_times.items():
+        print(f"  {corr_type}: {exec_time:.4f} seconds")

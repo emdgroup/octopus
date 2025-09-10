@@ -9,12 +9,18 @@ logger = get_logger()
 
 
 def init_ray(address=None, num_cpus=None, **kwargs):
-    """Initialize Ray once, safe to call multiple times.
+    """Initialize Ray once; safe to call multiple times.
 
-    Parameters:
-    - address: Connect to an existing cluster (e.g., "auto") or None for local.
-    - num_cpus: Limit CPUs for the local Ray runtime. Ignored if connecting to a cluster.
-    - **kwargs: Any additional ray.init keyword arguments (e.g., runtime_env, log_to_driver).
+    Parameters
+    ----------
+    address : str | None
+        Connect to an existing cluster (e.g., "auto") or None for local.
+    num_cpus : int | None
+        Limit CPUs for the local Ray runtime. Ignored if connecting to a
+        cluster.
+    **kwargs
+        Additional keyword arguments to pass to :func:`ray.init`
+        (e.g., ``runtime_env``, ``log_to_driver``).
     """
     if ray.is_initialized():
         logger.info("Ray is already initialized.")
@@ -75,10 +81,7 @@ def run_parallel_trainings(trainings):
         # Default local init; callers can explicitly call init_ray() earlier to configure differently.
         init_ray()
 
-    futures_with_idx = [
-        (_execute_training_ray.remote(training, idx), idx)
-        for idx, training in enumerate(trainings)
-    ]
+    futures_with_idx = [(_execute_training_ray.remote(training, idx), idx) for idx, training in enumerate(trainings)]
 
     # Ray returns results in the same order as the list we provide to ray.get
     results_in_submission_order = ray.get([f for f, _ in futures_with_idx])

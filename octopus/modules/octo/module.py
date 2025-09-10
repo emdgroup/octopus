@@ -92,6 +92,9 @@ class Octo(BaseSequenceItem):
     resume_optimization: bool = field(validator=[validators.instance_of(bool)], default=Factory(lambda: False))
     """Resume HPO, use existing optuna.db, don't delete optuna.db"""
 
+    optuna_return: str = field(default="pool", validator=[validators.in_(["pool", "average"])])
+    """How to calculate the bag performance for the optuna optimization target."""
+
     def __attrs_post_init__(self):
         # set default of n_workers to n_folds_inner
         if self.n_workers is None:

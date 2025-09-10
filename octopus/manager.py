@@ -11,6 +11,7 @@ from joblib import Parallel, delayed
 from octopus.config.core import OctoConfig
 from octopus.experiment import OctoExperiment
 from octopus.modules import modules_inventory
+from octopus.modules.octo.ray_parallel import init_ray, shutdown_ray
 
 from .logger import LogGroup, get_logger
 
@@ -30,6 +31,8 @@ class OctoManager:
 
     def run_outer_experiments(self):
         """Run outer experiments."""
+        # start local ray instance
+        self._init_ray()
         self._log_execution_info()
         self._validate_experiments()
 
@@ -44,13 +47,29 @@ class OctoManager:
         else:
             self._run_sequential()
 
+        # close manager
+        self._close()
+
+    def _init_ray(self):
+        """Initialize ray."""
+        # reserve num_workers for outer processes
+        num_workers = min(self.configs.study.n_folds_outer, cpu_count())
+        if self.configs.manager.run_single_experiment_num != -1:
+            num_workers = 1
+        # initialize ray
+        init_ray(num_cpus=cpu_count() - num_workers)
+
+    def _close(self):
+        # shutdown ray instance
+        shutdown_ray()
+
     def _log_execution_info(self):
         num_workers = min(self.configs.study.n_folds_outer, cpu_count())
         logger.info(
             f"Preparing execution of experiments | "
             f"Outer parallelization: {self.configs.manager.outer_parallelization} | "
             f"Run single experiment: {self.configs.manager.run_single_experiment_num} |"
-            f" Number of outer folds: {self.configs.study.n_folds_outer} | "
+            f"Number of outer folds: {self.configs.study.n_folds_outer} | "
             f"Number of logical CPUs: {cpu_count()} | "
             f"Number of outer fold workers: {num_workers}"
         )
@@ -72,9 +91,10 @@ class OctoManager:
             self.create_execute_mlmodules(base_experiment)
 
     def _run_parallel(self):
+        # Create a separate multiprocessing context for outer processes
         num_workers = min(self.configs.study.n_folds_outer, cpu_count())
         logger.info(f"Starting parallel execution with {num_workers} workers")
-        with Parallel(n_jobs=num_workers) as parallel:
+        with Parallel(n_jobs=num_workers, backend="loky") as parallel:
             parallel(
                 delayed(self._execute_task)(base_experiment, index)
                 for index, base_experiment in enumerate(self.base_experiments)
@@ -132,11 +152,12 @@ class OctoManager:
 
     def _calculate_assigned_cpus(self):
         if self.configs.manager.outer_parallelization:
-            return math.floor(cpu_count() / self.configs.study.n_folds_outer)
+            n_outer = self.configs.study.n_folds_outer
+            return math.floor((cpu_count() - n_outer) / n_outer)
         elif self.configs.manager.run_single_experiment_num != -1:
-            return cpu_count()
+            return cpu_count() - 1
         else:
-            return cpu_count()
+            return cpu_count() - 1
 
     def _create_sequence_directory(self, experiment):
         path_study_sequence = experiment.path_study.joinpath(experiment.path_sequence_item)

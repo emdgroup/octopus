@@ -82,6 +82,6 @@ octo_ml = OctoML(
     config_manager=config_manager,
     config_sequence=config_sequence,
 )
+octo_ml.run_study()
 
-octo_ml.create_outer_experiments()
-octo_ml.run_outer_experiments()
+print("Workflow completed")

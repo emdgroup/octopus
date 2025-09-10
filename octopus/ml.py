@@ -49,6 +49,7 @@ class OctoML:
             manager=self.config_manager,
             sequence=self.config_sequence,
         )
+        # initialize ray
 
     def create_outer_experiments(self) -> None:
         """Create the outer experiments structure.
@@ -279,3 +280,8 @@ class OctoML:
         # send self.experiments() to manager
         self.manager = OctoManager(self.experiments, self.configs)
         self.manager.run_outer_experiments()
+
+    def run_study(self):
+        """Run study."""
+        self.create_outer_experiments()
+        self.run_outer_experiments()

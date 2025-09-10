@@ -128,9 +128,7 @@ class OctoManager:
                 exp_path_dict[experiment.sequence_id] = path_save
 
                 self._update_experiment_if_needed(experiment, exp_path_dict)
-                self._run_and_save_experiment(
-                    experiment, path_study_sequence, path_save
-                )
+                self._run_and_save_experiment(experiment, path_study_sequence, path_save)
 
     def _log_sequence_item_info(self, element):
         logger.info(
@@ -148,9 +146,7 @@ class OctoManager:
         experiment.id = f"{experiment.id}_{element.sequence_id}"
         experiment.sequence_id = element.sequence_id
         experiment.input_sequence_id = element.input_sequence_id
-        experiment.path_sequence_item = Path(
-            f"experiment{experiment.experiment_id}", f"sequence{element.sequence_id}"
-        )
+        experiment.path_sequence_item = Path(f"experiment{experiment.experiment_id}", f"sequence{element.sequence_id}")
         experiment.num_assigned_cpus = self._calculate_assigned_cpus()
         return experiment
 
@@ -164,16 +160,12 @@ class OctoManager:
             return cpu_count() - 1
 
     def _create_sequence_directory(self, experiment):
-        path_study_sequence = experiment.path_study.joinpath(
-            experiment.path_sequence_item
-        )
+        path_study_sequence = experiment.path_study.joinpath(experiment.path_sequence_item)
         path_study_sequence.mkdir(parents=True, exist_ok=True)
         return path_study_sequence
 
     def _get_save_path(self, path_study_sequence, experiment):
-        return path_study_sequence.joinpath(
-            f"exp{experiment.experiment_id}_{experiment.sequence_id}.pkl"
-        )
+        return path_study_sequence.joinpath(f"exp{experiment.experiment_id}_{experiment.sequence_id}.pkl")
 
     def _update_experiment_if_needed(self, experiment, exp_path_dict):
         """Update from input item.
@@ -182,9 +174,7 @@ class OctoManager:
         """
         if experiment.input_sequence_id >= 0:
             self._update_from_input_item(experiment, exp_path_dict)
-        experiment.feature_groups = experiment.calculate_feature_groups(
-            experiment.feature_columns
-        )
+        experiment.feature_groups = experiment.calculate_feature_groups(experiment.feature_columns)
 
     def _run_and_save_experiment(self, experiment, path_study_sequence, path_save):
         logger.info(f"Running experiment: {experiment.id}")
@@ -196,9 +186,7 @@ class OctoManager:
         if experiment.results:
             # save predictions
             experiment.results["best"].create_prediction_df().to_parquet(
-                path_study_sequence.joinpath(
-                    f"predictions_{experiment.experiment_id}_{experiment.sequence_id}.parquet"
-                )
+                path_study_sequence.joinpath(f"predictions_{experiment.experiment_id}_{experiment.sequence_id}.parquet")
             )
 
             # save feature importance
@@ -221,9 +209,7 @@ class OctoManager:
             f"experiment{base_experiment.experiment_id}",
             f"sequence{element.sequence_id}",
         )
-        path_load = path_study_sequence.joinpath(
-            f"exp{base_experiment.experiment_id}_{element.sequence_id}.pkl"
-        )
+        path_load = path_study_sequence.joinpath(f"exp{base_experiment.experiment_id}_{element.sequence_id}.pkl")
 
         if not path_load.exists():
             raise FileNotFoundError("Sequence item to be loaded does not exist")

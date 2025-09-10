@@ -1,24 +1,23 @@
 """20250826A Workflow script for Octopus intro."""
 
-## Basic example for using Octopus Classification
+# Basic example for using Octopus Classification
 
 # This example demonstrates how to use Octopus to create a machine learning classification model.
 # We will use the famous Titanic dataset for this purpose.
 # Please ensure your dataset is clean, with no missing values (`NaN`),
 # and that all features are numeric.
 
-### Necessary imports for this example
+# Necessary imports for this example
 import os
 
 os.environ["OMP_NUM_THREADS"] = "1"
 os.environ["MKL_NUM_THREADS"] = "1"
 os.environ["OPENBLAS_NUM_THREADS"] = "1"
 os.environ["NUMEXPR_NUM_THREADS"] = "1"
-import socket
+import socket  # noqa: I001
 
 # import pandas as pd
 from sklearn.datasets import load_breast_cancer
-
 from octopus import OctoData, OctoML
 from octopus.config import ConfigManager, ConfigSequence, ConfigStudy
 from octopus.modules import Octo
@@ -149,7 +148,6 @@ octo_ml = OctoML(
     config_manager=config_manager,
     config_sequence=config_sequence,
 )
-octo_ml.create_outer_experiments()
-octo_ml.run_outer_experiments()
+octo_ml.run_study()
 
 print("Workflow completed")

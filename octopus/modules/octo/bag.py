@@ -16,11 +16,37 @@ from octopus.metrics import metrics_inventory
 
 # Adjust this import path as needed depending on your package layout
 from octopus.modules.octo.ray_parallel import (
-    run_parallel_trainings,
+    run_parallel_inner,
 )
 from octopus.modules.octo.scores import add_pooling_scores
 
 logger = get_logger()
+
+
+class TrainingWithLogging:
+    """Logging class for trainings."""
+
+    def __init__(self, inner_training, idx, logger, log_group_cls, log_prefix="EXP"):
+        self._inner = inner_training
+        self._idx = idx
+        self._logger = logger
+        self._log_group_cls = log_group_cls
+        self._log_prefix = log_prefix
+
+    def fit(self):
+        """Fit function."""
+        # Your logging policy lives here
+        self._logger.set_log_group(self._log_group_cls.PROCESSING, f"{self._log_prefix} {self._idx}")
+        self._logger.info("Starting execution")
+        try:
+            result = self._inner.fit()
+            self._logger.set_log_group(self._log_group_cls.PREPARE_EXECUTION, f"{self._log_prefix} {self._idx}")
+            self._logger.info("Completed successfully")
+            return result
+        except Exception as e:
+            self._logger.exception(f"Exception occurred while executing training {self._idx}: {e!s}")
+            # Decide your policy: raise to fail-fast, or return a sentinel to continue.
+            return None  # or: raise
 
 
 @define
@@ -59,9 +85,14 @@ class Bag:
         self.n_features_used_mean = 0.0
 
     def _train_parallel(self):
-        """Run trainings in parallel using Ray (delegated to parallel_ray)."""
-        # Only Ray-related wiring is here; all Ray logic is in parallel_ray.py
-        self.trainings = run_parallel_trainings(self.trainings)
+        """Run trainings in parallel using Ray (delegated to ray_parallel)."""
+        # Prepare wrapped trainings with logging
+        wrapped = [
+            TrainingWithLogging(t, idx, logger, LogGroup, log_prefix="EXP") for idx, t in enumerate(self.trainings)
+        ]
+        # Orchestrate with Ray; exceptions propagate only if your wrapper re-raises.
+        results = run_parallel_inner(wrapped)
+        self.trainings = results
 
     def _train_sequential(self):
         """Run trainings sequentially in the current process."""

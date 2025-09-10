@@ -2,16 +2,17 @@
 
 import copy
 import math
+import os
 from os import cpu_count
 from pathlib import Path
 
+import ray
 from attrs import define, field, validators
-from joblib import Parallel, delayed
 
 from octopus.config.core import OctoConfig
 from octopus.experiment import OctoExperiment
 from octopus.modules import modules_inventory
-from octopus.modules.octo.ray_parallel import init_ray, shutdown_ray
+from octopus.modules.octo.ray_parallel import init_ray, run_parallel_outer_ray, shutdown_ray
 
 from .logger import LogGroup, get_logger
 
@@ -43,7 +44,7 @@ class OctoManager:
             self._run_single_experiment(single_exp)
         # run multiple experiments
         elif self.configs.manager.outer_parallelization:
-            self._run_parallel()
+            self._run_parallel_ray()
         else:
             self._run_sequential()
 
@@ -56,8 +57,8 @@ class OctoManager:
         num_workers = min(self.configs.study.n_folds_outer, cpu_count())
         if self.configs.manager.run_single_experiment_num != -1:
             num_workers = 1
-        # initialize ray
-        init_ray(num_cpus=cpu_count() - num_workers)
+        # start exactly ONE local head here; export its address for children
+        init_ray(start_local_if_missing=True, num_cpus=cpu_count() - num_workers)
 
     def _close(self):
         # shutdown ray instance
@@ -90,28 +91,42 @@ class OctoManager:
             logger.info(f"Running Outerfold: {cnt}")
             self.create_execute_mlmodules(base_experiment)
 
-    def _run_parallel(self):
-        # Create a separate multiprocessing context for outer processes
-        num_workers = min(self.configs.study.n_folds_outer, cpu_count())
-        logger.info(f"Starting parallel execution with {num_workers} workers")
-        with Parallel(n_jobs=num_workers, backend="loky") as parallel:
-            parallel(
-                delayed(self._execute_task)(base_experiment, index)
-                for index, base_experiment in enumerate(self.base_experiments)
-            )
+    def _run_parallel_ray(self):
+        # Choose concurrency similar to your previous joblib setting
+        num_workers = min(self.configs.study.n_folds_outer, os.cpu_count() or 1)
 
-    def _execute_task(self, base_experiment, index):
-        logger.set_log_group(LogGroup.PROCESSING, f"EXP {index}")
-        logger.info("Starting execution")
-        try:
-            self.create_execute_mlmodules(base_experiment)
-            logger.set_log_group(LogGroup.PREPARE_EXECUTION, f"EXP {index}")
-            logger.info("Completed successfully")
-        except Exception as e:
-            logger.exception(f"Exception occurred while executing task {index}: {e!s}")
+        # Wrap your existing per-experiment logic into a callable that matches (base_experiment, index)
+        def create_execute_mlmodules_fn(base_experiment, index: int):
+            # Keep your logging the same
+            logger.set_log_group(LogGroup.PROCESSING, f"EXP {index}")
+            logger.info("Starting execution")
+            try:
+                # Your original logic
+                self.create_execute_mlmodules(base_experiment)
+                logger.set_log_group(LogGroup.PREPARE_EXECUTION, f"EXP {index}")
+                logger.info("Completed successfully")
+                return True  # or any meaningful result
+            except Exception as e:
+                logger.exception(f"Exception occurred while executing task {index}: {e!s}")
+                return None  # or raise to fail the task
+
+        # Run with Ray
+        results = run_parallel_outer_ray(
+            base_experiments=self.base_experiments,
+            create_execute_mlmodules=create_execute_mlmodules_fn,
+            num_workers=num_workers,
+        )
+        return results
 
     def create_execute_mlmodules(self, base_experiment: OctoExperiment):
         """Create and execute ml modules."""
+        # Child connects to ray the local ray instance
+        # using the address exported by the main process
+        # If running inside a Ray worker, this will be True and we won’t try to init again.
+        if not ray.is_initialized():
+            # Only used when you call this function outside of Ray.
+            init_ray(address=os.environ.get("RAY_ADDRESS"), start_local_if_missing=False)
+
         exp_path_dict: dict[int, Path] = {}
 
         for element in self.configs.sequence.sequence_items:
@@ -153,7 +168,8 @@ class OctoManager:
     def _calculate_assigned_cpus(self):
         if self.configs.manager.outer_parallelization:
             n_outer = self.configs.study.n_folds_outer
-            return math.floor((cpu_count() - n_outer) / n_outer)
+            # reserve 2 CPUs for the outer processes
+            return math.floor((cpu_count() - 2) / n_outer)
         elif self.configs.manager.run_single_experiment_num != -1:
             return cpu_count() - 1
         else:

@@ -10,7 +10,7 @@ def add_pooling_scores(pool, scores, target_metric, target_assignments, threshol
     metric_config = metrics_inventory.get_metric_config(target_metric)
     metric_function = metrics_inventory.get_metric_function(target_metric)
     ml_type = metric_config.ml_type
-    prediction_type = metric_config.prediction_type
+    prediction_type = metric_config.prediction_type  # type of input required for metric
 
     if ml_type == "timetoevent":
         for part in pool.keys():
@@ -27,21 +27,21 @@ def add_pooling_scores(pool, scores, target_metric, target_assignments, threshol
                 probabilities = pool[part][1]  # binary only!!
                 predictions = pool[part]["prediction"]
                 target = pool[part][target_col]
-                scores[part + "_pool_soft"] = metric_function(target, probabilities)
-                scores[part + "_pool_hard"] = metric_function(target, predictions)
+                scores[part + "_pool"] = metric_function(target, probabilities)  # input: probabilities
+                # scores[part + "_pool_hard"] = metric_function(target, predictions)
 
-        else:
+        else:  # "predict"
             for part in pool.keys():
                 target_col = list(target_assignments.values())[0]
                 probabilities = (pool[part][1] >= threshold).astype(int)  # binary only!!
                 predictions = (pool[part]["prediction"] >= threshold).astype(int)
                 target = pool[part][target_col]
-                scores[part + "_pool_soft"] = metric_function(target, probabilities)
-                scores[part + "_pool_hard"] = metric_function(target, predictions)
+                # scores[part + "_pool"] = metric_function(target, probabilities)
+                scores[part + "_pool"] = metric_function(target, predictions)  # input: predictions
 
     elif ml_type == "regression":
         for part in pool.keys():
             target_col = list(target_assignments.values())[0]
             predictions = pool[part]["prediction"]
             target = pool[part][target_col]
-            scores[part + "_pool_hard"] = metric_function(target, predictions)
+            scores[part + "_pool"] = metric_function(target, predictions)

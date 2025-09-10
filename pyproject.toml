@@ -104,3 +104,4 @@ version_scheme = 'post-release'
 local_scheme = "dirty-tag"
 [tool.setuptools]
 packages = ["octopus"]
+

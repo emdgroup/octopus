@@ -162,8 +162,10 @@ class ObjectiveOptuna:
         self._log_trial_scores(self.experiment, scores)
 
         # define optuna target
-        # optuna_target = scores["dev_avg"]
-        optuna_target = scores["dev_pool_soft"]
+        if self.experiment.ml_config.optuna_return == "pool":
+            optuna_target = scores["dev_pool"]
+        else:
+            optuna_target = scores["dev_avg"]
 
         # adjust direction, optuna in octofull always minimizes
         target_metric = self.experiment.configs.study.target_metric

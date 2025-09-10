@@ -1,5 +1,6 @@
 """Test octo manager."""
 
+import os
 from pathlib import Path
 from unittest.mock import Mock, patch
 
@@ -60,12 +61,37 @@ def test_run_outer_experiments_sequential(octo_manager):
         assert mock_create_execute.call_count == 1
 
 
-def test_run_outer_experiments_parallel(octo_manager):
-    """Test run outer experiment in parallel."""
+def test_run_outer_experiments_parallel_A(octo_manager):
+    # Arrange
     octo_manager.configs.manager.outer_parallelization = True
-    with patch("octopus.manager.Parallel") as mock_parallel:
+
+    with (
+        patch.object(type(octo_manager), "_run_parallel_ray") as mock_run,
+        patch("octopus.manager.init_ray"),
+        patch("octopus.manager.shutdown_ray"),
+    ):
+        # Act
         octo_manager.run_outer_experiments()
-        mock_parallel.assert_called_once()
+        # Assert
+        mock_run.assert_called_once()
+
+
+def test_run_outer_experiments_parallel_B(octo_manager):
+    octo_manager.configs.manager.outer_parallelization = True
+
+    with (
+        patch("octopus.manager.init_ray"),
+        patch("octopus.manager.shutdown_ray"),
+        patch("octopus.manager.run_parallel_outer_ray", return_value=[True]) as mock_run,
+    ):
+        octo_manager.run_outer_experiments()
+
+        mock_run.assert_called_once()
+        # Inspect args/kwargs
+        _, kwargs = mock_run.call_args
+        assert kwargs["base_experiments"] is octo_manager.base_experiments
+        assert callable(kwargs["create_execute_mlmodules"])
+        assert kwargs["num_workers"] == min(octo_manager.configs.study.n_folds_outer, os.cpu_count() or 1)
 
 
 def test_run_single_experiment(octo_manager):

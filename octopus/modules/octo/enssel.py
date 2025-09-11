@@ -49,14 +49,6 @@ class EnSel:
         """Optuna direction."""
         return metrics_inventory.get_direction(self.target_metric)
 
-    @property
-    def score_type(self) -> str:
-        """Score type."""
-        if self.target_metric in ["AUCROC", "LOGLOSS"]:
-            return "dev_pool_soft"
-        else:
-            return "dev_pool_hard"
-
     def __attrs_post_init__(self):
         # initialization here due to "Python immutable default"
         self.bags = dict()
@@ -89,11 +81,8 @@ class EnSel:
         for key, value in self.bags.items():
             s = pd.Series()
             s["id"] = value["id"]
-            s["dev_pool_hard"] = value["scores"]["dev_pool_hard"]  # relevant
-            if self.score_type == "dev_pool_soft":
-                s["dev_pool_soft"] = value["scores"]["dev_pool_soft"]  # relevant
-                s["test_pool_soft"] = value["scores"]["test_pool_soft"]
-            s["test_pool_hard"] = value["scores"]["test_pool_hard"]
+            s["dev_pool"] = value["scores"]["dev_pool"]  # relevant
+            s["test_pool"] = value["scores"]["test_pool"]
             s["dev_avg"] = value["scores"]["dev_avg"]
             s["test_avg"] = value["scores"]["test_avg"]
             s["n_features_used_mean"] = value["n_features_used_mean"]
@@ -103,13 +92,13 @@ class EnSel:
         self.model_table = pd.concat(df_lst, axis=1).T
 
         # order of table is important, depending on metric,
-        # (a) direction (b) dev_pool_soft or dev_pool_hard
+        # (a) direction
         if self.direction == "maximize":
             ascending = False
         else:
             ascending = True
 
-        self.model_table = self.model_table.sort_values(by=self.score_type, ascending=ascending).reset_index(drop=True)
+        self.model_table = self.model_table.sort_values(by="dev_pool", ascending=ascending).reset_index(drop=True)
 
     def _ensemble_models(self, bag_keys):
         """Esemble using all bags and their corresponding models provided by input."""
@@ -137,45 +126,31 @@ class EnSel:
 
     def _ensemble_scan(self):
         """Scan for highest performing ensemble consisting of best N bags."""
-        if self.score_type == "dev_pool_soft":
-            self.scan_table = pd.DataFrame(
-                columns=[
-                    "#models",
-                    "dev_pool_hard",
-                    "test_pool_hard",
-                    "dev_pool_soft",
-                    "test_pool_soft",
-                ]
-            )
-        else:
-            self.scan_table = pd.DataFrame(columns=["#models", "dev_pool_hard", "test_pool_hard"])
+        self.scan_table = pd.DataFrame(
+            columns=[
+                "#models",
+                "dev_pool",
+                "test_pool",
+            ]
+        )
 
         for i in range(len(self.model_table)):
             bag_keys = self.model_table[: i + 1]["path"].tolist()
             scores = self._ensemble_models(bag_keys)
-            if self.score_type == "dev_pool_soft":
-                self.scan_table.loc[i] = [
-                    i,
-                    scores["dev_pool_hard"],
-                    scores["test_pool_hard"],
-                    scores["dev_pool_soft"],
-                    scores["test_pool_soft"],
-                ]
-            else:
-                self.scan_table.loc[i] = [
-                    i,
-                    scores["dev_pool_hard"],
-                    scores["test_pool_hard"],
-                ]
+            self.scan_table.loc[i] = [
+                i,
+                scores["dev_pool"],
+                scores["test_pool"],
+            ]
 
     def _ensemble_optimization(self):
         """Ensembling optimization with replacement."""
         # we start with an best N models example derived from self.scan_table,
         # assuming that is sorted correctly
         if self.direction == "maximize":
-            start_n = int(self.scan_table[self.score_type].idxmax()) + 1
+            start_n = int(self.scan_table["dev_pool"].idxmax()) + 1
         else:
-            start_n = int(self.scan_table[self.score_type].idxmin()) + 1
+            start_n = int(self.scan_table["dev_pool"].idxmin()) + 1
         print("Ensemble scan, number of included best models: ", start_n)
 
         # startn_bags dict with path as key and repeats=1 as value
@@ -188,7 +163,7 @@ class EnSel:
         results_df = pd.DataFrame(columns=["model", "performance", "bags_lst"])
         start_bags = list(escan_ensemble.keys())
         scores = self._ensemble_models(start_bags)
-        start_perf = scores[self.score_type]
+        start_perf = scores["dev_pool"]
         print("Ensemble optimization")
         print("Start performance:", start_perf)
         # record start performance
@@ -209,7 +184,7 @@ class EnSel:
                 bags_lst = copy.deepcopy(bags_ensemble)
                 bags_lst.append(model)
                 scores = self._ensemble_models(bags_lst)
-                df.loc[len(df)] = [model, scores[self.score_type]]
+                df.loc[len(df)] = [model, scores["dev_pool"]]
 
             if self.direction == "maximize":
                 best_model = df.loc[df["performance"].idxmax()]["model"]

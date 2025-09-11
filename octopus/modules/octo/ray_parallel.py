@@ -118,17 +118,12 @@ def _execute_training(training: Any, idx: int) -> Any:
     return training.fit()
 
 
-@ray.remote(num_cpus=1)
-def _execute_training_ray(training: Any, idx: int) -> Any:
-    """Ray remote wrapper for executing a single training with CPU limit of 1."""
-    return _execute_training(training, idx)
-
-
-def run_parallel_inner(trainings: Iterable[Any]) -> list[Any]:
+def run_parallel_inner(trainings: Iterable[Any], num_cpus: int = 1) -> list[Any]:
     """Run training.fit() for each item in parallel using Ray and preserve input order.
 
     Args:
         trainings: Iterable of training-like objects. Each object must implement a fit() method.
+        num_cpus: Number of CPUs to allocate per training task (default: 1).
 
     Returns:
         List[Any]: Results from each training.fit(), in the same order as the input iterable.
@@ -147,5 +142,9 @@ def run_parallel_inner(trainings: Iterable[Any]) -> list[Any]:
             "Ray is not initialized in this process. Call init_ray(...) in the driver, "
             "or ensure this runs inside a Ray task."
         )
-    futures = [_execute_training_ray.remote(training, idx) for idx, training in enumerate(trainings)]
+
+    # Create the remote function with configurable num_cpus
+    execute_training_ray = ray.remote(num_cpus=num_cpus)(_execute_training)
+
+    futures = [execute_training_ray.remote(training, idx) for idx, training in enumerate(trainings)]
     return ray.get(futures)

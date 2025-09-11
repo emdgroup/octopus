@@ -12,6 +12,7 @@ from xgboost import XGBClassifier
 from .config import ModelConfig
 from .hyperparameter import Hyperparameter
 from .registry import ModelRegistry
+from .wrapper_models.GaussianProcessClassifier import GPClassifierWrapper
 
 
 @ModelRegistry.register("ExtraTreesClassifier")
@@ -26,6 +27,7 @@ class ExtraTreesClassifierModel:
             model_class=ExtraTreesClassifier,
             ml_type="classification",
             feature_method="internal",
+            chpo_compatible=True,
             hyperparameters=[
                 Hyperparameter(type="int", name="max_depth", low=2, high=32),
                 Hyperparameter(type="int", name="min_samples_split", low=2, high=100),
@@ -57,6 +59,7 @@ class GradientBoostingClassifierModel:
             model_class=GradientBoostingClassifier,
             ml_type="classification",
             feature_method="internal",
+            chpo_compatible=True,
             hyperparameters=[
                 Hyperparameter(type="float", name="learning_rate", low=0.01, high=1, log=True),
                 Hyperparameter(type="int", name="min_samples_leaf", low=1, high=200),
@@ -83,6 +86,7 @@ class RandomForestClassifierModel:
             model_class=RandomForestClassifier,
             ml_type="classification",
             feature_method="internal",
+            chpo_compatible=True,
             hyperparameters=[
                 Hyperparameter(type="int", name="max_depth", low=2, high=32),
                 Hyperparameter(type="int", name="min_samples_split", low=2, high=100),
@@ -108,6 +112,7 @@ class XGBClassifierModel:
             model_class=XGBClassifier,
             ml_type="classification",
             feature_method="internal",
+            chpo_compatible=True,
             hyperparameters=[
                 Hyperparameter(type="float", name="learning_rate", low=1e-4, high=0.3, log=True),
                 Hyperparameter(type="int", name="min_child_weight", low=2, high=15),
@@ -133,6 +138,7 @@ class CatBoostClassifierModel:
             model_class=CatBoostClassifier,
             ml_type="classification",
             feature_method="internal",
+            chpo_compatible=True,
             hyperparameters=[
                 Hyperparameter(type="float", name="learning_rate", low=1e-2, high=1e-1, log=True),
                 Hyperparameter(type="int", name="depth", low=3, high=10),
@@ -169,11 +175,12 @@ class LogisticRegressionClassifierModel:
             ml_type="classification",
             feature_method="permutation",
             n_repeats=2,
+            chpo_compatible=True,
             hyperparameters=[
                 Hyperparameter(type="int", name="max_iter", low=100, high=500),
                 Hyperparameter(type="float", name="C", low=1e-2, high=100, log=True),
                 Hyperparameter(type="float", name="tol", low=1e-4, high=1e-2, log=True),
-                Hyperparameter(type="categorical", name="penalty", choices=["l2", None]),
+                Hyperparameter(type="categorical", name="penalty", choices=["l2", "elasticnet", None]),
                 Hyperparameter(type="categorical", name="fit_intercept", choices=[True, False]),
                 Hyperparameter(type="categorical", name="class_weight", choices=[None, "balanced"]),
                 Hyperparameter(type="fixed", name="solver", value="lbfgs"),
@@ -198,6 +205,7 @@ class TabPFNClassifierModel:
             ml_type="classification",
             feature_method="constant",  # constant FI, disable constraint HPO
             n_repeats=2,
+            chpo_compatible=True,
             hyperparameters=[
                 Hyperparameter(type="fixed", name="n_estimators", value=4),
                 Hyperparameter(type="fixed", name="softmax_temperature", value=0.9),
@@ -213,6 +221,51 @@ class TabPFNClassifierModel:
         )
 
 
+@ModelRegistry.register("GaussianProcessClassifier")
+class GaussianProcessClassifierModel:
+    """Gaussian process classification model class."""
+
+    @staticmethod
+    def get_model_config():
+        """Get model config."""
+        return ModelConfig(
+            name="GaussianProcessClassifier",
+            model_class=GPClassifierWrapper,
+            ml_type="classification",
+            feature_method="permutation",
+            n_repeats=2,
+            chpo_compatible=False,
+            hyperparameters=[
+                Hyperparameter(
+                    type="categorical",
+                    name="kernel",
+                    choices=["RBF", "Matern", "RationalQuadratic"],
+                ),
+                Hyperparameter(
+                    type="categorical",
+                    name="optimizer",
+                    choices=["fmin_l_bfgs_b", None],
+                ),
+                Hyperparameter(
+                    type="int",
+                    name="n_restarts_optimizer",
+                    low=0,
+                    high=10,
+                    log=False,
+                ),
+                Hyperparameter(
+                    type="int",
+                    name="max_iter_predict",
+                    low=50,
+                    high=200,
+                    log=False,
+                ),
+            ],
+            n_jobs=None,
+            model_seed="random_state",
+        )
+
+
 __all__ = [
     "CatBoostClassifierModel",
     "ExtraTreesClassifierModel",
@@ -221,4 +274,5 @@ __all__ = [
     "RandomForestClassifierModel",
     "TabPFNClassifierModel",
     "XGBClassifierModel",
+    "GaussianProcessClassifierModel",
 ]

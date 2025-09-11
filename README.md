@@ -14,7 +14,7 @@ The package can be installed via
 
 If you need to install additional packages (extras), you can specify them like
 
-    pip install .[extra_package]
+    pip install -e ".[extra_package]"
 
 Available extra packages are:
 - autogluon (inclusion of Autogluon, as a reference)

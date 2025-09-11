@@ -238,17 +238,9 @@ class OctoCore:
             f"Experiment: {self.experiment.id} "
             f"{target_metric} "
             f"(ensembled, hard vote):"
-            f"Dev {ensel_scores['dev_pool_hard']:.3f}, "
-            f"Test {ensel_scores['test_pool_hard']:.3f}"
+            f"Dev {ensel_scores['dev_pool']:.3f}, "
+            f"Test {ensel_scores['test_pool']:.3f}"
         )
-        if self.experiment.ml_type == "classification":
-            print(
-                f"Experiment: {self.experiment.id} "
-                f"{target_metric} "
-                f"(ensembled, soft vote):"
-                f"Dev {ensel_scores['dev_pool_soft']:.3f}, "
-                f"Test {ensel_scores['test_pool_soft']:.3f}"
-            )
 
         with open(
             self.path_results.joinpath("ensel_scores_scores.json"),

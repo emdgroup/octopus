@@ -4,6 +4,7 @@ from catboost import CatBoostRegressor
 from sklearn.ensemble import (
     ExtraTreesRegressor,
     GradientBoostingRegressor,
+    HistGradientBoostingRegressor,
     RandomForestRegressor,
 )
 from sklearn.linear_model import ARDRegression, ElasticNet, Ridge
@@ -321,6 +322,33 @@ class XGBRegressorModel:
         )
 
 
+@ModelRegistry.register("HistGradientBoostingRegressor")
+class HistGradientBoostingRegressorModel:
+    """Histogram-based gradient boosting regression model class (scikit-learn 1.6.1)."""
+
+    @staticmethod
+    def get_model_config():
+        """Get model config."""
+        return ModelConfig(
+            name="HistGradientBoostingRegressor",
+            model_class=HistGradientBoostingRegressor,
+            ml_type="regression",
+            feature_method="internal",
+            chpo_compatible=True,
+            hyperparameters=[
+                Hyperparameter(type="float", name="learning_rate", low=0.01, high=0.3, log=True),
+                Hyperparameter(type="int", name="max_iter", low=50, high=1000),
+                Hyperparameter(type="int", name="max_leaf_nodes", low=7, high=256),
+                Hyperparameter(type="float", name="l2_regularization", low=1e-6, high=10.0, log=True),
+                Hyperparameter(type="int", name="min_samples_leaf", low=1, high=200),
+                Hyperparameter(type="int", name="max_bins", low=16, high=255),
+                Hyperparameter(type="fixed", name="loss", value="squared_error"),
+            ],
+            n_jobs=None,
+            model_seed="random_state",
+        )
+
+
 __all__ = [
     "ARDRegressorModel",
     "CatBoostRegressorModel",
@@ -328,6 +356,7 @@ __all__ = [
     "ExtraTreesRegressorModel",
     "GaussianProcessRegressorModel",
     "GradientBoostingRegressorModel",
+    "HistGradientBoostingRegressorModel",
     "RandomForestRegressorModel",
     "RidgeRegressorModel",
     "SvrRegressorModel",

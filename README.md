@@ -22,6 +22,20 @@ Available extra packages are:
 - boruta (Boruta feature selection module)
 - dev (all packages + dependencies required for development)
 
+### Note for Developers
+
+Install development setup
+
+    pip install -e ".[dev]"
+
+and make sure that pre-commit and pytest complete without errors after changes
+
+    pre-commit run --all-files
+
+    pytest
+
+
+
 ### Note for macOS Users
 
 For installing LightGBM on macOS, it is recommended to use Homebrew. Run the following command:

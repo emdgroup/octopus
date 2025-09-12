@@ -4,6 +4,7 @@ from catboost import CatBoostClassifier
 from sklearn.ensemble import (
     ExtraTreesClassifier,
     GradientBoostingClassifier,
+    HistGradientBoostingClassifier,
     RandomForestClassifier,
 )
 from sklearn.linear_model import LogisticRegression
@@ -43,6 +44,34 @@ class ExtraTreesClassifierModel:
                 Hyperparameter(type="fixed", name="bootstrap", value=True),
             ],
             n_jobs="n_jobs",
+            model_seed="random_state",
+        )
+
+
+@ModelRegistry.register("HistGradientBoostingClassifier")
+class HistGradientBoostingClassifierModel:
+    """Histogram-based gradient boosting classification model class (scikit-learn 1.6.1)."""
+
+    @staticmethod
+    def get_model_config():
+        """Get model config."""
+        return ModelConfig(
+            name="HistGradientBoostingClassifier",
+            model_class=HistGradientBoostingClassifier,
+            ml_type="classification",
+            feature_method="internal",
+            chpo_compatible=True,
+            hyperparameters=[
+                Hyperparameter(type="float", name="learning_rate", low=0.01, high=0.3, log=True),
+                Hyperparameter(type="int", name="max_iter", low=50, high=1000),
+                Hyperparameter(type="int", name="max_leaf_nodes", low=7, high=256),
+                Hyperparameter(type="int", name="min_samples_leaf", low=1, high=200),
+                Hyperparameter(type="int", name="max_bins", low=16, high=255),
+                Hyperparameter(type="float", name="l2_regularization", low=0.0, high=10.0, log=False),
+                Hyperparameter(type="fixed", name="loss", value="log_loss"),
+            ],
+            # HistGradientBoostingClassifier uses `random_state` for seeding (map model_seed -> "random_state")
+            n_jobs=None,
             model_seed="random_state",
         )
 
@@ -275,4 +304,5 @@ __all__ = [
     "TabPFNClassifierModel",
     "XGBClassifierModel",
     "GaussianProcessClassifierModel",
+    "HistGradientBoostingClassifierModel",
 ]

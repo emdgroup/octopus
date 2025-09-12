@@ -6,15 +6,31 @@ from attrs import Factory, define, field, validators
 
 from octopus.config.base_sequence_item import BaseSequenceItem
 from octopus.logger import get_logger
+from octopus.models.inventory import ModelInventory
 
 logger = get_logger()
+
+
+def _unique_unordered(seq):
+    # assumes seq is an iterable of hashable items (strings here)
+    return list(set(seq))
 
 
 @define
 class Octo(BaseSequenceItem):
     """Octofull sequence config."""
 
-    models: list = field(default=Factory(lambda: ["ExtraTreesClassifier"]))
+    models: list[str] = field(
+        default=Factory(lambda: ["ExtraTreesClassifier"]),
+        converter=_unique_unordered,
+        validator=[
+            validators.instance_of(list),
+            validators.deep_iterable(
+                member_validator=validators.instance_of(str),
+                iterable_validator=validators.instance_of(list),
+            ),
+        ],
+    )
     """Models for ML."""
 
     module: ClassVar[str] = "octo"
@@ -37,7 +53,7 @@ class Octo(BaseSequenceItem):
     """Model seed."""
 
     n_jobs: int = field(validator=[validators.instance_of(int)], default=Factory(lambda: 1))
-    """Number of parallel jobs. Ideal if n_folds_inner * number of datasplit seeds."""
+    """Number of CPUs used for every model training."""
 
     dim_red_methods: list = field(default=Factory(lambda: [""]))
     """Methods for dimension reduction."""
@@ -65,9 +81,6 @@ class Octo(BaseSequenceItem):
     n_optuna_startup_trials: int = field(validator=[validators.instance_of(int)], default=Factory(lambda: 10))
     """Number of Optuna startup trials (random sampler)"""
 
-    global_hyperparameter: bool = field(validator=[validators.in_([True, False])], default=Factory(lambda: True))
-    """Selection of hyperparameter set."""
-
     ensemble_selection: bool = field(validator=[validators.in_([True, False])], default=Factory(lambda: False))
     """Whether to perform ensemble selection."""
 
@@ -81,7 +94,7 @@ class Octo(BaseSequenceItem):
     """Bring own hyperparameter space."""
 
     max_features: int = field(validator=[validators.instance_of(int)], default=Factory(lambda: 0))
-    """Maximum features to constrain hyperparameter optimization."""
+    """Maximum features to constrain hyperparameter optimization. Default is zero (off)."""
 
     penalty_factor: float = field(validator=[validators.instance_of(float)], default=Factory(lambda: 1.0))
     """Factor to penalyse optuna target related to feature constraint."""
@@ -96,10 +109,51 @@ class Octo(BaseSequenceItem):
     """How to calculate the bag performance for the optuna optimization target."""
 
     def __attrs_post_init__(self):
-        # set default of n_workers to n_folds_inner
+        # (1) set default of n_workers to n_folds_inner
         if self.n_workers is None:
             self.n_workers = self.n_folds_inner
         if self.n_workers != self.n_folds_inner:
             logger.warning(
                 f"Octofull Warning: n_workers ({self.n_workers}) does not match n_folds_inner ({self.n_folds_inner})",
             )
+        # (2) Only enforce constrained-HPO compatibility when max_features > 0
+        if self.max_features > 0:
+            inventory = ModelInventory()
+            incompatible_models: list[str] = []
+
+            for m in self.models:
+                try:
+                    # Resolve model_config either by name (str) or by using get_model_config() on a class/object
+                    if isinstance(m, str):
+                        config = inventory.get_model_config(m)
+                    else:
+                        get_cfg = getattr(m, "get_model_config", None)
+                        if callable(get_cfg):
+                            config = get_cfg()
+                            if not getattr(config, "name", None):
+                                config.name = getattr(m, "__name__", str(m))
+                        else:
+                            raise ValueError(
+                                f"Model entry {m!r} is not a model name and does not provide get_model_config()"
+                            )
+
+                    chpo_flag = bool(getattr(config, "chpo_compatible", False))
+                    # print/log chpo_compatible for each model
+                    logger.info(f"Model '{config.name}': chpo_compatible={chpo_flag}")
+
+                    if not chpo_flag:
+                        incompatible_models.append(config.name)
+
+                except Exception as exc:
+                    logger.error(f"Could not retrieve model_config for model '{m}': {exc}")
+                    # stop construction on resolution failures
+                    raise ValueError(f"Could not retrieve model_config for model '{m}': {exc}") from exc
+
+            if incompatible_models:
+                msg = (
+                    "Octo: The following models are not compatible with constrained HPO. "
+                    "Please remove those model or turn constrained HPO off (max_features=0): "
+                    + ", ".join(incompatible_models)
+                )
+                logger.error(msg)
+                raise ValueError(msg)

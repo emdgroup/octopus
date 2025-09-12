@@ -14,13 +14,27 @@ The package can be installed via
 
 If you need to install additional packages (extras), you can specify them like
 
-    pip install .[extra_package]
+    pip install -e ".[extra_package]"
 
 Available extra packages are:
 - autogluon (inclusion of Autogluon, as a reference)
 - tabpfn (inclusion of TabPFN model, as a reference)
 - boruta (Boruta feature selection module)
 - dev (all packages + dependencies required for development)
+
+### Note for Developers
+
+Install development setup
+
+    pip install -e ".[dev]"
+
+and make sure that pre-commit and pytest complete without errors after changes
+
+    pre-commit run --all-files
+
+    pytest
+
+
 
 ### Note for macOS Users
 

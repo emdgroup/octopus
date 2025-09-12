@@ -9,7 +9,6 @@ from pathlib import Path
 import optuna
 import pandas as pd
 from attrs import Factory, define, field, validators
-from joblib import Parallel, delayed
 from optuna.trial import TrialState
 
 from octopus.experiment import OctoExperiment
@@ -165,18 +164,15 @@ class OctoCore:
     def run_experiment(self):
         """Run experiment."""
         # (1) model training and optimization
-        if self.experiment.ml_config.global_hyperparameter:
-            self._run_globalhp_optimization()
-        else:
-            self._run_individualhp_optimization()
+        self._run_globalhp_optimization()
 
         # create best bag in results directory
         # - attach best bag to experiment
         # - attach best bag scores to experiment
         self._create_best_bag()
 
-        # (2) ensemble selection, only globalhp scenario is supported
-        if self.experiment.ml_config.global_hyperparameter & self.experiment.ml_config.ensemble_selection:
+        # (2) ensemble selection
+        if self.experiment.ml_config.ensemble_selection:
             self._run_ensemble_selection()
 
         return self.experiment
@@ -350,77 +346,8 @@ class OctoCore:
         """Optimization run with a global HP set over all inner folds."""
         logger.info("Running Optuna Optimization with a global HP set")
 
-        # run Optuna study with a global HP set
-        self._optimize_splits(self.data_splits)
-
-    def _run_individualhp_optimization(self):
-        """Optimization runs with an individual HP set for each inner datasplit."""
-        logger.info("Running Optuna Optimizations for each inner datasplit separately")
-
-        # covert to list of dicts for compatibility with OptimizeOptuna
-        splits = [{key: value} for key, value in self.data_splits.items()]
-
-        # For the parallelization of Optuna tasks, we have several options:
-        # (a) n_jobs parameter in Optuna, however this is a threaded operation.
-        #     In this case, the splits are executed sequentially but each split
-        #     uses several optuna instances
-        # (b) we parallelize the Optuna execution per split, as shown below.
-        # (c) In addition to (b) we could start multiple optuna optimizations
-        #     per split and so achieve an even faster execution of trials.
-        #     One could also only do (c) with increased parallelization to
-        #     achieve the same effect as (b)+(c).
-
-        # same config parameters also used for parallelization of bag trainings
-
-        if self.experiment.ml_config.inner_parallelization:
-            # (A) joblib parallelization, compatible with xgboost
-            def optimize_split(split, split_index):
-                try:
-                    self._optimize_splits(split)
-                    print(f"Optimization of split {split_index} completed")
-                except Exception as e:  # pylint: disable=broad-except
-                    print(f"Exception occurred while optimizing split {split_index}: {e}")
-                    print(f"Exception type: {type(e).__name__}")
-
-            print("Parallel execution of Optuna optimizations for individual HPs")
-            with Parallel(n_jobs=self.experiment.ml_config.n_workers) as parallel:
-                parallel(delayed(optimize_split)(split, idx) for idx, split in enumerate(splits))
-
-            # (B) Alternative with xbgoost issue, issue46
-            #    print("Parallel execution of Optuna optimizations for individual HPs")
-            #    # max_tasks_per_child=1 requires Python3.11
-            #    with concurrent.futures.ProcessPoolExecutor(
-            #        max_workers=self.experiment.ml_config["n_workers"]
-            #    ) as executor:
-            #        futures = []
-            #        for split in splits:
-            #            try:
-            #                future = executor.submit(self._optimize_splits, split)
-            #                futures.append(future)
-            #            except Exception as e:  # pylint: disable=broad-except
-            #                print(f"Exception occurred while submitting task: {e}")
-            #        for future in concurrent.futures.as_completed(futures):
-            #            try:
-            #                _ = future.result()
-            #                print("Optimization of single split completed")
-            #            except Exception as e:  # pylint: disable=broad-except
-            #                print(f"Exception occurred while executing task: {e}")
-
-        else:
-            print("Sequential execution of Optuna optimizations for individual HPs")
-            for split in splits:
-                try:
-                    self._optimize_splits(split)
-                    print(f"Optimization of split:{split.keys()} completed")
-                except Exception as e:  # pylint: disable=broad-except
-                    print(f"Error during optimizatio of split:{split.keys()}: {e}, type: {type(e).__name__}")
-
-    def _optimize_splits(self, splits):
-        """Optimize splits.
-
-        Works if splits contain several splits as well as
-        when splits only contains a single split
-        """
+        # Optimize splits.
+        splits = self.data_splits
         study_name = f"optuna_{self.experiment.experiment_id}_{self.experiment.sequence_id}"
 
         # set up Optuna study

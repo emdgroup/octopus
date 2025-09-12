@@ -4,6 +4,7 @@ from catboost import CatBoostRegressor
 from sklearn.ensemble import (
     ExtraTreesRegressor,
     GradientBoostingRegressor,
+    HistGradientBoostingRegressor,
     RandomForestRegressor,
 )
 from sklearn.linear_model import ARDRegression, ElasticNet, Ridge
@@ -29,6 +30,7 @@ class ARDRegressorModel:
             ml_type="regression",
             feature_method="permutation",
             n_repeats=2,
+            chpo_compatible=False,
             hyperparameters=[
                 Hyperparameter(type="float", name="alpha_1", low=1e-10, high=1e-3, log=True),
                 Hyperparameter(type="float", name="alpha_2", low=1e-10, high=1e-3, log=True),
@@ -55,6 +57,7 @@ class CatBoostRegressorModel:
             model_class=CatBoostRegressor,
             ml_type="regression",
             feature_method="internal",
+            chpo_compatible=True,
             hyperparameters=[
                 Hyperparameter(type="float", name="learning_rate", low=1e-3, high=1e-1, log=True),
                 Hyperparameter(type="int", name="depth", low=3, high=10),
@@ -82,6 +85,7 @@ class ElasticNetRegressorModel:
             model_class=ElasticNet,
             ml_type="regression",
             feature_method="shap",
+            chpo_compatible=True,
             hyperparameters=[
                 Hyperparameter(type="float", name="alpha", low=1e-10, high=1e2, log=True),
                 Hyperparameter(type="float", name="l1_ratio", low=0, high=1, log=False),
@@ -107,6 +111,7 @@ class ExtraTreesRegressorModel:
             model_class=ExtraTreesRegressor,
             ml_type="regression",
             feature_method="internal",
+            chpo_compatible=True,
             hyperparameters=[
                 Hyperparameter(type="int", name="max_depth", low=2, high=32),
                 Hyperparameter(type="int", name="min_samples_split", low=2, high=100),
@@ -132,6 +137,7 @@ class GaussianProcessRegressorModel:
             ml_type="regression",
             feature_method="permutation",
             n_repeats=2,
+            chpo_compatible=False,
             hyperparameters=[
                 Hyperparameter(
                     type="categorical",
@@ -171,6 +177,7 @@ class GradientBoostingRegressorModel:
             model_class=GradientBoostingRegressor,
             ml_type="regression",
             feature_method="internal",
+            chpo_compatible=True,
             hyperparameters=[
                 Hyperparameter(type="float", name="learning_rate", low=0.01, high=1, log=True),
                 Hyperparameter(type="int", name="min_samples_leaf", low=1, high=200),
@@ -197,6 +204,7 @@ class RandomForestRegressorModel:
             model_class=RandomForestRegressor,
             ml_type="regression",
             feature_method="internal",
+            chpo_compatible=True,
             hyperparameters=[
                 Hyperparameter(type="int", name="max_depth", low=2, high=32),
                 Hyperparameter(type="int", name="min_samples_split", low=2, high=100),
@@ -221,6 +229,7 @@ class RidgeRegressorModel:
             model_class=Ridge,
             ml_type="regression",
             feature_method="shap",
+            chpo_compatible=False,
             hyperparameters=[
                 Hyperparameter(type="float", name="alpha", low=1e-5, high=1e5, log=True),
                 Hyperparameter(type="categorical", name="fit_intercept", choices=[True, False]),
@@ -244,6 +253,7 @@ class SvrRegressorModel:
             ml_type="regression",
             feature_method="permutation",
             n_repeats=2,
+            chpo_compatible=False,
             hyperparameters=[
                 Hyperparameter(type="float", name="C", low=0.03125, high=32768, log=True),
                 Hyperparameter(type="float", name="epsilon", low=0.001, high=1, log=True),
@@ -269,6 +279,7 @@ class TabPFNRegressorModel:
             ml_type="regression",
             feature_method="constant",  # constant FI, disable constraint HPO
             n_repeats=2,
+            chpo_compatible=True,
             hyperparameters=[
                 Hyperparameter(type="fixed", name="n_estimators", value=4),
                 Hyperparameter(type="fixed", name="softmax_temperature", value=0.9),
@@ -296,6 +307,7 @@ class XGBRegressorModel:
             model_class=XGBRegressor,
             ml_type="regression",
             feature_method="internal",
+            chpo_compatible=True,
             hyperparameters=[
                 Hyperparameter(type="float", name="learning_rate", low=1e-4, high=0.3, log=True),
                 Hyperparameter(type="int", name="min_child_weight", low=2, high=15),
@@ -310,6 +322,33 @@ class XGBRegressorModel:
         )
 
 
+@ModelRegistry.register("HistGradientBoostingRegressor")
+class HistGradientBoostingRegressorModel:
+    """Histogram-based gradient boosting regression model class (scikit-learn 1.6.1)."""
+
+    @staticmethod
+    def get_model_config():
+        """Get model config."""
+        return ModelConfig(
+            name="HistGradientBoostingRegressor",
+            model_class=HistGradientBoostingRegressor,
+            ml_type="regression",
+            feature_method="internal",
+            chpo_compatible=True,
+            hyperparameters=[
+                Hyperparameter(type="float", name="learning_rate", low=0.01, high=0.3, log=True),
+                Hyperparameter(type="int", name="max_iter", low=50, high=1000),
+                Hyperparameter(type="int", name="max_leaf_nodes", low=7, high=256),
+                Hyperparameter(type="float", name="l2_regularization", low=1e-6, high=10.0, log=True),
+                Hyperparameter(type="int", name="min_samples_leaf", low=1, high=200),
+                Hyperparameter(type="int", name="max_bins", low=16, high=255),
+                Hyperparameter(type="fixed", name="loss", value="squared_error"),
+            ],
+            n_jobs=None,
+            model_seed="random_state",
+        )
+
+
 __all__ = [
     "ARDRegressorModel",
     "CatBoostRegressorModel",
@@ -317,6 +356,7 @@ __all__ = [
     "ExtraTreesRegressorModel",
     "GaussianProcessRegressorModel",
     "GradientBoostingRegressorModel",
+    "HistGradientBoostingRegressorModel",
     "RandomForestRegressorModel",
     "RidgeRegressorModel",
     "SvrRegressorModel",

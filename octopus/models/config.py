@@ -38,3 +38,4 @@ class ModelConfig:
     n_repeats: None | int = field(factory=lambda: None)
     n_jobs: None | str = field(factory=lambda: "n_jobs")
     model_seed: None | str = field(factory=lambda: "model_seed")
+    chpo_compatible: bool = field(default=False)

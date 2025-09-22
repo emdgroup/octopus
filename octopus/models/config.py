@@ -39,3 +39,6 @@ class ModelConfig:
     n_jobs: None | str = field(factory=lambda: "n_jobs")
     model_seed: None | str = field(factory=lambda: "model_seed")
     chpo_compatible: bool = field(default=False)
+    scaler: None | str = field(default=None, validator=validators.in_([None, "StandardScaler"]))
+    imputation_required: bool = field(default=True)
+    categorical_enabled: bool = field(default=False)

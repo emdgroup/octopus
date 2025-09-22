@@ -10,8 +10,10 @@ from sklearn.gaussian_process.kernels import RBF, Kernel, Matern, RationalQuadra
 from sklearn.utils.validation import check_array, check_is_fitted, check_X_y
 
 
-class GPClassifierWrapper(BaseEstimator, ClassifierMixin):
+class GPClassifierWrapper(ClassifierMixin, BaseEstimator):
     """Wrapper for Gaussian Process Classifier."""
+
+    _estimator_type = "classifier"
 
     def __init__(
         self,
@@ -40,15 +42,7 @@ class GPClassifierWrapper(BaseEstimator, ClassifierMixin):
         return self.model_.classes_
 
     def fit(self, X: Any, y: Any) -> "GPClassifierWrapper":
-        """Fit the Gaussian Process model.
-
-        Args:
-            X: Training data.
-            y: Target values.
-
-        Returns:
-            Fitted model.
-        """
+        """Fit the Gaussian Process model."""
         X, y = check_X_y(X, y)
         kernel = self._get_kernel(self.kernel)
         self.model_ = GaussianProcessClassifier(
@@ -65,44 +59,19 @@ class GPClassifierWrapper(BaseEstimator, ClassifierMixin):
         return self
 
     def predict(self, X: Any) -> Any:
-        """Predict using the Gaussian Process model.
-
-        Args:
-            X: Input data.
-
-        Returns:
-            Predicted class labels.
-        """
+        """Predict using the Gaussian Process model."""
         check_is_fitted(self, "model_")
         X = check_array(X)
         return self.model_.predict(X)
 
     def predict_proba(self, X: Any) -> np.ndarray:
-        """Predict class probabilities using the Gaussian Process model.
-
-        Args:
-            X: Input data.
-
-        Returns:
-            Predicted class probabilities.
-        """
+        """Predict class probabilities using the Gaussian Process model."""
         check_is_fitted(self, "model_")
         X = check_array(X)
         return self.model_.predict_proba(X)
 
     def _get_kernel(self, kernel_str: str | Kernel) -> Kernel:
-        """Get the kernel object based on the kernel string.
-
-        Args:
-            kernel_str: Kernel string or object.
-
-        Returns:
-            Kernel object.
-
-        Raises:
-            ValueError: If any kernel is not known.
-
-        """
+        """Get the kernel object based on the kernel string."""
         if isinstance(kernel_str, Kernel):
             return kernel_str
         elif kernel_str == "RBF":
@@ -113,37 +82,3 @@ class GPClassifierWrapper(BaseEstimator, ClassifierMixin):
             return RationalQuadratic()
         else:
             raise ValueError(f"Unknown kernel: {kernel_str}")
-
-    def get_params(self, deep: bool = True) -> dict[str, Any]:
-        """Get parameters for this estimator.
-
-        Args:
-            deep: Whether to return the parameters for this estimator and
-                contained subobjects.
-
-        Returns:
-            Parameter names mapped to their values.
-        """
-        return {
-            "kernel": self.kernel,
-            "optimizer": self.optimizer,
-            "n_restarts_optimizer": self.n_restarts_optimizer,
-            "max_iter_predict": self.max_iter_predict,
-            "warm_start": self.warm_start,
-            "copy_X_train": self.copy_X_train,
-            "random_state": self.random_state,
-            "multi_class": self.multi_class,
-        }
-
-    def set_params(self, **params: Any) -> "GPClassifierWrapper":
-        """Set the parameters of this estimator.
-
-        Args:
-            **params: Estimator parameters.
-
-        Returns:
-            Estimator instance.
-        """
-        for param, value in params.items():
-            setattr(self, param, value)
-        return self

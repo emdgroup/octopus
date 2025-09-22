@@ -21,3 +21,6 @@ class BaseSequenceItem:
 
     description: str = field(default="", validator=[validators.instance_of(str)])
     """Description for the sequence."""
+
+    categorical_ohe: bool = field(default=False, validator=[validators.instance_of(bool)])
+    """Enforce categorical one-hot-encoding on module level (and not model) to stay compatible with feature importances"""

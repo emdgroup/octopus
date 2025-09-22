@@ -253,10 +253,9 @@ class OctoML:
         for key, value in data_splits.items():
             path_experiment = Path(f"experiment{key}")
             path_study.joinpath(path_experiment).mkdir(parents=True, exist_ok=True)
-            # impute datasets
-            feature_columns = self.data.feature_columns
-            traindev_df, test_df = self._impute_dataset(value["train"], value["test"], feature_columns)
-
+            # Changed: Imputation takes place in training
+            # feature_columns = self.data.feature_columns
+            # traindev_df, test_df = self._impute_dataset(value["train"], value["test"], feature_columns)
             self.experiments.append(
                 OctoExperiment(
                     id=str(key),
@@ -270,8 +269,8 @@ class OctoML:
                     feature_columns=self.data.feature_columns,
                     stratification_column=self.data.stratification_column,
                     target_assignments=self.data.target_assignments,
-                    data_traindev=traindev_df,
-                    data_test=test_df,
+                    data_traindev=value["train"],
+                    data_test=value["test"],
                 )
             )
 

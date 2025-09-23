@@ -19,6 +19,7 @@ class R2Metric:
             ml_type="regression",
             higher_is_better=True,
             prediction_type="predict",
+            scorer_string="r2",
         )
 
 
@@ -35,6 +36,7 @@ class MAEMetric:
             ml_type="regression",
             higher_is_better=False,
             prediction_type="predict",
+            scorer_string="neg_mean_absolute_error",
         )
 
 
@@ -51,6 +53,7 @@ class MSEMetric:
             ml_type="regression",
             higher_is_better=False,
             prediction_type="predict",
+            scorer_string="neg_mean_squared_error",
         )
 
 

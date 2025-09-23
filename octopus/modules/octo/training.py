@@ -13,36 +13,19 @@ from sklearn.ensemble import IsolationForest
 from sklearn.impute import SimpleImputer
 from sklearn.inspection import permutation_importance
 from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import FunctionTransformer, StandardScaler
 
 from octopus.logger import LogGroup, get_logger
+from octopus.metrics.inventory import MetricsInventory
 from octopus.models.inventory import ModelInventory
 from octopus.modules.utils import get_performance_score
 
 ## TOBEDONE pipeline
-# - establish pre-processing pipeline
-# - get model info and connect with pipeline
-# - enhance categorical processing: ohe + targetenconding?
-# - modify data class to provide info on categorical (nominal, ordinal) columns
-# - test script testing all models
-#   + numeric, categoricals, different categorical dtypes
-#   + end-to-end testing including permutation FI and shap
-# - remove imputation code
-# - keep mice imputation?
+# - implement cat encoding on module level
 # - how to provide categorical info to catboost and other models?
 
 
 logger = get_logger()
-
-scorer_string_inventory = {
-    "AUCROC": "roc_auc",
-    "ACC": "accuracy",
-    "ACCBAL": "balanced_accuracy",
-    "LOGLOSS": "neg_log_loss",
-    "MAE": "neg_mean_absolute_error",
-    "MSE": "neg_mean_squared_error",
-    "R2": "r2",
-}
 
 
 @define
@@ -191,56 +174,58 @@ class Training:
         self._setup_preprocessing_pipeline()
 
     def _setup_preprocessing_pipeline(self):
-        """Set up the preprocessing pipeline with imputation and scaling only.
+        """Set up the preprocessing pipeline with conditional imputation and scaling.
 
-        Simplified pipeline that only handles:
-        - Imputation: Fill missing values (median for numerical, most_frequent for categorical)
-        - Scaling: StandardScaler for all columns (replaces existing columns)
+        Pipeline handles:
+        - Imputation: Only applied if model's imputation_required attribute is True
+        - Scaling: Only applied if model's scaler attribute is not None
 
         Note: Categorical encoding (one-hot, ordinal) is handled elsewhere in the pipeline.
         """
-        # Get sample data to determine column types
+        # Get model configuration
+        model_config = ModelInventory().get_model_config(self.ml_model_type)
+
+        # Identify column types
         sample_data = self.data_train[self.feature_columns]
+        numerical_columns = [
+            col for col in self.feature_columns if sample_data[col].dtype not in ["object", "category", "bool"]
+        ]
+        categorical_columns = [
+            col for col in self.feature_columns if sample_data[col].dtype in ["object", "category", "bool"]
+        ]
 
-        # Identify numerical and categorical columns
-        numerical_columns = []
-        categorical_columns = []
-
-        for col in self.feature_columns:
-            if sample_data[col].dtype in ["object", "category", "bool"]:
-                categorical_columns.append(col)
-            else:
-                numerical_columns.append(col)
-
-        # Create transformers for different column types
+        # Build transformers
         transformers = []
 
-        # Numerical columns: imputation (median) + scaling (StandardScaler)
-        # This is the correct order: impute missing values first, then scale
+        # Numerical columns transformer
         if numerical_columns:
-            numerical_transformer = Pipeline(
-                steps=[("imputer", SimpleImputer(strategy="median")), ("scaler", StandardScaler())]
-            )
-            transformers.append(("num", numerical_transformer, numerical_columns))
+            steps = []
+            if model_config.imputation_required:
+                steps.append(("imputer", SimpleImputer(strategy="median")))
+            if model_config.scaler == "StandardScaler":
+                steps.append(("scaler", StandardScaler()))
+            elif model_config.scaler is not None:
+                raise ValueError(f"Unsupported scaler type: {model_config.scaler}")
 
-        # Categorical columns: imputation only (most_frequent)
-        # No encoding is performed - categorical values are preserved as-is
+            transformer = Pipeline(steps) if steps else "passthrough"
+            transformers.append(("num", transformer, numerical_columns))
+
+        # Categorical columns transformer
         if categorical_columns:
-            categorical_transformer = Pipeline(steps=[("imputer", SimpleImputer(strategy="most_frequent"))])
-            transformers.append(("cat", categorical_transformer, categorical_columns))
+            transformer = (
+                Pipeline([("imputer", SimpleImputer(strategy="most_frequent"))])
+                if model_config.imputation_required
+                else "passthrough"
+            )
+            transformers.append(("cat", transformer, categorical_columns))
 
-        # Create the column transformer
+        # Create final pipeline
         if transformers:
             self.preprocessing_pipeline = ColumnTransformer(
-                transformers=transformers,
-                remainder="passthrough",  # Keep any remaining columns as-is
-                verbose_feature_names_out=False,  # Keep original feature names where possible
+                transformers=transformers, remainder="passthrough", verbose_feature_names_out=False
             )
         else:
-            # If no transformers needed, create a simple pipeline with just imputation and scaling
-            self.preprocessing_pipeline = Pipeline(
-                steps=[("imputer", SimpleImputer(strategy="median")), ("scaler", StandardScaler())]
-            )
+            self.preprocessing_pipeline = Pipeline([("passthrough", FunctionTransformer())])
 
     # Training class functionality:
     # (1) outlier removal
@@ -530,7 +515,10 @@ class Training:
             # more work needed to support other metrics
             scoring_type = None
         else:
-            scoring_type = scorer_string_inventory[self.target_metric]
+            # Get scorer string from metrics inventory
+            metrics_inventory = MetricsInventory()
+            metric_config = metrics_inventory.get_metric_config(self.target_metric)
+            scoring_type = metric_config.scorer_string
 
         if partition == "dev":
             x = self.x_dev_processed
@@ -626,64 +614,89 @@ class Training:
         self.feature_importances["lofo" + "_test"] = fi_test_df
 
     def calculate_fi_featuresused_shap(self, partition="dev", bg_max=200):
-        """Shap feature importance, specifically for calc_features_used."""
+        """SHAP feature importance (for calc_features_used) with robust fallbacks.
+
+        Used when model property: feature_method = "shap". The shap method used is automatically determined
+        by shap. The main advantage is that for linear and tree model the feature importances are calculated
+        much faster.
+        """
         if getattr(self, "ml_type", None) == "timetoevent":
             raise ValueError("SHAP feature importance not supported for timetoevent")
 
-        X_eval = {"dev": self.x_dev_processed, "test": self.x_test_processed}.get(partition)
-        if X_eval is None:
+        # Select eval data
+        X_eval_df = {"dev": self.x_dev_processed, "test": self.x_test_processed}.get(partition)
+        if X_eval_df is None:
             raise ValueError("dataset type not supported")
 
-        # small background for speed
-        X_bg = self.x_train_processed
-        if hasattr(X_bg, "sample") and X_bg.shape[0] > bg_max:
-            X_bg = X_bg.sample(n=bg_max, replace=False, random_state=0)
+        # Background from train; sample for speed
+        X_bg_df = self.x_train_processed
+        if X_bg_df is None:
+            raise ValueError("Training data (x_train_processed) is required as background for SHAP.")
+        if hasattr(X_bg_df, "sample") and X_bg_df.shape[0] > bg_max:
+            X_bg_df = X_bg_df.sample(n=bg_max, replace=False, random_state=0)
 
-        # Try auto; if it fails (e.g., SVR/GPR), pass a callable + masker
-        try:
-            explainer = shap.Explainer(self.model, X_bg, feature_names=list(self.x_train_processed.columns))
-            explanation = explainer(X_eval)
-        except Exception:
-            if hasattr(self.model, "predict_proba"):
-                explainer = shap.Explainer(self.model.predict_proba, X_bg, link="logit")
-                explanation = explainer(X_eval, link="logit")
+        # Convert to numpy to avoid model attribute side-effects
+        X_eval = X_eval_df.to_numpy() if hasattr(X_eval_df, "to_numpy") else np.asarray(X_eval_df)
+        X_bg = X_bg_df.to_numpy() if hasattr(X_bg_df, "to_numpy") else np.asarray(X_bg_df)
+
+        n_features = X_eval.shape[1]
+
+        # Resolve feature names
+        feature_names = getattr(self, "feature_columns", None)
+        if not feature_names or len(feature_names) != n_features:
+            if hasattr(X_eval_df, "columns"):
+                feature_names = list(X_eval_df.columns)
             else:
-                explainer = shap.Explainer(self.model.predict, X_bg)
-                explanation = explainer(X_eval)
+                feature_names = [f"f{i}" for i in range(n_features)]
 
-        vals = np.asarray(explanation.values)
-        n_features = len(self.feature_columns)
+        # Build explainer
+        try:
+            # Let SHAP auto-select the best explainer (Tree for tree models, Kernel otherwise)
+            explainer = shap.Explainer(self.model, X_bg)
+            sv = explainer(X_eval)
+        except Exception as e1:
+            logger.debug(f"SHAP auto explainer failed: {e1}. Falling back to callable + Kernel.")
+            # Fallback to a plain callable; do NOT pass string link (avoids 'link needs to be callable' errors)
+            if getattr(self, "ml_type", None) == "classification" and hasattr(self.model, "predict_proba"):
 
-        # Aggregate absolute SHAP values to per-feature importance
+                def predict_fn(X):
+                    return np.asarray(self.model.predict_proba(np.asarray(X)))
+            else:
+
+                def predict_fn(X):
+                    return np.asarray(self.model.predict(np.asarray(X)))
+
+            # Use the generic constructor so SHAP picks Kernel with the given background
+            explainer = shap.Explainer(predict_fn, X_bg)
+            sv = explainer(X_eval)
+
+        # SHAP values and aggregation
+        vals = np.asarray(sv.values)  # could be (n, f) or (n, outputs, f), etc.
         if vals.ndim == 2 and vals.shape[1] == n_features:
             importance = np.abs(vals).mean(axis=0)
         else:
-            # find the feature axis and average over the rest
             feat_axes = [i for i, d in enumerate(vals.shape) if d == n_features]
             if len(feat_axes) != 1:
                 raise ValueError(f"Unexpected SHAP values shape {vals.shape}")
             feat_axis = feat_axes[0]
-            importance = np.mean(np.abs(vals), axis=tuple(i for i in range(vals.ndim) if i != feat_axis))
+            reduce_axes = tuple(i for i in range(vals.ndim) if i != feat_axis)
+            importance = np.mean(np.abs(vals), axis=reduce_axes)
 
-        if len(importance) != n_features:
+        if importance.shape[0] != n_features:
             raise ValueError("Feature count mismatch between SHAP values and feature_columns.")
 
-        fi_df = pd.DataFrame({"feature": self.feature_columns, "importance": importance})
+        # Build and store importance DataFrame
+        fi_df = pd.DataFrame({"feature": feature_names, "importance": importance})
         if not fi_df["importance"].empty:
             fi_df = fi_df[fi_df["importance"] > fi_df["importance"].max() / 1000.0]
 
         self.feature_importances[f"shap_{partition}"] = fi_df
 
-    def calculate_fi_shap(self, partition="dev", shap_type="kernel"):
-        """Compute SHAP feature importance with a model-agnostic explainer."""
-        logger.info(f"Calculating SHAP feature importances ({partition})...")
+    def calculate_fi_shap(self, partition="dev", shap_type="kernel", background_size=200):
+        """Compute SHAP feature importance with a model-agnostic explainer (kernel/permutation/exact)."""
+        logger.info(f"Calculating SHAP feature importances ({partition}, mode={shap_type})...")
 
-        # Prediction function for SHAP
-        predict_fn = (
-            self.model.predict_proba if getattr(self, "ml_type", None) == "classification" else self.model.predict
-        )
-
-        # Select data
+        # --- Select data
         if partition == "dev":
             data = self.x_dev_processed
         elif partition == "test":
@@ -691,34 +704,64 @@ class Training:
         else:
             raise ValueError("dataset type not supported")
 
-        # Select explainer
-        explainers = {
-            "exact": shap.explainers.Exact,
-            "permutation": shap.explainers.Permutation,
-            "kernel": shap.explainers.Kernel,
-        }
-        explainer_cls = explainers.get(shap_type)
-        if explainer_cls is None:
-            raise ValueError(f"SHAP type {shap_type} not supported.")
-        explainer = explainer_cls(predict_fn, data)
+        # Keep feature names, but pass numpy to SHAP to avoid feature_names_in_ issues
+        if hasattr(data, "columns"):
+            feature_names = data.columns.tolist()
+            X = data.to_numpy()
+        else:
+            X = np.asarray(data)
+            feature_names = [f"f{i}" for i in range(X.shape[1])]
 
-        # Compute SHAP values (Explanation API in shap>=0.48)
-        vals = np.asarray(explainer(data).values)  # shape varies by model/output
-        n_features = data.shape[1]
+        # --- Prediction function as a plain callable (not a bound method)
+        if getattr(self, "ml_type", None) == "classification" and hasattr(self.model, "predict_proba"):
 
-        # Aggregate absolute SHAP to per-feature importances
+            def predict_fn(X_in):
+                return np.asarray(self.model.predict_proba(np.asarray(X_in)))
+        else:
+
+            def predict_fn(X_in):
+                return np.asarray(self.model.predict(np.asarray(X_in)))
+
+        # --- Build explainer (no tree option)
+        if shap_type == "kernel":
+            # Kernel expects a background dataset (array or DataFrame), not a masker
+            # Sample a manageable background for speed
+            try:
+                bg = X if X.shape[0] <= background_size else shap.utils.sample(X, background_size, random_state=0)
+            except Exception:
+                # Fallback sampling if shap.utils.sample is unavailable
+                rng = np.random.default_rng(0)
+                idx = rng.choice(X.shape[0], size=min(background_size, X.shape[0]), replace=False)
+                bg = X[idx]
+            explainer = shap.explainers.Kernel(predict_fn, bg)
+
+        elif shap_type == "permutation":
+            explainer = shap.explainers.Permutation(predict_fn, X)
+
+        elif shap_type == "exact":
+            explainer = shap.explainers.Exact(predict_fn, X)
+
+        else:
+            raise ValueError(f"SHAP type {shap_type} not supported. Use 'kernel', 'permutation', or 'exact'.")
+
+        # --- Compute SHAP values
+        sv = explainer(X)
+        vals = np.asarray(sv.values)  # shape may be (n, f) or (n, outputs, f), etc.
+        n_features = X.shape[1]
+
+        # --- Aggregate absolute SHAP to per-feature importances
         if vals.ndim == 2 and vals.shape[1] == n_features:
             importance = np.abs(vals).mean(axis=0)
         else:
-            # Find the feature axis and average over others
             feat_axes = [i for i, d in enumerate(vals.shape) if d == n_features]
             if len(feat_axes) != 1:
                 raise ValueError(f"Unexpected SHAP values shape {vals.shape}")
             feat_axis = feat_axes[0]
-            importance = np.mean(np.abs(vals), axis=tuple(i for i in range(vals.ndim) if i != feat_axis))
+            reduce_axes = tuple(i for i in range(vals.ndim) if i != feat_axis)
+            importance = np.mean(np.abs(vals), axis=reduce_axes)
 
-        # Build importance DataFrame
-        fi_df = pd.DataFrame({"feature": data.columns.tolist(), "importance": importance})
+        # --- Build importance DataFrame
+        fi_df = pd.DataFrame({"feature": feature_names, "importance": importance})
         if not fi_df["importance"].empty:
             fi_df = fi_df[fi_df["importance"] > fi_df["importance"].max() / 1000.0]
 

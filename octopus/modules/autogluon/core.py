@@ -38,9 +38,11 @@ logger = get_logger()
 
 # TOBEDONE
 # - replace print() with logging
-# - compare ag and octopus performance calculations
-# - compare ag and octopus permutation feature importances
-# - compate speed of permutation fi calculations (octo/autogluon)
+# - autogluon example script and test file
+# - make ag use existing ray; Set RAY_ADDRESS
+#   save ray address to experiment and expose module to ray address
+
+
 class SklearnClassifier(BaseEstimator, ClassifierMixin):
     """Sklearn classifier wrapper."""
 
@@ -193,7 +195,7 @@ class AGCore:
 
     def _set_resources(self):
         """Set and validate resources."""
-        logger.set_log_group(LogGroup.PREPARE_EXECUTION)
+        logger.set_log_group(LogGroup.AUTOGLUON, f"EXP {self.experiment.experiment_id}")
 
         if self.experiment.ml_config.num_cpus == "auto":
             self.num_cpus = self.experiment.num_assigned_cpus
@@ -212,31 +214,6 @@ class AGCore:
 
     def run_experiment(self):
         """Run experiment."""
-        from octopus._optional.autogluon import (  # noqa: PLC0415
-            TabularPredictor,
-            accuracy,
-            balanced_accuracy,
-            log_loss,
-            mean_absolute_error,
-            r2,
-            roc_auc,
-            root_mean_squared_error,
-        )
-
-        # mapping of metrics
-        try:
-            metrics_inventory_autogluon = {
-                "AUCROC": roc_auc,
-                "ACC": accuracy,
-                "ACCBAL": balanced_accuracy,
-                "LOGLOSS": log_loss,
-                "MAE": mean_absolute_error,
-                "MSE": root_mean_squared_error,
-                "R2": r2,
-            }
-        except Exception as e:  # pylint: disable=W0718 # noqa: F841
-            metrics_inventory_autogluon = {}
-
         if len(self.target_assignments) == 1:
             target = next(iter(self.target_assignments.values()))
         else:
@@ -250,6 +227,7 @@ class AGCore:
             label=target,
             eval_metric=scoring_type,
             verbosity=self.experiment.ml_config.verbosity,
+            log_to_file=False,  # avoid file logs
         )
 
         # predictor fit
@@ -264,7 +242,9 @@ class AGCore:
             num_bag_folds=self.experiment.ml_config.num_bag_folds,
             included_model_types=self.experiment.ml_config.included_model_types,
         )
-        print("fitting completed")
+
+        logger.set_log_group(LogGroup.AUTOGLUON, f"EXP {self.experiment.experiment_id}")
+        logger.info("Fitting completed")
 
         # save failure info in case of crashes
         with open(self.path_results.joinpath("debug_info.txt"), "w", encoding="utf-8") as text_file:
@@ -274,13 +254,15 @@ class AGCore:
         self._save_leaderboard_info()
 
         # save results to experiment
-        self.experiment.results["Autogluon"] = ModuleResults(
+        self.experiment.results["autogluon"] = ModuleResults(
             id="autogluon",
+            experiment_id=self.experiment.experiment_id,
+            sequence_id=self.experiment.sequence_id,
             model=self._get_sklearn_model(),
             feature_importances=self._get_feature_importances(),
             scores=self._get_scores(),
             selected_features=self.feature_columns,  # no feature selection
-            predictions=self._get_predictions(),
+            predictions={"test": self._get_predictions()},
         )
 
         # return updated experiment object
@@ -297,7 +279,8 @@ class AGCore:
 
     def _get_feature_importances(self):
         """Calculate feature importances."""
-        print("Calculating test permutation feature importances...")
+        logger.set_log_group(LogGroup.AUTOGLUON, f"EXP {self.experiment.experiment_id}")
+        logger.info("Calculating test permutation feature importances...")
         fi = dict()
         # set seed
         np.random.seed(42)
@@ -314,6 +297,7 @@ class AGCore:
             silent=True,
         )
 
+        # permutation feature importances
         # Calculate group feature importances using feature_groups
         if hasattr(self.experiment, "feature_groups") and self.experiment.feature_groups:
             group_importances = {}
@@ -350,41 +334,48 @@ class AGCore:
             by="importance", ascending=False
         )
 
-        # SHAP feature importances
-        print("Calculating SHAP feature importances...")
-        if hasattr(self.experiment, "feature_groups") and self.experiment.feature_groups:
-            # Group SHAP feature importances
-            fi["octopus_shap_test"] = get_fi_group_shap(
-                experiment={
-                    "id": self.experiment.id,
-                    "model": self.model,
-                    "data_test": self.ag_test_data,
-                    "feature_columns": self.feature_columns,
-                    "ml_type": self.model.problem_type,
-                    "feature_group_dict": self.experiment.feature_groups,
-                },
-                data=None,
-                shap_type="kernel",
-            )
-        else:
-            shap_fi_df, _, _ = get_fi_shap(
-                experiment={
-                    "id": self.experiment.id,
-                    "model": self.model,
-                    "data_test": self.ag_test_data,
-                    "feature_columns": self.feature_columns,
-                    "ml_type": self.model.problem_type,
-                },
-                data=None,
-                shap_type="kernel",
-            )
-            fi["octopus_shap_test"] = shap_fi_df
-
-        # Combine all feature importances into a single dictionary
+        # only save permutation feature importances
         combined_importances = {
             "autogluon_permutation": fi["autogluon_permutation_test"].to_dict(orient="index"),
-            "octopus_shap": fi["octopus_shap_test"].to_dict(orient="records"),
         }
+
+        # shap feature importance - turned off
+        if False:
+            # SHAP feature importances
+            logger.info("Calculating SHAP feature importances...")
+            if hasattr(self.experiment, "feature_groups") and self.experiment.feature_groups:
+                # Group SHAP feature importances
+                fi["octopus_shap_test"] = get_fi_group_shap(
+                    experiment={
+                        "id": self.experiment.id,
+                        "model": self.model,
+                        "data_test": self.ag_test_data,
+                        "feature_columns": self.feature_columns,
+                        "ml_type": self.model.problem_type,
+                        "feature_group_dict": self.experiment.feature_groups,
+                    },
+                    data=None,
+                    shap_type="kernel",
+                )
+            else:
+                shap_fi_df, _, _ = get_fi_shap(
+                    experiment={
+                        "id": self.experiment.id,
+                        "model": self.model,
+                        "data_test": self.ag_test_data,
+                        "feature_columns": self.feature_columns,
+                        "ml_type": self.model.problem_type,
+                    },
+                    data=None,
+                    shap_type="kernel",
+                )
+                fi["octopus_shap_test"] = shap_fi_df
+
+            # Combine all feature importances into a single dictionary
+            combined_importances = {
+                "autogluon_permutation": fi["autogluon_permutation_test"].to_dict(orient="index"),
+                "octopus_shap": fi["octopus_shap_test"].to_dict(orient="records"),
+            }
 
         # print combined feature_importance
         with open(

@@ -200,17 +200,21 @@ class OctoManager:
         experiment = module.run_experiment()
 
         if experiment.results:
-            # save predictions
-            experiment.results["best"].create_prediction_df().to_parquet(
-                path_study_sequence.joinpath(f"predictions_{experiment.experiment_id}_{experiment.sequence_id}.parquet")
-            )
-
-            # save feature importance
-            experiment.results["best"].create_feature_importance_df().to_parquet(
-                path_study_sequence.joinpath(
-                    f"feature-importance_{experiment.experiment_id}_{experiment.sequence_id}.parquet"
+            # save predictions and feature importance for all keys
+            for key in experiment.results.keys():
+                # save predictions
+                experiment.results[key].create_prediction_df().to_parquet(
+                    path_study_sequence.joinpath(
+                        f"predictions_{experiment.experiment_id}_{experiment.sequence_id}_{key}.parquet"
+                    )
                 )
-            )
+
+                # save feature importance
+                experiment.results[key].create_feature_importance_df().to_parquet(
+                    path_study_sequence.joinpath(
+                        f"feature-importance_{experiment.experiment_id}_{experiment.sequence_id}_{key}.parquet"
+                    )
+                )
 
         experiment.to_pickle(path_save)
 

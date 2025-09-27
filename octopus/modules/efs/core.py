@@ -538,6 +538,8 @@ class EfsCore:
         # save results to experiment
         self.experiment.results["Efs"] = ModuleResults(
             id="efs",
+            experiment_id=self.experiment.experiment_id,
+            sequence_id=self.experiment.sequence_id,
             # model=None,
             # scores=scores,
             feature_importances={

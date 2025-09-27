@@ -319,6 +319,8 @@ class RfeCore:
         # save results to experiment
         self.experiment.results["Rfe"] = ModuleResults(
             id="rfe",
+            experiment_id=self.experiment.experiment_id,
+            sequence_id=self.experiment.sequence_id,
             model=best_gs_estimator,
             scores=scores,
             feature_importances={

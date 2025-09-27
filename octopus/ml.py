@@ -105,6 +105,10 @@ class OctoML:
         critical_issues = False
         warning_issues = False
 
+        # Check if report is empty (no issues detected)
+        if self.data.report.empty:
+            return
+
         df_sorted = self.data.report.sort_values(
             "Severity",
             key=lambda x: pd.Categorical(x, categories=["Info", "Warning", "Critical"], ordered=True),

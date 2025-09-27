@@ -32,8 +32,8 @@ class MetricsInventory:
             else:
                 raise UnknownMetricError(
                     f"Unknown metric '{name}'. "
-                    f"Available models are: {', '.join(list(self.metrics.keys()))}. "
-                    "Please check the model name and try again."
+                    f"Available metrics are: {', '.join(list(self.metrics.keys()))}. "
+                    "Please check the metrics name and try again."
                 )
         return self._metric_configs[name]
 

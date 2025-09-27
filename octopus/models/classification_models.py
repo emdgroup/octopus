@@ -29,6 +29,9 @@ class ExtraTreesClassifierModel:
             ml_type="classification",
             feature_method="internal",
             chpo_compatible=True,
+            scaler=None,
+            imputation_required=True,
+            categorical_enabled=False,
             hyperparameters=[
                 Hyperparameter(type="int", name="max_depth", low=2, high=32),
                 Hyperparameter(type="int", name="min_samples_split", low=2, high=100),
@@ -61,6 +64,9 @@ class HistGradientBoostingClassifierModel:
             ml_type="classification",
             feature_method="internal",
             chpo_compatible=True,
+            scaler=None,
+            imputation_required=False,
+            categorical_enabled=True,
             hyperparameters=[
                 Hyperparameter(type="float", name="learning_rate", low=0.01, high=0.3, log=True),
                 Hyperparameter(type="int", name="max_iter", low=50, high=1000),
@@ -89,6 +95,9 @@ class GradientBoostingClassifierModel:
             ml_type="classification",
             feature_method="internal",
             chpo_compatible=True,
+            scaler=None,
+            imputation_required=True,
+            categorical_enabled=False,
             hyperparameters=[
                 Hyperparameter(type="float", name="learning_rate", low=0.01, high=1, log=True),
                 Hyperparameter(type="int", name="min_samples_leaf", low=1, high=200),
@@ -116,6 +125,9 @@ class RandomForestClassifierModel:
             ml_type="classification",
             feature_method="internal",
             chpo_compatible=True,
+            scaler=None,
+            imputation_required=True,  # maybe: False - check!
+            categorical_enabled=False,
             hyperparameters=[
                 Hyperparameter(type="int", name="max_depth", low=2, high=32),
                 Hyperparameter(type="int", name="min_samples_split", low=2, high=100),
@@ -142,6 +154,9 @@ class XGBClassifierModel:
             ml_type="classification",
             feature_method="internal",
             chpo_compatible=True,
+            scaler=None,
+            imputation_required=False,
+            categorical_enabled=False,  # Maybe True - check!
             hyperparameters=[
                 Hyperparameter(type="float", name="learning_rate", low=1e-4, high=0.3, log=True),
                 Hyperparameter(type="int", name="min_child_weight", low=2, high=15),
@@ -168,6 +183,9 @@ class CatBoostClassifierModel:
             ml_type="classification",
             feature_method="internal",
             chpo_compatible=True,
+            scaler=None,
+            imputation_required=False,
+            categorical_enabled=True,
             hyperparameters=[
                 Hyperparameter(type="float", name="learning_rate", low=1e-2, high=1e-1, log=True),
                 Hyperparameter(type="int", name="depth", low=3, high=10),
@@ -181,8 +199,8 @@ class CatBoostClassifierModel:
                     choices=[None, "Balanced"],
                 ),
                 Hyperparameter(type="fixed", name="allow_writing_files", value=False),
-                # Hyperparameter(type="fixed", name="verbose", value=250),
                 Hyperparameter(type="fixed", name="logging_level", value="Silent"),
+                Hyperparameter(type="fixed", name="verbose", value=False),
                 Hyperparameter(type="fixed", name="thread_count", value=1),
                 Hyperparameter(type="fixed", name="task_type", value="CPU"),
             ],
@@ -205,6 +223,9 @@ class LogisticRegressionClassifierModel:
             feature_method="permutation",
             n_repeats=2,
             chpo_compatible=True,
+            scaler="StandardScaler",
+            imputation_required=True,
+            categorical_enabled=False,
             hyperparameters=[
                 Hyperparameter(type="int", name="max_iter", low=100, high=500),
                 Hyperparameter(type="float", name="C", low=1e-2, high=100, log=True),
@@ -228,13 +249,16 @@ class TabPFNClassifierModel:
         """Get model config."""
         from octopus._optional.tabpfn import TabPFNClassifier  # noqa: PLC0415
 
-        ModelConfig(
+        return ModelConfig(
             name="TabPFNClassifier",
             model_class=TabPFNClassifier,
             ml_type="classification",
             feature_method="constant",  # constant FI, disable constraint HPO
             n_repeats=2,
             chpo_compatible=True,
+            scaler="StandardScaler",
+            imputation_required=False,
+            categorical_enabled=True,
             hyperparameters=[
                 Hyperparameter(type="fixed", name="n_estimators", value=4),
                 Hyperparameter(type="fixed", name="softmax_temperature", value=0.9),
@@ -264,6 +288,9 @@ class GaussianProcessClassifierModel:
             feature_method="permutation",
             n_repeats=2,
             chpo_compatible=False,
+            scaler="StandardScaler",
+            imputation_required=True,
+            categorical_enabled=False,
             hyperparameters=[
                 Hyperparameter(
                     type="categorical",

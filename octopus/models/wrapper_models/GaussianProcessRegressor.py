@@ -9,8 +9,10 @@ from sklearn.gaussian_process.kernels import RBF, Kernel, Matern, RationalQuadra
 from sklearn.utils.validation import check_array, check_is_fitted, check_X_y
 
 
-class GPRegressorWrapper(BaseEstimator, RegressorMixin):
+class GPRegressorWrapper(RegressorMixin, BaseEstimator):
     """Wrapper for Gaussian Process Regressor."""
+
+    _estimator_type = "regressor"
 
     def __init__(
         self,
@@ -31,16 +33,8 @@ class GPRegressorWrapper(BaseEstimator, RegressorMixin):
         self.random_state = random_state
 
     def fit(self, X: Any, y: Any) -> "GPRegressorWrapper":
-        """Fit the Gaussian Process model.
-
-        Args:
-            X: Training data.
-            y: Target values.
-
-        Returns:
-            Fitted model.
-        """
-        X, y = check_X_y(X, y)
+        """Fit the Gaussian Process model."""
+        X, y = check_X_y(X, y, y_numeric=True)
         kernel = self._get_kernel(self.kernel)
         self.model_ = GaussianProcessRegressor(
             kernel=kernel,
@@ -55,31 +49,13 @@ class GPRegressorWrapper(BaseEstimator, RegressorMixin):
         return self
 
     def predict(self, X: Any) -> Any:
-        """Predict using the Gaussian Process model.
-
-        Args:
-            X: Input data.
-
-        Returns:
-            Predicted values.
-        """
+        """Predict using the Gaussian Process model."""
         check_is_fitted(self, "model_")
         X = check_array(X)
         return self.model_.predict(X)
 
     def _get_kernel(self, kernel_str: str | Kernel) -> Kernel:
-        """Get the kernel object based on the kernel string.
-
-        Args:
-            kernel_str: Kernel string or object.
-
-        Returns:
-            Kernel object.
-
-        Raises:
-            ValueError: If any kernel is not known.
-
-        """
+        """Get the kernel object based on the kernel string."""
         if isinstance(kernel_str, Kernel):
             return kernel_str
         elif kernel_str == "RBF":
@@ -90,36 +66,3 @@ class GPRegressorWrapper(BaseEstimator, RegressorMixin):
             return RationalQuadratic()
         else:
             raise ValueError(f"Unknown kernel: {kernel_str}")
-
-    def get_params(self, deep: bool = True) -> dict[str, Any]:
-        """Get parameters for this estimator.
-
-        Args:
-            deep: Whether to return the parameters for this estimator and
-                contained subobjects.
-
-        Returns:
-            Parameter names mapped to their values.
-        """
-        return {
-            "kernel": self.kernel,
-            "alpha": self.alpha,
-            "optimizer": self.optimizer,
-            "n_restarts_optimizer": self.n_restarts_optimizer,
-            "normalize_y": self.normalize_y,
-            "copy_X_train": self.copy_X_train,
-            "random_state": self.random_state,
-        }
-
-    def set_params(self, **params: Any) -> "GPRegressorWrapper":
-        """Set the parameters of this estimator.
-
-        Args:
-            **params: Estimator parameters.
-
-        Returns:
-            Estimator instance.
-        """
-        for param, value in params.items():
-            setattr(self, param, value)
-        return self

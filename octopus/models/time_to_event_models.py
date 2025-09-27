@@ -21,6 +21,9 @@ class ExtraTreesSurvModel:
             feature_method="permutation",
             n_repeats=2,
             chpo_compatible=True,
+            scaler=None,
+            imputation_required=True,
+            categorical_enabled=False,
             hyperparameters=[
                 Hyperparameter(type="int", name="max_depth", low=2, high=32),
                 Hyperparameter(type="int", name="min_samples_split", low=2, high=100),

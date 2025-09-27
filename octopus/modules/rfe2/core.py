@@ -172,6 +172,8 @@ class Rfe2Core(OctoCore):
         best_model = selected_row["model"]
         self.experiment.results["Rfe2"] = ModuleResults(
             id="rfe2",
+            experiment_id=self.experiment.experiment_id,
+            sequence_id=self.experiment.sequence_id,
             model=best_model,
             scores=best_model.get_scores(),
             feature_importances={

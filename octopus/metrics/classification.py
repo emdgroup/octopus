@@ -1,14 +1,15 @@
 """Classification metrics."""
 
-import numpy as np
 from sklearn.metrics import (
     accuracy_score,
-    auc,
+    average_precision_score,
     balanced_accuracy_score,
     brier_score_loss,
     f1_score,
     log_loss,
-    precision_recall_curve,
+    matthews_corrcoef,
+    precision_score,
+    recall_score,
     roc_auc_score,
 )
 
@@ -29,6 +30,7 @@ class AUCROCMetric:
             ml_type="classification",
             higher_is_better=True,
             prediction_type="predict_proba",
+            scorer_string="roc_auc",
         )
 
 
@@ -45,6 +47,7 @@ class ACCMetric:
             ml_type="classification",
             higher_is_better=True,
             prediction_type="predict",
+            scorer_string="accuracy",
         )
 
 
@@ -61,6 +64,7 @@ class ACCBALMetric:
             ml_type="classification",
             higher_is_better=True,
             prediction_type="predict",
+            scorer_string="balanced_accuracy",
         )
 
 
@@ -77,6 +81,7 @@ class LOGLOSSMetric:
             ml_type="classification",
             higher_is_better=True,
             prediction_type="predict_proba",
+            scorer_string="neg_log_loss",
         )
 
 
@@ -93,6 +98,7 @@ class F1Metric:
             ml_type="classification",
             higher_is_better=True,
             prediction_type="predict",
+            scorer_string="f1",
         )
 
 
@@ -109,6 +115,7 @@ class NEGBRIERSCOREMetric:
             ml_type="classification",
             higher_is_better=True,
             prediction_type="predict_proba",
+            scorer_string="neg_brier_score",
         )
 
 
@@ -116,23 +123,67 @@ class NEGBRIERSCOREMetric:
 class AUCPRMetric:
     """AUCPR metric class."""
 
-    def _auc_pr(y_true: np.ndarray | list, y_score: np.ndarray | list) -> float:
-        """Calculate the Area Under the Precision-Recall Curve (AUC-PR)."""
-        # Compute precision-recall pairs for different probability thresholds
-        precision, recall, _ = precision_recall_curve(y_true, y_score)
-        # Compute the area under the precision-recall curve using the trapezoidal rule
-        auc_score = auc(recall, precision)
-        return auc_score
-
     @staticmethod
     def get_metric_config():
         """Create metric config."""
         return MetricConfig(
             name="AUCPR",
-            metric_function=AUCPRMetric._auc_pr,
+            metric_function=average_precision_score,
             ml_type="classification",
             higher_is_better=True,
             prediction_type="predict_proba",
+            scorer_string="average_precision",
+        )
+
+
+@MetricRegistry.register("MCC")
+class MCCMetric:
+    """Matthews Correlation Coefficient metric class."""
+
+    @staticmethod
+    def get_metric_config():
+        """Create metric config."""
+        return MetricConfig(
+            name="MCC",
+            metric_function=matthews_corrcoef,
+            ml_type="classification",
+            higher_is_better=True,
+            prediction_type="predict",
+            scorer_string="matthews_corrcoef",
+        )
+
+
+@MetricRegistry.register("PRECISION")
+class PRECISIONMetric:
+    """Precision metric class."""
+
+    @staticmethod
+    def get_metric_config():
+        """Create metric config."""
+        return MetricConfig(
+            name="PRECISION",
+            metric_function=precision_score,
+            ml_type="classification",
+            higher_is_better=True,
+            prediction_type="predict",
+            scorer_string="precision",
+        )
+
+
+@MetricRegistry.register("RECALL")
+class RECALLMetric:
+    """Recall metric class."""
+
+    @staticmethod
+    def get_metric_config():
+        """Create metric config."""
+        return MetricConfig(
+            name="RECALL",
+            metric_function=recall_score,
+            ml_type="classification",
+            higher_is_better=True,
+            prediction_type="predict",
+            scorer_string="recall",
         )
 
 
@@ -143,5 +194,8 @@ __all__ = [
     "AUCROCMetric",
     "F1Metric",
     "LOGLOSSMetric",
+    "MCCMetric",
     "NEGBRIERSCOREMetric",
+    "PRECISIONMetric",
+    "RECALLMetric",
 ]

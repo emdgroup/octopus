@@ -70,16 +70,16 @@ class OctoDataPreparator:
 
     def _remove_singlevalue_features(self):
         """Remove features that contain only a single unique value."""
-        num_original_features = len(self.feature_columns)
+        original_features = self.feature_columns.copy()
 
+        # Keep only features with more than one unique value
         self.feature_columns = [feature for feature in self.feature_columns if self.data[feature].nunique() > 1]
-        num_new_features = len(self.feature_columns)
 
-        if num_original_features > num_new_features:
-            logger.info(
-                "Removed %d features due to single unique values.",
-                num_original_features - num_new_features,
-            )
+        # Calculate removed features
+        removed_features = list(set(original_features) - set(self.feature_columns))
+
+        if removed_features:
+            logger.info(f"Removed {len(removed_features)} features due to single unique values: {removed_features}")
 
     def _transform_bool_to_int(self):
         """Convert all boolean columns to integer."""

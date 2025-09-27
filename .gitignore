@@ -1,6 +1,7 @@
 # local directories
 datasets_local/
 studies/
+AutogluonModels/
 
 # macOS
 .DS_Store

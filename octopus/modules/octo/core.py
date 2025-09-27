@@ -256,6 +256,8 @@ class OctoCore:
         # save best bag and results to experiment
         self.experiment.results["ensel"] = ModuleResults(
             id="ensel",
+            experiment_id=self.experiment.experiment_id,
+            sequence_id=self.experiment.sequence_id,
             model=ensel_bag,
             scores=ensel_scores,
             feature_importances=ensel_bag_fi,
@@ -327,6 +329,8 @@ class OctoCore:
         # save best bag and results to experiment
         self.experiment.results["best"] = ModuleResults(
             id="best",
+            experiment_id=self.experiment.experiment_id,
+            sequence_id=self.experiment.sequence_id,
             model=best_bag,
             scores=best_bag_scores,
             feature_importances=best_bag_fi,

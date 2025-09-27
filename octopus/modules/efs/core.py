@@ -19,18 +19,9 @@ from sklearn.model_selection import (
 
 from octopus.experiment import OctoExperiment
 from octopus.metrics import metrics_inventory
+from octopus.metrics.inventory import MetricsInventory
 from octopus.models.inventory import ModelInventory
 from octopus.results import ModuleResults
-
-scorer_string_inventory = {
-    "AUCROC": "roc_auc",
-    "ACC": "accuracy",
-    "ACCBAL": "balanced_accuracy",
-    "LOGLOSS": "neg_log_loss",
-    "MAE": "neg_mean_absolute_error",
-    "MSE": "neg_mean_squared_error",
-    "R2": "r2",
-}
 
 supported_models = {
     "CatBoostClassifier",
@@ -268,7 +259,10 @@ class EfsCore:
 
         # set up model and scoring type
         model = ModelInventory().get_model_instance(model_type, {"random_state": 42})
-        scoring_type = scorer_string_inventory[self.target_metric]
+        # Get scorer string from metrics inventory
+        metrics_inventory = MetricsInventory()
+        metric_config = metrics_inventory.get_metric_config(self.target_metric)
+        scoring_type = metric_config.scorer_string
 
         # needs general improvements (consider groups and stratification column)
         stratification_column = self.experiment.stratification_column
@@ -544,6 +538,8 @@ class EfsCore:
         # save results to experiment
         self.experiment.results["Efs"] = ModuleResults(
             id="efs",
+            experiment_id=self.experiment.experiment_id,
+            sequence_id=self.experiment.sequence_id,
             # model=None,
             # scores=scores,
             feature_importances={

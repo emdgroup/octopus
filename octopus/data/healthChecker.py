@@ -121,7 +121,7 @@ class OctoDataHealthChecker:
                 category="rows",
                 issue_type="high_missing_values",
                 affected_items=[str(idx) for idx in high_missing_rows.index],
-                severity="high",
+                severity="Critical",
                 description=(f"{len(high_missing_rows)} rows have more than 10% missing values."),
                 action=("Consider removing these rows or using advanced imputation techniques."),
             )

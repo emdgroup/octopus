@@ -37,8 +37,6 @@ logger = get_logger()
 
 
 # TOBEDONE
-# - replace print() with logging
-# - autogluon example script and test file
 # - make ag use existing ray; Set RAY_ADDRESS
 #   save ray address to experiment and expose module to ray address
 

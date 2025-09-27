@@ -1,5 +1,9 @@
 """Test metrics coverage between octopus metrics and autogluon metrics inventory."""
 
+import importlib.util
+import sys
+from pathlib import Path
+
 import pytest
 
 from octopus.metrics.inventory import MetricsInventory
@@ -13,9 +17,6 @@ class TestAutogluonMetricsCoverage:
         self.metrics_inventory = MetricsInventory()
 
         # Get autogluon metrics inventory from octopus autogluon module
-        import importlib.util
-        import sys
-        from pathlib import Path
 
         # Get the path to the autogluon core module
         autogluon_core_path = (

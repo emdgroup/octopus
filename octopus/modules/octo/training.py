@@ -1,7 +1,9 @@
 """Octo Training."""
 
 import copy
+import gzip
 import math
+import pickle
 
 import numpy as np
 import pandas as pd
@@ -793,9 +795,13 @@ class Training:
         x_processed = self.preprocessing_pipeline.transform(x)
         return self.model.predict_proba(x_processed)
 
-    def to_pickle(self, path):
-        """Save training."""
+    def to_pickle(self, file_path: str) -> None:
+        """Save object to a compressed pickle file."""
+        with gzip.GzipFile(file_path, "wb") as file:
+            pickle.dump(self, file)
 
     @classmethod
-    def from_pickle(cls, path):
-        """Load training."""
+    def from_pickle(cls, file_path: str) -> "Training":
+        """Load object from a compressed pickle file."""
+        with gzip.GzipFile(file_path, "rb") as file:
+            return pickle.load(file)

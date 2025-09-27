@@ -285,6 +285,8 @@ class SfsCore:
         # save results to experiment
         self.experiment.results["Sfs"] = ModuleResults(
             id="SFS",
+            experiment_id=self.experiment.experiment_id,
+            sequence_id=self.experiment.sequence_id,
             model=best_gs_estimator,
             scores=scores,
             feature_importances={

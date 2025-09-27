@@ -7,6 +7,9 @@ from sklearn.metrics import (
     brier_score_loss,
     f1_score,
     log_loss,
+    matthews_corrcoef,
+    precision_score,
+    recall_score,
     roc_auc_score,
 )
 
@@ -133,6 +136,57 @@ class AUCPRMetric:
         )
 
 
+@MetricRegistry.register("MCC")
+class MCCMetric:
+    """Matthews Correlation Coefficient metric class."""
+
+    @staticmethod
+    def get_metric_config():
+        """Create metric config."""
+        return MetricConfig(
+            name="MCC",
+            metric_function=matthews_corrcoef,
+            ml_type="classification",
+            higher_is_better=True,
+            prediction_type="predict",
+            scorer_string="matthews_corrcoef",
+        )
+
+
+@MetricRegistry.register("PRECISION")
+class PRECISIONMetric:
+    """Precision metric class."""
+
+    @staticmethod
+    def get_metric_config():
+        """Create metric config."""
+        return MetricConfig(
+            name="PRECISION",
+            metric_function=precision_score,
+            ml_type="classification",
+            higher_is_better=True,
+            prediction_type="predict",
+            scorer_string="precision",
+        )
+
+
+@MetricRegistry.register("RECALL")
+class RECALLMetric:
+    """Recall metric class."""
+
+    @staticmethod
+    def get_metric_config():
+        """Create metric config."""
+        return MetricConfig(
+            name="RECALL",
+            metric_function=recall_score,
+            ml_type="classification",
+            higher_is_better=True,
+            prediction_type="predict",
+            scorer_string="recall",
+        )
+
+
 __all__ = [
     "ACCBALMetric",
     "ACCMetric",
@@ -140,5 +194,8 @@ __all__ = [
     "AUCROCMetric",
     "F1Metric",
     "LOGLOSSMetric",
+    "MCCMetric",
     "NEGBRIERSCOREMetric",
+    "PRECISIONMetric",
+    "RECALLMetric",
 ]

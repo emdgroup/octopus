@@ -18,6 +18,7 @@ class LogGroup(Enum):
     TRAINING = auto()
     SCORES = auto()
     RESULTS = auto()
+    AUTOGLUON = auto()
 
 
 class ContextualFilter(logging.Filter):

@@ -13,6 +13,7 @@ Usage:
     pytest tests/modules/octo/test_model_fitted_validation.py -v
 """
 
+import sys
 import time
 import warnings
 
@@ -115,7 +116,7 @@ def get_model_configs():
 
 def get_default_model_params(model_name: str) -> dict:
     """Get default parameters for a model from its hyperparameter configuration.
-    
+
     This function should replicate the exact same parameter handling as the real octopus framework
     to ensure test results match real-world behavior.
     """
@@ -325,16 +326,19 @@ def _test_model_fitted_validation(training: Training, model_name: str) -> dict:
 
 def _display_model_info(model_name: str, model_params: dict, verbose: bool = False):
     """Display detailed model information and hyperparameters.
-    
+
     Args:
         model_name: Name of the model
         model_params: Model parameters dictionary
         verbose: If True, display detailed information. If False, display minimal info.
+
+    Returns:
+        None: This function only prints information and does not return a value.
     """
     if not verbose:
         # Minimal output for pytest runs
         return
-        
+
     try:
         inventory = ModelInventory()
         model_config = inventory.get_model_config(model_name)
@@ -399,7 +403,6 @@ def _display_model_info(model_name: str, model_params: dict, verbose: bool = Fal
 
 def _is_running_standalone():
     """Check if the script is being run standalone (python script.py) vs pytest."""
-    import sys
     return __name__ == "__main__" or "pytest" not in sys.modules
 
 
@@ -467,9 +470,8 @@ class TestModelFittedValidation:
                 print(f"  ... and {len(failed_tests) - 10} more")
 
         # Assert that ALL models should work - configuration issues should cause test failure
-        assert len(failed_tests) == 0, (
-            f"Classification model configuration/validation failures detected:\n" + 
-            "\n".join(f"  - {failure}" for failure in failed_tests)
+        assert len(failed_tests) == 0, "Classification model configuration/validation failures detected:\n" + "\n".join(
+            f"  - {failure}" for failure in failed_tests
         )
 
     def test_regression_models_fitted_validation(self, test_data, feature_config):
@@ -649,9 +651,8 @@ class TestModelFittedValidation:
         print(f"  Success rate: {successful_tests / total_tests * 100:.1f}%")
 
         # Assert that ALL models should work - configuration issues should cause test failure
-        assert len(failed_tests) == 0, (
-            f"Model configuration/validation failures detected:\n" + 
-            "\n".join(f"  - {failure}" for failure in failed_tests)
+        assert len(failed_tests) == 0, "Model configuration/validation failures detected:\n" + "\n".join(
+            f"  - {failure}" for failure in failed_tests
         )
 
 

@@ -67,6 +67,7 @@ config_sequence = ConfigSequence(
             ],
             inner_parallelization=True,
             n_trials=1,
+            fi_methods_bestbag=["constant"],
         )
     ]
 )

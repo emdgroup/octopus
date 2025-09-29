@@ -35,7 +35,6 @@ class ObjectiveOptuna:
         self.n_save_trials = self.experiment.ml_config.ensel_n_save_trials
         # parameters potentially used for optimizations
         self.ml_model_types = self.experiment.ml_config.models
-        self.dim_red_methods = self.experiment.ml_config.dim_red_methods
         self.max_outl = self.experiment.ml_config.max_outl
         self.max_features = self.experiment.ml_config.max_features
         self.penalty_factor = self.experiment.ml_config.penalty_factor
@@ -59,13 +58,7 @@ class ObjectiveOptuna:
             in fixed model specific parameters
         """
         # get non-model parameters
-        # (1) dimension reduction
-        if len(self.dim_red_methods) > 1:
-            dim_reduction = trial.suggest_categorical(name="dim_red_method", choices=self.dim_red_methods)
-        else:
-            dim_reduction = self.dim_red_methods[0]
-
-        # (2) ml_model_type
+        # (1) ml_model_type
         if len(self.ml_model_types) > 1:
             ml_model_type = trial.suggest_categorical(name="ml_model_type", choices=self.ml_model_types)
         else:
@@ -102,7 +95,6 @@ class ObjectiveOptuna:
         )
 
         config_training = {
-            "dim_reduction": dim_reduction,
             "outl_reduction": num_outl,
             "n_input_features": len(feature_columns),
             "ml_model_type": ml_model_type,

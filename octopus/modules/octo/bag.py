@@ -97,17 +97,37 @@ class Bag:
     def _train_sequential(self):
         """Run trainings sequentially in the current process."""
         successful_trainings = []
+        failed_trainings = []
+
         for idx, training in enumerate(self.trainings):
+            training_id = getattr(training, "training_id", idx)
             try:
                 training.fit()
                 successful_trainings.append(training)
                 logger.info(
-                    f"Inner sequential training completed for bag_id {self.bag_id} and training id {getattr(training, 'training_id', idx)}"
+                    f"Inner sequential training completed for bag_id {self.bag_id} and training id {training_id}"
                 )
             except Exception as e:  # pylint: disable=broad-except
-                logger.info(
-                    f"Error during training {getattr(training, 'training_id', idx)}: {e}, type: {type(e).__name__}"
+                failed_trainings.append((training_id, str(e), type(e).__name__))
+                logger.error(
+                    f"Training failed for bag_id {self.bag_id}, training_id {training_id}: {e}, type: {type(e).__name__}"
                 )
+
+        # Log summary of training results
+        total_trainings = len(self.trainings)
+        successful_count = len(successful_trainings)
+        failed_count = len(failed_trainings)
+
+        logger.info(
+            f"Bag {self.bag_id} training summary: {successful_count}/{total_trainings} successful, "
+            f"{failed_count} failed"
+        )
+
+        if failed_trainings:
+            logger.warning(f"Failed trainings in bag {self.bag_id}:")
+            for training_id, error_msg, error_type in failed_trainings:
+                logger.warning(f"  - Training {training_id}: {error_type} - {error_msg}")
+
         self.trainings = successful_trainings
 
     def fit(self):
@@ -123,6 +143,10 @@ class Bag:
         n_feat_lst = list()
         for training in self.trainings:
             n_feat_lst.append(float(len(training.features_used)))
+
+        if not n_feat_lst:
+            raise ValueError(f"Empty feature list in bag: '{self.bag_id}'.")
+
         self.n_features_used_mean = mean(n_feat_lst)
 
     def get_predictions(self):

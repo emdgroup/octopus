@@ -2,6 +2,7 @@
 datasets_local/
 studies/
 AutogluonModels/
+catboost_info/
 
 # macOS
 .DS_Store
@@ -48,6 +49,7 @@ htmlcov
 *.log
 *.parquet
 *.csv
+*.tsv
 *.db
 *.db-journal
 *.json
@@ -55,3 +57,4 @@ htmlcov
 *.gz
 *.tar
 *.pem
+*.tfevents

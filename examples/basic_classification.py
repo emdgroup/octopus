@@ -16,7 +16,7 @@ from octopus.modules import Octo
 
 # Check if this is a smoke test
 SMOKE_TEST = os.environ.get("SMOKE_TEST", "").lower() in ["true", "1", "yes"]
-N_TRIALS = 5 if SMOKE_TEST else 50
+N_TRIALS = 5 if SMOKE_TEST else 5
 
 ### Load and Preprocess Data
 
@@ -60,7 +60,7 @@ config_study = ConfigStudy(
     silently_overwrite_study=True,
 )
 
-config_manager = ConfigManager(outer_parallelization=True, run_single_experiment_num=-1)
+config_manager = ConfigManager(outer_parallelization=True, run_single_experiment_num=0)
 
 config_sequence = ConfigSequence(
     sequence_items=[
@@ -69,10 +69,10 @@ config_sequence = ConfigSequence(
             sequence_id=0,
             models=[
                 "CatBoostClassifier",
-                "XGBClassifier",
-                "RandomForestClassifier",
-                "ExtraTreesClassifier",
-                "RandomForestClassifier",
+                # "XGBClassifier",
+                # "RandomForestClassifier",
+                # "ExtraTreesClassifier",
+                # "RandomForestClassifier",
             ],
             n_trials=N_TRIALS,
         )

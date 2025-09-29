@@ -7,13 +7,17 @@ import logging
 import subprocess
 import sys
 from pathlib import Path
-from typing import List
 
 from tabpfn.model_loading import _user_cache_dir
 
 
-def download_with_curl(base_url: str, model_files: List[str], download_dir: Path) -> tuple[int, int]:
+def download_with_curl(base_url: str, model_files: list[str], download_dir: Path) -> tuple[int, int]:
     """Download models using curl from Google Storage (Script 2 approach).
+
+    Args:
+        base_url: Base URL for downloading models
+        model_files: List of model file names to download
+        download_dir: Directory path where models will be saved
 
     Returns:
         tuple: (success_count, fail_count)
@@ -94,8 +98,6 @@ def download_with_tabpfn_builtin(cache_dir: Path, timeout: int = 600) -> bool:
         logger.info(f"Attempting to download models using TabPFN's built-in function (timeout: {timeout}s)...")
 
         # Use subprocess with timeout to handle the download
-        import subprocess
-        import sys
 
         # Create a temporary script to run the download with timeout
         result = subprocess.run(
@@ -130,7 +132,7 @@ def download_with_tabpfn_builtin(cache_dir: Path, timeout: int = 600) -> bool:
 
 
 def main() -> None:
-    """Combined TabPFN model downloader with fallback options."""
+    """Combine TabPFN model downloader with fallback options."""
     # Parse command-line arguments
     parser = argparse.ArgumentParser(description="Download all TabPFN models with fallback options.")
     parser.add_argument(

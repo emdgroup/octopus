@@ -36,7 +36,7 @@ class ConfigStudy:
 
     ml_type: str = field(
         validator=[
-            validators.in_(["classification", "regression", "timetoevent"]),
+            validators.in_(["classification", "multiclass", "regression", "timetoevent"]),
         ]
     )
     """The type of machine learning model.

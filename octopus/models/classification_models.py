@@ -1,7 +1,5 @@
 """Classification models."""
 
-import os
-
 from catboost import CatBoostClassifier
 from sklearn.ensemble import (
     ExtraTreesClassifier,
@@ -16,8 +14,6 @@ from .config import ModelConfig
 from .hyperparameter import Hyperparameter
 from .registry import ModelRegistry
 from .wrapper_models.GaussianProcessClassifier import GPClassifierWrapper
-
-os.environ["TABPFN_MODEL_CACHE_DIR"] = "/home/ec2-user/.cache/tabpfn"
 
 
 @ModelRegistry.register("ExtraTreesClassifier")

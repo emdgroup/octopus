@@ -55,9 +55,6 @@ class Octo(BaseSequenceItem):
     n_jobs: int = field(validator=[validators.instance_of(int)], default=Factory(lambda: 1))
     """Number of CPUs used for every model training."""
 
-    dim_red_methods: list = field(default=Factory(lambda: [""]))
-    """Methods for dimension reduction."""
-
     max_outl: int = field(validator=[validators.instance_of(int)], default=Factory(lambda: 3))
     """Maximum number of outliers, optimized by Optuna"""
 
@@ -69,8 +66,8 @@ class Octo(BaseSequenceItem):
         ),
     )
 
-    inner_parallelization: bool = field(validator=[validators.instance_of(bool)], default=Factory(lambda: False))
-    """Enable inner paralization. Defaults is False."""
+    inner_parallelization: bool = field(validator=[validators.instance_of(bool)], default=Factory(lambda: True))
+    """Enable inner paralization. Defaults is True."""
 
     n_workers: int = field(default=Factory(lambda: None))
     """Number of workers."""

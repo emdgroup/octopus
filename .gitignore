@@ -24,6 +24,10 @@ build
 # VSCode
 .vscode
 
+# Virtual environments
+.venv
+.env
+
 # Testing
 .tox
 .coverage
@@ -47,3 +51,7 @@ htmlcov
 *.db
 *.db-journal
 *.json
+*.zip
+*.gz
+*.tar
+*.pem

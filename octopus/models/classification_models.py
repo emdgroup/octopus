@@ -200,7 +200,6 @@ class CatBoostClassifierModel:
                 ),
                 Hyperparameter(type="fixed", name="allow_writing_files", value=False),
                 Hyperparameter(type="fixed", name="logging_level", value="Silent"),
-                Hyperparameter(type="fixed", name="verbose", value=False),
                 Hyperparameter(type="fixed", name="thread_count", value=1),
                 Hyperparameter(type="fixed", name="task_type", value="CPU"),
             ],
@@ -248,6 +247,7 @@ class TabPFNClassifierModel:
     def get_model_config():
         """Get model config."""
         from octopus._optional.tabpfn import TabPFNClassifier  # noqa: PLC0415
+        from octopus._optional.tabpfn_utils import get_tabpfn_model_path  # noqa: PLC0415
 
         return ModelConfig(
             name="TabPFNClassifier",
@@ -268,6 +268,7 @@ class TabPFNClassifierModel:
                 Hyperparameter(type="fixed", name="ignore_pretraining_limits", value=False),
                 Hyperparameter(type="fixed", name="fit_mode", value="fit_preprocessors"),
                 Hyperparameter(type="fixed", name="memory_saving_mode", value="auto"),
+                Hyperparameter(type="fixed", name="model_path", value=get_tabpfn_model_path("classifier")),
             ],
             n_jobs="n_jobs",
             model_seed="random_state",

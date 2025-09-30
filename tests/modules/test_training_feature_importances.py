@@ -162,13 +162,8 @@ def get_default_model_params(model_name: str) -> dict:
     if model_config.model_seed:
         params[model_config.model_seed] = 42  # Fixed seed for reproducibility
 
-    # Special handling for CatBoost models - remove conflicting verbose parameters
-    if "CatBoost" in model_name:
-        # Keep only the logging_level parameter and remove others
-        verbose_params = ["verbose", "verbose_eval", "silent"]
-        for param in verbose_params:
-            if param in params:
-                del params[param]
+    # DO NOT modify parameters for any model - let the real configuration issues surface
+    # This ensures the test detects the same issues as the real framework
 
     return params
 
@@ -567,7 +562,36 @@ def run_comprehensive_feature_importance_tests():
     print()
     print("=" * 80)
 
-    return results, summary_stats
+    # Final assessment summary
+    failed_tests = []
+    for ml_results in results.values():
+        for model_name, model_results in ml_results.items():
+            for method_name, method_result in model_results.items():
+                if not method_result.get("success", False):
+                    failed_tests.append(f"{model_name}/{method_name}: {method_result.get('error', 'Unknown error')}")
+
+    print("FINAL ASSESSMENT:")
+    print("=" * 80)
+    if len(failed_tests) == 0:
+        print("✅ ALL TESTS PASSED - No feature importance test failures detected")
+        print(f"   Successfully tested {successful_tests}/{total_tests} feature importance methods")
+    else:
+        print("❌ TESTS FAILED - Feature importance test failures detected")
+        print(f"   Failed: {len(failed_tests)} tests")
+        print(f"   Passed: {successful_tests} tests")
+        print(f"   Total: {total_tests} tests")
+        print("\nFailed Tests:")
+        for i, failure in enumerate(failed_tests, 1):
+            # Truncate very long error messages for readability
+            if len(failure) > 100:
+                truncated_failure = failure[:97] + "..."
+            else:
+                truncated_failure = failure
+            print(f"   {i:2d}. {truncated_failure}")
+
+    print("=" * 80)
+
+    return results, summary_stats, len(failed_tests) == 0
 
 
 # ============================================================================
@@ -632,4 +656,7 @@ if __name__ == "__main__":
         sys.exit(result.returncode)
     else:
         # Run standalone
-        results, summary_stats = run_comprehensive_feature_importance_tests()
+        results, summary_stats, all_passed = run_comprehensive_feature_importance_tests()
+
+        # Exit with appropriate code based on test results
+        sys.exit(0 if all_passed else 1)

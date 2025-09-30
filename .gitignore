@@ -2,6 +2,7 @@
 datasets_local/
 studies/
 AutogluonModels/
+catboost_info/
 
 # macOS
 .DS_Store
@@ -24,6 +25,10 @@ build
 # VSCode
 .vscode
 
+# Virtual environments
+.venv
+.env
+
 # Testing
 .tox
 .coverage
@@ -44,6 +49,12 @@ htmlcov
 *.log
 *.parquet
 *.csv
+*.tsv
 *.db
 *.db-journal
 *.json
+*.zip
+*.gz
+*.tar
+*.pem
+*.tfevents

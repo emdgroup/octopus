@@ -4,9 +4,27 @@ channels:
 dependencies:
   - _libgcc_mutex=0.1=conda_forge
   - _openmp_mutex=4.5=2_gnu
+  - _python_abi3_support=1.0=hd8ed1ab_2
+  - asttokens=3.0.0=pyhd8ed1ab_1
   - bzip2=1.0.8=hda65f42_8
   - ca-certificates=2025.8.3=hbd8a1cb_0
+  - comm=0.2.3=pyhe01879c_0
+  - cpython=3.12.11=py312hd8ed1ab_0
+  - debugpy=1.8.16=py312h8285ef7_1
+  - decorator=5.2.1=pyhd8ed1ab_0
+  - exceptiongroup=1.3.0=pyhd8ed1ab_0
+  - executing=2.2.1=pyhd8ed1ab_0
+  - importlib-metadata=8.7.0=pyhe01879c_1
+  - ipykernel=6.30.1=pyh82676e8_0
+  - ipython=9.5.0=pyhfa0c392_0
+  - ipython_pygments_lexers=1.1.1=pyhd8ed1ab_0
+  - jedi=0.19.2=pyhd8ed1ab_1
+  - jupyter_client=8.6.3=pyhd8ed1ab_1
+  - jupyter_core=5.8.1=pyh31011fe_0
+  - keyutils=1.6.3=hb9d3cd8_0
+  - krb5=1.21.3=h659f571_0
   - ld_impl_linux-64=2.44=h1423503_1
+  - libedit=3.1.20250104=pl5321h7949ede_0
   - libexpat=2.7.1=hecca717_0
   - libffi=3.4.6=h2dba641_1
   - libgcc=15.1.0=h767d61c_5
@@ -14,18 +32,45 @@ dependencies:
   - libgomp=15.1.0=h767d61c_5
   - liblzma=5.8.1=hb9d3cd8_2
   - libnsl=2.0.1=hb9d3cd8_1
+  - libsodium=1.0.20=h4ab18f5_0
   - libsqlite=3.50.4=h0c1763c_0
+  - libstdcxx=15.1.0=h8f9b012_5
+  - libstdcxx-ng=15.1.0=h4852527_5
   - libuuid=2.41.1=he9a06e4_0
   - libxcrypt=4.4.36=hd590300_1
   - libzlib=1.3.1=hb9d3cd8_2
+  - matplotlib-inline=0.1.7=pyhd8ed1ab_1
   - ncurses=6.5=h2d0b736_3
+  - nest-asyncio=1.6.0=pyhd8ed1ab_1
   - openssl=3.5.2=h26f9b46_0
+  - packaging=25.0=pyh29332c3_1
+  - parso=0.8.5=pyhcf101f3_0
+  - pexpect=4.9.0=pyhd8ed1ab_1
+  - pickleshare=0.7.5=pyhd8ed1ab_1004
   - pip=25.2=pyh8b19718_0
+  - platformdirs=4.4.0=pyhcf101f3_0
+  - prompt-toolkit=3.0.52=pyha770c72_0
+  - psutil=7.0.0=py312h4c3975b_1
+  - ptyprocess=0.7.0=pyhd8ed1ab_1
+  - pure_eval=0.2.3=pyhd8ed1ab_1
+  - pygments=2.19.2=pyhd8ed1ab_0
   - python=3.12.11=h9e4cc4f_0_cpython
+  - python-dateutil=2.9.0.post0=pyhe01879c_2
+  - python-gil=3.12.11=hd8ed1ab_0
+  - python_abi=3.12=8_cp312
+  - pyzmq=27.1.0=py312hfb55c3c_0
   - readline=8.2=h8c095d6_2
   - setuptools=80.9.0=pyhff2d567_0
+  - six=1.17.0=pyhe01879c_1
+  - stack_data=0.6.3=pyhd8ed1ab_1
   - tk=8.6.13=noxft_hd72426e_102
+  - tornado=6.5.2=py312h4c3975b_1
+  - traitlets=5.14.3=pyhd8ed1ab_1
+  - typing_extensions=4.15.0=pyhcf101f3_0
+  - wcwidth=0.2.13=pyhd8ed1ab_1
   - wheel=0.45.1=pyhd8ed1ab_1
+  - zeromq=4.3.5=h387f397_9
+  - zipp=3.23.0=pyhd8ed1ab_0
   - pip:
       - aiohappyeyeballs==2.6.1
       - aiohttp==3.12.15
@@ -43,9 +88,10 @@ dependencies:
       - autogluon-tabular==1.4.0
       - beartype==0.21.0
       - blis==1.3.0
+      - bokeh==3.8.0
       - boruta==0.4.3
-      - boto3==1.40.28
-      - botocore==1.40.28
+      - boto3==1.40.30
+      - botocore==1.40.30
       - cachetools==5.5.2
       - catalogue==2.0.10
       - catboost==1.2.8
@@ -63,6 +109,7 @@ dependencies:
       - cycler==0.12.1
       - cymem==2.0.11
       - distlib==0.4.0
+      - distro==1.9.0
       - docstring-parser-fork==0.0.14
       - docutils==0.22
       - duckdb==1.3.2
@@ -73,6 +120,7 @@ dependencies:
       - fastai==2.8.4
       - fastcore==1.8.8
       - fastdownload==0.0.7
+      - fastjsonschema==2.21.2
       - fastprogress==1.0.3
       - fasttransform==0.0.2
       - filelock==3.19.1
@@ -89,21 +137,32 @@ dependencies:
       - greenlet==3.2.4
       - grpcio==1.74.0
       - h11==0.16.0
-      - hf-xet==1.1.9
+      - hf-xet==1.1.10
+      - httpcore==1.0.9
+      - httpx==0.28.1
       - huggingface-hub==0.34.4
       - hyperopt==0.2.7
       - identify==2.6.14
       - idna==3.10
       - iniconfig==2.1.0
+      - ipywidgets==8.1.7
       - itsdangerous==2.2.0
-      - jedi==0.19.2
       - jinja2==3.1.6
+      - jiter==0.11.0
       - jmespath==1.0.1
       - joblib==1.5.2
+      - jsonpatch==1.33
+      - jsonpointer==3.0.0
       - jsonschema==4.25.1
       - jsonschema-specifications==2025.9.1
+      - jupyterlab-widgets==3.0.15
       - kiwisolver==1.4.9
+      - langchain==0.3.27
+      - langchain-core==0.3.76
+      - langchain-openai==0.3.33
+      - langchain-text-splitters==0.3.11
       - langcodes==3.5.0
+      - langsmith==0.4.28
       - language-data==1.3.0
       - lightgbm==4.6.0
       - llvmlite==0.44.0
@@ -111,7 +170,7 @@ dependencies:
       - loro==1.6.0
       - lz4==4.4.4
       - mako==1.3.10
-      - marimo==0.15.2
+      - marimo==0.15.3
       - marisa-trie==1.3.1
       - markdown==3.9
       - markdown-it-py==4.0.0
@@ -122,13 +181,15 @@ dependencies:
       - miceforest==6.0.3
       - mpmath==1.3.0
       - msgpack==1.1.1
+      - msgspec==0.19.0
       - multidict==6.6.4
       - murmurhash==1.0.13
-      - narwhals==2.4.0
+      - narwhals==2.5.0
+      - nbformat==5.10.4
       - networkx==3.5
       - nodeenv==1.9.1
       - numba==0.61.2
-      - numexpr==2.12.0
+      - numexpr==2.12.1
       - numpy==2.2.6
       - nvidia-cublas-cu12==12.6.4.1
       - nvidia-cuda-cupti-cu12==12.6.80
@@ -144,17 +205,15 @@ dependencies:
       - nvidia-nccl-cu12==2.26.2
       - nvidia-nvjitlink-cu12==12.6.85
       - nvidia-nvtx-cu12==12.6.77
-      - octopus==0.0.post462
       - omegaconf==2.3.0
+      - openai==1.107.3
       - opencensus==0.11.4
       - opencensus-context==0.1.3
       - optuna==4.5.0
+      - orjson==3.11.3
       - osqp==0.6.7.post3
-      - packaging==25.0
       - pandas==2.3.2
-      - parso==0.8.5
       - pillow==11.3.0
-      - platformdirs==4.4.0
       - plotly==6.3.0
       - pluggy==1.6.0
       - plum-dispatch==2.5.7
@@ -164,25 +223,22 @@ dependencies:
       - prometheus-client==0.22.1
       - propcache==0.3.2
       - proto-plus==1.26.1
-      - protobuf==6.32.0
-      - psutil==7.0.0
+      - protobuf==6.32.1
       - py-spy==0.4.1
       - py4j==0.10.9.9
       - pyarrow==20.0.0
       - pyasn1==0.6.1
       - pyasn1-modules==0.4.2
       - pycodestyle==2.14.0
-      - pydantic==2.11.7
+      - pydantic==2.11.9
       - pydantic-core==2.33.2
       - pydantic-settings==2.10.1
       - pydoclint==0.7.3
       - pyflakes==3.4.0
-      - pygments==2.19.2
       - pymdown-extensions==10.16.1
-      - pyparsing==3.2.3
+      - pyparsing==3.2.4
       - pytest==8.4.2
       - pytest-cov==7.0.0
-      - python-dateutil==2.9.0.post0
       - python-dotenv==1.1.1
       - pytz==2025.2
       - pyupgrade==3.20.0
@@ -193,6 +249,7 @@ dependencies:
       - referencing==0.36.2
       - regex==2025.9.1
       - requests==2.32.5
+      - requests-toolbelt==1.0.0
       - rich==14.1.0
       - rpds-py==0.27.1
       - rsa==4.9.1
@@ -201,10 +258,10 @@ dependencies:
       - safetensors==0.6.2
       - scikit-learn==1.6.1
       - scikit-survival==0.25.0
-      - scipy==1.16.1
+      - scipy==1.16.2
+      - seaborn==0.13.2
       - shap==0.48.0
       - shellingham==1.5.4
-      - six==1.17.0
       - slicer==0.0.8
       - smart-open==7.3.1
       - sniffio==1.3.1
@@ -213,12 +270,14 @@ dependencies:
       - spacy-loggers==1.0.5
       - sqlalchemy==2.0.43
       - srsly==2.5.1
-      - starlette==0.47.3
+      - starlette==0.48.0
       - sympy==1.14.0
       - tabpfn==2.1.3
+      - tenacity==9.1.2
       - tensorboardx==2.6.4
       - thinc==8.3.6
       - threadpoolctl==3.6.0
+      - tiktoken==0.11.0
       - tokenize-rt==6.2.0
       - tokenizers==0.22.0
       - tomlkit==0.13.3
@@ -228,7 +287,6 @@ dependencies:
       - transformers==4.56.1
       - triton==3.3.1
       - typer==0.17.4
-      - typing-extensions==4.15.0
       - typing-inspection==0.4.1
       - tzdata==2025.2
       - urllib3==2.5.0
@@ -237,7 +295,10 @@ dependencies:
       - wasabi==1.1.3
       - weasel==0.4.1
       - websockets==15.0.1
+      - widgetsnbextension==4.0.14
       - wrapt==1.17.3
       - xgboost==3.0.5
+      - xyzservices==2025.4.0
       - yarl==1.20.1
+      - zstandard==0.25.0
 prefix: /home/ec2-user/mambaforge/envs/octo

@@ -16,6 +16,7 @@ from sklearn.impute import SimpleImputer
 from sklearn.inspection import permutation_importance
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import FunctionTransformer, StandardScaler
+from sklearn.utils.validation import check_is_fitted
 
 from octopus.logger import LogGroup, get_logger
 from octopus.metrics.inventory import MetricsInventory
@@ -281,15 +282,23 @@ class Training:
         # (3) Model training
         self.model = ModelInventory().get_model_instance(self.ml_model_type, self.ml_model_params)
 
-        if len(self.target_assignments) == 1:
-            # standard sklearn single target models
-            self.model.fit(
-                self.x_train_processed,
-                y_train.squeeze(axis=1),
-            )
-        else:
-            # multi target models, incl. time2event
-            self.model.fit(self.x_train_processed, y_train)
+        try:
+            if len(self.target_assignments) == 1:
+                # standard sklearn single target models
+                self.model.fit(
+                    self.x_train_processed,
+                    y_train.squeeze(axis=1),
+                )
+            else:
+                # multi target models, incl. time2event
+                self.model.fit(self.x_train_processed, y_train)
+
+            # Validate that the model actually trained by checking model attributes (cheap validation)
+            self._validate_model_trained()
+
+        except Exception as e:
+            logger.error(f"Model training failed for {self.ml_model_type} in training {self.training_id}: {e}")
+            raise RuntimeError(f"Model training failed for {self.ml_model_type}: {e}") from e
 
         # (4) Model prediction
         self.predictions["train"] = pd.DataFrame()
@@ -355,7 +364,25 @@ class Training:
         else:
             raise ValueError("feature method provided in model config not supported")
 
-        return fi_df[fi_df["importance"] != 0]["feature"].tolist()
+        # Check if feature importance calculation failed (empty DataFrame)
+        if fi_df.empty:
+            logger.warning(
+                f"Feature importance calculation failed for model {self.ml_model_type} "
+                f"using method {feature_method}. Returning all features as used."
+            )
+            return self.feature_columns.copy()
+
+        features_used = fi_df[fi_df["importance"] != 0]["feature"].tolist()
+
+        # If no features have non-zero importance, return all features as a fallback
+        if not features_used:
+            logger.warning(
+                f"All feature importances are zero for model {self.ml_model_type} "
+                f"using method {feature_method}. Returning all features as used."
+            )
+            return self.feature_columns.copy()
+
+        return features_used
 
     def calculate_fi_constant(self):
         """Provide flat feature importance table."""
@@ -799,6 +826,28 @@ class Training:
         """Save object to a compressed pickle file."""
         with gzip.GzipFile(file_path, "wb") as file:
             pickle.dump(self, file)
+
+    def _validate_model_trained(self):
+        """Validate that the model actually trained using sklearn's check_is_fitted utility.
+
+        This is a general approach that works with most sklearn-compatible models.
+
+        Raises:
+            RuntimeError: If the model appears to not have trained successfully.
+        """
+        if self.model is None:
+            raise RuntimeError("Model is None - training failed")
+
+        try:
+            # Use sklearn's check_is_fitted utility - the most general approach
+            check_is_fitted(self.model)
+            logger.debug(f"Model {self.ml_model_type} validation passed - training appears successful")
+
+        except Exception as e:
+            # If check_is_fitted fails, the model is not properly fitted
+            raise RuntimeError(
+                f"Model {self.ml_model_type} validation failed - model appears not to be fitted: {e}"
+            ) from e
 
     @classmethod
     def from_pickle(cls, file_path: str) -> "Training":

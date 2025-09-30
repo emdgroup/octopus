@@ -1,22 +1,17 @@
-"""Basic example for using Octopus Classification."""
+"""Basic example for using Octopus Classification with TabPFN."""
 
-# This example demonstrates how to use Octopus to create a machine learning classification model.
-# We will use the famous Titanic dataset for this purpose.
+# This example demonstrates how to use Octopus to create a machine learning classification model
+# using TabPFN (Tabular Prior-data Fitted Networks).
+# We will use the breast cancer dataset for this purpose.
 # Please ensure your dataset is clean, with no missing values (`NaN`),
 # and that all features are numeric.
 
 ### Necessary imports for this example
-import os
-
 from sklearn.datasets import load_breast_cancer
 
 from octopus import OctoData, OctoML
 from octopus.config import ConfigManager, ConfigSequence, ConfigStudy
 from octopus.modules import Octo
-
-# Check if this is a smoke test
-SMOKE_TEST = os.environ.get("SMOKE_TEST", "").lower() in ["true", "1", "yes"]
-N_TRIALS = 5 if SMOKE_TEST else 5
 
 ### Load and Preprocess Data
 
@@ -68,13 +63,11 @@ config_sequence = ConfigSequence(
             description="step_1_octo",
             sequence_id=0,
             models=[
-                "CatBoostClassifier",
-                # "XGBClassifier",
-                # "RandomForestClassifier",
-                # "ExtraTreesClassifier",
-                # "RandomForestClassifier",
+                "TabPFNClassifier",
             ],
-            n_trials=N_TRIALS,
+            inner_parallelization=True,
+            n_trials=1,
+            fi_methods_bestbag=["constant"],
         )
     ]
 )

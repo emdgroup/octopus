@@ -7,16 +7,16 @@ from octopus.config import ConfigStudy
 
 def test_config_study_defaults():
     """Test default values."""
-    config = ConfigStudy(name="Test_study", ml_type="classification", target_metric="AUCROC")
+    config = ConfigStudy(name="Test_study", ml_type="classification", target_metric="ACC")
     assert config.name == "Test_study"
     assert config.ml_type == "classification"
-    assert config.target_metric == "AUCROC"
+    assert config.target_metric == "ACC"
     assert config.path == "./studies/"
     assert config.start_with_empty_study is True
     assert config.n_folds_outer == 5
     assert config.datasplit_seed_outer == 0
     assert config.silently_overwrite_study is False
-    assert config.metrics == ["AUCROC"]
+    assert config.metrics == ["ACC"]
 
 
 def test_config_study_custom_values():

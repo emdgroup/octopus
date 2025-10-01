@@ -42,6 +42,9 @@ class ConfigStudy:
     """The type of machine learning model.
     Choose from "classification", "regression" or "timetoevent"."""
 
+    positive_class: int = field(default=1, validator=[validators.optional(validators.instance_of(int))])
+    """The positive class label for binary classification. Defaults to 1. Not relevant for other ml_types."""
+
     target_metric: str = field(validator=[validate_metric])
     """The primary metric used for model evaluation."""
 

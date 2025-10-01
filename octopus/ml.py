@@ -75,6 +75,9 @@ class OctoML:
         # check data for critical issues
         self._check_for_data_issues()
 
+        # check positive class definition
+        self._check_positive_class()
+
         # get clean dataset only with relevant columns for ML
         # data_clean_df = self._get_dataset_with_relevant_columns()
         data_clean_df = self.data.data[self.data.relevant_columns]
@@ -143,6 +146,33 @@ class OctoML:
                     f", set `ignore_data_health_warning` "
                     f"to True in `ConfigStudy`."
                 )
+
+    def _check_positive_class(self) -> None:
+        """Check positive class definition for binary classification."""
+        # 1. Only check for classification tasks
+        if self.configs.study.ml_type != "classification":
+            return
+
+        # Get the target column data
+        target_col = list(self.data.target_assignments)[0]
+        target_data = self.data.data[target_col]
+
+        # 2. Check that target column is integer type
+        if not pd.api.types.is_integer_dtype(target_data):
+            raise ValueError(f"Target column must be integer type for binary classification, got {target_data.dtype}")
+
+        # 3. Check exactly 2 unique values
+        unique_values = target_data.dropna().unique()
+        if len(unique_values) != 2:
+            raise ValueError(
+                f"Binary classification requires exactly 2 unique values, found {len(unique_values)}: {unique_values}"
+            )
+
+        # 4. Check positive_class is in target column
+        if self.configs.study.positive_class not in unique_values:
+            raise ValueError(
+                f"positive_class {self.configs.study.positive_class} not found in target. Available: {unique_values}"
+            )
 
     def _handle_existing_study_path(self, path_study: Path) -> None:
         """Handle the existing study path.

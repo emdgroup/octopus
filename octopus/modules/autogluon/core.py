@@ -413,6 +413,7 @@ class AGCore:
                 self.feature_columns,
                 metric,
                 self.target_assignments,
+                positive_class=self.experiment.configs.study.positive_class,
             )
             test_performance_octo[metric + "_test_octo"] = performance
 

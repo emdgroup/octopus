@@ -475,7 +475,14 @@ class Training:
         features_dict = {**feature_columns_dict, **feature_groups}
 
         # calculate baseline score
-        baseline_score = get_performance_score(model, data, feature_columns, target_metric, target_assignments)
+        baseline_score = get_performance_score(
+            model,
+            data,
+            feature_columns,
+            target_metric,
+            target_assignments,
+            positive_class=self.config_training.get("positive_class"),
+        )
 
         results_df = pd.DataFrame(
             columns=[
@@ -498,7 +505,14 @@ class Training:
                 # we use data_all as the validation dataset may be small
                 for feat in feature:
                     data_pfi[feat] = np.random.choice(data[feat], len(data_pfi), replace=False)
-                pfi_score = get_performance_score(model, data_pfi, feature_columns, target_metric, target_assignments)
+                pfi_score = get_performance_score(
+                    model,
+                    data_pfi,
+                    feature_columns,
+                    target_metric,
+                    target_assignments,
+                    positive_class=self.config_training.get("positive_class"),
+                )
                 fi_lst.append(baseline_score - pfi_score)
 
             # calculate statistics
@@ -589,6 +603,7 @@ class Training:
             feature_columns,
             self.target_metric,
             self.target_assignments,
+            positive_class=self.config_training.get("positive_class"),
         )
         baseline_test = get_performance_score(
             self.model,
@@ -596,6 +611,7 @@ class Training:
             feature_columns,
             self.target_metric,
             self.target_assignments,
+            positive_class=self.config_training.get("positive_class"),
         )
 
         # create features dict
@@ -627,6 +643,7 @@ class Training:
                 selected_features,
                 self.target_metric,
                 self.target_assignments,
+                positive_class=self.config_training.get("positive_class"),
             )
             score_test = get_performance_score(
                 model,
@@ -634,6 +651,7 @@ class Training:
                 selected_features,
                 self.target_metric,
                 self.target_assignments,
+                positive_class=self.config_training.get("positive_class"),
             )
 
             fi_dev_df.loc[len(fi_dev_df)] = [name, baseline_dev - score_dev]

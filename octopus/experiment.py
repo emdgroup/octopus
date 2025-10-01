@@ -89,7 +89,7 @@ class OctoExperiment:
     """Number of CPUs assigned to the experiment."""
 
     ml_config: dict = field(init=False, default=None)
-    """Configuration settings for the machine learning module."""
+    """Configuration settings for the module used by the sequence item."""
 
     selected_features: list = field(default=Factory(list), validator=[validators.instance_of(list)])
     """List of features selected for the experiment."""

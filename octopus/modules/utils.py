@@ -10,35 +10,10 @@ from scipy.stats import rankdata
 
 from octopus.metrics import metrics_inventory
 
-# def get_score(metric: str, y_true: np.array, y_pred: np.array) -> float:
-#    """Calculate the specified metric for the given true and predicted values.
-#
-#    Args:
-#        metric: The name of the metric to compute.
-#            Valid options are 'MAE', 'R2', and 'MSE'.
-#        y_true: An array of true values for the model's predictions
-#            to be evaluated against.
-#        y_pred: An array of predicted values to evaluate.
-#
-#    Returns:
-#        The computed score of the specified metric.
-#
-#    Raises:
-#        ValueError: If the metric provided is not recognized or supported.
-#    """
-#    if metric == "MAE":
-#        return mean_absolute_error(y_true, y_pred)
-#    elif metric == "R2":
-#        return r2_score(y_true, y_pred)
-#    elif metric == "MSE":
-#        return mean_squared_error(y_true, y_pred)
-#    else:
-#        raise ValueError(
-#            f"Unsupported metric '{metric}'. Supported metrics are 'MAE', 'R2', 'MSE'."
-#        )
 
-
-def get_performance(model, data, feature_columns, target_metric, target_assignments, threshold=0.5) -> float:
+def get_performance(
+    model, data, feature_columns, target_metric, target_assignments, threshold=0.5, positive_class=None
+) -> float:
     """Calculate model performance score on dataset for given metric."""
     input_data = data[feature_columns]
 
@@ -62,13 +37,24 @@ def get_performance(model, data, feature_columns, target_metric, target_assignme
         performance = metric_function(event_indicator, event_time, estimate)[0]
 
     if ml_type == "classification":
+        # positive_class is required for classification
+        if positive_class is None:
+            raise ValueError("positive_class must be provided for classification tasks")
+
+        # Determine positive class index
+        classes = model.classes_
+        try:
+            positive_class_idx = list(classes).index(positive_class)
+        except ValueError:
+            raise ValueError(f"positive_class {positive_class} not found in model classes {classes}")
+
         if prediction_type == "predict_proba":
             probabilities = model.predict_proba(input_data)
             # Convert to NumPy array if it's a DataFrame
             if isinstance(probabilities, pd.DataFrame):
                 probabilities = probabilities.to_numpy()  # Convert to NumPy array
 
-            probabilities = probabilities[:, 1]  # Get probabilities for class 1
+            probabilities = probabilities[:, positive_class_idx]  # Get probabilities for positive class
             performance = metric_function(target, probabilities)
 
         else:
@@ -76,7 +62,7 @@ def get_performance(model, data, feature_columns, target_metric, target_assignme
             if isinstance(probabilities, pd.DataFrame):
                 probabilities = probabilities.to_numpy()  # Convert to NumPy array
 
-            probabilities = probabilities[:, 1]  # Get probabilities for class 1
+            probabilities = probabilities[:, positive_class_idx]  # Get probabilities for positive class
             predictions = (probabilities >= threshold).astype(int)
             performance = metric_function(target, predictions)
 
@@ -93,9 +79,13 @@ def get_performance(model, data, feature_columns, target_metric, target_assignme
     return performance
 
 
-def get_performance_score(model, data, feature_columns, target_metric, target_assignments) -> float:
+def get_performance_score(
+    model, data, feature_columns, target_metric, target_assignments, positive_class=None
+) -> float:
     """Calculate performance value for given metric."""
-    performance = get_performance(model, data, feature_columns, target_metric, target_assignments)
+    performance = get_performance(
+        model, data, feature_columns, target_metric, target_assignments, positive_class=positive_class
+    )
 
     # convert performance metric to score
     if metrics_inventory.get_direction(target_metric) == "maximize":

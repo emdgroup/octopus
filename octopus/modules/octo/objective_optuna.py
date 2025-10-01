@@ -99,6 +99,7 @@ class ObjectiveOptuna:
             "n_input_features": len(feature_columns),
             "ml_model_type": ml_model_type,
             "ml_model_params": model_params,
+            "postive_class": , #self.configs.study.positive_class 
         }
 
         # create trainings

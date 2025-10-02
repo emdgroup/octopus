@@ -154,7 +154,7 @@ class OctoML:
             return
 
         # Get the target column data
-        target_col = list(self.data.target_assignments)[0]
+        target_col = list(self.data.target_assignments.values())[0]
         target_data = self.data.data[target_col]
 
         # 2. Check that target column is integer type

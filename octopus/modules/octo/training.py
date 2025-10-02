@@ -89,6 +89,9 @@ class Training:
     outlier_samples: list = field(default=Factory(list), validator=[validators.instance_of(list)])
     """Outlie samples identified."""
 
+    is_fitted: bool = field(default=False, init=False)
+    """Flag indicating whether the training has been completed."""
+
     preprocessing_pipeline = field(init=False)
     """Preprocessing pipeline for data scaling, imputation, and categorical encoding."""
 
@@ -342,6 +345,9 @@ class Training:
             self.features_used = self._calculate_features_used()
         else:
             self.features_used = []
+
+        # Set fitted flag to True
+        self.is_fitted = True
 
         return self
 

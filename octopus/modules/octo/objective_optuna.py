@@ -99,7 +99,7 @@ class ObjectiveOptuna:
             "n_input_features": len(feature_columns),
             "ml_model_type": ml_model_type,
             "ml_model_params": model_params,
-            "postive_class": , #self.configs.study.positive_class 
+            "positive_class": self.experiment.configs.study.positive_class,
         }
 
         # create trainings
@@ -131,6 +131,7 @@ class ObjectiveOptuna:
             num_workers=self.num_workers,
             target_metric=self.experiment.configs.study.target_metric,
             row_column=self.experiment.row_column,
+            ml_type=self.experiment.ml_type,
             # path?
         )
 

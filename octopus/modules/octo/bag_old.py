@@ -5,15 +5,12 @@
 # import gzip
 import pickle
 from statistics import mean
-from typing import Any
 
 import lz4.frame
 import numpy as np
 import pandas as pd
 from attrs import define, field, validators
-from sklearn.base import BaseEstimator, ClassifierMixin, RegressorMixin
 
-# sklearn imports for compatibility
 from octopus.logger import LogGroup, get_logger
 from octopus.metrics import metrics_inventory
 
@@ -52,58 +49,13 @@ class TrainingWithLogging:
             return None  # or: raise
 
 
-class FeatureImportanceWithLogging:
-    """Logging wrapper for feature importance calculations."""
-
-    def __init__(self, training, idx, fi_type, partition, logger, log_group_cls, log_prefix="FI"):
-        self._training = training
-        self._idx = idx
-        self._fi_type = fi_type
-        self._partition = partition
-        self._logger = logger
-        self._log_group_cls = log_group_cls
-        self._log_prefix = log_prefix
-
-    def fit(self):
-        """Calculate feature importance for the training.
-
-        Uses fit() method for Ray compatibility.
-        """
-        training_id = getattr(self._training, "training_id", self._idx)
-        self._logger.set_log_group(self._log_group_cls.PROCESSING, f"{self._log_prefix} {training_id}")
-        self._logger.info(f"Starting {self._fi_type} feature importance calculation")
-
-        try:
-            if self._fi_type == "internal":
-                self._training.calculate_fi_internal()
-            elif self._fi_type == "shap":
-                self._training.calculate_fi_shap(partition=self._partition)
-            elif self._fi_type == "permutation":
-                self._training.calculate_fi_group_permutation(partition=self._partition)
-            elif self._fi_type == "lofo":
-                self._training.calculate_fi_lofo()
-            elif self._fi_type == "constant":
-                self._training.calculate_fi_constant()
-            else:
-                raise ValueError(f"FI type {self._fi_type} not supported")
-
-            self._logger.set_log_group(self._log_group_cls.PREPARE_EXECUTION, f"{self._log_prefix} {training_id}")
-            self._logger.info(f"Completed {self._fi_type} feature importance calculation")
-            return self._training
-        except Exception as e:
-            self._logger.exception(f"Exception in {self._fi_type} FI calculation for training {training_id}: {e!s}")
-            # Return the training object even if FI calculation failed
-            return self._training
-
-
 @define
-class BagBase(BaseEstimator):
-    """Base Container for Trainings.
+class Bag:
+    """Container for Trainings.
 
     Supports:
     - execution of trainings, sequential/parallel
     - saving/loading
-    - sklearn compatibility for inference tools like SHAP and permutation importance
     """
 
     bag_id: str = field(validator=[validators.instance_of(str)])
@@ -163,89 +115,10 @@ class BagBase(BaseEstimator):
         # Convert to numpy array and sort (sklearn compatible)
         return np.array(sorted(all_classes))
 
-    @property
-    def positive_class(self):
-        """Get the positive class for binary classification from trainings.
-
-        Returns:
-            The positive class value, or None if not applicable/determinable.
-
-        Raises:
-            ValueError: If training is missing config_training, missing positive_class
-                       in config_training, or if trainings have inconsistent positive_class values.
-
-        For binary classification, this method requires that each training has
-        positive_class explicitly set in config_training. No fallback solutions are provided.
-        """
-        # Only applicable for binary classification
-        if self.ml_type != "classification":
-            return None
-
-        # Return cached value if already computed
-        if self._positive_class is not None:
-            return self._positive_class
-
-        # Check if we have any trainings
-        if not self.trainings:
-            return None
-
-        # Require explicit positive_class in training configurations
-        # All trainings must have this property set
-        for training in self.trainings:
-            if not (hasattr(training, "config_training") and isinstance(training.config_training, dict)):
-                raise ValueError(f"Training {getattr(training, 'training_id', 'unknown')} missing config_training")
-
-            positive_class = training.config_training.get("positive_class")
-            if positive_class is None:
-                raise ValueError(
-                    f"Training {getattr(training, 'training_id', 'unknown')} missing positive_class in config_training"
-                )
-
-            # Cache the first valid positive_class found
-            if self._positive_class is None:
-                self._positive_class = positive_class
-
-            # Verify all trainings have the same positive_class
-            elif self._positive_class != positive_class:
-                raise ValueError(
-                    f"Inconsistent positive_class values across trainings: {self._positive_class} vs {positive_class}"
-                )
-
-        return self._positive_class
-
     def __attrs_post_init__(self):
         # initialization here due to "Python immutable default"
         self.feature_importances = dict()
         self.n_features_used_mean = 0.0
-        self._positive_class = None  # Will be inferred when needed
-
-    def get_params(self, deep=True):
-        """Get parameters for this estimator (sklearn requirement)."""
-        return {
-            "bag_id": self.bag_id,
-            "parallel_execution": self.parallel_execution,
-            "num_workers": self.num_workers,
-            "target_metric": self.target_metric,
-            "ml_type": self.ml_type,
-        }
-
-    def set_params(self, **params):
-        """Set parameters for this estimator (sklearn requirement)."""
-        for key, value in params.items():
-            if hasattr(self, key):
-                setattr(self, key, value)
-        return self
-
-    def _more_tags(self):
-        """Provide additional tags for sklearn compatibility."""
-        return {
-            "requires_fit": True,
-            "no_validation": True,  # We handle our own validation
-            "_xfail_checks": {
-                "check_estimators_dtypes": "Custom data handling",
-                "check_fit_score_takes_y": "Custom scoring method",
-            },
-        }
 
     def _train_parallel(self):
         """Run trainings in parallel using Ray (delegated to ray_parallel)."""
@@ -365,33 +238,8 @@ class BagBase(BaseEstimator):
                     for part, values in storage.items():
                         target_col = list(self.target_assignments.values())[0]
 
-                        # For binary classification, use probability of the positive class
-                        probabilities = training.predictions[part][self.positive_class]
-                        target = training.predictions[part][target_col]
-
-                        metric_result = metric_method(target, probabilities)
-                        values.append(metric_result)
-
-                else:
-                    for part, storage_value in storage.items():
-                        target_col = list(self.target_assignments.values())[0]
-                        predictions = training.predictions[part]["prediction"].astype(int)
-                        target = training.predictions[part][target_col]
-                        storage_value.append(metric_method(target, predictions))
-
-            elif ml_type == "multiclass":
-                if prediction_type == "predict_proba":
-                    for part, values in storage.items():
-                        target_col = list(self.target_assignments.values())[0]
-
-                        # For multiclass, get all class probabilities
-                        # Extract all probability columns (exclude prediction and target columns)
-                        prob_columns = [
-                            col
-                            for col in training.predictions[part].columns
-                            if isinstance(col, (int, float)) and col not in [target_col, "prediction", self.row_column]
-                        ]
-                        probabilities = training.predictions[part][prob_columns].values
+                        # Assumes binary classification
+                        probabilities = training.predictions[part][1]
                         target = training.predictions[part][target_col]
 
                         metric_result = metric_method(target, probabilities)
@@ -437,87 +285,21 @@ class BagBase(BaseEstimator):
 
         return scores
 
-    def _calculate_fi_parallel(self, fi_type="internal", partition="dev"):
-        """Calculate feature importance in parallel using Ray."""
-        # Prepare wrapped trainings with logging for feature importance calculation
-        wrapped = [
-            FeatureImportanceWithLogging(
-                training=t,
-                idx=idx,
-                fi_type=fi_type,
-                partition=partition,
-                logger=logger,
-                log_group_cls=LogGroup,
-                log_prefix="FI",
-            )
-            for idx, t in enumerate(self.trainings)
-        ]
-
-        # Execute feature importance calculations in parallel
-        # Use the same pattern as training execution
-        results = run_parallel_inner(wrapped, num_cpus=1)
-
-        # Update trainings with results (should be the same objects with FI calculated)
-        self.trainings = results
-
-    def _calculate_fi_sequential(self, fi_type="internal", partition="dev"):
-        """Calculate feature importance sequentially."""
-        successful_calculations = []
-        failed_calculations = []
-
-        for idx, training in enumerate(self.trainings):
-            training_id = getattr(training, "training_id", idx)
-            try:
-                if fi_type == "internal":
-                    training.calculate_fi_internal()
-                elif fi_type == "shap":
-                    training.calculate_fi_shap(partition=partition)
-                elif fi_type == "permutation":
-                    training.calculate_fi_group_permutation(partition=partition)
-                elif fi_type == "lofo":
-                    training.calculate_fi_lofo()
-                elif fi_type == "constant":
-                    training.calculate_fi_constant()
-                else:
-                    raise ValueError(f"FI type {fi_type} not supported")
-
-                successful_calculations.append(training)
-                logger.info(
-                    f"Feature importance ({fi_type}) calculation completed for bag_id {self.bag_id} "
-                    f"and training id {training_id}"
-                )
-            except Exception as e:  # pylint: disable=broad-except
-                failed_calculations.append((training_id, str(e), type(e).__name__))
-                logger.error(
-                    f"Feature importance ({fi_type}) calculation failed for bag_id {self.bag_id}, "
-                    f"training_id {training_id}: {e}, type: {type(e).__name__}"
-                )
-                # Still include the training even if FI calculation failed
-                successful_calculations.append(training)
-
-        # Log summary of FI calculation results
-        total_trainings = len(self.trainings)
-        successful_count = len(successful_calculations)
-        failed_count = len(failed_calculations)
-
-        logger.info(
-            f"Bag {self.bag_id} feature importance ({fi_type}) summary: "
-            f"{successful_count}/{total_trainings} successful, {failed_count} failed"
-        )
-
-        if failed_calculations:
-            logger.warning(f"Failed feature importance ({fi_type}) calculations in bag {self.bag_id}:")
-            for training_id, error_msg, error_type in failed_calculations:
-                logger.warning(f"  - Training {training_id}: {error_type} - {error_msg}")
-
-        self.trainings = successful_calculations
-
     def _calculate_fi(self, fi_type="internal", partition="dev"):
-        """Calculate feature importance using parallel or sequential execution."""
-        if self.parallel_execution:
-            self._calculate_fi_parallel(fi_type=fi_type, partition=partition)
-        else:
-            self._calculate_fi_sequential(fi_type=fi_type, partition=partition)
+        """Calculate feature importance."""
+        for training in self.trainings:
+            if fi_type == "internal":
+                training.calculate_fi_internal()
+            elif fi_type == "shap":
+                training.calculate_fi_shap(partition=partition)
+            elif fi_type == "permutation":
+                training.calculate_fi_group_permutation(partition=partition)
+            elif fi_type == "lofo":
+                training.calculate_fi_lofo()
+            elif fi_type == "constant":
+                training.calculate_fi_constant()
+            else:
+                raise ValueError("FI type not supported")
 
     def get_selected_features(self, fi_methods=None):
         """Get features selected by model, depending on fi method.
@@ -649,22 +431,7 @@ class BagBase(BaseEstimator):
         return self.feature_importances
 
     def predict(self, x):
-        """Predict with sklearn compatibility."""
-        # Import sklearn validation here to avoid auto-formatter issues
-
-        # Check if the bag has fitted trainings
-        if not self.trainings:
-            raise ValueError("No trainings available in bag")
-
-        # Check if all trainings are fitted
-        for training in self.trainings:
-            if not getattr(training, "is_fitted", False):
-                raise ValueError(f"Training {training.training_id} is not fitted")
-
-        # Convert pandas DataFrame to numpy if needed for sklearn compatibility
-        if hasattr(x, "values"):
-            x = x.values
-
+        """Predict."""
         preds_lst = list()
         weights_lst = list()
         for training in self.trainings:
@@ -676,24 +443,7 @@ class BagBase(BaseEstimator):
         return np.sum(np.array(preds_lst), axis=0) / sum(weights_lst)
 
     def predict_proba(self, x):
-        """Predict_proba with sklearn compatibility."""
-        # Only available for classification tasks
-        if self.ml_type not in ["classification", "multiclass"]:
-            raise AttributeError(f"predict_proba is not available for ml_type '{self.ml_type}'")
-
-        # Check if the bag has fitted trainings
-        if not self.trainings:
-            raise ValueError("No trainings available in bag")
-
-        # Check if all trainings are fitted
-        for training in self.trainings:
-            if not getattr(training, "is_fitted", False):
-                raise ValueError(f"Training {training.training_id} is not fitted")
-
-        # Convert pandas DataFrame to numpy if needed for sklearn compatibility
-        if hasattr(x, "values"):
-            x = x.values
-
+        """Predict_proba."""
         preds_lst = list()
         weights_lst = list()
         for training in self.trainings:
@@ -703,13 +453,6 @@ class BagBase(BaseEstimator):
 
         # return mean of weighted predictions
         return np.sum(np.array(preds_lst), axis=0) / sum(weights_lst)
-
-    def _estimator_type(self):
-        """Return the estimator type for sklearn compatibility."""
-        if self.ml_type in ["classification", "multiclass"]:
-            return "classifier"
-        else:
-            return "regressor"
 
     def to_pickle(self, file_path: str) -> None:
         """Save object to a compressed pickle file.
@@ -723,73 +466,16 @@ class BagBase(BaseEstimator):
             pickle.dump(self, file)
 
     @classmethod
-    def from_pickle(cls, file_path: str) -> "BagBase":
+    def from_pickle(cls, file_path: str) -> "Bag":
         """Load object to a compressed pickle file.
 
         Args:
             file_path: The path to the file to load the pickle data from.
 
         Returns:
-            BagBase: The loaded instance of BagBase.
+            Bag: The loaded instance of Bag.
         """
         # with gzip.GzipFile(file_path, "rb") as file:
         #    return pickle.load(file)
         with lz4.frame.open(file_path, "rb") as file:
             return pickle.load(file)
-
-
-@define
-class BagClassifier(BagBase, ClassifierMixin):
-    """Bag for classification tasks with sklearn ClassifierMixin."""
-
-    def _estimator_type(self):
-        """Return the estimator type for sklearn compatibility."""
-        return "classifier"
-
-
-@define
-class BagRegressor(BagBase, RegressorMixin):
-    """Bag for regression tasks with sklearn RegressorMixin."""
-
-    def _estimator_type(self):
-        """Return the estimator type for sklearn compatibility."""
-        return "regressor"
-
-    def predict_proba(self, x):
-        """Predict_proba not available for regression tasks."""
-        raise AttributeError("predict_proba is not available for regression tasks")
-
-
-def Bag(**kwargs: Any) -> BagClassifier | BagRegressor:
-    """Create appropriate Bag instance based on ml_type (factory function).
-
-    Args:
-        **kwargs: Arguments to pass to the Bag constructor
-
-    Returns:
-        BagClassifier or BagRegressor: Appropriate Bag instance based on ml_type
-    """
-    ml_type = kwargs.get("ml_type", "regression")
-
-    if ml_type in ["classification", "multiclass"]:
-        return BagClassifier(**kwargs)
-    else:
-        return BagRegressor(**kwargs)
-
-
-# Add from_pickle as a static method to the factory function
-def _bag_from_pickle(file_path: str):
-    """Load a Bag object from a compressed pickle file.
-
-    Args:
-        file_path: The path to the file to load the pickle data from.
-
-    Returns:
-        BagClassifier or BagRegressor: The loaded instance.
-    """
-    with lz4.frame.open(file_path, "rb") as file:
-        return pickle.load(file)
-
-
-# Attach the from_pickle method to the Bag factory function
-Bag.from_pickle = _bag_from_pickle

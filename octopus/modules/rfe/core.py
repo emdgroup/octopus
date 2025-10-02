@@ -283,6 +283,7 @@ class RfeCore:
             self.experiment.selected_features,
             self.target_metric,
             self.target_assignments,
+            positive_class=self.experiment.configs.study.positive_class,
         )
         print(f"Test set (refit) performance: {test_score_refit:.3f}")
 
@@ -297,6 +298,7 @@ class RfeCore:
             self.experiment.selected_features,
             self.target_metric,
             self.target_assignments,
+            positive_class=self.experiment.configs.study.positive_class,
         )
         print(f"Test set (gridsearch+refit) performance: {test_score_gsrefit:.3f}")
 

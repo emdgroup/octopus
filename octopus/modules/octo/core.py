@@ -221,6 +221,7 @@ class OctoCore:
             num_workers=self.experiment.ml_config.n_workers,
             target_metric=self.experiment.configs.study.target_metric,
             row_column=self.experiment.row_column,
+            ml_type=self.experiment.ml_type,
         )
         # save ensel bag
         ensel_bag.to_pickle(self.path_results.joinpath("ensel_bag.pkl"))
@@ -298,6 +299,7 @@ class OctoCore:
                 num_workers=self.experiment.ml_config.n_workers,
                 target_metric=self.experiment.configs.study.target_metric,
                 row_column=self.experiment.row_column,
+                ml_type=self.experiment.ml_type,
             )
             # save best bag
             best_bag.to_pickle(self.path_results.joinpath("best_bag.pkl"))
@@ -456,6 +458,7 @@ class OctoCore:
             num_workers=self.experiment.ml_config.n_workers,
             target_metric=self.experiment.configs.study.target_metric,
             row_column=self.experiment.row_column,
+            ml_type=self.experiment.ml_type,
             # path?
         )
 

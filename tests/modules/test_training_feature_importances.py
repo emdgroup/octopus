@@ -259,6 +259,10 @@ def create_training_instance(
         "outl_reduction": 0,
     }
 
+    # Add positive_class for classification tasks
+    if ml_type == "classification":
+        training_config["positive_class"] = 1
+
     return Training(
         training_id=f"test_{ml_type}_{model_name}",
         ml_type=ml_type,

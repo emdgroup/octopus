@@ -14,7 +14,7 @@ from octopus.metrics import metrics_inventory
 def get_performance(
     model, data, feature_columns, target_metric, target_assignments, threshold=0.5, positive_class=None
 ) -> float:
-    """Calculate model performance score on dataset for given metric."""
+    """Calculate model performance on dataset for given metric."""
     input_data = data[feature_columns]
 
     # Ensure input_data is not empty and contains the required feature columns
@@ -82,7 +82,7 @@ def get_performance(
 def get_performance_score(
     model, data, feature_columns, target_metric, target_assignments, positive_class=None
 ) -> float:
-    """Calculate performance value for given metric."""
+    """Calculate model performance score on dataset for given metric and optimizaion direction."""
     performance = get_performance(
         model, data, feature_columns, target_metric, target_assignments, positive_class=positive_class
     )

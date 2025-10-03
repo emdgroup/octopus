@@ -119,7 +119,7 @@ class EnSel:
         for part, pool_value in pool.items():
             pool[part] = pd.concat(pool_value, axis=0).groupby(by=self.row_column).mean()
 
-        # calculate pooling scores (soft and hard)
+        # calculate pooling scores
         add_pooling_scores(pool, scores, self.target_metric, self.target_assignments)
 
         return scores

@@ -71,11 +71,6 @@ tabpfn = [
     "tabpfn>=2.1"
 ]
 dev = [
-    "octopus[autogluon]",
-    "octopus[tabpfn]",
-    "octopus[boruta]",
-    "octopus[survival]",
-    "octopus[lint]",
     "octopus[test]",
     "nbformat>=5.10", # analysis notebook
     "seaborn>=0.13", # analysis notebook

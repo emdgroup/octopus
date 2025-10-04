@@ -140,7 +140,7 @@ class ObjectiveOptuna:
         bag_trainings.fit()
 
         # evaluate trainings using target metric
-        scores = bag_trainings.get_scores()
+        scores = bag_trainings.get_performance()
 
         # get number of features used in bag
         n_features_mean = bag_trainings.n_features_used_mean
@@ -163,7 +163,7 @@ class ObjectiveOptuna:
 
         # adjust direction, optuna in octofull always minimizes
         target_metric = self.experiment.configs.study.target_metric
-        if metrics_inventory.get_direction(target_metric) == "maximize":
+        if metrics_inventory.get_direction(target_metric) == "minimize":
             optuna_target = -optuna_target
 
         # add penaltiy for n_features > max_features if configured
@@ -172,7 +172,7 @@ class ObjectiveOptuna:
             # only consider if n_features_mean > max_features
             diff_nfeatures = max(diff_nfeatures, 0)
             n_features = len(self.experiment.feature_columns)
-            optuna_target = optuna_target + self.penalty_factor * diff_nfeatures / n_features
+            optuna_target = optuna_target - self.penalty_factor * diff_nfeatures / n_features
 
         # save bag if we plan to run ensemble selection
         if self.ensel:

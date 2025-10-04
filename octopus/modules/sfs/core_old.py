@@ -13,8 +13,8 @@ from mlxtend.feature_selection import SequentialFeatureSelector as SFS
 from sklearn.model_selection import GridSearchCV, StratifiedKFold, cross_val_score
 
 from octopus.experiment import OctoExperiment
+from octopus.metrics.utils import get_performance_score
 from octopus.models.models_inventory import model_inventory
-from octopus.modules.utils import get_performance_score
 from octopus.results import ModuleResults
 
 # Ignore all Warnings

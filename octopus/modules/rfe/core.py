@@ -12,8 +12,8 @@ from sklearn.model_selection import GridSearchCV, StratifiedKFold
 
 from octopus.experiment import OctoExperiment
 from octopus.metrics.inventory import MetricsInventory
+from octopus.metrics.utils import get_performance_score
 from octopus.models.inventory import ModelInventory
-from octopus.modules.utils import get_performance_score
 from octopus.results import ModuleResults
 
 supported_models = {

@@ -3,10 +3,7 @@
 # TBD
 
 ### Necessary imports for this example
-
-import os
-
-import pandas as pd
+from sklearn.datasets import load_diabetes
 
 from octopus import OctoData, OctoML
 from octopus.config import ConfigManager, ConfigSequence, ConfigStudy
@@ -17,29 +14,16 @@ from octopus.modules import Mrmr, Octo
 # https://shap.readthedocs.io/en/latest/example_notebooks/tabular_examples/model_agnostic/Diabetes%20regression.html
 # https://automl.github.io/auto-sklearn/master/examples/20_basic/example_regression.html
 
-# load data from csv and perform pre-processing
-data_df = pd.read_csv(os.path.join(os.getcwd(), "datasets", "diabetes.csv"), index_col=0)
+### Load the diabetes dataset
+diabetes = load_diabetes(as_frame=True)
 
 ### Create OctoData Object
-
-# TBD
 octo_data = OctoData(
-    data=data_df,
-    target_columns=["progression"],
-    feature_columns=[
-        "age",
-        "sex",
-        "bmi",
-        "bp",
-        "s1",
-        "s2",
-        "s3",
-        "s4",
-        "s5",
-        "s6",
-    ],
-    sample_id="patient_id",
-    datasplit_type="group_sample_and_features",
+    data=diabetes["frame"].reset_index(),
+    target_columns=["target"],
+    feature_columns=diabetes["feature_names"],
+    sample_id="index",
+    datasplit_type="sample",
 )
 
 ### Create Configuration

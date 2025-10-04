@@ -16,12 +16,12 @@ from sklearn.base import BaseEstimator, ClassifierMixin, RegressorMixin
 # sklearn imports for compatibility
 from octopus.logger import LogGroup, get_logger
 from octopus.metrics import metrics_inventory
+from octopus.metrics.utils import add_pooling_performance
 
 # Adjust this import path as needed depending on your package layout
 from octopus.modules.octo.ray_parallel import (
     run_parallel_inner,
 )
-from octopus.modules.octo.scores import add_pooling_scores
 
 logger = get_logger()
 
@@ -181,6 +181,10 @@ class BagBase(BaseEstimator):
         if self.ml_type != "classification":
             return None
 
+        # Initialize _positive_class if it doesn't exist (e.g., when loaded from pickle)
+        if not hasattr(self, "_positive_class"):
+            self._positive_class = None
+
         # Return cached value if already computed
         if self._positive_class is not None:
             return self._positive_class
@@ -336,8 +340,8 @@ class BagBase(BaseEstimator):
 
         return predictions
 
-    def get_scores(self):
-        """Get scores."""
+    def get_performance(self):
+        """Get performance scores."""
         if not self.train_status:
             print("Running trainings first to be able to get scores")
             self.fit()
@@ -433,7 +437,9 @@ class BagBase(BaseEstimator):
             pool[part] = concatenated.groupby(by=self.row_column).mean()
 
         # calculate pooling scores (soft and hard)
-        add_pooling_scores(pool, scores, self.target_metric, self.target_assignments)
+        add_pooling_performance(
+            pool, scores, self.target_metric, self.target_assignments, positive_class=self.positive_class
+        )
 
         return scores
 

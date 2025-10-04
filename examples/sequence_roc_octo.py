@@ -105,7 +105,6 @@ config_sequence = ConfigSequence(
             ],
             model_seed=0,
             n_jobs=1,
-            dim_red_methods=[""],  # No dimensionality reduction
             max_outl=0,  # No outlier removal
             fi_methods_bestbag=["permutation"],  # Feature importance method
             # Parallelization settings

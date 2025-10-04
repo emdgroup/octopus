@@ -20,8 +20,8 @@ from sklearn.utils.validation import check_is_fitted
 
 from octopus.logger import LogGroup, get_logger
 from octopus.metrics.inventory import MetricsInventory
+from octopus.metrics.utils import get_performance_score
 from octopus.models.inventory import ModelInventory
-from octopus.modules.utils import get_performance_score
 
 ## TOBEDONE pipeline
 # - implement cat encoding on module level
@@ -330,6 +330,13 @@ class Training:
 
         # add additional predictions for classifications
         if self.ml_type == "classification":
+            columns = [int(x) for x in self.model.classes_]  # column names --> int
+            self.predictions["train"][columns] = self.model.predict_proba(self.x_train_processed)
+            self.predictions["dev"][columns] = self.model.predict_proba(self.x_dev_processed)
+            self.predictions["test"][columns] = self.model.predict_proba(self.x_test_processed)
+
+        # add additional predictions for multiclass classifications
+        if self.ml_type == "multiclass":
             columns = [int(x) for x in self.model.classes_]  # column names --> int
             self.predictions["train"][columns] = self.model.predict_proba(self.x_train_processed)
             self.predictions["dev"][columns] = self.model.predict_proba(self.x_dev_processed)

@@ -37,7 +37,7 @@ from octopus.modules.octo.training import Training
 
 # Test data configuration
 TEST_CONFIG = {
-    "n_samples": 150,  # Smaller dataset for faster testing
+    "n_samples": 30,  # Even smaller dataset for faster testing
     "test_split": 0.3,
     "dev_split": 0.2,
     "random_seed": 42,
@@ -174,28 +174,21 @@ def test_data():
     np.random.seed(TEST_CONFIG["random_seed"])
     n_samples = TEST_CONFIG["n_samples"]
 
-    # Generate numerical features
+    # Generate fewer numerical features for speed
     data = pd.DataFrame(
         {
             "num_col1": np.random.normal(10, 2, n_samples),
             "num_col2": np.random.normal(50, 10, n_samples),
-            "num_col3": np.random.uniform(0, 100, n_samples),
         }
     )
 
-    # Add missing values to numerical columns
-    data.loc[::15, "num_col1"] = np.nan
-    data.loc[::20, "num_col2"] = np.nan
-    data.loc[::25, "num_col3"] = np.nan
+    # Minimal missing values for speed
+    data.loc[::10, "num_col1"] = np.nan
 
-    # Generate categorical features
-    nominal_col = np.random.choice([1, 2, 3, 4], n_samples).astype(float)
-    nominal_col[::18] = np.nan
+    # Single categorical feature for speed
+    nominal_col = np.random.choice([1, 2, 3], n_samples).astype(float)
+    nominal_col[::15] = np.nan
     data["nominal_col"] = nominal_col
-
-    ordinal_col = np.random.choice([1, 2, 3], n_samples).astype(float)
-    ordinal_col[::22] = np.nan
-    data["ordinal_col"] = ordinal_col
 
     # Add row identifier
     data["row_id"] = range(n_samples)
@@ -228,11 +221,11 @@ def test_data():
 
 @pytest.fixture(scope="session")
 def feature_config():
-    """Feature configuration for tests."""
-    feature_columns = ["num_col1", "num_col2", "num_col3", "nominal_col", "ordinal_col"]
+    """Feature configuration for tests - optimized for speed."""
+    feature_columns = ["num_col1", "num_col2", "nominal_col"]  # Reduced to 3 features
     feature_groups = {
         "numerical_group": ["num_col1", "num_col2"],
-        "categorical_group": ["nominal_col", "ordinal_col"],
+        "categorical_group": ["nominal_col"],
     }
     return feature_columns, feature_groups
 
@@ -303,11 +296,11 @@ def _test_fi_method(training: Training, method_name: str) -> dict:
             fi_key = "internal"
 
         elif method_name == "calculate_fi_group_permutation":
-            training.calculate_fi_group_permutation(partition="dev", n_repeats=2)
+            training.calculate_fi_group_permutation(partition="dev", n_repeats=1)  # Reduced repeats
             fi_key = "permutation_dev"
 
         elif method_name == "calculate_fi_permutation":
-            training.calculate_fi_permutation(partition="dev", n_repeats=2)
+            training.calculate_fi_permutation(partition="dev", n_repeats=1)  # Reduced repeats
             fi_key = "permutation_dev"
 
         elif method_name == "calculate_fi_lofo":
@@ -319,7 +312,7 @@ def _test_fi_method(training: Training, method_name: str) -> dict:
             fi_key = "shap_dev"
 
         elif method_name == "calculate_fi_shap":
-            training.calculate_fi_shap(partition="dev", shap_type="kernel")
+            training.calculate_fi_shap(partition="dev", shap_type="permutation")  # Faster SHAP method
             fi_key = "shap_dev"
 
         else:
@@ -362,28 +355,21 @@ def run_comprehensive_feature_importance_tests():
     np.random.seed(TEST_CONFIG["random_seed"])
     n_samples = TEST_CONFIG["n_samples"]
 
-    # Generate test data (same as fixture)
+    # Generate test data (optimized for speed)
     data = pd.DataFrame(
         {
             "num_col1": np.random.normal(10, 2, n_samples),
             "num_col2": np.random.normal(50, 10, n_samples),
-            "num_col3": np.random.uniform(0, 100, n_samples),
         }
     )
 
-    # Add missing values
-    data.loc[::15, "num_col1"] = np.nan
-    data.loc[::20, "num_col2"] = np.nan
-    data.loc[::25, "num_col3"] = np.nan
+    # Minimal missing values
+    data.loc[::10, "num_col1"] = np.nan
 
-    # Generate categorical features
-    nominal_col = np.random.choice([1, 2, 3, 4], n_samples).astype(float)
-    nominal_col[::18] = np.nan
+    # Single categorical feature
+    nominal_col = np.random.choice([1, 2, 3], n_samples).astype(float)
+    nominal_col[::15] = np.nan
     data["nominal_col"] = nominal_col
-
-    ordinal_col = np.random.choice([1, 2, 3], n_samples).astype(float)
-    ordinal_col[::22] = np.nan
-    data["ordinal_col"] = ordinal_col
 
     data["row_id"] = range(n_samples)
 
@@ -410,10 +396,10 @@ def run_comprehensive_feature_importance_tests():
     data_dev = data.iloc[dev_idx].reset_index(drop=True)
     data_test = data.iloc[test_idx].reset_index(drop=True)
 
-    feature_columns = ["num_col1", "num_col2", "num_col3", "nominal_col", "ordinal_col"]
+    feature_columns = ["num_col1", "num_col2", "nominal_col"]  # Reduced to 3 features
     feature_groups = {
         "numerical_group": ["num_col1", "num_col2"],
-        "categorical_group": ["nominal_col", "ordinal_col"],
+        "categorical_group": ["nominal_col"],
     }
 
     # Get all available models

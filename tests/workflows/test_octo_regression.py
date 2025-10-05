@@ -6,7 +6,7 @@ from unittest.mock import patch
 
 import pandas as pd
 import pytest
-from sklearn.datasets import load_diabetes
+from sklearn.datasets import make_regression
 
 from octopus import OctoData, OctoML
 from octopus.config import ConfigManager, ConfigSequence, ConfigStudy
@@ -18,11 +18,21 @@ class TestOctoRegression:
 
     @pytest.fixture
     def diabetes_dataset(self):
-        """Create diabetes dataset for testing (same as in the workflow)."""
-        # Load the diabetes dataset
-        diabetes = load_diabetes(as_frame=True)
-        df = diabetes["frame"].reset_index()
-        features = diabetes["feature_names"]
+        """Create synthetic regression dataset for testing (faster than diabetes dataset)."""
+        # Create synthetic regression dataset with reduced size for faster testing
+        X, y = make_regression(
+            n_samples=30,
+            n_features=5,
+            n_informative=3,
+            noise=0.1,
+            random_state=42,
+        )
+
+        # Create DataFrame similar to diabetes dataset structure
+        features = [f"feature_{i}" for i in range(5)]
+        df = pd.DataFrame(X, columns=features)
+        df["target"] = y
+        df = df.reset_index()
 
         return df, features
 
@@ -72,8 +82,8 @@ class TestOctoRegression:
         assert isinstance(df, pd.DataFrame)
         assert "target" in df.columns
         assert "index" in df.columns
-        assert len(features) == 10  # Diabetes dataset has 10 features
-        assert df.shape[0] == 442  # Diabetes dataset has 442 samples
+        assert len(features) == 5  # Synthetic dataset has 5 features
+        assert df.shape[0] == 30  # Synthetic dataset has 30 samples
 
         # Verify target values are continuous (regression)
         assert df["target"].dtype in ["float64", "int64"]
@@ -91,7 +101,7 @@ class TestOctoRegression:
         """Test OctoData configuration for diabetes dataset."""
         # Verify OctoData configuration
         assert octo_data_config.target_columns == ["target"]
-        assert len(octo_data_config.feature_columns) == 10
+        assert len(octo_data_config.feature_columns) == 5
         assert octo_data_config.sample_id == "index"
         assert octo_data_config.datasplit_type == "sample"
 

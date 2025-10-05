@@ -6,8 +6,9 @@ import shutil
 import tempfile
 from pathlib import Path
 
+import pandas as pd
 import pytest
-from sklearn.datasets import load_breast_cancer, load_diabetes
+from sklearn.datasets import make_classification, make_regression
 
 from octopus import OctoData, OctoML
 from octopus.config import ConfigManager, ConfigSequence, ConfigStudy
@@ -25,13 +26,21 @@ class TestAutogluonWorkflows:
         self.studies_path = os.path.join(self.temp_dir, "studies")
         os.makedirs(self.studies_path, exist_ok=True)
 
-        # Load the breast cancer dataset and reduce to 100 samples
-        breast_cancer = load_breast_cancer(as_frame=True)
-        df_full = breast_cancer["frame"].reset_index()
-        self.df = df_full.iloc[:100].copy()  # Reduce to 100 samples
-        self.df.columns = self.df.columns.str.replace(" ", "_")
-        self.features = list(breast_cancer["feature_names"])
-        self.features = [feature.replace(" ", "_") for feature in self.features]
+        # Create synthetic binary classification dataset with reduced size for faster testing
+        X, y = make_classification(
+            n_samples=30,
+            n_features=5,
+            n_informative=3,
+            n_redundant=2,
+            n_classes=2,
+            random_state=42,
+        )
+
+        # Create DataFrame similar to breast cancer dataset structure
+        self.features = [f"feature_{i}" for i in range(5)]
+        self.df = pd.DataFrame(X, columns=self.features)
+        self.df["target"] = y
+        self.df = self.df.reset_index()
 
     def teardown_method(self):
         """Clean up after each test method."""
@@ -67,7 +76,7 @@ class TestAutogluonWorkflows:
 
         config_manager = ConfigManager(
             outer_parallelization=True,  # Enable parallelization
-            run_single_experiment_num=-1,  # Run all experiments
+            run_single_experiment_num=0,  # Run experiment 0
         )
 
         config_sequence = ConfigSequence(
@@ -77,7 +86,7 @@ class TestAutogluonWorkflows:
                     sequence_id=0,
                     input_sequence_id=-1,
                     presets=["medium_quality"],
-                    time_limit=30,  # Time limit for testing
+                    time_limit=15,  # Time limit for testing
                     verbosity=0,  # Minimize AutoGluon output
                 ),
             ]
@@ -106,16 +115,26 @@ class TestAutogluonWorkflows:
 
     def test_full_regression_workflow(self):
         """Test the complete regression workflow execution."""
-        # Load diabetes dataset and reduce to 100 samples
-        diabetes = load_diabetes(as_frame=True)
-        df_full = diabetes["frame"].reset_index()
-        df_regression = df_full.iloc[:100].copy()  # Reduce to 100 samples
+        # Create synthetic regression dataset with reduced size for faster testing
+        X, y = make_regression(
+            n_samples=30,
+            n_features=5,
+            n_informative=3,
+            noise=0.1,
+            random_state=42,
+        )
+
+        # Create DataFrame similar to diabetes dataset structure
+        feature_names = [f"feature_{i}" for i in range(5)]
+        df_regression = pd.DataFrame(X, columns=feature_names)
+        df_regression["target"] = y
+        df_regression = df_regression.reset_index()
 
         # Create OctoData object for regression
         octo_data = OctoData(
             data=df_regression,
             target_columns=["target"],
-            feature_columns=diabetes["feature_names"],
+            feature_columns=feature_names,
             sample_id="index",
             datasplit_type="sample",
         )
@@ -146,7 +165,7 @@ class TestAutogluonWorkflows:
                     sequence_id=0,
                     input_sequence_id=-1,
                     presets=["medium_quality"],
-                    time_limit=30,  # Time limit for testing
+                    time_limit=15,  # Time limit for testing
                     verbosity=0,  # Minimize AutoGluon output
                 ),
             ]

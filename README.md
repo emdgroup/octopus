@@ -4,7 +4,9 @@ Octopus is a lightweight AutoML framework specifically designed for small datase
 
 ## Installation
 
-Before installation please create a new environment, for example:
+For maximum speed it is recommended to run Octopus on a compute node with n*m Cpus for a nxm nested cross validation. Octopus development is done, for example, on a c5.9xlarge EC2 instance. 
+
+Before installation please create a new environment:
 
     conda create -n "your_environment_name" python=3.12
 

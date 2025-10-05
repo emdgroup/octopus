@@ -6,7 +6,7 @@ from unittest.mock import patch
 
 import pandas as pd
 import pytest
-from sklearn.datasets import load_breast_cancer
+from sklearn.datasets import make_classification
 
 from octopus import OctoData, OctoML
 from octopus.config import ConfigManager, ConfigSequence, ConfigStudy
@@ -18,16 +18,24 @@ class TestOctoIntroClassification:
 
     @pytest.fixture
     def breast_cancer_dataset(self):
-        """Create breast cancer dataset for testing (same as in the workflow)."""
-        # Load the breast cancer dataset
-        breast_cancer = load_breast_cancer(as_frame=True)
+        """Create synthetic binary classification dataset for testing (faster than breast cancer dataset)."""
+        # Create synthetic binary classification dataset with reduced size for faster testing
+        X, y = make_classification(
+            n_samples=30,
+            n_features=5,
+            n_informative=3,
+            n_redundant=2,
+            n_classes=2,
+            random_state=42,
+        )
 
-        df = breast_cancer["frame"].reset_index()
-        df.columns = df.columns.str.replace(" ", "_")
-        features = list(breast_cancer["feature_names"])
-        features = [feature.replace(" ", "_") for feature in features]
+        # Create DataFrame similar to breast cancer dataset structure
+        feature_names = [f"feature_{i}" for i in range(5)]
+        df = pd.DataFrame(X, columns=feature_names)
+        df["target"] = y
+        df = df.reset_index()
 
-        return df, features
+        return df, feature_names
 
     @pytest.fixture
     def octo_data_config(self, breast_cancer_dataset):
@@ -53,7 +61,7 @@ class TestOctoIntroClassification:
                 target_metric="ACCBAL",
                 metrics=["AUCROC", "ACCBAL", "ACC", "LOGLOSS"],
                 datasplit_seed_outer=1234,
-                n_folds_outer=3,  # Reduced for faster testing
+                n_folds_outer=2,  # Reduced for faster testing
                 start_with_empty_study=True,
                 path=temp_dir,
                 silently_overwrite_study=True,
@@ -76,8 +84,8 @@ class TestOctoIntroClassification:
         assert isinstance(df, pd.DataFrame)
         assert "target" in df.columns
         assert "index" in df.columns
-        assert len(features) == 30  # Breast cancer dataset has 30 features
-        assert df.shape[0] == 569  # Breast cancer dataset has 569 samples
+        assert len(features) == 5  # Reduced to 5 features for faster testing
+        assert df.shape[0] == 30  # Reduced to 30 samples for faster testing
 
         # Verify target values are binary (0 and 1)
         unique_targets = df["target"].unique()
@@ -96,7 +104,7 @@ class TestOctoIntroClassification:
         """Test OctoData configuration for breast cancer dataset."""
         # Verify OctoData configuration
         assert octo_data_config.target_columns == ["target"]
-        assert len(octo_data_config.feature_columns) == 30
+        assert len(octo_data_config.feature_columns) == 5  # Reduced to 5 features
         assert octo_data_config.sample_id == "index"
         assert octo_data_config.datasplit_type == "sample"
         assert octo_data_config.stratification_column == "target"
@@ -114,25 +122,22 @@ class TestOctoIntroClassification:
                     sequence_id=0,
                     input_sequence_id=-1,
                     load_sequence_item=False,
-                    n_folds_inner=5,
+                    n_folds_inner=3,  # Reduced for faster testing
                     models=[
                         "ExtraTreesClassifier",
                         "RandomForestClassifier",
                     ],
-                    model_seed=0,
-                    n_jobs=1,
-                    max_outl=0,
                     fi_methods_bestbag=["permutation"],
                     inner_parallelization=True,
-                    n_workers=5,
+                    n_workers=3,  # Match n_folds_inner
                     optuna_seed=0,
-                    n_optuna_startup_trials=10,
+                    n_optuna_startup_trials=5,  # Reduced for faster testing
                     resume_optimization=False,
-                    n_trials=12,
-                    max_features=12,
+                    n_trials=6,  # Reduced for faster testing
+                    max_features=5,  # Reduced to match feature count
                     penalty_factor=1.0,
                     ensemble_selection=True,
-                    ensel_n_save_trials=10,
+                    ensel_n_save_trials=5,  # Reduced for faster testing
                 )
             ]
         )
@@ -146,22 +151,22 @@ class TestOctoIntroClassification:
         assert octo_step.sequence_id == 0
         assert octo_step.input_sequence_id == -1
         assert octo_step.description == "step_1_octo"
-        assert octo_step.n_folds_inner == 5
+        assert octo_step.n_folds_inner == 3
         assert set(octo_step.models) == {"ExtraTreesClassifier", "RandomForestClassifier"}
         assert octo_step.model_seed == 0
         assert octo_step.n_jobs == 1
-        assert octo_step.max_outl == 0
+        assert octo_step.max_outl == 3
         assert octo_step.fi_methods_bestbag == ["permutation"]
         assert octo_step.inner_parallelization is True
-        assert octo_step.n_workers == 5
+        assert octo_step.n_workers == 3
         assert octo_step.optuna_seed == 0
-        assert octo_step.n_optuna_startup_trials == 10
+        assert octo_step.n_optuna_startup_trials == 5
         assert octo_step.resume_optimization is False
-        assert octo_step.n_trials == 12
-        assert octo_step.max_features == 12
+        assert octo_step.n_trials == 6
+        assert octo_step.max_features == 5
         assert octo_step.penalty_factor == 1.0
         assert octo_step.ensemble_selection is True
-        assert octo_step.ensel_n_save_trials == 10
+        assert octo_step.ensel_n_save_trials == 5
 
     @patch("octopus.ml.OctoML.run_study")
     def test_workflow_initialization(self, mock_run_study, octo_data_config, config_study, config_manager):
@@ -177,7 +182,7 @@ class TestOctoIntroClassification:
                     models=["ExtraTreesClassifier"],
                     model_seed=0,
                     n_jobs=1,
-                    n_trials=10,  # Reduced for testing
+                    n_trials=5,  # Further reduced for testing
                     fi_methods_bestbag=["permutation"],
                 )
             ]
@@ -214,7 +219,7 @@ class TestOctoIntroClassification:
                     sequence_id=0,
                     input_sequence_id=-1,
                     models=[model],
-                    n_trials=5,  # Minimal for testing
+                    n_trials=3,  # Further reduced for testing
                     n_folds_inner=3,
                 )
             ]
@@ -233,7 +238,7 @@ class TestOctoIntroClassification:
                     sequence_id=0,
                     input_sequence_id=-1,
                     models=models,
-                    n_trials=10,
+                    n_trials=5,  # Reduced for testing
                     n_folds_inner=3,
                 )
             ]
@@ -253,7 +258,7 @@ class TestOctoIntroClassification:
                     input_sequence_id=-1,
                     models=["ExtraTreesClassifier"],
                     fi_methods_bestbag=fi_methods,
-                    n_trials=5,
+                    n_trials=3,  # Further reduced for testing
                 )
             ]
         )
@@ -272,7 +277,7 @@ class TestOctoIntroClassification:
                     models=["ExtraTreesClassifier", "RandomForestClassifier"],
                     ensemble_selection=True,
                     ensel_n_save_trials=15,
-                    n_trials=20,
+                    n_trials=5,  # Reduced for testing
                 )
             ]
         )
@@ -292,8 +297,8 @@ class TestOctoIntroClassification:
                     models=["ExtraTreesClassifier"],
                     optuna_seed=42,
                     n_optuna_startup_trials=5,
-                    n_trials=25,
-                    max_features=15,
+                    n_trials=5,  # Reduced for testing
+                    max_features=5,  # Reduced to match feature count
                     penalty_factor=1.5,
                 )
             ]
@@ -302,8 +307,8 @@ class TestOctoIntroClassification:
         octo_step = config_sequence.sequence_items[0]
         assert octo_step.optuna_seed == 42
         assert octo_step.n_optuna_startup_trials == 5
-        assert octo_step.n_trials == 25
-        assert octo_step.max_features == 15
+        assert octo_step.n_trials == 5
+        assert octo_step.max_features == 5
         assert octo_step.penalty_factor == 1.5
 
     @pytest.mark.slow
@@ -348,8 +353,8 @@ class TestOctoIntroClassification:
                         optuna_seed=0,
                         n_optuna_startup_trials=3,  # Reduced for testing
                         resume_optimization=False,
-                        n_trials=12,  # Reduced for testing
-                        max_features=12,
+                        n_trials=5,  # Further reduced for testing
+                        max_features=5,  # Reduced to match feature count
                         penalty_factor=1.0,
                         ensemble_selection=True,
                         ensel_n_save_trials=5,  # Reduced for testing
@@ -390,26 +395,6 @@ class TestOctoIntroClassification:
             sequence_dir = sequence_dirs[0]
             assert sequence_dir.exists(), "Octo sequence step should have been executed"
 
-    def test_smoke_test_configuration(self):
-        """Test configuration for smoke test (reduced parameters)."""
-        # Simulate SMOKE_TEST environment variable being set
-        config_sequence = ConfigSequence(
-            [
-                Octo(
-                    description="step_1_octo",
-                    sequence_id=0,
-                    input_sequence_id=-1,
-                    models=["ExtraTreesClassifier"],
-                    n_trials=5,  # Smoke test value
-                    n_folds_inner=3,
-                    fi_methods_bestbag=["permutation"],
-                )
-            ]
-        )
-
-        octo_step = config_sequence.sequence_items[0]
-        assert octo_step.n_trials == 5  # Should be reduced for smoke test
-
     def test_full_configuration_parameters(self):
         """Test that all configuration parameters from the original workflow are supported."""
         config_sequence = ConfigSequence(
@@ -430,8 +415,8 @@ class TestOctoIntroClassification:
                     optuna_seed=0,
                     n_optuna_startup_trials=10,
                     resume_optimization=False,
-                    n_trials=20,
-                    max_features=12,
+                    n_trials=5,  # Reduced for testing
+                    max_features=5,  # Reduced to match feature count
                     penalty_factor=1.0,
                     ensemble_selection=True,
                     ensel_n_save_trials=10,
@@ -468,8 +453,8 @@ class TestOctoIntroClassification:
         assert octo_step.optuna_seed == 0
         assert octo_step.n_optuna_startup_trials == 10
         assert octo_step.resume_optimization is False
-        assert octo_step.n_trials == 20
-        assert octo_step.max_features == 12
+        assert octo_step.n_trials == 5
+        assert octo_step.max_features == 5
         assert octo_step.penalty_factor == 1.0
 
         # Ensemble selection

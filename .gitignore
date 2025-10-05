@@ -58,3 +58,5 @@ htmlcov
 *.tar
 *.pem
 *.tfevents
+.env*
+env*

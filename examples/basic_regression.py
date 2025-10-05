@@ -6,17 +6,11 @@
 # and that all features are numeric.
 
 ### Necessary imports for this example
-import os
-
 from sklearn.datasets import load_diabetes
 
 from octopus import OctoData, OctoML
 from octopus.config import ConfigManager, ConfigSequence, ConfigStudy
 from octopus.modules import Octo
-
-# Check if this is a smoke test
-SMOKE_TEST = os.environ.get("SMOKE_TEST", "").lower() in ["true", "1", "yes"]
-N_TRIALS = 5 if SMOKE_TEST else 200
 
 ### Load the diabetes dataset
 diabetes = load_diabetes(as_frame=True)
@@ -66,7 +60,7 @@ config_sequence = ConfigSequence(
                 "GradientBoostingRegressor",
                 "CatBoostRegressor",
             ],
-            n_trials=N_TRIALS,
+            n_trials=20,
         ),
     ]
 )

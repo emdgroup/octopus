@@ -2,7 +2,6 @@
 
 from typing import Any
 
-import pandas as pd
 from attrs import define, field
 
 from octopus.exceptions import UnknownMetricError
@@ -58,37 +57,3 @@ class MetricsInventory:
             return "maximize"
         else:
             return "minimize"
-
-    def get_performance_score(
-        self,
-        metric: str,
-        target_assignments: dict,
-        model: type,
-        data: pd.DataFrame,
-        feature_columns: list,
-    ) -> float:
-        """Get performance score."""
-        metric_config = self.get_metric_config(metric)
-        metric_function = metric_config.metric_function
-        prediction_type = metric_config.prediction_type
-        ml_type = metric_config.ml_type
-
-        if ml_type == "timetoevent":
-            estimate = model.predict(data[feature_columns])
-            event_time = data[target_assignments["duration"]].astype(float)
-            event_indicator = data[target_assignments["event"]].astype(bool)
-            performance = metric_function(event_indicator, event_time, estimate)[0]
-        else:
-            if prediction_type == "predict_proba":
-                # binary only!!
-                probabilities = model.predict_proba(data[feature_columns])[:, 1]
-            elif prediction_type == "predict":
-                probabilities = model.predict(data[feature_columns])
-            else:
-                return ValueError(f"Unknown prediction type {prediction_type}")
-            target = data[target_assignments["default"]]
-            performance = metric_function(target, probabilities)
-        if metric_function.higher_is_better is True:
-            return performance
-        else:
-            return -performance

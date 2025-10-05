@@ -102,6 +102,7 @@ try:
         "PRECISION": precision,
         "RECALL": recall,
         "R2": r2,
+        "RMSE": root_mean_squared_error,  # RMSE is equivalent to MSE in autogluon
     }
 except Exception as e:  # pylint: disable=W0718 # noqa: F841
     metrics_inventory_autogluon = {}
@@ -413,6 +414,7 @@ class AGCore:
                 self.feature_columns,
                 metric,
                 self.target_assignments,
+                positive_class=self.experiment.configs.study.positive_class,
             )
             test_performance_octo[metric + "_test_octo"] = performance
 

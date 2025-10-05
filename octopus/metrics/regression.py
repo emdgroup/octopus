@@ -1,9 +1,23 @@
 """Regression metrics."""
 
+import numpy as np
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 
 from .config import MetricConfig
 from .registry import MetricRegistry
+
+
+def root_mean_squared_error(y_true: np.ndarray, y_pred: np.ndarray) -> float:
+    """Calculate Root Mean Squared Error (RMSE).
+
+    Args:
+        y_true: True target values
+        y_pred: Predicted target values
+
+    Returns:
+        float: RMSE value
+    """
+    return np.sqrt(mean_squared_error(y_true, y_pred))
 
 
 @MetricRegistry.register("R2")
@@ -57,4 +71,21 @@ class MSEMetric:
         )
 
 
-__all__ = ["MAEMetric", "MSEMetric", "R2Metric"]
+@MetricRegistry.register("RMSE")
+class RMSEMetric:
+    """RMSE metric class."""
+
+    @staticmethod
+    def get_metric_config():
+        """Get metric config."""
+        return MetricConfig(
+            name="RMSE",
+            metric_function=root_mean_squared_error,
+            ml_type="regression",
+            higher_is_better=False,
+            prediction_type="predict",
+            scorer_string="neg_root_mean_squared_error",
+        )
+
+
+__all__ = ["MAEMetric", "MSEMetric", "RMSEMetric", "R2Metric"]

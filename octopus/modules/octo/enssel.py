@@ -17,8 +17,8 @@ import pandas as pd
 from attrs import define, field, validators
 
 from octopus.metrics import metrics_inventory
+from octopus.metrics.utils import add_pooling_performance
 from octopus.modules.octo.bag import Bag
-from octopus.modules.octo.scores import add_pooling_scores
 
 
 @define
@@ -30,6 +30,7 @@ class EnSel:
     path_trials: Path = field(validator=[validators.instance_of(Path)])
     max_n_iterations: int = field(validator=[validators.instance_of(int)])
     row_column: str = field(validator=[validators.instance_of(str)])
+    positive_class = field(default=None)
     model_table: pd.DataFrame = field(
         init=False,
         default=pd.DataFrame(),
@@ -70,7 +71,7 @@ class EnSel:
             bag = Bag.from_pickle(file)
             self.bags[file] = {
                 "id": bag.bag_id,
-                "scores": bag.get_scores(),
+                "scores": bag.get_performance(),
                 "predictions": bag.get_predictions(),
                 "n_features_used_mean": bag.n_features_used_mean,
             }
@@ -119,8 +120,10 @@ class EnSel:
         for part, pool_value in pool.items():
             pool[part] = pd.concat(pool_value, axis=0).groupby(by=self.row_column).mean()
 
-        # calculate pooling scores (soft and hard)
-        add_pooling_scores(pool, scores, self.target_metric, self.target_assignments)
+        # calculate pooling scores
+        add_pooling_performance(
+            pool, scores, self.target_metric, self.target_assignments, positive_class=self.positive_class
+        )
 
         return scores
 

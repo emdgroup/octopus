@@ -6,17 +6,11 @@
 # and that all features are numeric.
 
 ### Necessary imports for this example
-import os
-
 from sklearn.datasets import load_breast_cancer
 
 from octopus import OctoData, OctoML
 from octopus.config import ConfigManager, ConfigSequence, ConfigStudy
 from octopus.modules import Octo
-
-# Check if this is a smoke test
-SMOKE_TEST = os.environ.get("SMOKE_TEST", "").lower() in ["true", "1", "yes"]
-N_TRIALS = 5 if SMOKE_TEST else 5
 
 ### Load and Preprocess Data
 
@@ -74,7 +68,7 @@ config_sequence = ConfigSequence(
                 # "ExtraTreesClassifier",
                 # "RandomForestClassifier",
             ],
-            n_trials=N_TRIALS,
+            n_trials=5,
         )
     ]
 )

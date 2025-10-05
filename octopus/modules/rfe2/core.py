@@ -131,7 +131,7 @@ class Rfe2Core(OctoCore):
             bag = self._retrain_and_calc_fi(bag, new_features)
 
             # get scores
-            bag_scores = bag.get_scores()
+            bag_scores = bag.get_performance()
 
             # record performance
             dev_lst = bag_scores["dev_lst"]
@@ -175,7 +175,7 @@ class Rfe2Core(OctoCore):
             experiment_id=self.experiment.experiment_id,
             sequence_id=self.experiment.sequence_id,
             model=best_model,
-            scores=best_model.get_scores(),
+            scores=best_model.get_performance(),
             feature_importances={
                 "dev": selected_row["feature_importances"],
             },

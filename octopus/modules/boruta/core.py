@@ -13,8 +13,8 @@ from sklearn.model_selection import GridSearchCV, StratifiedKFold, cross_val_sco
 
 from octopus.experiment import OctoExperiment
 from octopus.metrics.inventory import MetricsInventory
+from octopus.metrics.utils import get_performance_score
 from octopus.models.inventory import ModelInventory
-from octopus.modules.utils import get_performance_score
 from octopus.results import ModuleResults
 
 # Ignore all Warnings
@@ -232,6 +232,7 @@ class BorutaCore:
             self.experiment.selected_features,
             self.target_metric,
             self.target_assignments,
+            positive_class=self.experiment.configs.study.positive_class,
         )
         print(f"Test set (refit) performance: {test_score_refit:.3f}")
 
@@ -247,6 +248,7 @@ class BorutaCore:
             self.experiment.selected_features,
             self.target_metric,
             self.target_assignments,
+            positive_class=self.experiment.configs.study.positive_class,
         )
         print(f"Test set (gridsearch+refit) performance: {test_score_gsrefit:.3f}")
 

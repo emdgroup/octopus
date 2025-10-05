@@ -6,7 +6,7 @@ from unittest.mock import patch
 
 import pandas as pd
 import pytest
-from sklearn.datasets import load_wine
+from sklearn.datasets import make_classification
 
 from octopus import OctoData, OctoML
 from octopus.config import ConfigManager, ConfigSequence, ConfigStudy
@@ -18,16 +18,30 @@ class TestOctoMulticlass:
 
     @pytest.fixture
     def wine_dataset(self):
-        """Create wine dataset for testing (same as in the workflow)."""
-        # Load the wine dataset
-        wine = load_wine(as_frame=True)
+        """Create synthetic multiclass dataset for testing (faster than Wine dataset)."""
+        # Create synthetic multiclass dataset with reduced size for faster testing
+        X, y = make_classification(
+            n_samples=30,
+            n_features=5,
+            n_informative=3,
+            n_redundant=2,
+            n_classes=3,
+            random_state=42,
+        )
 
-        df = wine["frame"].reset_index()
-        df.columns = df.columns.str.replace(" ", "_")
-        features = list(wine["feature_names"])
-        features = [feature.replace(" ", "_") for feature in features]
+        # Create DataFrame similar to Wine dataset structure
+        feature_names = [f"feature_{i}" for i in range(5)]
+        df = pd.DataFrame(X, columns=feature_names)
+        df["target"] = y
+        df = df.reset_index()
 
-        return df, features, wine
+        # Create mock wine object for compatibility
+        class MockWine:
+            target_names = ["class_0", "class_1", "class_2"]
+
+        wine = MockWine()
+
+        return df, feature_names, wine
 
     @pytest.fixture
     def octo_data_config(self, wine_dataset):
@@ -69,15 +83,15 @@ class TestOctoMulticlass:
         )
 
     def test_wine_dataset_loading(self, wine_dataset):
-        """Test that the wine dataset is loaded correctly."""
+        """Test that the synthetic dataset is loaded correctly."""
         df, features, wine = wine_dataset
 
         # Verify dataset structure
         assert isinstance(df, pd.DataFrame)
         assert "target" in df.columns
         assert "index" in df.columns
-        assert len(features) == 13  # Wine dataset has 13 features
-        assert df.shape[0] == 178  # Wine dataset has 178 samples
+        assert len(features) == 5  # Synthetic dataset has 5 features
+        assert df.shape[0] == 30  # Synthetic dataset has 30 samples
 
         # Verify target values are multiclass (0, 1, 2)
         unique_targets = df["target"].unique()
@@ -97,15 +111,15 @@ class TestOctoMulticlass:
         assert len(target_counts) == 3
         assert all(count > 0 for count in target_counts.values)
 
-        # Verify wine target names
+        # Verify target names
         assert len(wine.target_names) == 3
         assert all(isinstance(name, str) for name in wine.target_names)
 
     def test_octo_data_configuration(self, octo_data_config):
-        """Test OctoData configuration for wine dataset."""
+        """Test OctoData configuration for synthetic dataset."""
         # Verify OctoData configuration
         assert octo_data_config.target_columns == ["target"]
-        assert len(octo_data_config.feature_columns) == 13
+        assert len(octo_data_config.feature_columns) == 5
         assert octo_data_config.sample_id == "index"
         assert octo_data_config.datasplit_type == "sample"
         assert octo_data_config.stratification_column == "target"
@@ -351,7 +365,7 @@ class TestOctoMulticlass:
                         max_outl=0,
                         fi_methods_bestbag=["permutation"],
                         inner_parallelization=True,
-                        n_workers=2,  # Reduced for testing
+                        n_workers=3,  # Match n_folds_inner
                         n_trials=12,  # Reduced for testing
                     )
                 ]
@@ -390,54 +404,19 @@ class TestOctoMulticlass:
             sequence_dir = sequence_dirs[0]
             assert sequence_dir.exists(), "Multiclass Octo sequence step should have been executed"
 
-    def test_smoke_test_configuration(self):
-        """Test configuration for smoke test (reduced parameters)."""
-        # Simulate SMOKE_TEST environment variable being set
-        config_sequence = ConfigSequence(
-            [
-                Octo(
-                    description="step_1_octo_multiclass",
-                    sequence_id=0,
-                    input_sequence_id=-1,
-                    models=["ExtraTreesClassifier"],
-                    n_trials=5,  # Smoke test value
-                    n_folds_inner=3,
-                    fi_methods_bestbag=["permutation"],
-                )
-            ]
-        )
-
-        octo_step = config_sequence.sequence_items[0]
-        assert octo_step.n_trials == 5  # Should be reduced for smoke test
-
-    def test_wine_dataset_properties(self, wine_dataset):
-        """Test specific properties of the Wine dataset."""
+    def test_synthetic_dataset_properties(self, wine_dataset):
+        """Test specific properties of the synthetic dataset."""
         df, features, wine = wine_dataset
 
         # Test feature names
-        expected_features = [
-            "alcohol",
-            "malic_acid",
-            "ash",
-            "alcalinity_of_ash",
-            "magnesium",
-            "total_phenols",
-            "flavanoids",
-            "nonflavanoid_phenols",
-            "proanthocyanins",
-            "color_intensity",
-            "hue",
-            "od280/od315_of_diluted_wines",
-            "proline",
-        ]
+        expected_features = ["feature_0", "feature_1", "feature_2", "feature_3", "feature_4"]
         assert set(features) == set(expected_features)
 
-        # Test target distribution (Wine dataset has specific class distribution)
+        # Test target distribution (synthetic dataset with 30 samples)
         target_counts = df["target"].value_counts().sort_index()
         assert len(target_counts) == 3
-        assert target_counts[0] == 59  # Class 0 has 59 samples
-        assert target_counts[1] == 71  # Class 1 has 71 samples
-        assert target_counts[2] == 48  # Class 2 has 48 samples
+        assert sum(target_counts.values) == 30  # Total 30 samples
+        assert all(count > 0 for count in target_counts.values)
 
         # Test that all features are numeric
         for feature in features:

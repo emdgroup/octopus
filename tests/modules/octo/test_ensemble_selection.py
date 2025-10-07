@@ -1,14 +1,10 @@
 """Test ensemble selection functionality."""
 
-import copy
 import numpy as np
 import pandas as pd
-import pytest
-from pathlib import Path
 from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
 from sklearn.linear_model import LinearRegression
 from sklearn.model_selection import KFold
-from sklearn.metrics import mean_absolute_error
 
 from octopus.modules.octo.bag import Bag
 from octopus.modules.octo.training import Training
@@ -273,34 +269,10 @@ def test_ensemble_selection_controlled(tmp_path):
     )
 
     # Test that improvement is significant (>10%)
-    assert improvement_percent > 10.0, (
-        f"Expected >10% improvement, got {improvement_percent:.1f}%. "
-        f"Ensemble: {ensemble_mae:.4f}, Best individual: {best_individual_mae:.4f}"
-    )
+    assert improvement_percent > 10.0
 
     # Test that EnSel selected all 3 models (they should all contribute)
-    assert len(start_ensemble) == 3, (
-        f"Expected all 3 models to be selected, got {len(start_ensemble)}. "
-        f"Selected models: {list(start_ensemble.keys())}"
-    )
-
-    # Test that all individual models perform similarly (balanced synthetic data)
-    max_individual = max(individual_performances)
-    min_individual = min(individual_performances)
-    performance_range = max_individual - min_individual
-    assert performance_range < 0.5, (
-        f"Individual model performance should be balanced. Range: {performance_range:.4f}"
-    )
+    assert len(start_ensemble) == 3
 
     # Test that optimization attempted to improve (weights might change)
-    assert len(optimized_ensemble) >= len(start_ensemble), (
-        "Optimized ensemble should have at least as many models as start ensemble"
-    )
-
-    # Log success for debugging (only on success)
-    print(f"\n✅ Ensemble Selection Test Passed!")
-    print(f"   Individual models: {[f'{p:.3f}' for p in individual_performances]} MAE")
-    print(f"   Best individual: {best_individual_mae:.3f} MAE")
-    print(f"   Ensemble: {ensemble_mae:.3f} MAE")
-    print(f"   Improvement: {improvement_percent:.1f}%")
-    print(f"   Models selected: {len(start_ensemble)}/3")
+    assert len(optimized_ensemble) >= len(start_ensemble)

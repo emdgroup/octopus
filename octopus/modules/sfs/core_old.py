@@ -13,8 +13,8 @@ from mlxtend.feature_selection import SequentialFeatureSelector as SFS
 from sklearn.model_selection import GridSearchCV, StratifiedKFold, cross_val_score
 
 from octopus.experiment import OctoExperiment
+from octopus.metrics.utils import get_performance_score
 from octopus.models.models_inventory import model_inventory
-from octopus.modules.utils import get_performance_score
 from octopus.results import ModuleResults
 
 # Ignore all Warnings
@@ -263,6 +263,7 @@ class SfsCore:
             self.experiment.selected_features,
             self.target_metric,
             self.target_assignments,
+            positive_class=self.experiment.configs.study.positive_class,
         )
         print(f"Test set (refit) performance: {test_score_refit:.3f}")
 
@@ -277,6 +278,7 @@ class SfsCore:
             self.experiment.selected_features,
             self.target_metric,
             self.target_assignments,
+            positive_class=self.experiment.configs.study.positive_class,
         )
         print(f"Test set (gridsearch+refit) performance: {test_score_gsrefit:.3f}")
 

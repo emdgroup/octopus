@@ -20,8 +20,8 @@ from sklearn.utils.validation import check_is_fitted
 
 from octopus.logger import LogGroup, get_logger
 from octopus.metrics.inventory import MetricsInventory
+from octopus.metrics.utils import get_performance_score
 from octopus.models.inventory import ModelInventory
-from octopus.modules.utils import get_performance_score
 
 ## TOBEDONE pipeline
 # - implement cat encoding on module level
@@ -88,6 +88,9 @@ class Training:
 
     outlier_samples: list = field(default=Factory(list), validator=[validators.instance_of(list)])
     """Outlie samples identified."""
+
+    is_fitted: bool = field(default=False, init=False)
+    """Flag indicating whether the training has been completed."""
 
     preprocessing_pipeline = field(init=False)
     """Preprocessing pipeline for data scaling, imputation, and categorical encoding."""
@@ -332,6 +335,13 @@ class Training:
             self.predictions["dev"][columns] = self.model.predict_proba(self.x_dev_processed)
             self.predictions["test"][columns] = self.model.predict_proba(self.x_test_processed)
 
+        # add additional predictions for multiclass classifications
+        if self.ml_type == "multiclass":
+            columns = [int(x) for x in self.model.classes_]  # column names --> int
+            self.predictions["train"][columns] = self.model.predict_proba(self.x_train_processed)
+            self.predictions["dev"][columns] = self.model.predict_proba(self.x_dev_processed)
+            self.predictions["test"][columns] = self.model.predict_proba(self.x_test_processed)
+
         # add additional predictions for time to event predictions
         if self.ml_type == "timetoevent":
             pass
@@ -342,6 +352,9 @@ class Training:
             self.features_used = self._calculate_features_used()
         else:
             self.features_used = []
+
+        # Set fitted flag to True
+        self.is_fitted = True
 
         return self
 
@@ -475,7 +488,14 @@ class Training:
         features_dict = {**feature_columns_dict, **feature_groups}
 
         # calculate baseline score
-        baseline_score = get_performance_score(model, data, feature_columns, target_metric, target_assignments)
+        baseline_score = get_performance_score(
+            model,
+            data,
+            feature_columns,
+            target_metric,
+            target_assignments,
+            positive_class=self.config_training.get("positive_class"),
+        )
 
         results_df = pd.DataFrame(
             columns=[
@@ -498,7 +518,14 @@ class Training:
                 # we use data_all as the validation dataset may be small
                 for feat in feature:
                     data_pfi[feat] = np.random.choice(data[feat], len(data_pfi), replace=False)
-                pfi_score = get_performance_score(model, data_pfi, feature_columns, target_metric, target_assignments)
+                pfi_score = get_performance_score(
+                    model,
+                    data_pfi,
+                    feature_columns,
+                    target_metric,
+                    target_assignments,
+                    positive_class=self.config_training.get("positive_class"),
+                )
                 fi_lst.append(baseline_score - pfi_score)
 
             # calculate statistics
@@ -589,6 +616,7 @@ class Training:
             feature_columns,
             self.target_metric,
             self.target_assignments,
+            positive_class=self.config_training.get("positive_class"),
         )
         baseline_test = get_performance_score(
             self.model,
@@ -596,6 +624,7 @@ class Training:
             feature_columns,
             self.target_metric,
             self.target_assignments,
+            positive_class=self.config_training.get("positive_class"),
         )
 
         # create features dict
@@ -627,6 +656,7 @@ class Training:
                 selected_features,
                 self.target_metric,
                 self.target_assignments,
+                positive_class=self.config_training.get("positive_class"),
             )
             score_test = get_performance_score(
                 model,
@@ -634,6 +664,7 @@ class Training:
                 selected_features,
                 self.target_metric,
                 self.target_assignments,
+                positive_class=self.config_training.get("positive_class"),
             )
 
             fi_dev_df.loc[len(fi_dev_df)] = [name, baseline_dev - score_dev]

@@ -19,6 +19,7 @@ class CIMetric:
             ml_type="timetoevent",
             higher_is_better=True,
             prediction_type="predict",
+            scorer_string="Not available",
         )
 
 

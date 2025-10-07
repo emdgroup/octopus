@@ -185,6 +185,7 @@ class OctoCore:
             max_n_iterations=100,
             row_column=self.experiment.row_column,
             target_assignments=self.experiment.target_assignments,
+            positive_class=self.experiment.configs.study.positive_class,
         )
         ensemble_paths_dict = ensel.start_ensemble
         # ensemble_paths_dict = ensel.optimized_ensemble
@@ -221,12 +222,13 @@ class OctoCore:
             num_workers=self.experiment.ml_config.n_workers,
             target_metric=self.experiment.configs.study.target_metric,
             row_column=self.experiment.row_column,
+            ml_type=self.experiment.ml_type,
         )
         # save ensel bag
         ensel_bag.to_pickle(self.path_results.joinpath("ensel_bag.pkl"))
 
         # save performance values of best bag
-        ensel_scores = ensel_bag.get_scores()
+        ensel_scores = ensel_bag.get_performance()
         target_metric = self.experiment.configs.study.target_metric
         # show and save test results
         print("Ensemble selection performance")
@@ -298,6 +300,7 @@ class OctoCore:
                 num_workers=self.experiment.ml_config.n_workers,
                 target_metric=self.experiment.configs.study.target_metric,
                 row_column=self.experiment.row_column,
+                ml_type=self.experiment.ml_type,
             )
             # save best bag
             best_bag.to_pickle(self.path_results.joinpath("best_bag.pkl"))
@@ -305,7 +308,7 @@ class OctoCore:
             raise ValueError("No bags founds in results directory")
 
         # save performance values of best bag
-        best_bag_scores = best_bag.get_scores()
+        best_bag_scores = best_bag.get_performance()
         target_metric = self.experiment.configs.study.target_metric
         # show and save test results
         print(
@@ -377,7 +380,7 @@ class OctoCore:
         storage = optuna.storages.RDBStorage(url=f"sqlite:///{db_path}")
         study = optuna.create_study(
             study_name=study_name,
-            direction="minimize",  # metric adjustment in optuna objective
+            direction="maximize",  # metric adjustment in optuna objective
             sampler=sampler,
             storage=storage,
             load_if_exists=True,
@@ -456,6 +459,7 @@ class OctoCore:
             num_workers=self.experiment.ml_config.n_workers,
             target_metric=self.experiment.configs.study.target_metric,
             row_column=self.experiment.row_column,
+            ml_type=self.experiment.ml_type,
             # path?
         )
 
@@ -465,7 +469,7 @@ class OctoCore:
         best_bag.to_pickle(self.path_results.joinpath(f"{study_name}_trial{study.best_trial.number}_bag.pkl"))
 
         # print best_bag scores for verification
-        best_bag_scores = best_bag.get_scores()
+        best_bag_scores = best_bag.get_performance()
         logger.info(f"Best bag performance {best_bag_scores}")
 
         # save optuna results as parquet file

@@ -1,0 +1,62 @@
+# Cline Rules for Octopus Repository
+
+## Code Modification Best Practices
+
+### Import Management
+- **Always change code first, then add imports** to avoid formatting conflicts
+- When adding new functionality that requires imports, follow this order:
+  1. Make the code changes first
+  2. Add the necessary imports after the code is working
+  3. This prevents auto-formatter conflicts between code and import changes
+
+### Environment Management
+- **Always activate the octo conda environment** when running Python tools or commands
+- If any command fails due to missing dependencies or environment issues, prefix with `conda activate octo &&`
+- Default command pattern: `conda activate octo && [your command]`
+
+### File Editing Strategy
+- Use `replace_in_file` for targeted changes to existing files
+- Use `write_to_file` only for new files or complete rewrites
+- When making multiple changes to the same file, use a single `replace_in_file` call with multiple SEARCH/REPLACE blocks
+
+### Testing and Validation
+- Always run tests after making changes to verify functionality
+- Run `ruff check .` to ensure code quality standards are maintained
+- **Regularly run `pre-commit run --all-files`** to ensure all formatting and linting standards are met
+- If pre-commit shows errors, run it **3 times** as pre-commit applies formatting incrementally
+- For Python changes, activate the octo environment before running tests
+
+### Code Quality
+- Follow PEP 8 standards for Python code
+- Ensure proper docstring formatting (Google style)
+- Add type hints where required by the project configuration
+- Keep imports organized at the top-level of files
+
+## Project-Specific Guidelines
+
+### Octopus Framework
+- This is a machine learning framework with specific dependencies
+- Always use the `octo` conda environment for Python operations
+- Pay attention to sklearn compatibility requirements
+- Feature importance methods require proper configuration (e.g., positive_class for classification)
+
+### Common Commands
+```bash
+# Activate environment and run tests
+conda activate octo && python -m pytest [test_file] -v
+
+# Activate environment and check code quality
+conda activate octo && ruff check .
+
+# Run pre-commit checks (run 3 times if errors occur)
+conda activate octo && pre-commit run --all-files
+
+# Activate environment and run Python scripts
+conda activate octo && python [script_name].py
+```
+
+## Error Prevention
+- Before running any Python command, check if octo environment is needed
+- When encountering import errors or missing modules, activate octo environment
+- When making code changes that affect imports, change code first, then imports
+- Always wait for tool completion before proceeding to next step

@@ -45,6 +45,9 @@ class ConfigStudy:
     target_metric: str = field(validator=[validate_metric])
     """The primary metric used for model evaluation."""
 
+    positive_class: int = field(default=1, validator=[validators.optional(validators.instance_of(int))])
+    """The positive class label for binary classification. Defaults to 1. Not relevant for other ml_types."""
+
     path: str = field(default="./studies/")
     """The path where study outputs are saved. Defaults to "./studies/"."""
 

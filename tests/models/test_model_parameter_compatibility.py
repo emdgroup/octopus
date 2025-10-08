@@ -2,7 +2,7 @@
 
 import itertools
 import warnings
-from typing import Any, Dict, List
+from typing import Any
 
 import pytest
 
@@ -15,7 +15,7 @@ def get_all_models():
     return [name for name in inventory.models.keys() if "TabPFN" not in name]
 
 
-def generate_param_combinations(model_name: str, max_combos: int = 20) -> List[Dict[str, Any]]:
+def generate_param_combinations(model_name: str, max_combos: int = 20) -> list[dict[str, Any]]:
     """Generate parameter combinations from model config."""
     inventory = ModelInventory()
     config = inventory.get_model_config(model_name)

@@ -146,3 +146,119 @@ def test_check_string_out_of_bounds(health_checker):
     health_checker.feature_columns.append("feature7")
     health_checker._check_string_out_of_bounds()
     assert any(issue["Issue Type"] == "string_out_of_bounds" for issue in health_checker.issues)
+
+
+def test_check_class_imbalance(health_checker):
+    """Test class imbalance check."""
+    health_checker.data["target"] = [0] * 90 + [1] * 10
+    health_checker._check_class_imbalance()
+    assert any(issue["Issue Type"] == "class_imbalance" for issue in health_checker.issues)
+
+
+def test_check_high_cardinality(health_checker):
+    """Test high cardinality check."""
+    health_checker.data["feature8"] = [f"cat_{i}" for i in range(80)] + ["cat_0"] * 20
+    health_checker.feature_columns.append("feature8")
+    health_checker._check_high_cardinality()
+    assert any(issue["Issue Type"] == "high_cardinality" for issue in health_checker.issues)
+
+
+def test_check_target_leakage(health_checker):
+    """Test target leakage check."""
+    health_checker.data["target_numeric"] = health_checker.data["target"].astype(float)
+    health_checker.target_columns = ["target_numeric"]
+    health_checker.data["feature9"] = health_checker.data["target_numeric"] * 0.99 + np.random.randn(100) * 0.01
+    health_checker.feature_columns.append("feature9")
+    health_checker._check_target_leakage()
+    assert any(issue["Issue Type"] == "target_leakage" for issue in health_checker.issues)
+
+
+def test_check_target_distribution(health_checker):
+    """Test target distribution check."""
+    health_checker.data["target_regression"] = np.exp(np.random.randn(100) * 2)  # Right-skewed
+    health_checker.target_columns = ["target_regression"]
+    health_checker._check_target_distribution()
+    assert any(issue["Issue Type"] == "problematic_distribution" for issue in health_checker.issues)
+
+
+def test_check_minimum_samples(sample_data):
+    """Test minimum samples check."""
+    health_checker_sufficient = OctoDataHealthChecker(
+        data=sample_data,
+        feature_columns=["feature1"],
+        target_columns=["target"],
+        row_id="id",
+        sample_id="sample_id",
+        stratification_column=None,
+    )
+    health_checker_sufficient._check_minimum_samples()
+    assert not any(issue["Issue Type"] == "insufficient_samples" for issue in health_checker_sufficient.issues)
+
+    small_data = sample_data.head(10)
+    health_checker_insufficient = OctoDataHealthChecker(
+        data=small_data,
+        feature_columns=["feature1"],
+        target_columns=["target"],
+        row_id="id",
+        sample_id="sample_id",
+        stratification_column=None,
+    )
+    health_checker_insufficient._check_minimum_samples()
+    assert any(issue["Issue Type"] == "insufficient_samples" for issue in health_checker_insufficient.issues)
+    assert any("10" in issue["Description"] for issue in health_checker_insufficient.issues)
+
+
+def test_check_row_id_unique(sample_data):
+    """Test row_id unique check."""
+    health_checker_unique = OctoDataHealthChecker(
+        data=sample_data,
+        feature_columns=["feature1"],
+        target_columns=["target"],
+        row_id="id",
+        sample_id="sample_id",
+        stratification_column=None,
+    )
+    health_checker_unique._check_row_id_unique()
+    assert not any(issue["Issue Type"] == "duplicate_row_ids" for issue in health_checker_unique.issues)
+
+    duplicate_data = sample_data.copy()
+    duplicate_data.loc[5, "id"] = duplicate_data.loc[0, "id"]
+    health_checker_duplicate = OctoDataHealthChecker(
+        data=duplicate_data,
+        feature_columns=["feature1"],
+        target_columns=["target"],
+        row_id="id",
+        sample_id="sample_id",
+        stratification_column=None,
+    )
+    health_checker_duplicate._check_row_id_unique()
+    assert any(issue["Issue Type"] == "duplicate_row_ids" for issue in health_checker_duplicate.issues)
+    assert any("duplicate" in issue["Description"].lower() for issue in health_checker_duplicate.issues)
+
+
+def test_check_features_not_all_null(sample_data):
+    """Test features not all null check."""
+    health_checker_valid = OctoDataHealthChecker(
+        data=sample_data,
+        feature_columns=["feature1", "feature2"],
+        target_columns=["target"],
+        row_id="id",
+        sample_id="sample_id",
+        stratification_column=None,
+    )
+    health_checker_valid._check_features_not_all_null()
+    assert not any(issue["Issue Type"] == "all_null_features" for issue in health_checker_valid.issues)
+
+    null_data = sample_data.copy()
+    null_data["feature1"] = np.nan
+    health_checker_null = OctoDataHealthChecker(
+        data=null_data,
+        feature_columns=["feature1", "feature2"],
+        target_columns=["target"],
+        row_id="id",
+        sample_id="sample_id",
+        stratification_column=None,
+    )
+    health_checker_null._check_features_not_all_null()
+    assert any(issue["Issue Type"] == "all_null_features" for issue in health_checker_null.issues)
+    assert any("feature1" in issue["Affected Items"] for issue in health_checker_null.issues)

@@ -1,6 +1,5 @@
 """OctoData Validator."""
 
-import re
 from collections import Counter
 
 import pandas as pd
@@ -56,7 +55,6 @@ class OctoDataValidator:
         validators = [
             self._validate_nonempty_dataframe,
             self._validate_minimum_samples,
-            self._validate_column_names_characters,
             self._validate_reserved_column_conflicts,
             self._validate_columns_exist,
             self._validate_duplicated_columns,
@@ -238,25 +236,6 @@ class OctoDataValidator:
         if non_matching_columns:
             non_matching_str = ", ".join(non_matching_columns)
             raise ValueError(f"Columns with wrong dtypes: {non_matching_str}")
-
-    def _validate_column_names_characters(self):
-        """Validate that column names do not contain disallowed characters.
-
-        Checks for characters that are incompatible with miceforest/lightGBM.
-        Disallowed characters include: " : [ ] { }
-
-        Raises:
-            ValueError: If any column name contains disallowed characters.
-                Lists all problematic columns.
-        """
-        disallowed_chars_pattern = re.compile(r'[",:[\]{}]')
-        problematic_columns = [col for col in self.relevant_columns if disallowed_chars_pattern.search(col)]
-        if problematic_columns:
-            raise ValueError(
-                f"The following columns contain disallowed characters:"
-                f" {', '.join(problematic_columns)}.\n"
-                f'Disallowed characters are: ", : , [ , ] , {{ , }}.'
-            )
 
     def _validate_row_id_unique(self):
         """Validate that row_id column contains unique values.

@@ -1,62 +1,26 @@
-## Basic example for using Octopus regression
+"""Example for using custom hyperparameters in Octopus regression."""
 
-# This example demonstrates how to use Octopus to create a machine learning regression model.
-# We will use the famous California housing dataset for this purpose.
-# Please ensure your dataset is clean, with no missing values (`NaN`),
-# and that all features are numeric.
+# This example demonstrates how to use Octopus with custom hyperparameters.
+# Instead of letting Optuna automatically search the hyperparameter space,
+# you can define your own hyperparameter ranges for the models.
+# We will use the diabetes dataset for this purpose.
 
 ### Necessary imports for this example
-import os
-
-import pandas as pd
+from sklearn.datasets import load_diabetes
 
 from octopus import OctoData, OctoML
 from octopus.config import ConfigManager, ConfigSequence, ConfigStudy
-from octopus.models.machine_learning.hyperparameter import Hyperparameter
+from octopus.models.hyperparameter import Hyperparameter
 from octopus.modules import Octo
 
-### Load and Preprocess Data
-
-# First, we load the Titanic dataset and preprocess it
-# to ensure it's clean and suitable for analysis. We restrict it
-# to only the first 100 entries to make this example faster.
-
-data_df = (
-    pd.read_csv(os.path.join(os.getcwd(), "datasets", "california_housing_prices.csv"))
-    .reset_index()
-    .astype(
-        {
-            "housing_median_age": int,
-            "total_rooms": int,
-            "population": int,
-            "households": int,
-            "median_income": int,
-            "median_house_value": int,
-        }
-    )
-    .loc[0:100, :]
-)
+### Load the diabetes dataset
+diabetes = load_diabetes(as_frame=True)
 
 ### Create OctoData Object
-
-# We define the data, target columns, feature columns, sample ID to identify groups,
-# and the data split type. The columns total_bedrooms and ocean_proximity are not
-# cleaned yet. Therefore we leave them out of the example.
-
 octo_data = OctoData(
-    data=data_df,
-    target_columns=["median_house_value"],
-    feature_columns=[
-        "longitude",
-        "latitude",
-        "housing_median_age",
-        "total_rooms",
-        "population",
-        "households",
-        "median_income",
-        # "total_bedrooms",
-        # "ocean_proximity",
-    ],
+    data=diabetes["frame"].reset_index(),
+    target_columns=["target"],
+    feature_columns=diabetes["feature_names"],
     sample_id="index",
     datasplit_type="sample",
 )
@@ -64,18 +28,20 @@ octo_data = OctoData(
 ### Create Configuration
 
 # We create three types of configurations:
-# 1. `ConfigStudy`: Sets the name, machine learning type (classification), and target metric.
+# 1. `ConfigStudy`: Sets the name, machine learning type (regression), and target metric.
 
 # 2. `ConfigManager`: Manages how the machine learning will be executed.
 # We use the default settings.
 
 # 3. `ConfigSequence`: Defines the sequences to be executed. In this example,
-# we use one sequence with the `RandomForestRegressor` and `XGBRegressor` model.
+# we use `RandomForestRegressor` with custom hyperparameter ranges defined using
+# the `Hyperparameter` class.
 
 config_study = ConfigStudy(
-    name="basic_regression_example",
+    name="use_own_hyperparameters_example",
     ml_type="regression",
-    target_metric="R2",
+    target_metric="MAE",
+    ignore_data_health_warning=True,
     silently_overwrite_study=True,
 )
 
@@ -84,7 +50,7 @@ config_manager = ConfigManager(outer_parallelization=False, run_single_experimen
 config_sequence = ConfigSequence(
     [
         Octo(
-            description="step_1",
+            sequence_id=0,
             models=["RandomForestRegressor"],
             n_trials=3,
             hyperparameters={
@@ -110,6 +76,9 @@ octo_ml = OctoML(
 )
 octo_ml.run_study()
 
-# This completes the basic example for using Octopus regression
-# with the Calfifornia housing dataset. The workflow involves loading and preprocessing
-# the data, creating necessary configurations, and executing the machine learning pipeline.
+print("Workflow completed")
+
+# This example demonstrates how to use custom hyperparameters with Octopus.
+# The key difference from the basic example is the use of the `hyperparameters` parameter
+# in the Octo configuration, where you can define custom hyperparameter ranges
+# for each model using the Hyperparameter class.

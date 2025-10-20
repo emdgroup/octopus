@@ -12,12 +12,14 @@ respect-gitignore = true
     "PLC0415", # Import outside top-level
     "B018",    # Found useless expression. Either assign it to a variable or remove it. - Those might make sense in marimo notebooks
     "E266",    # Too many leading '#' for block comment. These make sense as markdown headings in marimo notebooks
+    "T201",    # Print statements OK in examples
 ]
 "tests/*" = [
     "D100",    # Missing module docstrings in tests
     "D103",    # Missing function docstrings in tests
     "PLR2004", # Magic values OK in tests
     "S101",    # Use of assert (OK in tests)
+    "T201",    # Print statements OK in tests
 ]
 "scripts/*" = [
     "D100",    # Missing module docstrings in scripts

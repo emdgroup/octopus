@@ -122,7 +122,7 @@ class OctoManager:
         """Create and execute ml modules."""
         # Child connects to ray the local ray instance
         # using the address exported by the main process
-        # If running inside a Ray worker, this will be True and we won’t try to init again.
+        # If running inside a Ray worker, this will be True and we won't try to init again.
         if not ray.is_initialized():
             # Only used when you call this function outside of Ray.
             init_ray(address=os.environ.get("RAY_ADDRESS"), start_local_if_missing=False)

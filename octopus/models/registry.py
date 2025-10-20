@@ -1,10 +1,12 @@
 """Model Registry."""
 
+from typing import ClassVar
+
 
 class ModelRegistry:
     """Model Registry."""
 
-    _models = {}
+    _models: ClassVar[dict[str, type]] = {}
 
     @classmethod
     def register(cls, name):

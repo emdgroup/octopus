@@ -2,6 +2,7 @@
 
 import tempfile
 from pathlib import Path
+from typing import ClassVar
 from unittest.mock import patch
 
 import pandas as pd
@@ -37,7 +38,7 @@ class TestOctoMulticlass:
 
         # Create mock wine object for compatibility
         class MockWine:
-            target_names = ["class_0", "class_1", "class_2"]
+            target_names: ClassVar[list[str]] = ["class_0", "class_1", "class_2"]
 
         wine = MockWine()
 

@@ -455,7 +455,7 @@ class TestModelFittedValidation:
                 print(f"Skipping {model_name} due to missing dependency: {e}")
                 continue
             except Exception as e:
-                failed_tests.append(f"Classification/{model_name}/setup: {str(e)}")
+                failed_tests.append(f"Classification/{model_name}/setup: {e!s}")
 
         # Print summary
         print("\nClassification Models Summary:")
@@ -515,7 +515,7 @@ class TestModelFittedValidation:
                 print(f"Skipping {model_name} due to missing dependency: {e}")
                 continue
             except Exception as e:
-                failed_tests.append(f"Regression/{model_name}/setup: {str(e)}")
+                failed_tests.append(f"Regression/{model_name}/setup: {e!s}")
 
         # Print summary
         print("\nRegression Models Summary:")
@@ -578,7 +578,7 @@ class TestModelFittedValidation:
                 print(f"Skipping {model_name} due to missing dependency: {e}")
                 continue
             except Exception as e:
-                failed_tests.append(f"TimeToEvent/{model_name}/setup: {str(e)}")
+                failed_tests.append(f"TimeToEvent/{model_name}/setup: {e!s}")
 
         # Print summary
         print("\nTime-to-Event Models Summary:")
@@ -641,7 +641,7 @@ class TestModelFittedValidation:
                     continue
                 except Exception as e:
                     total_tests += 2
-                    failed_tests.append(f"{ml_type}/{model_name}/setup: {str(e)}")
+                    failed_tests.append(f"{ml_type}/{model_name}/setup: {e!s}")
 
         # Print comprehensive summary
         print("\nComprehensive Model Fitted Validation Summary:")

@@ -292,7 +292,7 @@ class SfsCore:
         # print(fi_df)
 
         # scores
-        scores = dict()
+        scores = {}
         scores["dev_avg"] = sfs.k_score_
         scores["test_avg"] = test_score_cv
         scores["test_refit"] = test_score_refit

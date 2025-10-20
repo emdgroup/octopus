@@ -218,7 +218,7 @@ class BagBase(BaseEstimator):
 
     def __attrs_post_init__(self):
         # initialization here due to "Python immutable default"
-        self.feature_importances = dict()
+        self.feature_importances = {}
         self.n_features_used_mean = 0.0
         self._positive_class = None  # Will be inferred when needed
 
@@ -306,7 +306,7 @@ class BagBase(BaseEstimator):
         self.train_status = (True,)
 
         # get used features in bag
-        n_feat_lst = list()
+        n_feat_lst = []
         for training in self.trainings:
             n_feat_lst.append(float(len(training.features_used)))
 
@@ -321,7 +321,7 @@ class BagBase(BaseEstimator):
             print("Running trainings first to be able to get scores")
             self.fit()
 
-        predictions = dict()
+        predictions = {}
         pool = []
         for training in self.trainings:
             # collect all predictions (train/dev/test) from training
@@ -345,7 +345,7 @@ class BagBase(BaseEstimator):
             print("Running trainings first to be able to get scores")
             self.fit()
 
-        scores = dict()
+        scores = {}
         storage = {key: [] for key in ["train", "dev", "test"]}
         pool = {key: [] for key in ["train", "dev", "test"]}
 
@@ -621,7 +621,7 @@ class BagBase(BaseEstimator):
                 method_str = "constant"
             else:
                 method_str = method + "_dev"
-            fi_pool = list()
+            fi_pool = []
             for training in self.trainings:
                 fi_pool.append(training.feature_importances[method_str])
             fi = pd.concat(fi_pool, axis=0)
@@ -669,8 +669,8 @@ class BagBase(BaseEstimator):
         if hasattr(x, "values"):
             x = x.values
 
-        preds_lst = list()
-        weights_lst = list()
+        preds_lst = []
+        weights_lst = []
         for training in self.trainings:
             train_w = training.training_weight
             weights_lst.append(train_w)
@@ -698,8 +698,8 @@ class BagBase(BaseEstimator):
         if hasattr(x, "values"):
             x = x.values
 
-        preds_lst = list()
-        weights_lst = list()
+        preds_lst = []
+        weights_lst = []
         for training in self.trainings:
             train_w = training.training_weight
             weights_lst.append(train_w)

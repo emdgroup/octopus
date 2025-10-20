@@ -52,9 +52,9 @@ class EnSel:
 
     def __attrs_post_init__(self):
         # initialization here due to "Python immutable default"
-        self.bags = dict()
-        self.start_ensemble = dict()
-        self.optimized_ensemble = dict()
+        self.bags = {}
+        self.start_ensemble = {}
+        self.optimized_ensemble = {}
         # get a trials existing in path_trials
         self._collect_trials()
         self._create_model_table()
@@ -78,7 +78,7 @@ class EnSel:
 
     def _create_model_table(self):
         """Create model table."""
-        df_lst = list()
+        df_lst = []
         for key, value in self.bags.items():
             s = pd.Series()
             s["id"] = value["id"]
@@ -101,7 +101,7 @@ class EnSel:
     def _ensemble_models(self, bag_keys):
         """Esemble using all bags and their corresponding models provided by input."""
         # collect all predictions over inner folds and bags
-        scores = dict()
+        scores = {}
         pool = {key: [] for key in ["dev", "test"]}
 
         for key in bag_keys:
@@ -154,7 +154,7 @@ class EnSel:
         print("Ensemble scan, number of included best models: ", start_n)
 
         # startn_bags dict with path as key and repeats=1 as value
-        escan_ensemble = dict()
+        escan_ensemble = {}
         for _, row in self.model_table.head(start_n).iterrows():
             escan_ensemble[row["path"]] = 1
 

@@ -155,7 +155,7 @@ def get_fi_permutation(experiment, n_repeat, data) -> pd.DataFrame:
     )
     for feature in feature_columns:
         data_pfi = data.copy()
-        fi_lst = list()
+        fi_lst = []
 
         for _ in range(n_repeat):
             # replace column with random selection from that column of data_all
@@ -246,7 +246,7 @@ def get_fi_group_permutation(experiment, n_repeat, data) -> pd.DataFrame:
     # calculate pfi
     for name, feature in features_dict.items():
         data_pfi = data.copy()
-        fi_lst = list()
+        fi_lst = []
 
         for _ in range(n_repeat):
             # replace column with random selection from that column of data_all

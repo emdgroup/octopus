@@ -101,7 +101,7 @@ class ObjectiveOptuna:
         }
 
         # create trainings
-        trainings = list()
+        trainings = []
         for key, split in self.data_splits.items():
             trainings.append(
                 Training(

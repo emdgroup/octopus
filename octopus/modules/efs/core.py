@@ -294,7 +294,7 @@ class EfsCore:
 
         # (A) create model table
         # train (gridsearch) on all subsets
-        df_lst = list()
+        df_lst = []
         for i, subset in enumerate(subsets):
             # Perform Grid Search and Cross-Validation
             # print("subset:", subset)
@@ -372,7 +372,7 @@ class EfsCore:
         # print("groupby_df", groupby_df.head(20)["predictions"])
 
         # calculate ensemble performance
-        ensel_performance = dict()
+        ensel_performance = {}
         y = self.y_traindev.squeeze(axis=1)
         # print("y", y)
         # print("-----------------------------------")
@@ -438,7 +438,7 @@ class EfsCore:
         print("Ensemble scan, number of included best models: ", start_n)
 
         # startn_bags dict with path as key and repeats=1 as value
-        escan_ensemble = dict()
+        escan_ensemble = {}
         for _, row in self.model_table.head(start_n).iterrows():
             escan_ensemble[row["id"]] = 1
 
@@ -513,7 +513,7 @@ class EfsCore:
 
     def _generate_results(self):
         """Generate results."""
-        feature_lst = list()
+        feature_lst = []
         for key, value in self.optimized_ensemble.items():
             row = self.model_table[self.model_table["id"] == key]
             model_features = row["used_features"].tolist()

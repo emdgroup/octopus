@@ -35,14 +35,14 @@ class Hyperparameter:
         if self.type in {"int", "float"}:
             if self.low is None or self.high is None:
                 raise ValueError("low and high must be provided for int and float types.")
-            if not isinstance(self.low, (int, float)):
+            if not isinstance(self.low, (int | float)):
                 raise_type_error("low", "int or float")
-            if not isinstance(self.high, (int, float)):
+            if not isinstance(self.high, (int | float)):
                 raise_type_error("high", "int or float")
             if self.low >= self.high:
                 raise ValueError("low must be less than high.")
             if self.step is not None:
-                if not isinstance(self.step, (int, float)):
+                if not isinstance(self.step, (int | float)):
                     raise_type_error("step", "int or float")
                 if self.step <= 0:
                     raise ValueError("step must be greater than 0.")

@@ -305,7 +305,7 @@ def maxrminr(
     # Clean and validate requested_feature_counts
     max_feats = len(relevant)
     cleaned_counts = sorted(
-        {int(c) for c in requested_feature_counts if isinstance(c, (int, np.integer)) and 1 <= int(c) <= max_feats}
+        {int(c) for c in requested_feature_counts if isinstance(c, (int | np.integer)) and 1 <= int(c) <= max_feats}
     )
     if max_feats not in cleaned_counts:
         cleaned_counts.append(max_feats)

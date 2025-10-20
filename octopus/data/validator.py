@@ -73,7 +73,7 @@ class OctoDataValidator:
             try:
                 validator()
             except ValueError as e:
-                errors.append(f"- {str(e)}")
+                errors.append(f"- {e!s}")
 
         if errors:
             error_message = "Multiple validation errors found:\n" + "\n".join(errors)

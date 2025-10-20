@@ -1,6 +1,7 @@
 """Efs core."""
 
 import copy
+import itertools
 import json
 import random
 import shutil
@@ -517,7 +518,7 @@ class EfsCore:
         for key, value in self.optimized_ensemble.items():
             row = self.model_table[self.model_table["id"] == key]
             model_features = row["used_features"].tolist()
-            model_features = sum(model_features, [])  # flatten list
+            model_features = list(itertools.chain.from_iterable(model_features))  # flatten list
             # replicate model features with model count
             feature_lst.extend(model_features * value)
 

@@ -115,8 +115,8 @@ def get_performance(
         classes = model.classes_
         try:
             positive_class_idx = list(classes).index(positive_class)
-        except ValueError:
-            raise ValueError(f"positive_class {positive_class} not found in model classes {classes}")
+        except ValueError as e:
+            raise ValueError(f"positive_class {positive_class} not found in model classes {classes}") from e
 
         if prediction_type == "predict_proba":
             probabilities = model.predict_proba(input_data)

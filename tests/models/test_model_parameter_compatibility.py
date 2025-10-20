@@ -52,7 +52,7 @@ def generate_param_combinations(model_name: str, max_combos: int = 20) -> list[d
 
     for combo in itertools.product(*values):
         test_params = params.copy()
-        for name, value in zip(names, combo):
+        for name, value in zip(names, combo, strict=True):
             test_params[name] = value
         combinations.append(test_params)
         if len(combinations) >= max_combos:

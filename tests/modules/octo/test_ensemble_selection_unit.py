@@ -1,16 +1,17 @@
 """Unit tests for EnSel (Ensemble Selection) individual methods."""
 
+from pathlib import Path
+
 import numpy as np
 import pandas as pd
-import pytest
 from sklearn.linear_model import LinearRegression
 
 from octopus.modules.octo.bag import Bag
-from octopus.modules.octo.training import Training
 from octopus.modules.octo.enssel import EnSel
-
+from octopus.modules.octo.training import Training
 
 # Utility functions for creating mock data and bags
+
 
 def create_mock_training(training_id, performance_dev, performance_test, n_samples=100):
     """Create a mock Training object with controlled performance."""
@@ -30,56 +31,44 @@ def create_mock_training(training_id, performance_dev, performance_test, n_sampl
     test_idx = slice(n_train + n_dev, n_samples)
 
     # Create dataframes
-    train_df = pd.DataFrame(X[train_idx], columns=[f'feature_{i}' for i in range(4)])
-    train_df['row_id'] = row_ids[train_idx]
-    train_df['target'] = y[train_idx]
+    train_df = pd.DataFrame(X[train_idx], columns=[f"feature_{i}" for i in range(4)])
+    train_df["row_id"] = row_ids[train_idx]
+    train_df["target"] = y[train_idx]
 
-    dev_df = pd.DataFrame(X[dev_idx], columns=[f'feature_{i}' for i in range(4)])
-    dev_df['row_id'] = row_ids[dev_idx]
-    dev_df['target'] = y[dev_idx]
+    dev_df = pd.DataFrame(X[dev_idx], columns=[f"feature_{i}" for i in range(4)])
+    dev_df["row_id"] = row_ids[dev_idx]
+    dev_df["target"] = y[dev_idx]
 
-    test_df = pd.DataFrame(X[test_idx], columns=[f'feature_{i}' for i in range(4)])
-    test_df['row_id'] = row_ids[test_idx]
-    test_df['target'] = y[test_idx]
+    test_df = pd.DataFrame(X[test_idx], columns=[f"feature_{i}" for i in range(4)])
+    test_df["row_id"] = row_ids[test_idx]
+    test_df["target"] = y[test_idx]
 
     # Create controlled predictions to achieve target performance
     # For MAE, we need |prediction - target| = performance_dev/performance_test
     # Use systematic offset to achieve precise MAE
-    pred_train = train_df['target'] + np.full(len(train_df), 0.1)  # Small constant error
-    pred_dev = dev_df['target'] + np.full(len(dev_df), performance_dev)  # Exact MAE control
-    pred_test = test_df['target'] + np.full(len(test_df), performance_test)  # Exact MAE control
+    pred_train = train_df["target"] + np.full(len(train_df), 0.1)  # Small constant error
+    pred_dev = dev_df["target"] + np.full(len(dev_df), performance_dev)  # Exact MAE control
+    pred_test = test_df["target"] + np.full(len(test_df), performance_test)  # Exact MAE control
 
     predictions = {
-        'train': pd.DataFrame({
-            'row_id': train_df['row_id'],
-            'prediction': pred_train,
-            'target': train_df['target']
-        }),
-        'dev': pd.DataFrame({
-            'row_id': dev_df['row_id'],
-            'prediction': pred_dev,
-            'target': dev_df['target']
-        }),
-        'test': pd.DataFrame({
-            'row_id': test_df['row_id'],
-            'prediction': pred_test,
-            'target': test_df['target']
-        })
+        "train": pd.DataFrame({"row_id": train_df["row_id"], "prediction": pred_train, "target": train_df["target"]}),
+        "dev": pd.DataFrame({"row_id": dev_df["row_id"], "prediction": pred_dev, "target": dev_df["target"]}),
+        "test": pd.DataFrame({"row_id": test_df["row_id"], "prediction": pred_test, "target": test_df["target"]}),
     }
 
     training = Training(
         training_id=training_id,
         ml_type="regression",
-        target_assignments={'default': 'target'},
-        feature_columns=[f'feature_{i}' for i in range(4)],
-        row_column='row_id',
+        target_assignments={"default": "target"},
+        feature_columns=[f"feature_{i}" for i in range(4)],
+        row_column="row_id",
         data_train=train_df,
         data_dev=dev_df,
         data_test=test_df,
-        target_metric='MAE',
+        target_metric="MAE",
         max_features=4,
         feature_groups={},
-        config_training={'ml_model_type': 'RidgeRegressor'}
+        config_training={"ml_model_type": "RidgeRegressor"},
     )
 
     training.predictions = predictions
@@ -107,19 +96,21 @@ def create_mock_bag(bag_id, target_dev_mae, target_test_mae, n_trainings=3, exac
     bag = Bag(
         bag_id=bag_id,
         trainings=trainings,
-        target_assignments={'default': 'target'},
-        row_column='row_id',
-        target_metric='MAE',
-        ml_type='regression',
+        target_assignments={"default": "target"},
+        row_column="row_id",
+        target_metric="MAE",
+        ml_type="regression",
         parallel_execution=False,
-        num_workers=1
+        num_workers=1,
     )
 
     bag.train_status = True
     return bag
 
 
-def create_mock_trial_directory(tmp_path, bag_performances, exact_performance=False):
+def create_mock_trial_directory(
+    tmp_path: Path, bag_performances: list[tuple[str, float, float]], exact_performance: bool = False
+) -> Path:
     """Create directory with mock trial bags.
 
     Args:
@@ -141,7 +132,7 @@ def create_mock_trial_directory(tmp_path, bag_performances, exact_performance=Fa
     return trials_path
 
 
-def create_partial_ensel(trials_path, target_metric='MAE', methods_to_run=None):
+def create_partial_ensel(trials_path, target_metric="MAE", methods_to_run=None):
     """Create EnSel instance that only runs specified methods."""
 
     class PartialEnSel(EnSel):
@@ -150,103 +141,99 @@ def create_partial_ensel(trials_path, target_metric='MAE', methods_to_run=None):
             self.start_ensemble = dict()
             self.optimized_ensemble = dict()
 
-            if methods_to_run is None or '_collect_trials' in methods_to_run:
+            if methods_to_run is None or "_collect_trials" in methods_to_run:
                 self._collect_trials()
-            if methods_to_run is None or '_create_model_table' in methods_to_run:
+            if methods_to_run is None or "_create_model_table" in methods_to_run:
                 self._create_model_table()
-            if methods_to_run is None or '_ensemble_scan' in methods_to_run:
+            if methods_to_run is None or "_ensemble_scan" in methods_to_run:
                 self._ensemble_scan()
-            if methods_to_run is None or '_ensemble_optimization' in methods_to_run:
+            if methods_to_run is None or "_ensemble_optimization" in methods_to_run:
                 self._ensemble_optimization()
 
     return PartialEnSel(
         target_metric=target_metric,
-        target_assignments={'default': 'target'},
+        target_assignments={"default": "target"},
         path_trials=trials_path,
         max_n_iterations=10,
-        row_column='row_id'
+        row_column="row_id",
     )
 
 
 # Tests for EnSel._collect_trials() method
 
+
 def test__collect_trials_basic(tmp_path):
     """Test basic trial collection from directory."""
     # Create mock trials with known performance
-    bag_performances = [
-        ("model_a", 1.0, 1.1),
-        ("model_b", 1.5, 1.4),
-        ("model_c", 2.0, 1.9)
-    ]
+    bag_performances = [("model_a", 1.0, 1.1), ("model_b", 1.5, 1.4), ("model_c", 2.0, 1.9)]
     trials_path = create_mock_trial_directory(tmp_path, bag_performances)
 
-    ensel = create_partial_ensel(trials_path, methods_to_run=['_collect_trials'])
+    ensel = create_partial_ensel(trials_path, methods_to_run=["_collect_trials"])
 
     # Verify bags were collected correctly
     assert len(ensel.bags) == 3
 
     # Check that all expected keys are present in bags
-    expected_keys = {'id', 'scores', 'predictions', 'n_features_used_mean'}
+    expected_keys = {"id", "scores", "predictions", "n_features_used_mean"}
     for bag_path, bag_data in ensel.bags.items():
         assert set(bag_data.keys()) == expected_keys
-        assert isinstance(bag_data['scores'], dict)
-        assert isinstance(bag_data['predictions'], dict)
-        assert 'dev_pool' in bag_data['scores']
-        assert 'test_pool' in bag_data['scores']
+        assert isinstance(bag_data["scores"], dict)
+        assert isinstance(bag_data["predictions"], dict)
+        assert "dev_pool" in bag_data["scores"]
+        assert "test_pool" in bag_data["scores"]
+
 
 # Tests for EnSel._create_model_table() method
+
 
 def test__create_model_table_sorting_minimize(tmp_path):
     """Test model table creation and sorting for minimize metrics (MAE)."""
     bag_performances = [
-        ("model_good", 1.0, 1.1),      # Best performance
-        ("model_medium", 1.5, 1.4),   # Medium performance
-        ("model_poor", 2.0, 1.9)      # Worst performance
+        ("model_good", 1.0, 1.1),  # Best performance
+        ("model_medium", 1.5, 1.4),  # Medium performance
+        ("model_poor", 2.0, 1.9),  # Worst performance
     ]
     trials_path = create_mock_trial_directory(tmp_path, bag_performances)
 
-    ensel = create_partial_ensel(trials_path, methods_to_run=['_collect_trials', '_create_model_table'])
+    ensel = create_partial_ensel(trials_path, methods_to_run=["_collect_trials", "_create_model_table"])
 
     # Verify model table structure
     assert len(ensel.model_table) == 3
-    expected_columns = {'id', 'dev_pool', 'test_pool', 'dev_avg', 'test_avg', 'n_features_used_mean', 'path'}
+    expected_columns = {"id", "dev_pool", "test_pool", "dev_avg", "test_avg", "n_features_used_mean", "path"}
     assert set(ensel.model_table.columns) == expected_columns
 
     # Verify sorting (ascending for minimize metrics)
-    dev_scores = ensel.model_table['dev_pool'].values
-    assert all(dev_scores[i] <= dev_scores[i+1] for i in range(len(dev_scores)-1))
+    dev_scores = ensel.model_table["dev_pool"].values
+    assert all(dev_scores[i] <= dev_scores[i + 1] for i in range(len(dev_scores) - 1))
 
     # Best model should be first
-    assert ensel.model_table.iloc[0]['id'] == 'model_good'
+    assert ensel.model_table.iloc[0]["id"] == "model_good"
 
 
 def test__create_model_table_identical_performance(tmp_path):
     """Test handling of models with identical performance."""
-    bag_performances = [
-        ("model_a", 1.5, 1.5),
-        ("model_b", 1.5, 1.5),
-        ("model_c", 1.5, 1.5)
-    ]
+    bag_performances = [("model_a", 1.5, 1.5), ("model_b", 1.5, 1.5), ("model_c", 1.5, 1.5)]
     trials_path = create_mock_trial_directory(tmp_path, bag_performances, exact_performance=True)
 
-    ensel = create_partial_ensel(trials_path, methods_to_run=['_collect_trials', '_create_model_table'])
+    ensel = create_partial_ensel(trials_path, methods_to_run=["_collect_trials", "_create_model_table"])
 
     # Should handle identical performance gracefully
     assert len(ensel.model_table) == 3
     # All should have same dev_pool score
-    dev_scores = ensel.model_table['dev_pool'].values
+    dev_scores = ensel.model_table["dev_pool"].values
     # TODO: Why allow small variation?
     assert np.allclose(dev_scores, 1.5, rtol=0.1)  # Allow small variation from mock data
 
 
 # Tests for EnSel._ensemble_models() core algorithm
 
+
 def test__ensemble_models_single_bag(tmp_path):
     """Test ensemble calculation with single model."""
     bag_performances = [("single_model", 1.0, 1.1)]
     trials_path = create_mock_trial_directory(tmp_path, bag_performances)
 
-    ensel = create_partial_ensel(trials_path, methods_to_run=['_collect_trials'])
+    ensel = create_partial_ensel(trials_path, methods_to_run=["_collect_trials"])
 
     # Test ensemble with single bag
     bag_keys = list(ensel.bags.keys())
@@ -254,27 +241,30 @@ def test__ensemble_models_single_bag(tmp_path):
 
     # Verify score structure
     assert isinstance(scores, dict)
-    expected_keys = {'dev_pool', 'test_pool'}
+    expected_keys = {"dev_pool", "test_pool"}
     assert expected_keys.issubset(set(scores.keys()))
-    assert isinstance(scores['dev_pool'], (int, float))
-    assert isinstance(scores['test_pool'], (int, float))
+    assert isinstance(scores["dev_pool"], (int, float))
+    assert isinstance(scores["test_pool"], (int, float))
 
 
 # Tests for EnSel._ensemble_scan() method
 
+
 def test__ensemble_scan_creates_scan_table(tmp_path):
     """Test that ensemble scan creates and populates scan_table."""
     bag_performances = [
-        ("model_poor", 3.0, 3.1),     # Worst performance
-        ("model_best", 1.0, 1.1),    # Best performance
-        ("model_medium", 2.0, 2.1)   # Medium performance
+        ("model_poor", 3.0, 3.1),  # Worst performance
+        ("model_best", 1.0, 1.1),  # Best performance
+        ("model_medium", 2.0, 2.1),  # Medium performance
     ]
     trials_path = create_mock_trial_directory(tmp_path, bag_performances, exact_performance=True)
 
-    ensel = create_partial_ensel(trials_path, methods_to_run=['_collect_trials', '_create_model_table', '_ensemble_scan'])
+    ensel = create_partial_ensel(
+        trials_path, methods_to_run=["_collect_trials", "_create_model_table", "_ensemble_scan"]
+    )
 
     # Verify scan_table was created
-    assert hasattr(ensel, 'scan_table')
+    assert hasattr(ensel, "scan_table")
 
     # Should have one row for each model (testing ensemble sizes 1, 2, 3)
     assert len(ensel.scan_table) == 3
@@ -282,20 +272,20 @@ def test__ensemble_scan_creates_scan_table(tmp_path):
 
 # Tests for EnSel._ensemble_optimization() method
 
+
 def test__ensemble_optimization_creates_ensembles(tmp_path):
     """Test that optimization creates both start and optimized ensembles."""
-    bag_performances = [
-        ("model_a", 2.0, 2.1),
-        ("model_b", 1.8, 1.9),
-        ("model_c", 2.2, 2.0)
-    ]
+    bag_performances = [("model_a", 2.0, 2.1), ("model_b", 1.8, 1.9), ("model_c", 2.2, 2.0)]
     trials_path = create_mock_trial_directory(tmp_path, bag_performances, exact_performance=True)
 
-    ensel = create_partial_ensel(trials_path, methods_to_run=['_collect_trials', '_create_model_table', '_ensemble_scan', '_ensemble_optimization'])
+    ensel = create_partial_ensel(
+        trials_path,
+        methods_to_run=["_collect_trials", "_create_model_table", "_ensemble_scan", "_ensemble_optimization"],
+    )
 
     # Both start and optimized ensembles should exist
-    assert hasattr(ensel, 'start_ensemble')
-    assert hasattr(ensel, 'optimized_ensemble')
+    assert hasattr(ensel, "start_ensemble")
+    assert hasattr(ensel, "optimized_ensemble")
     assert len(ensel.start_ensemble) >= 1
     assert len(ensel.optimized_ensemble) >= 1
 
@@ -314,7 +304,10 @@ def test__ensemble_optimization_single_model_case(tmp_path):
     bag_performances = [("single_model", 1.5, 1.6)]
     trials_path = create_mock_trial_directory(tmp_path, bag_performances)
 
-    ensel = create_partial_ensel(trials_path, methods_to_run=['_collect_trials', '_create_model_table', '_ensemble_scan', '_ensemble_optimization'])
+    ensel = create_partial_ensel(
+        trials_path,
+        methods_to_run=["_collect_trials", "_create_model_table", "_ensemble_scan", "_ensemble_optimization"],
+    )
 
     # Both ensembles should have the single model
     assert len(ensel.start_ensemble) == 1

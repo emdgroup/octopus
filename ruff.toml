@@ -45,49 +45,23 @@ extend-ignore = [
 # Here, we explicitly choose the rules that ruff should verify.
 # For a full list of available rules, see https://docs.astral.sh/ruff/rules/
 # Comprehensive rule selection
-#select = [
-#    "E",       # pycodestyle errors
-#    "W",       # pycodestyle warnings
-#    "F",       # Pyflakes
-#    "I",       # isort
-#    "N",       # pep8-naming
-#    "D",       # pydocstyle
-#    "UP",      # pyupgrade
-#    "B",       # flake8-bugbear
-#    "A",       # flake8-builtins
-#    "C4",      # flake8-comprehensions
-#    "PL",      # Pylint
-#    "RUF",     # Ruff-specific rules
-#    #"T20",     # flake8-print - finsa print statements
-#    "SIM",     # flake8-simplify
-#    "TCH",     # flake8-type-checking
-#]
-# basic configuration which misses quite a few issues
-select=[
-    "D", # Enforce all pydocstyle rules, will be filtered by the convention.
-    "D401", # Enforce imparative mood for docstrings
-    "E501", # Add 'line-too-long' rule to the enforced rule set.
-    "F", # Rules of flake8 according to https://docs.astral.sh/ruff/rules/#pyflakes-f,
-    "I", # isort
-    "E4", # default choice of ruff
-    "E7", # default choice of ruff
-    "E9", # default choice of ruff
-    "W", # Warnings
-    "PL", # Pylint
-    "E", # pycodestyle errors
-    "W", # pycodestyle warnings
-    "F", # Pyflakes
-    "I", # isort
-    # TODO: activate "N", # pep8-naming
-    "UP", # pyupgrade
-    "B", # flake8-bugbear
-    "A", # flake8-builtins
-    "C4", # flake8-comprehensions
-    "RUF", # Ruff-specific rules
-    # TODO: activate "T20", # flake8-print - finsa print statements
-    "SIM", # flake8-simplify
-    "TCH", # flake8-type-checking
-    ]
+select = [
+    "E",       # pycodestyle errors
+    "W",       # pycodestyle warnings
+    "F",       # Pyflakes
+    "I",       # isort
+    # TODO: activate "N",       # pep8-naming
+    "D",       # pydocstyle
+    "UP",      # pyupgrade
+    "B",       # flake8-bugbear
+    "A",       # flake8-builtins
+    "C4",      # flake8-comprehensions
+    "PL",      # Pylint
+    "RUF",     # Ruff-specific rules
+    # TODO: activate "T20",     # flake8-print - finsa print statements
+    "SIM",     # flake8-simplify
+    "TCH",     # flake8-type-checking
+]
 
 [lint.pydocstyle]
 convention = "google"

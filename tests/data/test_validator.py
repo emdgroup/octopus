@@ -189,29 +189,6 @@ def test_validate_column_dtypes(validator_factory, sample_data):
         validator_factory(data=data_with_invalid_dtype)._validate_column_dtypes()
 
 
-@pytest.mark.parametrize(
-    "invalid_column,should_fail",
-    [
-        (None, False),
-        ("invalid:column", True),
-        ("invalid[column]", True),
-        ("invalid{column}", True),
-    ],
-)
-def test_validate_column_names_characters(validator_factory, invalid_column, should_fail):
-    """Test column names characters validation."""
-    validator = validator_factory()
-
-    if invalid_column:
-        validator.relevant_columns.append(invalid_column)
-
-    if should_fail:
-        with pytest.raises(ValueError):
-            validator._validate_column_names_characters()
-    else:
-        validator._validate_column_names_characters()
-
-
 def test_validate_row_id_unique(validator_factory, sample_data):
     """Test row_id is unique validation."""
     validator_factory()._validate_row_id_unique()

@@ -10,7 +10,6 @@ from attrs import Factory, asdict, define, field, validators
 from octopus import OctoData
 from octopus.config import ConfigManager, ConfigSequence, ConfigStudy
 from octopus.config.core import OctoConfig
-from octopus.data.imputer import impute_mice, impute_simple
 from octopus.experiment import OctoExperiment
 from octopus.manager import OctoManager
 from octopus.utils import DataSplit
@@ -237,44 +236,6 @@ class OctoML:
         ).to_parquet(config_path.joinpath("config_sequence.parquet"))
 
         self.configs.to_pickle(config_path / "config.pkl")
-
-    def _impute_dataset(
-        self, train_df: pd.DataFrame, test_df: pd.DataFrame, feature_columns: list
-    ) -> tuple[pd.DataFrame, pd.DataFrame]:
-        """Impute dataset if missing values are present.
-
-        Parameters:
-            train_df: The training dataset.
-            test_df: The testing dataset.
-            feature_columns: List of feature column names to impute.
-
-        Returns:
-            tuple: A tuple containing the imputed (or original) train and test datasets.
-        """
-        imputation_method = self.configs.study.imputation_method
-
-        # Check for missing values in the feature columns
-        missing_in_train = train_df[feature_columns].isna().any().any()
-        missing_in_test = test_df[feature_columns].isna().any().any()
-
-        if not missing_in_train and not missing_in_test:
-            # No missing values, return original datasets
-            return train_df, test_df
-
-        logger.info("Imputing data .....")
-        # Perform imputation if missing values are present
-        if imputation_method == "mice":
-            logger.info("MICE imputation")
-            imputed_train_df, imputed_test_df = impute_mice(train_df, test_df, feature_columns)
-        else:
-            logger.info("Simple imputation")
-            imputed_train_df, imputed_test_df = impute_simple(train_df, test_df, feature_columns, imputation_method)
-
-        # Assert that there are no NaNs in the imputed data
-        assert not imputed_train_df[feature_columns].isna().any().any(), "NaNs present in imputed train_df"
-        assert not imputed_test_df[feature_columns].isna().any().any(), "NaNs present in imputed test_df"
-
-        return imputed_train_df, imputed_test_df
 
     def _create_experiments(self, path_study: Path, data_splits: dict, datasplit_col: str) -> None:
         """Create the experiments based on the data splits.

@@ -6,7 +6,7 @@ from octopus.models.hyperparameter import Hyperparameter
 
 
 @pytest.mark.parametrize(
-    "type, name, low, high, step, choices, log, value, expected_exception",
+    "hyperparameter_type, name, low, high, step, choices, log, value, expected_exception",
     [
         # Valid int hyperparameter
         ("int", "para1", 1, 10, None, [], False, None, None),
@@ -44,12 +44,12 @@ from octopus.models.hyperparameter import Hyperparameter
         ("unknown", "para1", None, None, None, [], False, None, ValueError),
     ],
 )
-def test_validate_hyperparameters(type, name, low, high, step, choices, log, value, expected_exception):
+def test_validate_hyperparameters(hyperparameter_type, name, low, high, step, choices, log, value, expected_exception):
     """Test validate hyperparameters."""
     if expected_exception:
         with pytest.raises(expected_exception):
             Hyperparameter(
-                type=type,
+                type=hyperparameter_type,
                 name=name,
                 low=low,
                 high=high,
@@ -60,7 +60,7 @@ def test_validate_hyperparameters(type, name, low, high, step, choices, log, val
             )
     else:
         Hyperparameter(
-            type=type,
+            type=hyperparameter_type,
             name=name,
             low=low,
             high=high,

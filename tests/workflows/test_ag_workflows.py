@@ -229,18 +229,15 @@ class TestAutogluonWorkflows:
                         exp = OctoExperiment.from_pickle(path_exp_pkl)
 
                         # Test for 'autogluon' results key
-                        if "autogluon" in exp.results.keys():
+                        if "autogluon" in exp.results:
                             found_autogluon_result = True
                             print(f"✓ Found 'autogluon' results key in {path_exp_pkl}")
 
                             # Test for 'autogluon_permutation_test' feature importance key
                             result = exp.results["autogluon"]
-                            if hasattr(result, "feature_importances") and result.feature_importances:
-                                if "autogluon_permutation_test" in result.feature_importances.keys():
-                                    found_autogluon_permutation_test = True
-                                    print(
-                                        f"✓ Found 'autogluon_permutation_test' feature importance key in {path_exp_pkl}"
-                                    )
+                            if "autogluon_permutation_test" in getattr(result, "feature_importances", {}):
+                                found_autogluon_permutation_test = True
+                                print(f"✓ Found 'autogluon_permutation_test' feature importance key in {path_exp_pkl}")
 
                     except Exception as e:
                         print(f"Error loading experiment {path_exp_pkl}: {e}")

@@ -58,7 +58,7 @@ class ModelCache:
         models_by_type = {"classification": [], "regression": [], "timetoevent": []}
         skipped_tabpfn_models = []
 
-        for model_name in all_models.keys():
+        for model_name in all_models:
             # Skip TabPFN models due to potential dependency issues
             if "TabPFN" in model_name:
                 skipped_tabpfn_models.append(model_name)

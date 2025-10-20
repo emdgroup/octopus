@@ -268,7 +268,7 @@ class Rfe2Core(OctoCore):
         lowest_feature = fi_avail_df.loc[fi_avail_df[selection_column].idxmin(), "feature"]
 
         # get all feature to be removed, including group members
-        if lowest_feature in bag.feature_groups.keys():
+        if lowest_feature in bag.feature_groups:
             drop_features = bag.feature_groups[lowest_feature]
             drop_features.append(lowest_feature)
         else:

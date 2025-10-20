@@ -15,7 +15,7 @@ def add_pooling_performance(pool, scores, target_metric, target_assignments, thr
     prediction_type = metric_config.prediction_type  # type of input required for metric
 
     if ml_type == "timetoevent":
-        for part in pool.keys():
+        for part in pool:
             estimate = pool[part]["prediction"]
             event_time = pool[part][target_assignments["duration"]].astype(float)
             event_indicator = pool[part][target_assignments["event"]].astype(bool)
@@ -28,7 +28,7 @@ def add_pooling_performance(pool, scores, target_metric, target_assignments, thr
             raise ValueError("positive_class must be provided for classification tasks")
 
         if prediction_type == "predict_proba":
-            for part in pool.keys():
+            for part in pool:
                 target_col = list(target_assignments.values())[0]
 
                 # Use positive_class to get the correct probability column
@@ -39,7 +39,7 @@ def add_pooling_performance(pool, scores, target_metric, target_assignments, thr
                 # scores[part + "_pool_hard"] = metric_function(target, predictions)
 
         else:  # "predict"
-            for part in pool.keys():
+            for part in pool:
                 target_col = list(target_assignments.values())[0]
 
                 # Use positive_class to get the correct probability column
@@ -51,7 +51,7 @@ def add_pooling_performance(pool, scores, target_metric, target_assignments, thr
 
     elif ml_type == "multiclass":
         if prediction_type == "predict_proba":
-            for part in pool.keys():
+            for part in pool:
                 target_col = list(target_assignments.values())[0]
 
                 # For multiclass, get all class probabilities
@@ -67,14 +67,14 @@ def add_pooling_performance(pool, scores, target_metric, target_assignments, thr
                 scores[part + "_pool"] = metric_function(target, probabilities)
 
         else:  # "predict"
-            for part in pool.keys():
+            for part in pool:
                 target_col = list(target_assignments.values())[0]
                 predictions = pool[part]["prediction"].astype(int)
                 target = pool[part][target_col]
                 scores[part + "_pool"] = metric_function(target, predictions)
 
     elif ml_type == "regression":
-        for part in pool.keys():
+        for part in pool:
             target_col = list(target_assignments.values())[0]
             predictions = pool[part]["prediction"]
             target = pool[part][target_col]

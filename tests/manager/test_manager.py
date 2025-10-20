@@ -139,6 +139,5 @@ def test_load_existing_experiment(octo_manager, mock_experiment):
 def test_load_existing_experiment_not_found(octo_manager, mock_experiment):
     """Test experiment not found."""
     element = Mock(sequence_id=3)
-    with patch.object(Path, "exists", return_value=False):
-        with pytest.raises(FileNotFoundError):
-            octo_manager._load_existing_experiment(mock_experiment, element)
+    with patch.object(Path, "exists", return_value=False), pytest.raises(FileNotFoundError):
+        octo_manager._load_existing_experiment(mock_experiment, element)

@@ -149,12 +149,11 @@ class BagBase(BaseEstimator):
 
         for training in self.trainings:
             # Check if the training has a fitted model with classes_ attribute
-            if hasattr(training, "model") and training.model is not None:
-                if hasattr(training.model, "classes_"):
-                    # Add classes from this training to the set
-                    training_classes = training.model.classes_
-                    if training_classes is not None:
-                        all_classes.update(training_classes)
+            if hasattr(training, "model") and hasattr(training.model, "classes_"):
+                # Add classes from this training to the set
+                training_classes = training.model.classes_
+                if training_classes is not None:
+                    all_classes.update(training_classes)
 
         # If no classes found, return None
         if not all_classes:
@@ -565,13 +564,12 @@ class BagBase(BaseEstimator):
         feat_additional = []
         for key in groups:
             features = self.feature_groups.get(key, [])
-            if not any(feature in feat_single for feature in features):
-                if features:  # Ensure the list is not empty
-                    # Find the feature with the highest importance in fi_df
-                    feature_importances = fi_df[fi_df["feature"].isin(features)]
-                    if not feature_importances.empty:
-                        best_feature = feature_importances.loc[feature_importances["importance"].idxmax(), "feature"]
-                        feat_additional.append(best_feature)
+            if features and not any(feature in feat_single for feature in features):
+                # Find the feature with the highest importance in fi_df
+                feature_importances = fi_df[fi_df["feature"].isin(features)]
+                if not feature_importances.empty:
+                    best_feature = feature_importances.loc[feature_importances["importance"].idxmax(), "feature"]
+                    feat_additional.append(best_feature)
 
         # Add the additional features to feat_single and remove duplicates
         feat_all = list(set(feat_single + feat_additional))

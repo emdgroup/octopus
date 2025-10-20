@@ -59,10 +59,11 @@ class ObjectiveOptuna:
         """
         # get non-model parameters
         # (1) ml_model_type
-        if len(self.ml_model_types) > 1:
-            ml_model_type = trial.suggest_categorical(name="ml_model_type", choices=self.ml_model_types)
-        else:
-            ml_model_type = self.ml_model_types[0]
+        ml_model_type = (
+            trial.suggest_categorical(name="ml_model_type", choices=self.ml_model_types)
+            if len(self.ml_model_types) > 1
+            else self.ml_model_types[0]
+        )
 
         # (3) number of outliers to be detected
         if self.max_outl > 0:
@@ -81,10 +82,7 @@ class ObjectiveOptuna:
         # get hyperparameters for selected model
         model_item = ModelInventory().get_model_by_name(ml_model_type)
 
-        if ml_model_type in self.hyper_parameters.keys():
-            hyperparameters = self.hyper_parameters[ml_model_type]
-        else:
-            hyperparameters = model_item.hyperparameters
+        hyperparameters = self.hyper_parameters.get(ml_model_type, model_item.hyperparameters)
 
         model_params = ModelInventory().create_trial_parameters(
             trial,

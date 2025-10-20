@@ -47,7 +47,7 @@ class TestConfigSequence:
             test_sequence_items = []
             for name in sequence_items:
                 # check if item is a fixture
-                if name in request._fixturemanager._arg2fixturedefs.keys():
+                if name in request._fixturemanager._arg2fixturedefs:
                     test_sequence_items.append(request.getfixturevalue(name))
                 else:
                     test_sequence_items.append(name)

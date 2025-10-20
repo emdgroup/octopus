@@ -34,6 +34,7 @@ extend-ignore = [
     "COM812",  # Trailing comma (conflicts with formatter)
     "ISC001",  # Implicit string concatenation (conflicts with formatter)
     "E501",    # Line too long (handled by formatter)
+    "SIM108",  # Use ternary operator instead of `if`-`else`-block
 ]
 
 # Here, we explicitly choose the rules that ruff should verify.
@@ -79,7 +80,7 @@ select=[
     # TODO: activate "C4", # flake8-comprehensions
     # TODO: activate "RUF", # Ruff-specific rules
     # TODO: activate "T20", # flake8-print - finsa print statements
-    # TODO: activate "SIM", # flake8-simplify
+    "SIM", # flake8-simplify
     "TCH", # flake8-type-checking
     ]
 

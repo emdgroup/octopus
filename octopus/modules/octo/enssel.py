@@ -94,10 +94,7 @@ class EnSel:
 
         # order of table is important, depending on metric,
         # (a) direction
-        if self.direction == "maximize":
-            ascending = False
-        else:
-            ascending = True
+        ascending = self.direction != "maximize"
 
         self.model_table = self.model_table.sort_values(by="dev_pool", ascending=ascending).reset_index(drop=True)
 

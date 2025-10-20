@@ -134,17 +134,16 @@ class OctoML:
                 f"/data/data_health_report.csv"
             )
 
-        if warning_issues:
-            if not self.config_study.ignore_data_health_warning:
-                raise Exception(
-                    f"Data issues have been detected. "
-                    f"Please check the details in the following file: "
-                    f"{Path(self.configs.study.path, self.configs.study.name)}"
-                    f"/data/data_health_report.csv\n\n"
-                    f"To proceed despite these warnings"
-                    f", set `ignore_data_health_warning` "
-                    f"to True in `ConfigStudy`."
-                )
+        if warning_issues and not self.config_study.ignore_data_health_warning:
+            raise Exception(
+                f"Data issues have been detected. "
+                f"Please check the details in the following file: "
+                f"{Path(self.configs.study.path, self.configs.study.name)}"
+                f"/data/data_health_report.csv\n\n"
+                f"To proceed despite these warnings"
+                f", set `ignore_data_health_warning` "
+                f"to True in `ConfigStudy`."
+            )
 
     def _check_positive_class(self) -> None:
         """Check positive class definition for binary classification."""

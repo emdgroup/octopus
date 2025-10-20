@@ -182,6 +182,7 @@ def create_fake_bag(trained_model, model_name, feature_indices, cv_folds, splits
         target_assignments={'default': 'target'},
         row_column='row_id',
         target_metric='MAE',
+        ml_type='regression',
         parallel_execution=False,
         num_workers=1
     )
@@ -235,7 +236,7 @@ def test_ensemble_selection_ensembled_data(tmp_path):
     # 5. Get individual model performance
     individual_performances = []
     for model_name, bag in bags.items():
-        scores = bag.get_scores()
+        scores = bag.get_performance()
         individual_performances.append(scores['dev_pool'])
 
     best_individual_mae = min(individual_performances)

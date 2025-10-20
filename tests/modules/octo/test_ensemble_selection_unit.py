@@ -110,6 +110,7 @@ def create_mock_bag(bag_id, target_dev_mae, target_test_mae, n_trainings=3, exac
         target_assignments={'default': 'target'},
         row_column='row_id',
         target_metric='MAE',
+        ml_type='regression',
         parallel_execution=False,
         num_workers=1
     )

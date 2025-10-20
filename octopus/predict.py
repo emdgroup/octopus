@@ -242,7 +242,7 @@ class OctoPredict:
         print("Calculating combined feature importances.")
         # create combined experiment
         feature_col_lst = list()
-        for exp_id, experiment in self.experiments.items():
+        for experiment in self.experiments.values():
             feature_col_lst.extend(experiment["feature_columns"])
 
         # use last experiment in for loop

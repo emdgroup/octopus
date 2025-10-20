@@ -10,6 +10,8 @@ respect-gitignore = true
     "PLR1711", # Useless return statement
     "E402",    # Module import not at top of file
     "PLC0415", # Import outside top-level
+    "B018",    # Found useless expression. Either assign it to a variable or remove it. - Those might make sense in marimo notebooks
+    "E266",     # Too many leading '#' for block comment. These make sense as markdown headings in marimo notebooks
 ]
 "tests/*" = [
     "D100",    # Missing module docstrings in tests
@@ -75,7 +77,7 @@ select=[
     "I", # isort
     # TODO: activate "N", # pep8-naming
     # TODO: activate "UP", # pyupgrade
-    # TODO: activate "B", # flake8-bugbear
+    "B", # flake8-bugbear
     # TODO: activate "A", # flake8-builtins
     # TODO: activate "C4", # flake8-comprehensions
     # TODO: activate "RUF", # Ruff-specific rules

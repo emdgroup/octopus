@@ -107,16 +107,22 @@ class DataFrameGenerator:
         """Add a constant column to the DataFrame."""
         self.df[column_name] = value
 
-    def add_decimal_columns(self, column_names=["decimal_1", "decimal_2"], precision=8):
+    def add_decimal_columns(self, column_names: list[str] | None = None, precision=8):
         """Add columns with Decimal data type."""
+        if column_names is None:
+            column_names = ["decimal_1", "decimal_2"]
+
         rng = np.random.default_rng(self.random_state)
         for col_name in column_names:
             random_numbers = rng.random(size=len(self.df))
             formatted_numbers = [Decimal(f"{num:.{precision}f}") for num in random_numbers]
             self.df[col_name] = formatted_numbers
 
-    def add_inf_columns(self, column_names=["inf_col"], num_inf=10):
+    def add_inf_columns(self, column_names: list[str] | None = None, num_inf=10):
         """Add columns with infinite values."""
+        if column_names is None:
+            column_names = ["inf_col"]
+
         rng = np.random.default_rng(self.random_state)
         for col_name in column_names:
             # Initialize the column with random float values

@@ -68,6 +68,19 @@ select=[
     "E9", # default choice of ruff
     "W", # Warnings
     "PL", # Pylint
+    "E", # pycodestyle errors
+    "W", # pycodestyle warnings
+    "F", # Pyflakes
+    "I", # isort
+    # TODO: activate "N", # pep8-naming
+    # TODO: activate "UP", # pyupgrade
+    # TODO: activate "B", # flake8-bugbear
+    # TODO: activate "A", # flake8-builtins
+    # TODO: activate "C4", # flake8-comprehensions
+    # TODO: activate "RUF", # Ruff-specific rules
+    # TODO: activate "T20", # flake8-print - finsa print statements
+    # TODO: activate "SIM", # flake8-simplify
+    "TCH", # flake8-type-checking
     ]
 
 [lint.pydocstyle]

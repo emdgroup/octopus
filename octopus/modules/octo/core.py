@@ -198,7 +198,7 @@ class OctoCore:
         # extract trainings
         # here, we don't use the weight info
         # this requires more work for scores and feature importances
-        trainings = list()
+        trainings = []
         train_id = 0
         for path, weight in ensemble_paths_dict.items():
             bag = Bag.from_pickle(path)
@@ -285,7 +285,7 @@ class OctoCore:
                 best_bag = Bag.from_pickle(file)
         elif len(path_bags) > 1:
             # collect all trainings from bags
-            trainings = list()
+            trainings = []
             for file in path_bags:
                 if file.is_file():
                     bag = Bag.from_pickle(file)
@@ -431,7 +431,7 @@ class OctoCore:
         best_bag_feature_columns = self.mrmr_features[n_input_features]
 
         # create best bag from optuna info
-        best_trainings = list()
+        best_trainings = []
         for key, split in splits.items():
             best_trainings.append(
                 Training(

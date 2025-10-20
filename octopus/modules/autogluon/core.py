@@ -280,7 +280,7 @@ class AGCore:
         """Calculate feature importances."""
         logger.set_log_group(LogGroup.AUTOGLUON, f"EXP {self.experiment.experiment_id}")
         logger.info("Calculating test permutation feature importances...")
-        fi = dict()
+        fi = {}
         # set seed
         np.random.seed(42)
 
@@ -406,7 +406,7 @@ class AGCore:
 
         # test scores calculated by octo method, for comparison
         all_metrics = list(dict.fromkeys(self.metrics + [self.target_metric]))
-        test_performance_octo = dict()
+        test_performance_octo = {}
         for metric in all_metrics:
             performance = get_performance_score(
                 self.model,
@@ -471,7 +471,7 @@ class AGCore:
 
     def _get_predictions(self):
         """Get validation and test predictions."""
-        predictions = dict()
+        predictions = {}
         best_model_name = self.model.model_best
         problem_type = self.model.problem_type
         row_column = self.experiment.row_column

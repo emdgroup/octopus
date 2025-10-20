@@ -76,7 +76,7 @@ class OctoPredict:
     def _get_models(self):
         """Get all models and test data from study path."""
         print("\nLoading available experiments ......")
-        experiments = dict()
+        experiments = {}
 
         for experiment_id in range(self.n_experiments):
             path_exp = self.study_path.joinpath(
@@ -112,7 +112,7 @@ class OctoPredict:
 
     def predict(self, data: pd.DataFrame, return_df=False) -> pd.DataFrame:
         """Predict on new data."""
-        preds_lst = list()
+        preds_lst = []
         for _, experiment in self.experiments.items():
             feature_columns = experiment["feature_columns"]
 
@@ -133,7 +133,7 @@ class OctoPredict:
 
     def predict_proba(self, data: pd.DataFrame, return_df=False) -> pd.DataFrame:
         """Predict_proba on new data."""
-        preds_lst = list()
+        preds_lst = []
         for _, experiment in self.experiments.items():
             feature_columns = experiment["feature_columns"]
             probabilities = experiment["model"].predict_proba(data[feature_columns])
@@ -157,7 +157,7 @@ class OctoPredict:
 
     def predict_test(self) -> pd.DataFrame:
         """Predict on available test data."""
-        preds_lst = list()
+        preds_lst = []
         for _, experiment in self.experiments.items():
             data_test = experiment["data_test"]
             feature_columns = experiment["feature_columns"]
@@ -182,7 +182,7 @@ class OctoPredict:
 
     def predict_proba_test(self) -> pd.DataFrame:
         """Predict_proba on available test data."""
-        preds_lst = list()
+        preds_lst = []
         for _, experiment in self.experiments.items():
             data_test = experiment["data_test"]
             feature_columns = experiment["feature_columns"]
@@ -241,7 +241,7 @@ class OctoPredict:
         # feature importances for the combined predictions
         print("Calculating combined feature importances.")
         # create combined experiment
-        feature_col_lst = list()
+        feature_col_lst = []
         for experiment in self.experiments.values():
             feature_col_lst.extend(experiment["feature_columns"])
 

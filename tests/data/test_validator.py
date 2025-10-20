@@ -25,26 +25,55 @@ def sample_data():
 
 
 @pytest.fixture
-def valid_validator(sample_data):
-    """Create valid validator."""
-    return OctoDataValidator(
-        data=sample_data,
-        feature_columns=["feature1", "feature2", "feature3"],
-        target_columns=["target"],
+def validator_factory(sample_data):
+    """Create validators with custom parameters."""
+
+    def _create_validator(
+        data=None,
+        feature_columns=None,
+        target_columns=None,
         sample_id="sample_id",
         row_id="id",
         stratification_column="strat",
-        target_assignments={},
-        relevant_columns=[
-            "id",
-            "sample_id",
-            "feature1",
-            "feature2",
-            "feature3",
-            "target",
-            "strat",
-        ],
-    )
+        target_assignments=None,
+        relevant_columns=None,
+    ):
+        if data is None:
+            data = sample_data
+        if feature_columns is None:
+            feature_columns = ["feature1", "feature2", "feature3"]
+        if target_columns is None:
+            target_columns = ["target"]
+        if target_assignments is None:
+            target_assignments = {}
+        if relevant_columns is None:
+            relevant_columns = list(
+                set(
+                    [sample_id, row_id]
+                    + feature_columns
+                    + target_columns
+                    + ([stratification_column] if stratification_column else [])
+                )
+            )
+
+        return OctoDataValidator(
+            data=data,
+            feature_columns=feature_columns,
+            target_columns=target_columns,
+            sample_id=sample_id,
+            row_id=row_id,
+            stratification_column=stratification_column,
+            target_assignments=target_assignments,
+            relevant_columns=relevant_columns,
+        )
+
+    return _create_validator
+
+
+@pytest.fixture
+def valid_validator(validator_factory):
+    """Create valid validator."""
+    return validator_factory()
 
 
 def test_initialization(valid_validator):
@@ -57,71 +86,86 @@ def test_validate(valid_validator):
     valid_validator.validate()
 
 
-def test_validate_columns_exist(valid_validator):
+@pytest.mark.parametrize(
+    "extra_columns,should_fail",
+    [
+        ([], False),
+        (["non_existent_column"], True),
+    ],
+)
+def test_validate_columns_exist(validator_factory, extra_columns, should_fail):
     """Test column exists validation."""
-    valid_validator._validate_columns_exist()
+    validator = validator_factory()
+    validator.relevant_columns.extend(extra_columns)
 
-    invalid_validator = valid_validator
-    invalid_validator.relevant_columns.append("non_existent_column")
-    with pytest.raises(ValueError):
-        invalid_validator._validate_columns_exist()
+    if should_fail:
+        with pytest.raises(ValueError):
+            validator._validate_columns_exist()
+    else:
+        validator._validate_columns_exist()
 
 
-def test_check_for_duplicated_columns(valid_validator):
+@pytest.mark.parametrize(
+    "duplicate_setup,should_fail",
+    [
+        (None, False),
+        ("feature_to_target", True),
+    ],
+)
+def test_validate_duplicated_columns(validator_factory, duplicate_setup, should_fail):
     """Test duplicated columns validation."""
-    valid_validator._check_for_duplicated_columns()
+    validator = validator_factory()
 
-    invalid_validator = valid_validator
-    invalid_validator.feature_columns.append("target")
-    with pytest.raises(ValueError):
-        invalid_validator._check_for_duplicated_columns()
+    if duplicate_setup == "feature_to_target":
+        validator.feature_columns.append("target")
+
+    if should_fail:
+        with pytest.raises(ValueError):
+            validator._validate_duplicated_columns()
+    else:
+        validator._validate_duplicated_columns()
 
 
-def test_validate_stratification_column(valid_validator):
+@pytest.mark.parametrize(
+    "stratification_column,should_fail",
+    [
+        ("strat", False),
+        ("sample_id", True),
+        ("id", True),
+    ],
+)
+def test_validate_stratification_column(validator_factory, stratification_column, should_fail):
     """Test stratification column validation."""
-    valid_validator._validate_stratification_column()
+    validator = validator_factory(stratification_column=stratification_column)
 
-    invalid_validator = valid_validator
-    invalid_validator.stratification_column = "sample_id"
-    with pytest.raises(ValueError):
-        invalid_validator._validate_stratification_column()
+    if should_fail:
+        with pytest.raises(ValueError):
+            validator._validate_stratification_column()
+    else:
+        validator._validate_stratification_column()
 
 
-def test_validate_target_assignments(valid_validator):
+@pytest.mark.parametrize(
+    "target_columns,target_assignments,should_fail",
+    [
+        (["target"], {}, False),
+        (["target"], {"event": "target"}, True),
+        (["target", "time"], {}, True),
+        (["target", "time"], {"event": "target"}, True),
+        (["target", "time"], {"event": "target", "duration": "non_existent"}, True),
+        (["target", "time"], {"event": "target", "duration": "target"}, True),
+        (["target", "time"], {"event": "target", "duration": "time"}, False),
+    ],
+)
+def test_validate_target_assignments(validator_factory, target_columns, target_assignments, should_fail):
     """Test target assignment validation."""
-    # Test with single target column and no assignments
-    valid_validator._validate_target_assignments()  # Should not raise any exceptions
+    validator = validator_factory(target_columns=target_columns, target_assignments=target_assignments)
 
-    # Test with single target column and assignments (should raise an error)
-    invalid_validator = valid_validator
-    invalid_validator.target_assignments = {"event": "target"}
-    with pytest.raises(ValueError):
-        invalid_validator._validate_target_assignments()
-
-    # Test with multiple target columns and no assignments
-    invalid_validator = valid_validator
-    invalid_validator.target_columns = ["target", "time"]
-    invalid_validator.target_assignments = {}
-    with pytest.raises(ValueError):
-        invalid_validator._validate_target_assignments()
-
-    # Test with multiple target columns and missing assignments
-    invalid_validator.target_assignments = {"event": "target"}
-    with pytest.raises(ValueError):
-        invalid_validator._validate_target_assignments()
-
-    # Test with multiple target columns and invalid assignments
-    invalid_validator.target_assignments = {
-        "event": "target",
-        "duration": "non_existent_column",
-    }
-    with pytest.raises(ValueError):
-        invalid_validator._validate_target_assignments()
-
-    # Test with multiple target columns and duplicate assignments
-    invalid_validator.target_assignments = {"event": "target", "duration": "target"}
-    with pytest.raises(ValueError):
-        invalid_validator._validate_target_assignments()
+    if should_fail:
+        with pytest.raises(ValueError):
+            validator._validate_target_assignments()
+    else:
+        validator._validate_target_assignments()
 
 
 def test_validate_number_of_targets(valid_validator):
@@ -135,70 +179,110 @@ def test_validate_number_of_targets(valid_validator):
         invalid_validator._validate_number_of_targets()
 
 
-def test_validate_column_dtypes(valid_validator):
+def test_validate_column_dtypes(validator_factory, sample_data):
     """Test column dtype validation."""
-    valid_validator._validate_column_dtypes()
+    validator_factory()._validate_column_dtypes()
 
-    invalid_validator = valid_validator
-    invalid_validator.data["feature1"] = invalid_validator.data["feature1"].astype("object")
+    data_with_invalid_dtype = sample_data.copy()
+    data_with_invalid_dtype["feature1"] = data_with_invalid_dtype["feature1"].astype("object")
     with pytest.raises(ValueError):
-        invalid_validator._validate_column_dtypes()
+        validator_factory(data=data_with_invalid_dtype)._validate_column_dtypes()
 
 
-def test_validate_column_names_characters(valid_validator):
-    """Test column names characters validation."""
-    valid_validator._validate_column_names_characters()
-
-    invalid_validator = valid_validator
-    invalid_validator.relevant_columns.append("invalid:column")
-    with pytest.raises(ValueError):
-        invalid_validator._validate_column_names_characters()
-
-
-def test_validate_column_names(valid_validator):
-    """Test column name validation."""
-    valid_validator._validate_column_names()
-
-    invalid_validator = valid_validator
-    invalid_validator.data["group_features"] = 0
-    with pytest.raises(ValueError):
-        invalid_validator._validate_column_names()
-
-
-def test_validate_row_id_unique(valid_validator):
+def test_validate_row_id_unique(validator_factory, sample_data):
     """Test row_id is unique validation."""
-    valid_validator._validate_row_id_unique()
+    validator_factory()._validate_row_id_unique()
 
-    invalid_validator = valid_validator
-    invalid_validator.data.loc[0, "id"] = 2
+    data_with_duplicate_id = sample_data.copy()
+    data_with_duplicate_id.loc[0, "id"] = 2
     with pytest.raises(ValueError):
-        invalid_validator._validate_row_id_unique()
+        validator_factory(data=data_with_duplicate_id)._validate_row_id_unique()
 
 
-def test_validate_with_two_targets(sample_data):
+def test_validate_with_two_targets(validator_factory):
     """Test two targets."""
-    two_target_validator = OctoDataValidator(
-        data=sample_data,
-        feature_columns=["feature1", "feature2", "feature3"],
+    validator = validator_factory(
         target_columns=["target", "time"],
-        sample_id="sample_id",
-        row_id="id",
-        stratification_column="strat",
         target_assignments={"event": "target", "time": "time"},
-        relevant_columns=[
-            "id",
-            "sample_id",
-            "feature1",
-            "feature2",
-            "feature3",
-            "target",
-            "time",
-            "strat",
-        ],
     )
-    two_target_validator.validate()
+    validator.validate()
 
-    invalid_validator = two_target_validator
-    invalid_validator.target_assignments = {}
+    invalid_validator = validator_factory(target_columns=["target", "time"], target_assignments={})
     with pytest.raises(ValueError):
         invalid_validator._validate_number_of_targets()
+
+
+def test_validate_nonempty_dataframe(validator_factory):
+    """Test nonempty dataframe validation."""
+    validator_factory(feature_columns=["feature1"])._validate_nonempty_dataframe()
+
+    empty_validator = validator_factory(data=pd.DataFrame(), feature_columns=["feature1"])
+    with pytest.raises(ValueError, match="DataFrame is empty"):
+        empty_validator._validate_nonempty_dataframe()
+
+
+def test_validate_minimum_samples(validator_factory, sample_data):
+    """Test minimum samples validation."""
+    validator_factory(feature_columns=["feature1"])._validate_minimum_samples()
+
+    small_validator = validator_factory(data=sample_data.head(10), feature_columns=["feature1"])
+    with pytest.raises(ValueError, match="Dataset must have at least 20 samples"):
+        small_validator._validate_minimum_samples()
+
+
+def test_validate_critical_columns_not_null(validator_factory, sample_data):
+    """Test critical columns not null validation."""
+    validator_factory(feature_columns=["feature1"])._validate_critical_columns_not_null()
+
+    data_with_null = sample_data.copy()
+    data_with_null.loc[0, "sample_id"] = np.nan
+    with pytest.raises(ValueError, match="Critical identifier columns cannot contain null values"):
+        validator_factory(data=data_with_null, feature_columns=["feature1"])._validate_critical_columns_not_null()
+
+
+def test_validate_feature_target_overlap(validator_factory):
+    """Test feature target overlap validation."""
+    validator_factory(feature_columns=["feature1", "feature2"])._validate_feature_target_overlap()
+
+    with pytest.raises(ValueError, match="Columns cannot be both features and targets"):
+        validator_factory(feature_columns=["feature1", "target"])._validate_feature_target_overlap()
+
+
+def test_validate_reserved_column_conflicts(validator_factory, sample_data):
+    """Test reserved column conflicts validation."""
+    validator_factory(feature_columns=["feature1"])._validate_reserved_column_conflicts()
+
+    data_with_reserved = sample_data.copy()
+    data_with_reserved["group_features"] = 0
+    with pytest.raises(ValueError, match="Reserved column names found in data"):
+        validator_factory(data=data_with_reserved, feature_columns=["feature1"])._validate_reserved_column_conflicts()
+
+
+def test_validate_features_not_all_null(validator_factory, sample_data):
+    """Test features not all null validation."""
+    validator_factory(feature_columns=["feature1", "feature2"])._validate_features_not_all_null()
+
+    data_with_null_feature = sample_data.copy()
+    data_with_null_feature["feature1"] = np.nan
+    with pytest.raises(ValueError, match="Feature columns are entirely null"):
+        validator_factory(
+            data=data_with_null_feature, feature_columns=["feature1", "feature2"]
+        )._validate_features_not_all_null()
+
+
+def test_validate_error_accumulation(validator_factory, sample_data):
+    """Test that validate() accumulates multiple errors."""
+    data_with_issues = sample_data.head(10).copy()
+    data_with_issues.loc[0, "sample_id"] = np.nan
+    data_with_issues["group_features"] = 0
+
+    validator = validator_factory(data=data_with_issues, feature_columns=["feature1"], stratification_column=None)
+
+    with pytest.raises(ValueError) as exc_info:
+        validator.validate()
+
+    error_message = str(exc_info.value)
+    assert "Multiple validation errors found" in error_message
+    assert "Dataset must have at least 20 samples" in error_message
+    assert "Reserved column names found in data" in error_message
+    assert "Critical identifier columns cannot contain null values" in error_message

@@ -1,9 +1,11 @@
 """OctoData Validator."""
 
-import re
+from collections import Counter
 
 import pandas as pd
 from attrs import define
+
+MIN_SAMPLES = 20
 
 
 @define
@@ -37,43 +39,91 @@ class OctoDataValidator:
     """Relevant columns of the dataset."""
 
     def validate(self):
-        """Run all validation checks."""
-        self._validate_column_names()
-        self._validate_column_names_characters()
-        self._validate_columns_exist()
-        self._check_for_duplicated_columns()
-        self._validate_stratification_column()
-        self._validate_target_assignments()
-        self._validate_number_of_targets()
-        self._validate_column_dtypes()
-        self._validate_row_id_unique()
+        """Run all validation checks on the OctoData configuration.
+
+        Performs comprehensive validation checks in a specific order to ensure
+        data quality and structural integrity before processing. Validates basic
+        structure, column names, relationships, data types, and data quality.
+
+        Collects all validation errors and raises a single exception with all
+        error messages if any validation fails.
+
+        Raises:
+            ValueError: If any validation check fails. Includes all validation
+                errors in a single exception message.
+        """
+        validators = [
+            self._validate_nonempty_dataframe,
+            self._validate_minimum_samples,
+            self._validate_reserved_column_conflicts,
+            self._validate_columns_exist,
+            self._validate_duplicated_columns,
+            self._validate_feature_target_overlap,
+            self._validate_stratification_column,
+            self._validate_target_assignments,
+            self._validate_number_of_targets,
+            self._validate_column_dtypes,
+            self._validate_critical_columns_not_null,
+            self._validate_features_not_all_null,
+            self._validate_row_id_unique,
+        ]
+
+        errors = []
+        for validator in validators:
+            try:
+                validator()
+            except ValueError as e:
+                errors.append(f"- {str(e)}")
+
+        if errors:
+            error_message = "Multiple validation errors found:\n" + "\n".join(errors)
+            raise ValueError(error_message)
 
     def _validate_columns_exist(self):
-        """Validate that all columns exists in the dataframe."""
-        # Identify missing columns
-        missing_columns = [col for col in self.relevant_columns if col not in self.data.columns]
+        """Validate that all relevant columns exist in the DataFrame.
 
-        # Raise error if any columns are missing
+        Checks that all columns specified in feature_columns, target_columns,
+        sample_id, row_id, and stratification_column are present in the DataFrame.
+
+        Raises:
+            ValueError: If any relevant columns are missing from the DataFrame.
+        """
+        missing_columns = [col for col in self.relevant_columns if col not in self.data.columns]
         if missing_columns:
             missing_str = ", ".join(missing_columns)
             raise ValueError(f"Columns not found in the DataFrame: {missing_str}")
 
-    def _check_for_duplicated_columns(self):
-        # Combine all columns to check for duplicates
+    def _validate_duplicated_columns(self):
+        """Validate that no duplicate column names exist in the configuration.
+
+        Validates that no column appears multiple times across feature_columns,
+        target_columns, sample_id, and row_id. This prevents ambiguous column
+        references.
+
+        Raises:
+            ValueError: If any column name appears more than once in the
+                configuration.
+        """
         columns_to_check = self.feature_columns + self.target_columns + [self.sample_id]
 
         if self.row_id:
             columns_to_check.append(self.row_id)
 
-        # Check for duplicates
-        duplicates = {col for col in columns_to_check if columns_to_check.count(col) > 1}
+        duplicates = [col for col, count in Counter(columns_to_check).items() if count > 1]
 
         if duplicates:
             duplicates_str = ", ".join(duplicates)
             raise ValueError(f"Duplicate columns found: {duplicates_str}")
 
     def _validate_stratification_column(self):
-        """Validate if stratification_column is not the same as row_id or sample_id."""
+        """Validate that stratification_column is not a reserved identifier.
+
+        Ensures that the stratification column (if specified) is not the same as
+        sample_id or row_id, which are reserved for data identification.
+
+        Raises:
+            ValueError: If stratification_column is the same as sample_id or row_id.
+        """
         if self.stratification_column and self.stratification_column in [
             self.sample_id,
             self.row_id,
@@ -81,9 +131,20 @@ class OctoDataValidator:
             raise ValueError("Stratification column cannot be the same as sample_id or row_id")
 
     def _validate_target_assignments(self):
-        """Validate target_assignments.
+        """Validate target assignments for multi-target scenarios.
 
-        Values need to be unique and within target_columns.
+        For single target columns, ensures no assignments are provided (not needed).
+        For multiple target columns, validates that:
+        - All target columns have assignments
+        - All assignments reference valid target columns
+        - Each target column has a unique assignment
+
+        Raises:
+            ValueError: If target assignments are invalid, missing, or contain
+                duplicates. Specific error messages indicate the exact issue.
+
+        Returns:
+            None: Returns early for single target columns after validation.
         """
         if len(self.target_columns) == 1:
             if self.target_assignments:
@@ -91,8 +152,6 @@ class OctoDataValidator:
                     "Target assignments provided for a single target column. Assignments are only needed for multiple target columns."
                 )
             return
-
-        # Multiple target columns: validate assignments
         if not self.target_assignments:
             raise ValueError(
                 f"Multiple target columns detected ({len(self.target_columns)}), "
@@ -100,7 +159,6 @@ class OctoDataValidator:
                 f"Please specify assignments for: {', '.join(self.target_columns)}"
             )
 
-        # Check if all target columns are assigned
         missing_assignments = set(self.target_columns) - set(self.target_assignments.values())
         if missing_assignments:
             raise ValueError(
@@ -110,7 +168,6 @@ class OctoDataValidator:
                 f"{', '.join(self.target_columns)}"
             )
 
-        # Check if all assignments are valid target columns
         invalid_assignments = set(self.target_assignments.values()) - set(self.target_columns)
         if invalid_assignments:
             raise ValueError(
@@ -119,7 +176,6 @@ class OctoDataValidator:
                 f"only for existing target columns: {', '.join(self.target_columns)}"
             )
 
-        # Check for duplicate assignments
         if len(set(self.target_assignments.values())) != len(self.target_assignments):
             duplicate_values = [
                 val for val in self.target_assignments.values() if list(self.target_assignments.values()).count(val) > 1
@@ -131,16 +187,35 @@ class OctoDataValidator:
             )
 
     def _validate_number_of_targets(self):
-        """Validate number of targets."""
+        """Validate the number of target columns.
+
+        Ensures that:
+        - No more than 2 target columns are specified
+        - If 2 targets are specified, target_assignments must be provided
+          (required for time-to-event modeling)
+
+        Raises:
+            ValueError: If more than 2 targets are specified, or if 2 targets
+                are provided without target assignments.
+        """
         if len(self.target_columns) > 2:
             raise ValueError("More than two targets are not allowed")
         if len(self.target_columns) == 2 and not self.target_assignments:
             raise ValueError(
-                "Target assignments are required when two targets are selected.This is only for ml_type = 'timetoevent'."
+                "Target assignments are required when two targets are selected. This is only for ml_type = 'timetoevent'."
             )
 
     def _validate_column_dtypes(self):
-        """Validate that all relevant columns have correct dtypes."""
+        """Validate that feature and target columns have supported data types.
+
+        Checks that all feature columns, target columns, and stratification column
+        (if present) have dtypes that are compatible with machine learning models.
+        Supported dtypes are: integer, float, boolean, and categorical.
+
+        Raises:
+            ValueError: If any column has an unsupported dtype. Lists all columns
+                with invalid dtypes along with their actual dtype.
+        """
         non_matching_columns = []
 
         if self.stratification_column:
@@ -148,7 +223,6 @@ class OctoDataValidator:
         else:
             columns_to_check = self.feature_columns + self.target_columns
 
-        # Check each relevant column's dtype
         for column in columns_to_check:
             dtype = self.data[column].dtype
             if not (
@@ -159,35 +233,106 @@ class OctoDataValidator:
             ):
                 non_matching_columns.append(f"{column} ({dtype})")
 
-        # Raise error if any columns have wrong dtypes
         if non_matching_columns:
             non_matching_str = ", ".join(non_matching_columns)
             raise ValueError(f"Columns with wrong dtypes: {non_matching_str}")
 
-    def _validate_column_names_characters(self):
-        """Search for disallowed characters in column names."""
-        # Define the pattern for disallowed characters
-        # This requirement comes from miceforest/lightGBM.
-        disallowed_chars_pattern = re.compile(r'[",:$$ \ $${}]')
-        # Find columns with disallowed characters
-        problematic_columns = [col for col in self.relevant_columns if disallowed_chars_pattern.search(col)]
-        # Raise an error if any problematic columns are found
-        if problematic_columns:
-            raise ValueError(
-                f"The following columns contain disallowed characters:"
-                f" {', '.join(problematic_columns)}.\n"
-                f'Disallowed characters are: ", : , [ , ] , {{ , }}.'
-            )
-
-    def _validate_column_names(self):
-        """Validate not allowed column names."""
-        columns_not_allowed = ["group_features", "group_sample_and_features"]
-
-        problematic_columns = [col for col in columns_not_allowed if col in self.data.columns]
-
-        if problematic_columns:
-            raise ValueError(f"The following columns names are not allowed  {', '.join(problematic_columns)}.\n")
-
     def _validate_row_id_unique(self):
+        """Validate that row_id column contains unique values.
+
+        If a row_id column is specified, ensures that all values in that column
+        are unique, as row IDs are used to uniquely identify each data row.
+
+        Raises:
+            ValueError: If duplicate row IDs are found in the row_id column.
+        """
         if self.row_id and not self.data[self.row_id].is_unique:
             raise ValueError("Duplicate row IDs found. Each row ID must be unique.")
+
+    def _validate_nonempty_dataframe(self):
+        """Validate that the DataFrame is not empty.
+
+        Ensures the DataFrame contains at least one row of data.
+
+        Raises:
+            ValueError: If the DataFrame has zero rows.
+        """
+        if len(self.data) == 0:
+            raise ValueError("DataFrame is empty. Cannot proceed with empty dataset.")
+
+    def _validate_minimum_samples(self):
+        """Validate that the DataFrame has a minimum number of samples.
+
+        Ensures the dataset has enough rows for meaningful analysis and modeling.
+        Requires at least MIN_SAMPLES rows.
+
+        Raises:
+            ValueError: If the DataFrame has fewer than MIN_SAMPLES rows.
+        """
+        if len(self.data) < MIN_SAMPLES:
+            raise ValueError(f"Dataset must have at least {MIN_SAMPLES} samples, got {len(self.data)}")
+
+    def _validate_critical_columns_not_null(self):
+        """Validate that critical identifier columns do not contain null values.
+
+        Checks that sample_id and row_id (if specified) do not contain any null
+        values, as these columns are essential for data grouping and identification.
+
+        Raises:
+            ValueError: If any critical identifier column contains null values.
+        """
+        critical_cols = [self.sample_id]
+        if self.row_id:
+            critical_cols.append(self.row_id)
+
+        null_cols = [col for col in critical_cols if self.data[col].isnull().any()]
+        if null_cols:
+            raise ValueError(f"Critical identifier columns cannot contain null values: {', '.join(null_cols)}")
+
+    def _validate_feature_target_overlap(self):
+        """Validate that no column is both a feature and a target.
+
+        Ensures that feature_columns and target_columns do not share any column
+        names, preventing logical conflicts in model training.
+
+        Raises:
+            ValueError: If any columns appear in both feature_columns and
+                target_columns.
+        """
+        overlap = set(self.feature_columns) & set(self.target_columns)
+        if overlap:
+            raise ValueError(f"Columns cannot be both features and targets: {', '.join(sorted(overlap))}")
+
+    def _validate_reserved_column_conflicts(self):
+        """Validate that reserved column names are not present in the DataFrame.
+
+        Checks for conflicts with columns that will be created during data
+        preparation: 'group_features', 'group_sample_and_features', and 'row_id'
+        (if not provided by user).
+
+        Raises:
+            ValueError: If any reserved column names are found in the DataFrame.
+        """
+        reserved = ["group_features", "group_sample_and_features"]
+        if not self.row_id:
+            reserved.append("row_id")
+
+        conflicts = [col for col in reserved if col in self.data.columns]
+        if conflicts:
+            raise ValueError(
+                f"Reserved column names found in data: {', '.join(conflicts)}. "
+                "These column names are used internally by Octopus."
+            )
+
+    def _validate_features_not_all_null(self):
+        """Validate that feature columns are not entirely null.
+
+        Checks that each feature column contains at least one non-null value.
+        Features with all null values provide no information for modeling.
+
+        Raises:
+            ValueError: If any feature columns contain only null values.
+        """
+        all_null_features = [col for col in self.feature_columns if self.data[col].isnull().all()]
+        if all_null_features:
+            raise ValueError(f"Feature columns are entirely null: {', '.join(all_null_features)}")

@@ -98,9 +98,8 @@ class OctoCore:
         # as optuna.create(...,load_if_exists=True)
         # create directory if it does not exist
         for directory in [self.path_trials, self.path_results]:
-            if not self.experiment.ml_config.resume_optimization:
-                if directory.exists():
-                    shutil.rmtree(directory)
+            if not self.experiment.ml_config.resume_optimization and directory.exists():
+                shutil.rmtree(directory)
             directory.mkdir(parents=True, exist_ok=True)
 
         # check if there is a mismatch between configured resources

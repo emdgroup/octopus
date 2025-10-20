@@ -75,7 +75,7 @@ class ModelCache:
         models_by_type = {"classification": [], "regression": [], "timetoevent": []}
         skipped_tabpfn_models = []
 
-        for model_name in all_models.keys():
+        for model_name in all_models:
             # Skip TabPFN models
             if "TabPFN" in model_name:
                 skipped_tabpfn_models.append(model_name)
@@ -492,7 +492,7 @@ def run_comprehensive_feature_importance_tests():
     # ML type summary
     print("ML Type Summary:")
     print("-" * 40)
-    for ml_type in results.keys():
+    for ml_type in results:
         ml_success = sum(
             sum(1 for method_result in model_results.values() if method_result.get("success", False))
             for model_results in results[ml_type].values()
@@ -573,10 +573,7 @@ def run_comprehensive_feature_importance_tests():
         print("\nFailed Tests:")
         for i, failure in enumerate(failed_tests, 1):
             # Truncate very long error messages for readability
-            if len(failure) > 100:
-                truncated_failure = failure[:97] + "..."
-            else:
-                truncated_failure = failure
+            truncated_failure = failure[:97] + "..." if len(failure) > 100 else failure
             print(f"   {i:2d}. {truncated_failure}")
 
     print("=" * 80)

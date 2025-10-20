@@ -201,7 +201,7 @@ class OctoManager:
 
         if experiment.results:
             # save predictions and feature importance for all keys
-            for key in experiment.results.keys():
+            for key in experiment.results:
                 # save predictions
                 experiment.results[key].create_prediction_df().to_parquet(
                     path_study_sequence.joinpath(

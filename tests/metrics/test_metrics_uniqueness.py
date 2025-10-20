@@ -121,7 +121,7 @@ class TestMetricsUniqueness:
 
         # Print distribution for documentation
         print("\n=== ML Type Distribution ===")
-        for ml_type in sorted(ml_type_distribution.keys()):
+        for ml_type in sorted(ml_type_distribution):
             metrics = sorted(ml_type_distribution[ml_type])
             print(f"{ml_type} ({len(metrics)}): {metrics}")
 

@@ -18,7 +18,7 @@ def get_classification_models():
     excluded_models = {"TabPFNClassifier"}
 
     # Get all models from the inventory
-    for model_name in inventory.models.keys():
+    for model_name in inventory.models:
         try:
             config = inventory.get_model_config(model_name)
             if config.ml_type == "classification" and model_name not in excluded_models:

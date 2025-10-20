@@ -43,8 +43,8 @@ def get_param_grid(model_type):
             # "learning_rate": [0.001, 0.03, 0.1],
             # "depth": [3, 6, 8, 10],
             # "l2_leaf_reg": [2, 5, 7, 10],
-            #'random_strength': [2, 5, 7, 10],
-            #'rsm': [0.1, 0.5, 1],
+            # 'random_strength': [2, 5, 7, 10],
+            # 'rsm': [0.1, 0.5, 1],
             "iterations": [500],
         }
     elif model_type in ("XGBClassifier", "XGBRegressor"):
@@ -355,10 +355,7 @@ class EfsCore:
 
         # order of table is important, depending on metric,
         # (a) direction (b) dev_pool_soft or dev_pool_hard
-        if self.direction == "maximize":
-            ascending = False
-        else:
-            ascending = True
+        ascending = self.direction != "maximize"
 
         self.model_table = self.model_table.sort_values(by="performance", ascending=ascending).reset_index(drop=True)
 
@@ -381,22 +378,24 @@ class EfsCore:
         # print("-----------------------------------")
 
         # needs improvement!!
-        if self.target_metric in ["ACC", "ACCBAL"]:
-            model_predictions = groupby_df["predictions"].round().astype(int)
-        else:
-            model_predictions = groupby_df["predictions"]
+        model_predictions = (
+            groupby_df["predictions"].round().astype(int)
+            if self.target_metric in ["ACC", "ACCBAL"]
+            else groupby_df["predictions"]
+        )
 
         metric_function = metrics_inventory.get_metric_function(self.target_metric)
-        if self.metric_input == "predictions":
-            ensel_performance = metric_function(y, model_predictions)
-        else:
-            ensel_performance = metric_function(y, groupby_df["probabilities"])
+        ensel_performance = (
+            metric_function(y, model_predictions)
+            if self.metric_input == "predictions"
+            else metric_function(y, groupby_df["probabilities"])
+        )
 
         return ensel_performance
 
     def _create_scantable(self):
         """Perform ensemble scan."""
-        ## (B) perform ensemble scan, hillclimb
+        # (B) perform ensemble scan, hillclimb
         self.scan_table = pd.DataFrame(
             columns=[
                 "#models",
@@ -427,10 +426,11 @@ class EfsCore:
         """Ensembling optimization with replacement."""
         # we start with an best N models example derived from self.scan_table,
         # assuming that is sorted correctly
-        if self.direction == "maximize":
-            best_performance = self.scan_table["performance"].max()
-        else:  # minimize
-            best_performance = self.scan_table["performance"].min()
+        best_performance = (
+            self.scan_table["performance"].max()
+            if self.direction == "maximize"
+            else self.scan_table["performance"].min()
+        )
         # get the last index with best performance
         best_rows = self.scan_table[self.scan_table["performance"] == best_performance]
         last_best_index = best_rows.index[-1]

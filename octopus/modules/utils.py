@@ -1,5 +1,6 @@
 """Helper functions."""
 
+import contextlib
 import math
 
 import numpy as np
@@ -33,10 +34,8 @@ def rdc(x, y, f=np.sin, k=20, s=1 / 6.0, n=5):
     if n > 1:
         values = []
         for _ in range(n):
-            try:
+            with contextlib.suppress(np.linalg.linalg.LinAlgError):
                 values.append(rdc(x, y, f, k, s, 1))
-            except np.linalg.linalg.LinAlgError:
-                pass
         return np.median(values)
 
     if len(x.shape) == 1:

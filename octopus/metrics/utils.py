@@ -59,7 +59,7 @@ def add_pooling_performance(pool, scores, target_metric, target_assignments, thr
                 prob_columns = [
                     col
                     for col in pool[part].columns
-                    if isinstance(col, (int, float)) and col not in [target_col, "prediction"]
+                    if isinstance(col, (int | float)) and col not in [target_col, "prediction"]
                 ]
                 probabilities = pool[part][prob_columns].values
                 target = pool[part][target_col]

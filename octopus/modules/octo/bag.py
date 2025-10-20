@@ -392,7 +392,7 @@ class BagBase(BaseEstimator):
                         prob_columns = [
                             col
                             for col in training.predictions[part].columns
-                            if isinstance(col, (int, float)) and col not in [target_col, "prediction", self.row_column]
+                            if isinstance(col, (int | float)) and col not in [target_col, "prediction", self.row_column]
                         ]
                         probabilities = training.predictions[part][prob_columns].values
                         target = training.predictions[part][target_col]

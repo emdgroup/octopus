@@ -79,7 +79,7 @@ select=[
     "F", # Pyflakes
     "I", # isort
     # TODO: activate "N", # pep8-naming
-    # TODO: activate "UP", # pyupgrade
+    "UP", # pyupgrade
     "B", # flake8-bugbear
     "A", # flake8-builtins
     "C4", # flake8-comprehensions

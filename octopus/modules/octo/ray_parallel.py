@@ -55,6 +55,27 @@ def shutdown_ray() -> None:
     """Shut down Ray if initialized. Safe to call multiple times."""
     if ray.is_initialized():
         ray.shutdown()
+    # Clear RAY_ADDRESS to avoid stale references after shutdown
+    os.environ.pop("RAY_ADDRESS", None)
+    os.environ.pop("RAY_HEAD_ADDRESS", None)
+
+
+def setup_ray_for_external_library() -> None:
+    """Set RAY_ADDRESS environment variable for external libraries like AutoGluon.
+
+    This ensures that external libraries that use Ray internally will connect to
+    the existing Ray instance instead of creating their own.
+
+    Should be called before using external libraries that may use Ray.
+    """
+    if ray.is_initialized():
+        # Get the Ray address and set it in the environment
+        ray_address = ray.get_runtime_context().gcs_address
+        if ray_address:
+            os.environ["RAY_ADDRESS"] = ray_address
+    else:
+        # If Ray is not initialized, clear the RAY_ADDRESS to avoid stale references
+        os.environ.pop("RAY_ADDRESS", None)
 
 
 def run_parallel_outer_ray(

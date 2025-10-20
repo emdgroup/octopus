@@ -62,7 +62,8 @@ class OctoDataHealthChecker:
         """Check for missing values in critical columns (target, sample_id, row_id)."""
         missing_value_share_col = self.data.isnull().mean()
 
-        critical_columns = self.target_columns + [
+        critical_columns = [
+            *self.target_columns,
             self.sample_id,
             self.row_id,
             self.stratification_column,
@@ -164,7 +165,7 @@ class OctoDataHealthChecker:
         duplicated_features = self.data[self.feature_columns].duplicated().any()
 
         if self.sample_id is not None:
-            duplicated_features_and_sample = self.data[self.feature_columns + [self.sample_id]].duplicated().any()
+            duplicated_features_and_sample = self.data[[*self.feature_columns, self.sample_id]].duplicated().any()
         else:
             duplicated_features_and_sample = None
 
@@ -259,10 +260,10 @@ class OctoDataHealthChecker:
             self.add_issue(
                 category="features",
                 issue_type="identical_features",
-                affected_items=[feature] + identical_list,
+                affected_items=[feature, *identical_list],
                 severity="Warning",
                 description=(
-                    f"The feature '{feature}' is identical to the following feature(s): {{', '.join(identical_list)}}"
+                    f"The feature '{feature}' is identical to the following feature(s): {', '.join(identical_list)}"
                 ),
                 action=("Consider removing redundant features to simplify the dataset and improve model performance."),
             )

@@ -405,7 +405,7 @@ class AGCore:
         train_performance_with_suffix = {f"{key}_train": value for key, value in train_performance.items()}
 
         # test scores calculated by octo method, for comparison
-        all_metrics = list(dict.fromkeys(self.metrics + [self.target_metric]))
+        all_metrics = list(dict.fromkeys([*self.metrics, self.target_metric]))
         test_performance_octo = {}
         for metric in all_metrics:
             performance = get_performance_score(

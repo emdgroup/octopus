@@ -326,11 +326,11 @@ class GaussianProcessClassifierModel:
 __all__ = [
     "CatBoostClassifierModel",
     "ExtraTreesClassifierModel",
+    "GaussianProcessClassifierModel",
     "GradientBoostingClassifierModel",
+    "HistGradientBoostingClassifierModel",
     "LogisticRegressionClassifierModel",
     "RandomForestClassifierModel",
     "TabPFNClassifierModel",
     "XGBClassifierModel",
-    "GaussianProcessClassifierModel",
-    "HistGradientBoostingClassifierModel",
 ]

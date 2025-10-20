@@ -452,13 +452,13 @@ def run_comprehensive_feature_importance_tests():
                         print(f"✗ Error: {result['error']}")
 
             except Exception as e:
-                print(f"    ✗ Model fitting failed: {str(e)}")
+                print(f"    ✗ Model fitting failed: {e!s}")
                 for method_name in FI_METHODS:
                     total_tests += 1
                     results[ml_type][model_name][method_name] = {
                         "method": method_name,
                         "success": False,
-                        "error": f"Model fitting failed: {str(e)}",
+                        "error": f"Model fitting failed: {e!s}",
                         "execution_time": 0,
                         "fi_count": 0,
                         "fi_keys": [],
@@ -616,7 +616,7 @@ class TestFeatureImportanceComprehensive:
 
                 except Exception as e:
                     for method_name in FI_METHODS:
-                        failed_tests.append(f"{ml_type}/{model_name}/{method_name}: Model fitting failed: {str(e)}")
+                        failed_tests.append(f"{ml_type}/{model_name}/{method_name}: Model fitting failed: {e!s}")
 
         # Fail the test if there are any failures
         if failed_tests:

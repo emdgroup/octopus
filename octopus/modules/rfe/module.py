@@ -36,6 +36,6 @@ class Rfe(BaseSequenceItem):
     # A string (see model evaluation documentation) or a scorer callable object /
     # function with signature scorer(estimator, X, y).
 
-    # importance_getter: str or callable, default=’auto’
-    # If ‘auto’, uses the feature importance either through a coef_ or
+    # importance_getter: str or callable, default='auto'
+    # If 'auto', uses the feature importance either through a coef_ or
     # feature_importances_ attributes of estimator.

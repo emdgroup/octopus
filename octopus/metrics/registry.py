@@ -1,10 +1,12 @@
 """Metrics Registry."""
 
+from typing import ClassVar
+
 
 class MetricRegistry:
     """Metric Registry."""
 
-    _metrics = {}
+    _metrics: ClassVar[dict[str, type]] = {}
 
     @classmethod
     def register(cls, name: str):

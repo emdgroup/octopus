@@ -81,7 +81,7 @@ def test_model_parameter_compatibility(model_name):
                 keyword in error_msg
                 for keyword in ["supports only", "not supported", "incompatible", "invalid combination"]
             ):
-                compatibility_errors.append(f"Params {params}: {str(e)}")
+                compatibility_errors.append(f"Params {params}: {e!s}")
         except Exception:
             # Ignore other errors (missing dependencies, etc.)
             pass
@@ -103,7 +103,7 @@ def test_all_models_have_valid_configs():
             assert config.model_class is not None
             assert config.ml_type in ["classification", "regression", "timetoevent"]
         except Exception as e:
-            config_errors.append(f"{model_name}: {str(e)}")
+            config_errors.append(f"{model_name}: {e!s}")
 
     assert not config_errors, "Model configuration errors:\n" + "\n".join(config_errors)
 
@@ -141,7 +141,7 @@ def test_model_instantiation_with_default_params():
             # Parameter compatibility issues are what we want to catch
             error_msg = str(e).lower()
             if any(keyword in error_msg for keyword in ["supports only", "not supported", "incompatible"]):
-                instantiation_errors.append(f"{model_name}: {str(e)}")
+                instantiation_errors.append(f"{model_name}: {e!s}")
         except Exception:
             # Ignore other errors (dependencies, etc.)
             pass

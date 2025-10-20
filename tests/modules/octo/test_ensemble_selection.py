@@ -2,13 +2,14 @@
 
 import numpy as np
 import pandas as pd
-from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
+from sklearn.ensemble import GradientBoostingRegressor, RandomForestRegressor
 from sklearn.linear_model import LinearRegression
+from sklearn.metrics import mean_absolute_error
 from sklearn.model_selection import KFold
 
 from octopus.modules.octo.bag import Bag
-from octopus.modules.octo.training import Training
 from octopus.modules.octo.enssel import EnSel
+from octopus.modules.octo.training import Training
 
 
 def create_synthetic_data_and_models(n_samples=500):
@@ -25,30 +26,30 @@ def create_synthetic_data_and_models(n_samples=500):
 
     # Create models with fixed parameters for consistency
     models = {
-        'linear': LinearRegression(),
-        'rf': RandomForestRegressor(n_estimators=20, random_state=42),  # Fewer trees for speed
-        'gb': GradientBoostingRegressor(n_estimators=20, random_state=42)
+        "linear": LinearRegression(),
+        "rf": RandomForestRegressor(n_estimators=20, random_state=42),  # Fewer trees for speed
+        "gb": GradientBoostingRegressor(n_estimators=20, random_state=42),
     }
 
     # Generate intermediate targets for training signal generators
-    y_linear = 2*X[:, 0] + 1.5*X[:, 1] - X[:, 2] + 0.5*X[:, 3]
-    y_rf = X[:, 4] * X[:, 5] + np.sin(X[:, 6]) + X[:, 7]**2
-    y_gb = np.exp(0.1*X[:, 8]) + np.log(1 + X[:, 9]**2) + X[:, 10]*X[:, 11]
+    y_linear = 2 * X[:, 0] + 1.5 * X[:, 1] - X[:, 2] + 0.5 * X[:, 3]
+    y_rf = X[:, 4] * X[:, 5] + np.sin(X[:, 6]) + X[:, 7] ** 2
+    y_gb = np.exp(0.1 * X[:, 8]) + np.log(1 + X[:, 9] ** 2) + X[:, 10] * X[:, 11]
 
     # Train each model on its feature subset and intermediate target
-    models['linear'].fit(X[:, 0:4], y_linear)
-    models['rf'].fit(X[:, 4:8], y_rf)
-    models['gb'].fit(X[:, 8:12], y_gb)
+    models["linear"].fit(X[:, 0:4], y_linear)
+    models["rf"].fit(X[:, 4:8], y_rf)
+    models["gb"].fit(X[:, 8:12], y_gb)
 
     # Generate signals using trained models
     signals = {
-        'linear': models['linear'].predict(X[:, 0:4]),
-        'rf': models['rf'].predict(X[:, 4:8]),
-        'gb': models['gb'].predict(X[:, 8:12])
+        "linear": models["linear"].predict(X[:, 0:4]),
+        "rf": models["rf"].predict(X[:, 4:8]),
+        "gb": models["gb"].predict(X[:, 8:12]),
     }
 
     # Create global target as sum of all signals plus noise
-    y_global = signals['linear'] + signals['rf'] + signals['gb'] + np.random.normal(0, 0.1, n_samples)
+    y_global = signals["linear"] + signals["rf"] + signals["gb"] + np.random.normal(0, 0.1, n_samples)
 
     return X, y_global, models, signals
 
@@ -64,12 +65,12 @@ def create_data_splits(X, y_global, test_size=0.2):
     train_indices = row_ids[:-n_test]
 
     return {
-        'X_train': X[train_indices],
-        'y_train': y_global[train_indices],
-        'X_test': X[test_indices],
-        'y_test': y_global[test_indices],
-        'train_row_ids': train_indices,
-        'test_row_ids': test_indices
+        "X_train": X[train_indices],
+        "y_train": y_global[train_indices],
+        "X_test": X[test_indices],
+        "y_test": y_global[test_indices],
+        "train_row_ids": train_indices,
+        "test_row_ids": test_indices,
     }
 
 
@@ -80,12 +81,12 @@ def create_cv_folds(X_train, y_train, train_row_ids, n_folds=3):
 
     for _, (train_idx, val_idx) in enumerate(kf.split(X_train)):
         fold_data = {
-            'X_fold_train': X_train[train_idx],
-            'y_fold_train': y_train[train_idx],
-            'X_fold_val': X_train[val_idx],
-            'y_fold_val': y_train[val_idx],
-            'fold_train_row_ids': train_row_ids[train_idx],
-            'fold_val_row_ids': train_row_ids[val_idx]
+            "X_fold_train": X_train[train_idx],
+            "y_fold_train": y_train[train_idx],
+            "X_fold_val": X_train[val_idx],
+            "y_fold_val": y_train[val_idx],
+            "fold_train_row_ids": train_row_ids[train_idx],
+            "fold_val_row_ids": train_row_ids[val_idx],
         }
         cv_folds.append(fold_data)
 
@@ -95,9 +96,9 @@ def create_cv_folds(X_train, y_train, train_row_ids, n_folds=3):
 def create_fake_training(trained_model, model_name, feature_indices, fold_data, splits, training_id):
     """Create fake Training object with predictions using pre-trained model."""
     # Extract feature subset for this model
-    X_fold_train = fold_data['X_fold_train'][:, feature_indices]
-    X_fold_val = fold_data['X_fold_val'][:, feature_indices]
-    X_test = splits['X_test'][:, feature_indices]
+    X_fold_train = fold_data["X_fold_train"][:, feature_indices]
+    X_fold_val = fold_data["X_fold_val"][:, feature_indices]
+    X_test = splits["X_test"][:, feature_indices]
 
     # Create predictions using pre-trained model (NO retraining)
     pred_train = trained_model.predict(X_fold_train)
@@ -106,56 +107,44 @@ def create_fake_training(trained_model, model_name, feature_indices, fold_data, 
 
     # Create prediction dataframes in octopus format
     predictions = {
-        'train': pd.DataFrame({
-            'row_id': fold_data['fold_train_row_ids'],
-            'prediction': pred_train,
-            'target': fold_data['y_fold_train']
-        }),
-        'dev': pd.DataFrame({
-            'row_id': fold_data['fold_val_row_ids'],
-            'prediction': pred_val,
-            'target': fold_data['y_fold_val']
-        }),
-        'test': pd.DataFrame({
-            'row_id': splits['test_row_ids'],
-            'prediction': pred_test,
-            'target': splits['y_test']
-        })
+        "train": pd.DataFrame(
+            {"row_id": fold_data["fold_train_row_ids"], "prediction": pred_train, "target": fold_data["y_fold_train"]}
+        ),
+        "dev": pd.DataFrame(
+            {"row_id": fold_data["fold_val_row_ids"], "prediction": pred_val, "target": fold_data["y_fold_val"]}
+        ),
+        "test": pd.DataFrame({"row_id": splits["test_row_ids"], "prediction": pred_test, "target": splits["y_test"]}),
     }
 
     # Create proper dataframes for Training object
-    train_df = pd.DataFrame(X_fold_train, columns=[f'feature_{i}' for i in range(len(feature_indices))])
-    train_df['row_id'] = fold_data['fold_train_row_ids']
-    train_df['target'] = fold_data['y_fold_train']
+    train_df = pd.DataFrame(X_fold_train, columns=[f"feature_{i}" for i in range(len(feature_indices))])
+    train_df["row_id"] = fold_data["fold_train_row_ids"]
+    train_df["target"] = fold_data["y_fold_train"]
 
-    val_df = pd.DataFrame(X_fold_val, columns=[f'feature_{i}' for i in range(len(feature_indices))])
-    val_df['row_id'] = fold_data['fold_val_row_ids']
-    val_df['target'] = fold_data['y_fold_val']
+    val_df = pd.DataFrame(X_fold_val, columns=[f"feature_{i}" for i in range(len(feature_indices))])
+    val_df["row_id"] = fold_data["fold_val_row_ids"]
+    val_df["target"] = fold_data["y_fold_val"]
 
-    test_df = pd.DataFrame(X_test, columns=[f'feature_{i}' for i in range(len(feature_indices))])
-    test_df['row_id'] = splits['test_row_ids']
-    test_df['target'] = splits['y_test']
+    test_df = pd.DataFrame(X_test, columns=[f"feature_{i}" for i in range(len(feature_indices))])
+    test_df["row_id"] = splits["test_row_ids"]
+    test_df["target"] = splits["y_test"]
 
     # Map model names to valid octopus model names
-    model_name_mapping = {
-        'linear': 'RidgeRegressor',
-        'rf': 'RandomForestRegressor',
-        'gb': 'GradientBoostingRegressor'
-    }
+    model_name_mapping = {"linear": "RidgeRegressor", "rf": "RandomForestRegressor", "gb": "GradientBoostingRegressor"}
 
     training = Training(
         training_id=training_id,
         ml_type="regression",
-        target_assignments={'default': 'target'},
-        feature_columns=[f'feature_{i}' for i in range(len(feature_indices))],
-        row_column='row_id',
+        target_assignments={"default": "target"},
+        feature_columns=[f"feature_{i}" for i in range(len(feature_indices))],
+        row_column="row_id",
         data_train=train_df,
         data_dev=val_df,
         data_test=test_df,
-        target_metric='MAE',
+        target_metric="MAE",
         max_features=len(feature_indices),
         feature_groups={},
-        config_training={'ml_model_type': model_name_mapping[model_name]}
+        config_training={"ml_model_type": model_name_mapping[model_name]},
     )
 
     # Manually set predictions and model
@@ -171,20 +160,18 @@ def create_fake_bag(trained_model, model_name, feature_indices, cv_folds, splits
 
     for fold_idx, fold_data in enumerate(cv_folds):
         training_id = f"{bag_id}_{fold_idx}"
-        training = create_fake_training(
-            trained_model, model_name, feature_indices, fold_data, splits, training_id
-        )
+        training = create_fake_training(trained_model, model_name, feature_indices, fold_data, splits, training_id)
         trainings.append(training)
 
     bag = Bag(
         bag_id=bag_id,
         trainings=trainings,
-        target_assignments={'default': 'target'},
-        row_column='row_id',
-        target_metric='MAE',
-        ml_type='regression',
+        target_assignments={"default": "target"},
+        row_column="row_id",
+        target_metric="MAE",
+        ml_type="regression",
         parallel_execution=False,
-        num_workers=1
+        num_workers=1,
     )
 
     # Set train_status to indicate models are already trained
@@ -207,20 +194,15 @@ def test_ensemble_selection_ensembled_data(tmp_path):
 
     # 2. Create data splits
     splits = create_data_splits(X, y_global)
-    cv_folds = create_cv_folds(splits['X_train'], splits['y_train'], splits['train_row_ids'])
+    cv_folds = create_cv_folds(splits["X_train"], splits["y_train"], splits["train_row_ids"])
 
     # 3. Create fake bags for each model
-    feature_subsets = {
-        'linear': list(range(0, 4)),
-        'rf': list(range(4, 8)),
-        'gb': list(range(8, 12))
-    }
+    feature_subsets = {"linear": list(range(0, 4)), "rf": list(range(4, 8)), "gb": list(range(8, 12))}
 
     bags = {}
     for model_name, model in models.items():
         bag = create_fake_bag(
-            model, model_name, feature_subsets[model_name],
-            cv_folds, splits, bag_id=f"trial_{model_name}"
+            model, model_name, feature_subsets[model_name], cv_folds, splits, bag_id=f"trial_{model_name}"
         )
         bags[model_name] = bag
 
@@ -237,17 +219,17 @@ def test_ensemble_selection_ensembled_data(tmp_path):
     individual_performances = []
     for model_name, bag in bags.items():
         scores = bag.get_performance()
-        individual_performances.append(scores['dev_pool'])
+        individual_performances.append(scores["dev_pool"])
 
     best_individual_mae = min(individual_performances)
 
     # 6. Run EnSel analysis
     ensel = EnSel(
-        target_metric='MAE',
+        target_metric="MAE",
         path_trials=trials_path,
         max_n_iterations=50,  # Fewer iterations for speed
-        row_column='row_id',
-        target_assignments={'default': 'target'}
+        row_column="row_id",
+        target_assignments={"default": "target"},
     )
 
     # 7. Extract ensemble results
@@ -257,7 +239,7 @@ def test_ensemble_selection_ensembled_data(tmp_path):
     # Calculate ensemble performance
     start_bags = list(start_ensemble.keys())
     start_scores = ensel._ensemble_models(start_bags)
-    ensemble_mae = start_scores['dev_pool']
+    ensemble_mae = start_scores["dev_pool"]
 
     # Calculate improvement
     # improvement_percent = (best_individual_mae - ensemble_mae) / best_individual_mae * 100
@@ -269,25 +251,23 @@ def test_ensemble_selection_ensembled_data(tmp_path):
         # Get pooled dev predictions from this bag (this is what EnSel uses)
         bag_pool = []
         for training in bag.trainings:
-            bag_pool.append(training.predictions['dev'])
+            bag_pool.append(training.predictions["dev"])
 
         # Pool predictions the same way as in Bag.get_scores()
-        pooled_dev = pd.concat(bag_pool, axis=0).groupby('row_id').mean().reset_index()
+        pooled_dev = pd.concat(bag_pool, axis=0).groupby("row_id").mean().reset_index()
         bag_dev_predictions.append(pooled_dev)
 
     # Get common row IDs and targets
     common_rows = bag_dev_predictions[0]
-    dev_targets = common_rows['target'].values
+    dev_targets = common_rows["target"].values
 
     # Average predictions from all three bags (same as ensemble selection does)
     true_ensemble_preds = (
-        bag_dev_predictions[0]['prediction'].values +
-        bag_dev_predictions[1]['prediction'].values +
-        bag_dev_predictions[2]['prediction'].values
+        bag_dev_predictions[0]["prediction"].values
+        + bag_dev_predictions[1]["prediction"].values
+        + bag_dev_predictions[2]["prediction"].values
     ) / 3
 
-    # Calculate true optimal MAE
-    from sklearn.metrics import mean_absolute_error
     true_ensemble_mae = mean_absolute_error(dev_targets, true_ensemble_preds)
 
     # 8. ASSERTIONS - Test core ensemble selection functionality

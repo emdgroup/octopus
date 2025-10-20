@@ -57,7 +57,7 @@ class DataSplit:
             for key in sorted(result.keys()):
                 combined_values.append(result[key])
 
-        combined_datasplits = {i: value for i, value in enumerate(combined_values)}
+        combined_datasplits = dict(enumerate(combined_values))
         logger.info("Combined data splits created successfully")
         return combined_datasplits
 
@@ -96,9 +96,9 @@ class DataSplit:
             )
             stratification_target = None
 
-        data_splits = dict()
-        all_test_indices = list()
-        all_test_groups = list()
+        data_splits = {}
+        all_test_indices = []
+        all_test_groups = []
         logger.info(f"Setting number of splits: {self.num_folds}")
         logger.info("Generating splits...")
 

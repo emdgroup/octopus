@@ -93,7 +93,7 @@ class RocCore:
         return self.experiment.ml_config.filter_type
 
     def __attrs_post_init__(self):
-        self.feature_groups = list()
+        self.feature_groups = []
         # delete directories /trials /optuna /results to ensure clean state
         # of module when restarted
         # create directory if it does not exist

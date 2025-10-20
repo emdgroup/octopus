@@ -134,7 +134,7 @@ class DataFrameGenerator:
     def add_fixed_unique_values_column(self, column_name="few_unique", num_unique=3):
         """Add a column with a specified number of unique values."""
         # Create a list of unique values
-        unique_values = [i for i in range(num_unique)]
+        unique_values = list(range(num_unique))
         # Repeat these values to fill the column
         repeated_values = unique_values * (len(self.df) // num_unique + 1)
         # Assign to the DataFrame, trimming to the correct length

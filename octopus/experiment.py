@@ -124,7 +124,7 @@ class OctoExperiment:
         logging.info("Calculating feature groups.")
 
         auto_group_thresholds = [0.7, 0.8, 0.9]
-        auto_groups = list()
+        auto_groups = []
 
         pos_corr_matrix, _ = scipy.stats.spearmanr(np.nan_to_num(self.data_traindev[feature_columns].values))
         pos_corr_matrix = np.abs(pos_corr_matrix)

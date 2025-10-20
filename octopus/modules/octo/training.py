@@ -511,7 +511,7 @@ class Training:
         # calculate pfi
         for name, feature in features_dict.items():
             data_pfi = data.copy()
-            fi_lst = list()
+            fi_lst = []
 
             for _ in range(n_repeats):
                 # replace column with random selection from that column of data_all

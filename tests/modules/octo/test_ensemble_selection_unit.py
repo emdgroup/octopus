@@ -137,9 +137,9 @@ def create_partial_ensel(trials_path, target_metric="MAE", methods_to_run=None):
 
     class PartialEnSel(EnSel):
         def __attrs_post_init__(self):
-            self.bags = dict()
-            self.start_ensemble = dict()
-            self.optimized_ensemble = dict()
+            self.bags = {}
+            self.start_ensemble = {}
+            self.optimized_ensemble = {}
 
             if methods_to_run is None or "_collect_trials" in methods_to_run:
                 self._collect_trials()
@@ -175,7 +175,7 @@ def test_collect_trials_basic(tmp_path):
 
     # Check that all expected keys are present in bags
     expected_keys = {"id", "scores", "predictions", "n_features_used_mean"}
-    for bag_path, bag_data in ensel.bags.items():
+    for _bag_path, bag_data in ensel.bags.items():
         assert set(bag_data.keys()) == expected_keys
         assert isinstance(bag_data["scores"], dict)
         assert isinstance(bag_data["predictions"], dict)

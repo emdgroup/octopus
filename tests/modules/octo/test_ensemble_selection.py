@@ -209,7 +209,7 @@ def test_ensemble_selection_ensembled_data(tmp_path):
     trials_path = tmp_path / "experiment0" / "sequence0" / "trials"
     trials_path.mkdir(parents=True)
 
-    for trial_idx, (model_name, bag) in enumerate(bags.items()):
+    for trial_idx, (_model_name, bag) in enumerate(bags.items()):
         filename = f"trial{trial_idx}_bag.pkl"
         filepath = trials_path / filename
         bag.to_pickle(str(filepath))

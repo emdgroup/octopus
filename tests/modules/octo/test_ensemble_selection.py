@@ -18,10 +18,9 @@ def create_synthetic_data_and_models(n_samples=500):
     Returns data where target = signal1 + signal2 + signal3 + noise,
     and each model captures only 1/3 of the signal.
     """
-    # Set fixed seed for deterministic results
     np.random.seed(42)
 
-    # Generate 12 features
+    # Generate features
     X = np.random.randn(n_samples, 12)
 
     # Create models with fixed parameters for consistency
@@ -189,14 +188,14 @@ def test_ensemble_selection_ensembled_data(tmp_path):
     - Target = signal1 + signal2 + signal3 + noise
     - Ensemble should significantly outperform individual models
     """
-    # 1. Generate synthetic data and trained models
+    # Generate synthetic data and trained models
     X, y_global, models, signals = create_synthetic_data_and_models(n_samples=400)  # Smaller for speed
 
-    # 2. Create data splits
+    # Create data splits
     splits = create_data_splits(X, y_global)
     cv_folds = create_cv_folds(splits["X_train"], splits["y_train"], splits["train_row_ids"])
 
-    # 3. Create fake bags for each model
+    # Create fake bags for each model
     feature_subsets = {"linear": list(range(0, 4)), "rf": list(range(4, 8)), "gb": list(range(8, 12))}
 
     bags = {}
@@ -206,7 +205,7 @@ def test_ensemble_selection_ensembled_data(tmp_path):
         )
         bags[model_name] = bag
 
-    # 4. Save fake trial bags to temporary directory
+    # Save fake trial bags to temporary directory
     trials_path = tmp_path / "experiment0" / "sequence0" / "trials"
     trials_path.mkdir(parents=True)
 
@@ -215,7 +214,7 @@ def test_ensemble_selection_ensembled_data(tmp_path):
         filepath = trials_path / filename
         bag.to_pickle(str(filepath))
 
-    # 5. Get individual model performance
+    # Get individual model performance
     individual_performances = []
     for model_name, bag in bags.items():
         scores = bag.get_performance()
@@ -232,7 +231,7 @@ def test_ensemble_selection_ensembled_data(tmp_path):
         target_assignments={"default": "target"},
     )
 
-    # 7. Extract ensemble results
+    # Extract ensemble results
     start_ensemble = ensel.start_ensemble
     optimized_ensemble = ensel.optimized_ensemble
 
@@ -240,9 +239,6 @@ def test_ensemble_selection_ensembled_data(tmp_path):
     start_bags = list(start_ensemble.keys())
     start_scores = ensel._ensemble_models(start_bags)
     ensemble_mae = start_scores["dev_pool"]
-
-    # Calculate improvement
-    # improvement_percent = (best_individual_mae - ensemble_mae) / best_individual_mae * 100
 
     # Calculate true optimal ensemble performance using same bag predictions
     # Sum individual bag dev predictions instead of ensemble selection's averaging
@@ -269,8 +265,6 @@ def test_ensemble_selection_ensembled_data(tmp_path):
     ) / 3
 
     true_ensemble_mae = mean_absolute_error(dev_targets, true_ensemble_preds)
-
-    # 8. ASSERTIONS - Test core ensemble selection functionality
 
     # Test that ensemble outperforms best individual model
     assert ensemble_mae < best_individual_mae, (

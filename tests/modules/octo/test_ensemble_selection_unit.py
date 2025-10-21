@@ -12,7 +12,6 @@ from octopus.modules.octo.training import Training
 
 # Utility functions for creating mock data and bags
 
-
 def create_mock_training(training_id, performance_dev, performance_test, n_samples=100):
     """Create a mock Training object with controlled performance."""
     np.random.seed(42 + hash(training_id) % 1000)  # Deterministic but varied
@@ -161,8 +160,7 @@ def create_partial_ensel(trials_path, target_metric="MAE", methods_to_run=None):
 
 # Tests for EnSel._collect_trials() method
 
-
-def test__collect_trials_basic(tmp_path):
+def test_collect_trials_basic(tmp_path):
     """Test basic trial collection from directory."""
     # Create mock trials with known performance
     bag_performances = [("model_a", 1.0, 1.1), ("model_b", 1.5, 1.4), ("model_c", 2.0, 1.9)]
@@ -185,8 +183,7 @@ def test__collect_trials_basic(tmp_path):
 
 # Tests for EnSel._create_model_table() method
 
-
-def test__create_model_table_sorting_minimize(tmp_path):
+def test_create_model_table_sorting_minimize(tmp_path):
     """Test model table creation and sorting for minimize metrics (MAE)."""
     bag_performances = [
         ("model_good", 1.0, 1.1),  # Best performance
@@ -210,25 +207,23 @@ def test__create_model_table_sorting_minimize(tmp_path):
     assert ensel.model_table.iloc[0]["id"] == "model_good"
 
 
-def test__create_model_table_identical_performance(tmp_path):
+def test_create_model_table_identical_performance(tmp_path):
     """Test handling of models with identical performance."""
     bag_performances = [("model_a", 1.5, 1.5), ("model_b", 1.5, 1.5), ("model_c", 1.5, 1.5)]
     trials_path = create_mock_trial_directory(tmp_path, bag_performances, exact_performance=True)
 
     ensel = create_partial_ensel(trials_path, methods_to_run=["_collect_trials", "_create_model_table"])
 
-    # Should handle identical performance gracefully
+    # Should handle identical performance
     assert len(ensel.model_table) == 3
     # All should have same dev_pool score
     dev_scores = ensel.model_table["dev_pool"].values
-    # TODO: Why allow small variation?
-    assert np.allclose(dev_scores, 1.5, rtol=0.1)  # Allow small variation from mock data
+    assert np.all(dev_scores == 1.5)  
 
 
 # Tests for EnSel._ensemble_models() core algorithm
 
-
-def test__ensemble_models_single_bag(tmp_path):
+def test_ensemble_models_single_bag(tmp_path):
     """Test ensemble calculation with single model."""
     bag_performances = [("single_model", 1.0, 1.1)]
     trials_path = create_mock_trial_directory(tmp_path, bag_performances)
@@ -249,8 +244,7 @@ def test__ensemble_models_single_bag(tmp_path):
 
 # Tests for EnSel._ensemble_scan() method
 
-
-def test__ensemble_scan_creates_scan_table(tmp_path):
+def test_ensemble_scan_creates_scan_table(tmp_path):
     """Test that ensemble scan creates and populates scan_table."""
     bag_performances = [
         ("model_poor", 3.0, 3.1),  # Worst performance
@@ -272,8 +266,7 @@ def test__ensemble_scan_creates_scan_table(tmp_path):
 
 # Tests for EnSel._ensemble_optimization() method
 
-
-def test__ensemble_optimization_creates_ensembles(tmp_path):
+def test_ensemble_optimization_creates_ensembles(tmp_path):
     """Test that optimization creates both start and optimized ensembles."""
     bag_performances = [("model_a", 2.0, 2.1), ("model_b", 1.8, 1.9), ("model_c", 2.2, 2.0)]
     trials_path = create_mock_trial_directory(tmp_path, bag_performances, exact_performance=True)
@@ -299,7 +292,7 @@ def test__ensemble_optimization_creates_ensembles(tmp_path):
         assert weight >= 1
 
 
-def test__ensemble_optimization_single_model_case(tmp_path):
+def test_ensemble_optimization_single_model_case(tmp_path):
     """Test optimization behavior when only one model exists."""
     bag_performances = [("single_model", 1.5, 1.6)]
     trials_path = create_mock_trial_directory(tmp_path, bag_performances)

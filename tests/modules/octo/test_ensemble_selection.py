@@ -216,7 +216,7 @@ def test_ensemble_selection_ensembled_data(tmp_path):
 
     # Get individual model performance
     individual_performances = []
-    for model_name, bag in bags.items():
+    for _model_name, bag in bags.items():
         scores = bag.get_performance()
         individual_performances.append(scores["dev_pool"])
 

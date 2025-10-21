@@ -61,15 +61,15 @@ def shutdown_ray() -> None:
 
 
 def setup_ray_for_external_library() -> None:
-    """Set RAY_ADDRESS environment variable for external libraries like AutoGluon.
+    """Configure environment to enable external libraries to use the existing Ray instance.
 
-    This ensures that external libraries that use Ray internally will connect to
-    the existing Ray instance instead of creating their own.
+    Sets RAY_ADDRESS to the current Ray GCS address, preventing external libraries
+    (e.g., AutoGluon, Ray Tune) from creating separate Ray instances that would
+    cause resource conflicts.
 
     Should be called before using external libraries that may use Ray.
     """
     if ray.is_initialized():
-        # Get the Ray address and set it in the environment
         ray_address = ray.get_runtime_context().gcs_address
         if ray_address:
             os.environ["RAY_ADDRESS"] = ray_address

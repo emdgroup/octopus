@@ -12,6 +12,7 @@ from octopus.modules.octo.training import Training
 
 # Utility functions for creating mock data and bags
 
+
 def create_mock_training(training_id, performance_dev, performance_test, n_samples=100):
     """Create a mock Training object with controlled performance."""
     np.random.seed(42 + hash(training_id) % 1000)  # Deterministic but varied
@@ -160,6 +161,7 @@ def create_partial_ensel(trials_path, target_metric="MAE", methods_to_run=None):
 
 # Tests for EnSel._collect_trials() method
 
+
 def test_collect_trials_basic(tmp_path):
     """Test basic trial collection from directory."""
     # Create mock trials with known performance
@@ -182,6 +184,7 @@ def test_collect_trials_basic(tmp_path):
 
 
 # Tests for EnSel._create_model_table() method
+
 
 def test_create_model_table_sorting_minimize(tmp_path):
     """Test model table creation and sorting for minimize metrics (MAE)."""
@@ -218,10 +221,11 @@ def test_create_model_table_identical_performance(tmp_path):
     assert len(ensel.model_table) == 3
     # All should have same dev_pool score
     dev_scores = ensel.model_table["dev_pool"].values
-    assert np.all(dev_scores == 1.5)  
+    assert np.all(dev_scores == 1.5)
 
 
 # Tests for EnSel._ensemble_models() core algorithm
+
 
 def test_ensemble_models_single_bag(tmp_path):
     """Test ensemble calculation with single model."""
@@ -244,6 +248,7 @@ def test_ensemble_models_single_bag(tmp_path):
 
 # Tests for EnSel._ensemble_scan() method
 
+
 def test_ensemble_scan_creates_scan_table(tmp_path):
     """Test that ensemble scan creates and populates scan_table."""
     bag_performances = [
@@ -265,6 +270,7 @@ def test_ensemble_scan_creates_scan_table(tmp_path):
 
 
 # Tests for EnSel._ensemble_optimization() method
+
 
 def test_ensemble_optimization_creates_ensembles(tmp_path):
     """Test that optimization creates both start and optimized ensembles."""

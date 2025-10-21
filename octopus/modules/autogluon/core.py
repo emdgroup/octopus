@@ -26,6 +26,7 @@ from sklearn.base import BaseEstimator, ClassifierMixin, RegressorMixin
 
 from octopus.experiment import OctoExperiment
 from octopus.logger import LogGroup, get_logger
+from octopus.modules.octo.ray_parallel import setup_ray_for_external_library
 from octopus.modules.utils import (
     get_fi_group_shap,
     get_fi_shap,
@@ -34,11 +35,6 @@ from octopus.modules.utils import (
 from octopus.results import ModuleResults
 
 logger = get_logger()
-
-
-# TOBEDONE
-# - make ag use existing ray; Set RAY_ADDRESS
-#   save ray address to experiment and expose module to ray address
 
 
 class SklearnClassifier(BaseEstimator, ClassifierMixin):
@@ -213,6 +209,9 @@ class AGCore:
 
     def run_experiment(self):
         """Run experiment."""
+        # Ensure AutoGluon uses existing Ray instance if available
+        setup_ray_for_external_library()
+
         if len(self.target_assignments) == 1:
             target = next(iter(self.target_assignments.values()))
         else:

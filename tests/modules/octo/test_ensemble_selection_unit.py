@@ -242,8 +242,8 @@ def test_ensemble_models_single_bag(tmp_path):
     assert isinstance(scores, dict)
     expected_keys = {"dev_pool", "test_pool"}
     assert expected_keys.issubset(set(scores.keys()))
-    assert isinstance(scores["dev_pool"], (int, float))
-    assert isinstance(scores["test_pool"], (int, float))
+    assert isinstance(scores["dev_pool"], (int | float))
+    assert isinstance(scores["test_pool"], (int | float))
 
 
 # Tests for EnSel._ensemble_scan() method

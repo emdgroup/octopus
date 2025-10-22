@@ -547,6 +547,5 @@ class EfsCore:
                 "Efs_counts": feature_counts_df,
                 "Efs_counts_relative": feature_counts_relative_df,
             },
-            # predictions=ensel_bag.get_predictions(),
             # selected_features=selected_features,
         )

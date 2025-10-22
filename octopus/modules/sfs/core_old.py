@@ -13,7 +13,7 @@ from mlxtend.feature_selection import SequentialFeatureSelector as SFS
 from sklearn.model_selection import GridSearchCV, StratifiedKFold, cross_val_score
 
 from octopus.experiment import OctoExperiment
-from octopus.metrics.utils import get_performance_score
+from octopus.metrics.utils import get_score_from_model
 from octopus.models.models_inventory import model_inventory
 from octopus.results import ModuleResults
 
@@ -257,7 +257,7 @@ class SfsCore:
 
         # retrain best model on x_traindev
         best_estimator.fit(x_traindev_sfs, self.y_traindev.squeeze(axis=1))
-        test_score_refit = get_performance_score(
+        test_score_refit = get_score_from_model(
             best_estimator,
             self.data_test,
             self.experiment.selected_features,
@@ -272,7 +272,7 @@ class SfsCore:
         best_gs_parameters = grid_search.best_params_
         best_gs_estimator = grid_search.best_estimator_
         best_gs_estimator.fit(x_traindev_sfs, self.y_traindev.squeeze(axis=1))  # refit
-        test_score_gsrefit = get_performance_score(
+        test_score_gsrefit = get_score_from_model(
             best_gs_estimator,
             self.data_test,
             self.experiment.selected_features,

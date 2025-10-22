@@ -1,6 +1,5 @@
 """OctoFull core function."""
 
-# import concurrent.futures
 import copy
 import json
 import shutil
@@ -168,7 +167,7 @@ class OctoCore:
         # create best bag in results directory
         # - attach best bag to experiment
         # - attach best bag scores to experiment
-        self._create_best_bag()
+        # self._create_best_bag()
 
         # (2) ensemble selection
         if self.experiment.ml_config.ensemble_selection:
@@ -230,11 +229,12 @@ class OctoCore:
         ensel_scores = ensel_bag.get_performance()
         target_metric = self.experiment.configs.study.target_metric
         # show and save test results
-        print("Ensemble selection performance")
-        print(
+        logger.set_log_group(LogGroup.RESULTS)
+        logger.info("Ensemble selection performance")
+        logger.info(
             f"Experiment: {self.experiment.id} "
             f"{target_metric} "
-            f"(ensembled, hard vote):"
+            f"(ensemble selection): "
             f"Dev {ensel_scores['dev_pool']:.3f}, "
             f"Test {ensel_scores['test_pool']:.3f}"
         )
@@ -265,88 +265,6 @@ class OctoCore:
             predictions=ensel_bag.get_predictions(),
             selected_features=selected_features,
         )
-
-    def _create_best_bag(self):
-        """Create best bag from bags found in results.
-
-        This code here is only meant to show the desired functionality
-        and needs to be improved.
-        It shows an indirect way of creating the best bag. It
-        would be preferable to access the optuna results and
-        then create the best bag from them.
-        """
-        path_bags = list(self.path_results.rglob("*.pkl"))
-
-        if len(path_bags) == 1:
-            # only single bag found - copy to best bag
-            shutil.copy(path_bags[0], self.path_results.joinpath("best_bag.pkl"))
-            file = path_bags[0]
-            if file.is_file():
-                best_bag = Bag.from_pickle(file)
-        elif len(path_bags) > 1:
-            # collect all trainings from bags
-            trainings = []
-            for file in path_bags:
-                if file.is_file():
-                    bag = Bag.from_pickle(file)
-                    trainings.extend(bag.trainings)
-            # create best bag
-            best_bag = Bag(
-                bag_id=self.experiment.id + "_best",
-                trainings=trainings,
-                target_assignments=self.experiment.target_assignments,
-                parallel_execution=self.experiment.ml_config.inner_parallelization,
-                num_workers=self.experiment.ml_config.n_workers,
-                target_metric=self.experiment.configs.study.target_metric,
-                row_column=self.experiment.row_column,
-                ml_type=self.experiment.ml_type,
-            )
-            # save best bag
-            best_bag.to_pickle(self.path_results.joinpath("best_bag.pkl"))
-        else:
-            raise ValueError("No bags founds in results directory")
-
-        # save performance values of best bag
-        best_bag_scores = best_bag.get_performance()
-        target_metric = self.experiment.configs.study.target_metric
-        # show and save test results
-        print(
-            f"Experiment: {self.experiment.id} "
-            f"{target_metric} "
-            f"(ensembled):"
-            f"Dev {best_bag_scores['dev_pool']:.3f}, "
-            f"Test {best_bag_scores['test_pool']:.3f}"
-        )
-
-        with open(self.path_results.joinpath("best_bag_scores.json"), "w", encoding="utf-8") as f:
-            json.dump(best_bag_scores, f)
-
-        # calculate feature importances of best bag
-        fi_methods = self.experiment.ml_config.fi_methods_bestbag
-        best_bag_fi = best_bag.calculate_feature_importances(fi_methods, partitions=["dev"])
-
-        # calculate selected features
-        selected_features = best_bag.get_selected_features(fi_methods)
-
-        # save best bag and results to experiment
-        self.experiment.results["best"] = ModuleResults(
-            id="best",
-            experiment_id=self.experiment.experiment_id,
-            sequence_id=self.experiment.sequence_id,
-            model=best_bag,
-            scores=best_bag_scores,
-            feature_importances=best_bag_fi,
-            selected_features=selected_features,
-            predictions=best_bag.get_predictions(),
-        )
-
-        # save selected features to experiment
-        print("---")
-        print("Number of original features:", len(self.experiment.feature_columns))
-        self.experiment.selected_features = selected_features
-        print("Number of selected features:", len(self.experiment.selected_features))
-        if len(self.experiment.selected_features) == 0:
-            print("Warning: Best bag - all feature importances values are zero.This hints at a model related problem.")
 
     def _run_globalhp_optimization(self):
         """Optimization run with a global HP set over all inner folds."""
@@ -403,14 +321,30 @@ class OctoCore:
             callbacks=[logging_callback],
         )
 
-        # copy bag of best trial to results
-        # not needed anymore
-        # source = self.experiment.path_study.joinpath(
-        #    self.experiment.path_sequence_item,
-        #    "trials",
-        #    f"study{study_name}trial{study.best_trial.number}_bag.pkl",
-        # )
-        # shutil.copy(source, self.path_results / source.name)
+        #      save optuna results as parquet file
+        # how to get the split id?
+        dict_optuna = []
+        for trial in study.get_trials():
+            for name, _ in trial.distributions.items():
+                if name == "ml_model_type":
+                    continue
+                if "ml_model_type" in trial.params:
+                    model_type = trial.params["ml_model_type"]
+                else:
+                    model_type = trial.user_attrs["config_training"]["ml_model_type"]
+
+                dict_optuna.append(
+                    {
+                        "experiment_id": self.experiment.experiment_id,
+                        "sequence_id": self.experiment.sequence_id,
+                        "trial": trial.number,
+                        "value": trial.value,
+                        "model_type": model_type,
+                        "hyper_param": name.split(f"_{model_type}")[0],
+                        "param_value": str(trial.params[name]),
+                    }
+                )
+        pd.DataFrame(dict_optuna).to_parquet(self.path_module.joinpath(f"{study_name}.parquet"))
 
         # display results
         logger.set_log_group(LogGroup.SCORES, f"EXP {self.experiment.experiment_id} SQE TBD")
@@ -426,7 +360,6 @@ class OctoCore:
         logger.info(f"Performance Info: {performance_info}")
 
         logger.info("Create best bag.....")
-        # get input features
         n_input_features = user_attrs["config_training"]["n_input_features"]
         best_bag_feature_columns = self.mrmr_features[n_input_features]
 
@@ -464,35 +397,55 @@ class OctoCore:
 
         # train all models in best_bag
         best_bag.fit()
+
         # save best bag
-        best_bag.to_pickle(self.path_results.joinpath(f"{study_name}_trial{study.best_trial.number}_bag.pkl"))
+        best_bag.to_pickle(self.path_results.joinpath("best_bag.pkl"))
 
-        # print best_bag scores for verification
-        best_bag_scores = best_bag.get_performance()
-        logger.info(f"Best bag performance {best_bag_scores}")
+        # save performance values of best bag
+        best_bag_performance = best_bag.get_performance()
+        logger.info(f"Best bag performance {best_bag_performance}")
+        target_metric = self.experiment.configs.study.target_metric
 
-        # save optuna results as parquet file
-        # how to get the split id?
-        dict_optuna = []
-        for trial in study.get_trials():
-            for name, _ in trial.distributions.items():
-                if name == "ml_model_type":
-                    continue
-                if "ml_model_type" in trial.params:
-                    model_type = trial.params["ml_model_type"]
-                else:
-                    model_type = trial.user_attrs["config_training"]["ml_model_type"]
+        # show and save test results
+        logger.set_log_group(LogGroup.RESULTS)
+        logger.info(
+            f"Experiment: {self.experiment.id} "
+            f"{target_metric} "
+            f"(best bag - ensembled): "
+            f"Dev {best_bag_performance['dev_pool']:.3f}, "
+            f"Test {best_bag_performance['test_pool']:.3f}"
+        )
 
-                dict_optuna.append(
-                    {
-                        "experiment_id": self.experiment.experiment_id,
-                        "sequence_id": self.experiment.sequence_id,
-                        "trial": trial.number,
-                        "value": trial.value,
-                        "model_type": model_type,
-                        "hyper_param": name.split(f"_{model_type}")[0],
-                        "param_value": str(trial.params[name]),
-                    }
-                )
-        pd.DataFrame(dict_optuna).to_parquet(self.path_module.joinpath(f"{study_name}.parquet"))
+        # save best bag performance
+        with open(self.path_results.joinpath("best_bag_performance.json"), "w", encoding="utf-8") as f:
+            json.dump(best_bag_performance, f)
+
+        # calculate feature importances of best bag
+        fi_methods = self.experiment.ml_config.fi_methods_bestbag
+        best_bag_fi = best_bag.calculate_feature_importances(fi_methods, partitions=["dev"])
+
+        # calculate selected features
+        selected_features = best_bag.get_selected_features(fi_methods)
+
+        # save best bag and results to experiment
+        self.experiment.results["best"] = ModuleResults(
+            id="best",
+            experiment_id=self.experiment.experiment_id,
+            sequence_id=self.experiment.sequence_id,
+            model=best_bag,
+            scores=best_bag_performance,
+            feature_importances=best_bag_fi,
+            selected_features=selected_features,
+            predictions=best_bag.get_predictions(),
+        )
+
+        # save selected features to experiment
+        logger.set_log_group(LogGroup.RESULTS)
+        logger.info("---")
+        logger.info(f"Number of original features: {len(self.experiment.feature_columns)}")
+        self.experiment.selected_features = selected_features
+        logger.info(f"Number of selected features: {len(self.experiment.selected_features)}")
+        if len(self.experiment.selected_features) == 0:
+            logger.warning("Best bag - all feature importances values are zero. This hints at a model related problem.")
+
         return True

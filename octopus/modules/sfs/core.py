@@ -12,7 +12,7 @@ from sklearn.model_selection import GridSearchCV, StratifiedKFold
 
 from octopus.experiment import OctoExperiment
 from octopus.metrics.inventory import MetricsInventory
-from octopus.metrics.utils import get_performance_score
+from octopus.metrics.utils import get_score_from_model
 from octopus.models.inventory import ModelInventory
 from octopus.results import ModuleResults
 
@@ -244,7 +244,7 @@ class SfsCore:
         x_traindev_sfs = sfs.transform(self.x_traindev)
         # refit on selected features
         best_estimator.fit(x_traindev_sfs, self.y_traindev.squeeze(axis=1))
-        test_score_refit = get_performance_score(
+        test_score_refit = get_score_from_model(
             best_estimator,
             self.data_test,
             self.experiment.selected_features,
@@ -259,7 +259,7 @@ class SfsCore:
         best_gs_parameters = grid_search.best_params_
         best_gs_estimator = grid_search.best_estimator_
         best_gs_estimator.fit(x_traindev_sfs, self.y_traindev.squeeze(axis=1))  # refit
-        test_score_gsrefit = get_performance_score(
+        test_score_gsrefit = get_score_from_model(
             best_gs_estimator,
             self.data_test,
             self.experiment.selected_features,

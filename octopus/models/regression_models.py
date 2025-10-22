@@ -389,6 +389,55 @@ class HistGradientBoostingRegressorModel:
         )
 
 
+@ModelRegistry.register("TabularNNRegressor")
+class TabularNNRegressorModel:
+    """Tabular Neural Network regression model class with categorical embeddings."""
+
+    @staticmethod
+    def get_model_config():
+        """Get model config."""
+        from .wrapper_models.TabularNNRegressor import TabularNNRegressor  # noqa: PLC0415
+
+        return ModelConfig(
+            name="TabularNNRegressor",
+            model_class=TabularNNRegressor,
+            ml_type="regression",
+            feature_method="permutation",
+            n_repeats=2,
+            chpo_compatible=True,
+            scaler="StandardScaler",
+            imputation_required=True,
+            categorical_enabled=True,
+            hyperparameters=[
+                Hyperparameter(
+                    type="categorical",
+                    name="hidden_sizes",
+                    choices=[
+                        [512, 256, 128],
+                        [512, 256],
+                        [512, 128],
+                        [256, 256, 128],
+                        [256, 128, 64],
+                        [256, 128],
+                        [256, 64],
+                        [128, 128, 64],
+                        [128, 64],
+                        [128, 32],
+                    ],
+                ),
+                Hyperparameter(type="float", name="dropout", low=0.0, high=0.5),
+                Hyperparameter(type="float", name="learning_rate", low=1e-5, high=1e-2, log=True),
+                Hyperparameter(type="fixed", name="weight_decay", value=1e-5),
+                Hyperparameter(type="fixed", name="activation", value="elu"),
+                Hyperparameter(type="fixed", name="optimizer", value="adamw"),
+                Hyperparameter(type="categorical", name="batch_size", choices=[32, 64, 128, 256]),
+                Hyperparameter(type="fixed", name="epochs", value=200),
+            ],
+            n_jobs=None,
+            model_seed="random_state",
+        )
+
+
 __all__ = [
     "ARDRegressorModel",
     "CatBoostRegressorModel",
@@ -401,5 +450,6 @@ __all__ = [
     "RidgeRegressorModel",
     "SvrRegressorModel",
     "TabPFNRegressorModel",
+    "TabularNNRegressorModel",
     "XGBRegressorModel",
 ]

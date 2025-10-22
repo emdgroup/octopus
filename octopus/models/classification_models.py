@@ -14,6 +14,7 @@ from .config import ModelConfig
 from .hyperparameter import Hyperparameter
 from .registry import ModelRegistry
 from .wrapper_models.GaussianProcessClassifier import GPClassifierWrapper
+from .wrapper_models.TabularNNClassifier import TabularNNClassifier
 
 
 @ModelRegistry.register("ExtraTreesClassifier")
@@ -323,6 +324,37 @@ class GaussianProcessClassifierModel:
         )
 
 
+@ModelRegistry.register("TabularNNClassifier")
+class TabularNNClassifierModel:
+    """Tabular Neural Network classification model class."""
+
+    @staticmethod
+    def get_model_config():
+        """Get model config."""
+        return ModelConfig(
+            name="TabularNNClassifier",
+            model_class=TabularNNClassifier,
+            ml_type="classification",
+            feature_method="permutation",
+            n_repeats=2,
+            chpo_compatible=True,
+            scaler=None,
+            imputation_required=False,
+            categorical_enabled=True,
+            hyperparameters=[
+                Hyperparameter(type="int", name="epochs", low=50, high=200),
+                Hyperparameter(type="float", name="learning_rate", low=1e-4, high=1e-2, log=True),
+                Hyperparameter(type="float", name="dropout", low=0.0, high=0.5),
+                Hyperparameter(type="int", name="batch_size", low=64, high=512, log=True),
+                Hyperparameter(type="float", name="weight_decay", low=1e-6, high=1e-3, log=True),
+                Hyperparameter(type="categorical", name="activation", choices=["relu", "elu"]),
+                Hyperparameter(type="categorical", name="optimizer", choices=["adam", "adamw"]),
+            ],
+            n_jobs=None,
+            model_seed="random_state",
+        )
+
+
 __all__ = [
     "CatBoostClassifierModel",
     "ExtraTreesClassifierModel",
@@ -332,5 +364,6 @@ __all__ = [
     "LogisticRegressionClassifierModel",
     "RandomForestClassifierModel",
     "TabPFNClassifierModel",
+    "TabularNNClassifierModel",
     "XGBClassifierModel",
 ]

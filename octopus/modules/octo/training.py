@@ -20,7 +20,7 @@ from sklearn.utils.validation import check_is_fitted
 
 from octopus.logger import LogGroup, get_logger
 from octopus.metrics.inventory import MetricsInventory
-from octopus.metrics.utils import get_performance_score
+from octopus.metrics.utils import get_score_from_model
 from octopus.models.inventory import ModelInventory
 
 ## TOBEDONE pipeline
@@ -488,7 +488,7 @@ class Training:
         features_dict = {**feature_columns_dict, **feature_groups}
 
         # calculate baseline score
-        baseline_score = get_performance_score(
+        baseline_score = get_score_from_model(
             model,
             data,
             feature_columns,
@@ -518,7 +518,7 @@ class Training:
                 # we use data_all as the validation dataset may be small
                 for feat in feature:
                     data_pfi[feat] = np.random.choice(data[feat], len(data_pfi), replace=False)
-                pfi_score = get_performance_score(
+                pfi_score = get_score_from_model(
                     model,
                     data_pfi,
                     feature_columns,
@@ -610,7 +610,7 @@ class Training:
         data_dev = pd.concat([self.x_dev_processed, self.data_dev[[target_col]]], axis=1)
         data_test = pd.concat([self.x_test_processed, self.data_test[[target_col]]], axis=1)
 
-        baseline_dev = get_performance_score(
+        baseline_dev = get_score_from_model(
             self.model,
             data_dev,
             feature_columns,
@@ -618,7 +618,7 @@ class Training:
             self.target_assignments,
             positive_class=self.config_training.get("positive_class"),
         )
-        baseline_test = get_performance_score(
+        baseline_test = get_score_from_model(
             self.model,
             data_test,
             feature_columns,
@@ -650,7 +650,7 @@ class Training:
                 model.fit(self.x_train_processed[selected_features], self.y_train)
 
             # get lofo dev + test scores
-            score_dev = get_performance_score(
+            score_dev = get_score_from_model(
                 model,
                 data_dev,
                 selected_features,
@@ -658,7 +658,7 @@ class Training:
                 self.target_assignments,
                 positive_class=self.config_training.get("positive_class"),
             )
-            score_test = get_performance_score(
+            score_test = get_score_from_model(
                 model,
                 data_test,
                 selected_features,

@@ -138,26 +138,26 @@ class ObjectiveOptuna:
         bag_trainings.fit()
 
         # evaluate trainings using target metric
-        scores = bag_trainings.get_performance()
+        bag_performance = bag_trainings.get_performance()
 
         # get number of features used in bag
         n_features_mean = bag_trainings.n_features_used_mean
 
         # add scores info to the optuna trial
-        for key, value in scores.items():
+        for key, value in bag_performance.items():
             trial.set_user_attr(key, value)
 
         # add config_training to user attributes
         trial.set_user_attr("config_training", config_training)
 
         # log results
-        self._log_trial_scores(self.experiment, scores)
+        self._log_trial_scores(self.experiment, bag_performance)
 
         # define optuna target
         if self.experiment.ml_config.optuna_return == "pool":
-            optuna_target = scores["dev_pool"]
+            optuna_target = bag_performance["dev_pool"]
         else:
-            optuna_target = scores["dev_avg"]
+            optuna_target = bag_performance["dev_avg"]
 
         # adjust direction, optuna in octofull always minimizes
         target_metric = self.experiment.configs.study.target_metric

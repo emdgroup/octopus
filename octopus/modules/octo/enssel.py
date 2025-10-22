@@ -16,9 +16,12 @@ from pathlib import Path
 import pandas as pd
 from attrs import define, field, validators
 
+from octopus.logger import get_logger
 from octopus.metrics import metrics_inventory
-from octopus.metrics.utils import add_pooling_performance
+from octopus.metrics.utils import get_performance_from_predictions
 from octopus.modules.octo.bag import Bag
+
+logger = get_logger()
 
 
 @define
@@ -71,7 +74,7 @@ class EnSel:
             bag = Bag.from_pickle(file)
             self.bags[file] = {
                 "id": bag.bag_id,
-                "scores": bag.get_performance(),
+                "performance": bag.get_performance(),
                 "predictions": bag.get_predictions(),
                 "n_features_used_mean": bag.n_features_used_mean,
             }
@@ -82,10 +85,10 @@ class EnSel:
         for key, value in self.bags.items():
             s = pd.Series()
             s["id"] = value["id"]
-            s["dev_pool"] = value["scores"]["dev_pool"]  # relevant
-            s["test_pool"] = value["scores"]["test_pool"]
-            s["dev_avg"] = value["scores"]["dev_avg"]
-            s["test_avg"] = value["scores"]["test_avg"]
+            s["dev_pool"] = value["performance"]["dev_pool"]  # relevant
+            s["test_pool"] = value["performance"]["test_pool"]
+            s["dev_avg"] = value["performance"]["dev_avg"]
+            s["test_avg"] = value["performance"]["test_avg"]
             s["n_features_used_mean"] = value["n_features_used_mean"]
             s["path"] = key
             df_lst.append(s)
@@ -98,31 +101,50 @@ class EnSel:
 
         self.model_table = self.model_table.sort_values(by="dev_pool", ascending=ascending).reset_index(drop=True)
 
+        logger.info("Model Table:")
+        logger.info(f"\n{self.model_table.head(20)}")
+
     def _ensemble_models(self, bag_keys):
         """Esemble using all bags and their corresponding models provided by input."""
         # collect all predictions over inner folds and bags
-        scores = {}
+        predictions = {}
+        performance_output = {}
         pool = {key: [] for key in ["dev", "test"]}
 
         for key in bag_keys:
-            predictions = self.bags[key]["predictions"]
+            bag_predictions = self.bags[key]["predictions"]
             # remove 'ensemble'
-            predictions.pop("ensemble", 0)
+            bag_predictions.pop("ensemble", 0)
             # concatenate and averag dev and test predictions from inner models
-            for pred in predictions.values():
+            for pred in bag_predictions.values():
                 for part, pool_value in pool.items():
                     pool_value.append(pred[part])
 
-        # average all predictions (inner models, bags)
+        # created ensembled predictions (all inner models from all bags) for each partition
+        predictions["ensemble"] = {}
         for part, pool_value in pool.items():
-            pool[part] = pd.concat(pool_value, axis=0).groupby(by=self.row_column).mean()
+            ensemble = pd.concat(pool_value, axis=0).groupby(by=self.row_column).mean().reset_index()
+            # Get the first bag to determine target column dtype
+            first_bag_key = bag_keys[0]
+            first_bag = Bag.from_pickle(first_bag_key)
+            for column in list(self.target_assignments.values()):
+                ensemble[column] = ensemble[column].astype(first_bag.trainings[0].data_train[column].dtype)
+            predictions["ensemble"][part] = ensemble
 
-        # calculate pooling scores
-        add_pooling_performance(
-            pool, scores, self.target_metric, self.target_assignments, positive_class=self.positive_class
+        # Calculate performance using the utility function
+        performance = get_performance_from_predictions(
+            predictions=predictions,
+            target_metric=self.target_metric,
+            target_assignments=self.target_assignments,
+            positive_class=self.positive_class,
         )
 
-        return scores
+        # Add ensemble performance with renamed keys
+        if "ensemble" in performance:
+            performance_output["dev_pool"] = performance["ensemble"]["dev"]
+            performance_output["test_pool"] = performance["ensemble"]["test"]
+
+        return performance_output
 
     def _ensemble_scan(self):
         """Scan for highest performing ensemble consisting of best N bags."""
@@ -138,20 +160,30 @@ class EnSel:
             bag_keys = self.model_table[: i + 1]["path"].tolist()
             scores = self._ensemble_models(bag_keys)
             self.scan_table.loc[i] = [
-                i,
+                i + 1,  # Number of models in ensemble
                 scores["dev_pool"],
                 scores["test_pool"],
             ]
+        logger.info("Scan Table:")
+        logger.info(f"\n{self.scan_table.head(20)}")
 
     def _ensemble_optimization(self):
         """Ensembling optimization with replacement."""
         # we start with an best N models example derived from self.scan_table,
         # assuming that is sorted correctly
+        # When there are multiple rows with the same best value, take the last one (more models)
         if self.direction == "maximize":
-            start_n = int(self.scan_table["dev_pool"].idxmax()) + 1
+            # Get all indices with the max value, then take the last one
+            best_value = self.scan_table["dev_pool"].max()
+            best_idx = self.scan_table[self.scan_table["dev_pool"] == best_value].index[-1]
         else:
-            start_n = int(self.scan_table["dev_pool"].idxmin()) + 1
-        print("Ensemble scan, number of included best models: ", start_n)
+            # Get all indices with the min value, then take the last one
+            best_value = self.scan_table["dev_pool"].min()
+            best_idx = self.scan_table[self.scan_table["dev_pool"] == best_value].index[-1]
+        start_n = int(self.scan_table.loc[best_idx, "#models"])
+        logger.info(f"Ensemble scan, number of included best models: {start_n}")
+        logger.info(f"Ensemble scan, dev_pool value: {self.scan_table.loc[best_idx, 'dev_pool']}")
+        logger.info(f"Ensemble scan, test_pool value: {self.scan_table.loc[best_idx, 'test_pool']}")
 
         # startn_bags dict with path as key and repeats=1 as value
         escan_ensemble = {}
@@ -162,10 +194,9 @@ class EnSel:
         # we start with the bags found in ensemble scan
         results_df = pd.DataFrame(columns=["model", "performance", "bags_lst"])
         start_bags = list(escan_ensemble.keys())
-        scores = self._ensemble_models(start_bags)
-        start_perf = scores["dev_pool"]
-        print("Ensemble optimization")
-        print("Start performance:", start_perf)
+        start_perf = self._ensemble_models(start_bags)["dev_pool"]
+        logger.info("Ensemble optimization")
+        logger.info(f"Start performance: {start_perf}")
         # record start performance
         results_df.loc[len(results_df)] = [
             ["ensemble scan"],
@@ -178,30 +209,36 @@ class EnSel:
         best_global = copy.deepcopy(start_perf)
 
         for i in range(self.max_n_iterations):
-            df = pd.DataFrame(columns=["model", "performance"])
+            df = pd.DataFrame(columns=["model", "performance_dev", "performance_test"])
             # find additional model
             for model in self.model_table["path"].tolist():
                 bags_lst = copy.deepcopy(bags_ensemble)
                 bags_lst.append(model)
-                scores = self._ensemble_models(bags_lst)
-                df.loc[len(df)] = [model, scores["dev_pool"]]
+                perf = self._ensemble_models(bags_lst)
+                df.loc[len(df)] = [model, perf["dev_pool"], perf["test_pool"]]
 
             if self.direction == "maximize":
-                best_model = df.loc[df["performance"].idxmax()]["model"]
-                best_performance = df.loc[df["performance"].idxmax()]["performance"]
-                if best_performance < best_global:
+                best_model = df.loc[df["performance_dev"].idxmax()]["model"]
+                best_performance = df.loc[df["performance_dev"].idxmax()]["performance_dev"]
+                performance_test = df.loc[df["performance_dev"].idxmax()]["performance_test"]
+                if best_performance < best_global:  # we continue if results is the same
                     break  # stop ensembling
                 else:
                     best_global = best_performance
-                    print(f"iteration: {i}, performance: {best_performance}")
+                    logger.info(
+                        f"iteration: {i}, performance_dev: {best_performance}, performance_test {performance_test}"
+                    )
             else:  # minimize
-                best_model = df.loc[df["performance"].idxmin()]["model"]
-                best_performance = df.loc[df["performance"].idxmin()]["performance"]
-                if best_performance > best_global:
+                best_model = df.loc[df["performance_dev"].idxmin()]["model"]
+                best_performance = df.loc[df["performance_dev"].idxmin()]["performance_dev"]
+                performance_test = df.loc[df["performance_dev"].idxmin()]["performance_test"]
+                if best_performance > best_global:  # we continue if results is the same
                     break  # stop ensembling
                 else:
                     best_global = best_performance
-                    print(f"iteration: {i}, performance: {best_performance}")
+                    logger.info(
+                        f"iteration: {i}, performance_dev: {best_performance}, performance_test {performance_test}"
+                    )
 
             # add best model to ensemble
             bags_ensemble.append(best_model)
@@ -218,7 +255,7 @@ class EnSel:
 
         # store optimization results
         self.optimized_ensemble = dict(Counter(results_df.iloc[-1]["bags_lst"]))
-        print("Ensemble selection completed.")
+        logger.info("Ensemble selection completed.")
 
     def get_ens_input(self):
         """Get ensemble dict."""

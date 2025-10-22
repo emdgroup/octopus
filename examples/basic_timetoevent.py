@@ -103,7 +103,7 @@ config_study = ConfigStudy(
 
 config_manager = ConfigManager(
     outer_parallelization=True,  # Set to True for parallel execution across folds
-    run_single_experiment_num=0,  # 0: only first experiemnt, -1 runs all experiments
+    run_single_experiment_num=0,  # 0: only first experiment, -1 runs all experiments
 )
 
 config_sequence = ConfigSequence(

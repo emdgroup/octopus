@@ -113,7 +113,10 @@ config_sequence = ConfigSequence(
                 "ExtraTreesSurv",  # Extra Trees for survival analysis
             ],
             n_trials=20,  # Number of hyperparameter optimization trials
-            fi_methods_bestbag=["shap"],  # Use SHAP for feature importance
+            fi_methods_bestbag=["permutation"],  # or "shap"
+            max_features=8,  # Maximum number of features to use
+            ensemble_selection=True,  # Enable ensemble selection
+            ensel_n_save_trials=20,  # Save top 15 trials for ensemble
         ),
     ]
 )

@@ -76,9 +76,13 @@ class TabularNNRegressor(RegressorMixin, BaseEstimator):
             torch.manual_seed(self.random_state)
             np.random.seed(self.random_state)
 
-        # Convert to DataFrame if needed
+        # Convert to DataFrame if needed and store feature names
         if not isinstance(X, pd.DataFrame):
             X = pd.DataFrame(X, columns=[f"col_{i}" for i in range(X.shape[1])])
+
+        # Store original feature names for sklearn compatibility
+        self.feature_names_in_ = np.array(X.columns)
+        self.n_features_in_ = len(self.feature_names_in_)
 
         # Detect categorical and numerical columns
         self.cat_cols_, self.num_cols_ = self._detect_categorical_columns(X)
@@ -179,9 +183,13 @@ class TabularNNRegressor(RegressorMixin, BaseEstimator):
         """Predict using the model."""
         check_is_fitted(self, "model_")
 
-        # Convert to DataFrame if needed
+        # Convert to DataFrame if needed, using stored feature names
         if not isinstance(X, pd.DataFrame):
-            X = pd.DataFrame(X, columns=[f"col_{i}" for i in range(X.shape[1])])
+            # Use feature_names_in_ if available, otherwise generate column names
+            if hasattr(self, "feature_names_in_"):
+                X = pd.DataFrame(X, columns=self.feature_names_in_)
+            else:
+                X = pd.DataFrame(X, columns=[f"col_{i}" for i in range(X.shape[1])])
 
         # Encode categorical features
         X_cat_encoded = []

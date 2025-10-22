@@ -347,6 +347,7 @@ class TestOctoTimeToEvent:
                         ensel_n_save_trials=10,
                         model_seed=0,
                         n_jobs=1,
+                        fi_methods_bestbag=["shap"],  # Use SHAP for feature importance
                         inner_parallelization=True,
                         n_workers=2,  # Reduced for testing
                         optuna_seed=0,

@@ -25,7 +25,7 @@ def get_performance_from_model(
     prediction_type = metric_config.prediction_type
 
     if ml_type == "timetoevent":
-        estimate = model.predict(input_data)
+        estimate = model.predict(data[feature_columns])
         event_time = data[target_assignments["duration"]].astype(float)
         event_indicator = data[target_assignments["event"]].astype(bool)
         performance = metric_function(event_indicator, event_time, estimate)[0]

@@ -187,7 +187,7 @@ def main() -> None:
 
     if args.method == "curl":
         # Use only curl method
-        success_count, fail_count = download_with_curl(base_url, model_files, cache_dir)
+        _success_count, fail_count = download_with_curl(base_url, model_files, cache_dir)
         success = fail_count == 0
 
     elif args.method == "builtin":
@@ -205,7 +205,7 @@ def main() -> None:
             logger.info("Falling back to Google Storage download method...")
             logger.info("=" * 60)
 
-            success_count, fail_count = download_with_curl(base_url, model_files, cache_dir)
+            _success_count, fail_count = download_with_curl(base_url, model_files, cache_dir)
             success = fail_count == 0
         else:
             success = True

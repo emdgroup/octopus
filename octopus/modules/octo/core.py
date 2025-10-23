@@ -164,11 +164,6 @@ class OctoCore:
         # (1) model training and optimization
         self._run_globalhp_optimization()
 
-        # create best bag in results directory
-        # - attach best bag to experiment
-        # - attach best bag scores to experiment
-        # self._create_best_bag()
-
         # (2) ensemble selection
         if self.experiment.ml_config.ensemble_selection:
             self._run_ensemble_selection()
@@ -321,8 +316,7 @@ class OctoCore:
             callbacks=[logging_callback],
         )
 
-        #      save optuna results as parquet file
-        # how to get the split id?
+        # save optuna results as parquet file
         dict_optuna = []
         for trial in study.get_trials():
             for name, _ in trial.distributions.items():

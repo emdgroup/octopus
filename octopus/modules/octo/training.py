@@ -479,9 +479,6 @@ class Training:
         if not set(feature_columns).issubset(data.columns):
             raise ValueError("Features missing in provided dataset.")
 
-        # check that targets are in dataset
-        # MISSING
-
         # keep all features and add group features
         # create features dict
         feature_columns_dict = {x: [x] for x in feature_columns}

@@ -5,83 +5,7 @@ import pandas as pd
 from octopus.metrics import metrics_inventory
 
 
-def add_pooling_performance(pool, scores, target_metric, target_assignments, threshold=0.5, positive_class=None):
-    """Add pooling performance scores to scores dict."""
-    # calculate pooling scores (soft and hard)
-
-    metric_config = metrics_inventory.get_metric_config(target_metric)
-    metric_function = metrics_inventory.get_metric_function(target_metric)
-    ml_type = metric_config.ml_type
-    prediction_type = metric_config.prediction_type  # type of input required for metric
-
-    if ml_type == "timetoevent":
-        for part in pool:
-            estimate = pool[part]["prediction"]
-            event_time = pool[part][target_assignments["duration"]].astype(float)
-            event_indicator = pool[part][target_assignments["event"]].astype(bool)
-            ci = metric_function(event_indicator, event_time, estimate)[0]
-            scores[part + "_pool_hard"] = float(ci)
-
-    elif ml_type == "classification":
-        # positive_class is required for classification
-        if positive_class is None:
-            raise ValueError("positive_class must be provided for classification tasks")
-
-        if prediction_type == "predict_proba":
-            for part in pool:
-                target_col = list(target_assignments.values())[0]
-
-                # Use positive_class to get the correct probability column
-                probabilities = pool[part][positive_class]
-                predictions = pool[part]["prediction"]
-                target = pool[part][target_col]
-                scores[part + "_pool"] = metric_function(target, probabilities)  # input: probabilities
-                # scores[part + "_pool_hard"] = metric_function(target, predictions)
-
-        else:  # "predict"
-            for part in pool:
-                target_col = list(target_assignments.values())[0]
-
-                # Use positive_class to get the correct probability column
-                probabilities = (pool[part][positive_class] >= threshold).astype(int)
-                predictions = (pool[part]["prediction"] >= threshold).astype(int)
-                target = pool[part][target_col]
-                # scores[part + "_pool"] = metric_function(target, probabilities)
-                scores[part + "_pool"] = metric_function(target, predictions)  # input: predictions
-
-    elif ml_type == "multiclass":
-        if prediction_type == "predict_proba":
-            for part in pool:
-                target_col = list(target_assignments.values())[0]
-
-                # For multiclass, get all class probabilities
-                # Extract all probability columns (exclude prediction and target columns)
-                prob_columns = [
-                    col
-                    for col in pool[part].columns
-                    if isinstance(col, (int | float)) and col not in [target_col, "prediction"]
-                ]
-                probabilities = pool[part][prob_columns].values
-                target = pool[part][target_col]
-
-                scores[part + "_pool"] = metric_function(target, probabilities)
-
-        else:  # "predict"
-            for part in pool:
-                target_col = list(target_assignments.values())[0]
-                predictions = pool[part]["prediction"].astype(int)
-                target = pool[part][target_col]
-                scores[part + "_pool"] = metric_function(target, predictions)
-
-    elif ml_type == "regression":
-        for part in pool:
-            target_col = list(target_assignments.values())[0]
-            predictions = pool[part]["prediction"]
-            target = pool[part][target_col]
-            scores[part + "_pool"] = metric_function(target, predictions)
-
-
-def get_performance(
+def get_performance_from_model(
     model, data, feature_columns, target_metric, target_assignments, threshold=0.5, positive_class=None
 ) -> float:
     """Calculate model performance on dataset for given metric."""
@@ -163,11 +87,154 @@ def get_performance(
     return performance
 
 
-def get_performance_score(
-    model, data, feature_columns, target_metric, target_assignments, positive_class=None
-) -> float:
-    """Calculate model performance score on dataset for given metric and optimizaion direction."""
-    performance = get_performance(
+def get_performance_from_predictions(
+    predictions: dict,
+    target_metric: str,
+    target_assignments: dict,
+    threshold: float = 0.5,
+    positive_class: int | str | None = None,
+) -> dict:
+    """Calculate model performance from predictions dict (from bag.get_predictions()).
+
+    Args:
+        predictions: Dictionary with predictions from bag.get_predictions().
+                    Expected structure: {training_id: {partition: df}, 'ensemble': {partition: df}}
+                    where partition is 'train', 'dev', or 'test'
+        target_metric: Name of the metric to calculate
+        target_assignments: Dictionary mapping target types to column names
+        threshold: Classification threshold (default: 0.5)
+        positive_class: Positive class for binary classification (required for classification)
+
+    Returns:
+        Dictionary with performance values for each training and ensemble
+
+    Raises:
+        ValueError: If positive_class is not provided for classification tasks,
+                   if predict_proba is used for regression, or if ml_type is unknown
+    """
+    metric_config = metrics_inventory.get_metric_config(target_metric)
+    metric_function = metrics_inventory.get_metric_function(target_metric)
+    ml_type = metric_config.ml_type
+    prediction_type = metric_config.prediction_type
+
+    performance = {}
+
+    for training_id, partitions in predictions.items():
+        performance[training_id] = {}
+
+        for part, pred_df in partitions.items():
+            target_col = list(target_assignments.values())[0]
+            target = pred_df[target_col]
+
+            if ml_type == "timetoevent":
+                estimate = pred_df["prediction"]
+                event_time = pred_df[target_assignments["duration"]].astype(float)
+                event_indicator = pred_df[target_assignments["event"]].astype(bool)
+                perf_value = metric_function(event_indicator, event_time, estimate)[0]
+
+            elif ml_type == "classification":
+                if positive_class is None:
+                    raise ValueError("positive_class must be provided for classification tasks")
+
+                if prediction_type == "predict_proba":
+                    probabilities = pred_df[positive_class]
+                    perf_value = metric_function(target, probabilities)
+                else:
+                    probabilities = pred_df[positive_class]
+                    predictions_binary = (probabilities >= threshold).astype(int)
+                    perf_value = metric_function(target, predictions_binary)
+
+            elif ml_type == "multiclass":
+                if prediction_type == "predict_proba":
+                    # Probability columns are class labels (integers: 0, 1, 2, ...)
+                    # They should form a contiguous block of consecutive integers starting from 0
+                    # Filter to only int type columns, excluding target and prediction
+                    prob_columns = [
+                        col for col in pred_df.columns if isinstance(col, int) and col not in [target_col, "prediction"]
+                    ]
+
+                    # Additional validation: ensure they form a contiguous sequence starting from 0
+                    if prob_columns:
+                        prob_columns_sorted = sorted(prob_columns)
+                        expected_sequence = list(range(len(prob_columns_sorted)))
+                        if prob_columns_sorted != expected_sequence:
+                            raise ValueError(
+                                f"Probability columns must be consecutive integers starting from 0. "
+                                f"Found: {prob_columns_sorted}, expected: {expected_sequence}"
+                            )
+
+                    probabilities = pred_df[prob_columns].values
+                    perf_value = metric_function(target, probabilities)
+                else:
+                    predictions_class = pred_df["prediction"].astype(int)
+                    perf_value = metric_function(target, predictions_class)
+
+            elif ml_type == "regression":
+                if prediction_type == "predict_proba":
+                    raise ValueError("predict_proba not supported for regression")
+                predictions_reg = pred_df["prediction"]
+                perf_value = metric_function(target, predictions_reg)
+
+            else:
+                raise ValueError(f"Unknown ml_type: {ml_type}")
+
+            performance[training_id][part] = float(perf_value)
+
+    return performance
+
+
+def get_score_from_prediction(
+    predictions: dict,
+    target_metric: str,
+    target_assignments: dict,
+    threshold: float = 0.5,
+    positive_class: int | str | None = None,
+) -> dict:
+    """Calculate model performance scores from predictions dict with optimization direction applied.
+
+    This function calls get_performance_from_predictions and then applies the optimization
+    direction (maximize/minimize) to convert performance values to scores, similar to
+    get_score_from_model.
+
+    Args:
+        predictions: Dictionary with predictions from bag.get_predictions().
+                    Expected structure: {training_id: {partition: df}, 'ensemble': {partition: df}}
+                    where partition is 'train', 'dev', or 'test'
+        target_metric: Name of the metric to calculate
+        target_assignments: Dictionary mapping target types to column names
+        threshold: Classification threshold (default: 0.5)
+        positive_class: Positive class for binary classification (required for classification)
+
+    Returns:
+        Dictionary with score values for each training and ensemble, with direction applied
+    """
+    # Get performance values
+    performance = get_performance_from_predictions(
+        predictions=predictions,
+        target_metric=target_metric,
+        target_assignments=target_assignments,
+        threshold=threshold,
+        positive_class=positive_class,
+    )
+
+    # Convert performance to score based on optimization direction
+    scores = {}
+    direction = metrics_inventory.get_direction(target_metric)
+
+    for training_id, partitions in performance.items():
+        scores[training_id] = {}
+        for part, perf_value in partitions.items():
+            if direction == "maximize":
+                scores[training_id][part] = perf_value
+            else:
+                scores[training_id][part] = -perf_value
+
+    return scores
+
+
+def get_score_from_model(model, data, feature_columns, target_metric, target_assignments, positive_class=None) -> float:
+    """Calculate model performance score on dataset for given metric and optimization direction."""
+    performance = get_performance_from_model(
         model, data, feature_columns, target_metric, target_assignments, positive_class=positive_class
     )
 

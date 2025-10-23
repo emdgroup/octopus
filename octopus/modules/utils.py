@@ -9,7 +9,7 @@ import scipy.stats
 import shap
 from scipy.stats import rankdata
 
-from octopus.metrics.utils import get_performance_score
+from octopus.metrics.utils import get_score_from_model
 
 
 def rdc(x, y, f=np.sin, k=20, s=1 / 6.0, n=5):
@@ -133,11 +133,8 @@ def get_fi_permutation(experiment, n_repeat, data) -> pd.DataFrame:
     if not set(feature_columns).issubset(data.columns):
         raise ValueError("Features missing in provided dataset.")
 
-    # check that targets are in dataset
-    # MISSING
-
     # calculate baseline score
-    baseline_score = get_performance_score(model, data, feature_columns, target_metric, target_assignments)
+    baseline_score = get_score_from_model(model, data, feature_columns, target_metric, target_assignments)
 
     # get all data select random feature values
     data_all = pd.concat([data_traindev, data], axis=0)
@@ -161,7 +158,7 @@ def get_fi_permutation(experiment, n_repeat, data) -> pd.DataFrame:
             # replace column with random selection from that column of data_all
             # we use data_all as the validation dataset may be small
             data_pfi[feature] = np.random.choice(data_all[feature], len(data_pfi), replace=False)
-            pfi_score = get_performance_score(model, data_pfi, feature_columns, target_metric, target_assignments)
+            pfi_score = get_score_from_model(model, data_pfi, feature_columns, target_metric, target_assignments)
             fi_lst.append(baseline_score - pfi_score)
 
         # calculate statistics
@@ -227,7 +224,7 @@ def get_fi_group_permutation(experiment, n_repeat, data) -> pd.DataFrame:
     features_dict = {**feature_columns_dict, **feature_groups}
 
     # calculate baseline score
-    baseline_score = get_performance_score(model, data, feature_columns, target_metric, target_assignments)
+    baseline_score = get_score_from_model(model, data, feature_columns, target_metric, target_assignments)
 
     # get all data select random feature values
     data_all = pd.concat([data_traindev, data], axis=0)
@@ -253,7 +250,7 @@ def get_fi_group_permutation(experiment, n_repeat, data) -> pd.DataFrame:
             # we use data_all as the validation dataset may be small
             for feat in feature:
                 data_pfi[feat] = np.random.choice(data_all[feat], len(data_pfi), replace=False)
-            pfi_score = get_performance_score(model, data_pfi, feature_columns, target_metric, target_assignments)
+            pfi_score = get_score_from_model(model, data_pfi, feature_columns, target_metric, target_assignments)
             fi_lst.append(baseline_score - pfi_score)
 
         # calculate statistics

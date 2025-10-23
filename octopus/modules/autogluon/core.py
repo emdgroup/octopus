@@ -30,7 +30,7 @@ from octopus.modules.octo.ray_parallel import setup_ray_for_external_library
 from octopus.modules.utils import (
     get_fi_group_shap,
     get_fi_shap,
-    get_performance_score,
+    get_score_from_model,
 )
 from octopus.results import ModuleResults
 
@@ -407,7 +407,7 @@ class AGCore:
         all_metrics = list(dict.fromkeys([*self.metrics, self.target_metric]))
         test_performance_octo = {}
         for metric in all_metrics:
-            performance = get_performance_score(
+            performance = get_score_from_model(
                 self.model,
                 self.ag_test_data,
                 self.feature_columns,

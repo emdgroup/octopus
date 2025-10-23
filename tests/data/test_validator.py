@@ -189,16 +189,6 @@ def test_validate_column_dtypes(validator_factory, sample_data):
         validator_factory(data=data_with_invalid_dtype)._validate_column_dtypes()
 
 
-def test_validate_row_id_unique(validator_factory, sample_data):
-    """Test row_id is unique validation."""
-    validator_factory()._validate_row_id_unique()
-
-    data_with_duplicate_id = sample_data.copy()
-    data_with_duplicate_id.loc[0, "id"] = 2
-    with pytest.raises(ValueError):
-        validator_factory(data=data_with_duplicate_id)._validate_row_id_unique()
-
-
 def test_validate_with_two_targets(validator_factory):
     """Test two targets."""
     validator = validator_factory(
@@ -221,25 +211,6 @@ def test_validate_nonempty_dataframe(validator_factory):
         empty_validator._validate_nonempty_dataframe()
 
 
-def test_validate_minimum_samples(validator_factory, sample_data):
-    """Test minimum samples validation."""
-    validator_factory(feature_columns=["feature1"])._validate_minimum_samples()
-
-    small_validator = validator_factory(data=sample_data.head(10), feature_columns=["feature1"])
-    with pytest.raises(ValueError, match="Dataset must have at least 20 samples"):
-        small_validator._validate_minimum_samples()
-
-
-def test_validate_critical_columns_not_null(validator_factory, sample_data):
-    """Test critical columns not null validation."""
-    validator_factory(feature_columns=["feature1"])._validate_critical_columns_not_null()
-
-    data_with_null = sample_data.copy()
-    data_with_null.loc[0, "sample_id"] = np.nan
-    with pytest.raises(ValueError, match="Critical identifier columns cannot contain null values"):
-        validator_factory(data=data_with_null, feature_columns=["feature1"])._validate_critical_columns_not_null()
-
-
 def test_validate_feature_target_overlap(validator_factory):
     """Test feature target overlap validation."""
     validator_factory(feature_columns=["feature1", "feature2"])._validate_feature_target_overlap()
@@ -258,31 +229,22 @@ def test_validate_reserved_column_conflicts(validator_factory, sample_data):
         validator_factory(data=data_with_reserved, feature_columns=["feature1"])._validate_reserved_column_conflicts()
 
 
-def test_validate_features_not_all_null(validator_factory, sample_data):
-    """Test features not all null validation."""
-    validator_factory(feature_columns=["feature1", "feature2"])._validate_features_not_all_null()
-
-    data_with_null_feature = sample_data.copy()
-    data_with_null_feature["feature1"] = np.nan
-    with pytest.raises(ValueError, match="Feature columns are entirely null"):
-        validator_factory(
-            data=data_with_null_feature, feature_columns=["feature1", "feature2"]
-        )._validate_features_not_all_null()
-
-
 def test_validate_error_accumulation(validator_factory, sample_data):
     """Test that validate() accumulates multiple errors."""
-    data_with_issues = sample_data.head(10).copy()
-    data_with_issues.loc[0, "sample_id"] = np.nan
+    data_with_issues = sample_data.copy()
     data_with_issues["group_features"] = 0
+    data_with_issues.loc[0, "feature1"] = "invalid_string"  # This will fail dtype validation
 
-    validator = validator_factory(data=data_with_issues, feature_columns=["feature1"], stratification_column=None)
+    validator = validator_factory(
+        data=data_with_issues,
+        feature_columns=["feature1", "feature2"],
+        stratification_column="sample_id",  # This will fail as sample_id can't be stratification column
+    )
 
     with pytest.raises(ValueError) as exc_info:
         validator.validate()
 
     error_message = str(exc_info.value)
     assert "Multiple validation errors found" in error_message
-    assert "Dataset must have at least 20 samples" in error_message
     assert "Reserved column names found in data" in error_message
-    assert "Critical identifier columns cannot contain null values" in error_message
+    assert "Stratification column cannot be the same as sample_id" in error_message

@@ -42,7 +42,7 @@ def test_model_config_with_conflict():
 
     with pytest.raises(
         ValueError,
-        match="Hyperparameter 'n_jobs' is not allowed in 'hyperparameters'.",
+        match=r"Hyperparameter 'n_jobs' is not allowed in 'hyperparameters'\.",
     ):
         ModelConfig(
             name="test_model",

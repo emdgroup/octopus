@@ -404,9 +404,9 @@ class TabularNNRegressorModel:
             ml_type="regression",
             feature_method="permutation",
             n_repeats=2,
-            chpo_compatible=True,
+            chpo_compatible=False,
             scaler="StandardScaler",
-            imputation_required=True,
+            imputation_required=False,
             categorical_enabled=True,
             hyperparameters=[
                 Hyperparameter(

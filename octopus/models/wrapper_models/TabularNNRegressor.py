@@ -1,5 +1,7 @@
 """Enhanced Tabular Neural Network Regressor with Categorical Embeddings."""
 
+from typing import Any
+
 import numpy as np
 import pandas as pd
 import torch
@@ -13,42 +15,32 @@ from torch.utils.data import DataLoader, TensorDataset
 class TabularNNRegressor(RegressorMixin, BaseEstimator):
     """Enhanced neural network for tabular regression with categorical embeddings.
 
-    Parameters
-    ----------
-    hidden_sizes : list of int, default=[200, 100]
-        Sizes of hidden layers.
-    dropout : float, default=0.1
-        Dropout probability.
-    learning_rate : float, default=0.001
-        Learning rate for optimizer.
-    batch_size : int, default=256
-        Training batch size.
-    epochs : int, default=100
-        Number of training epochs.
-    weight_decay : float, default=1e-5
-        L2 regularization strength.
-    activation : str, default='relu'
-        Activation function ('relu' or 'elu').
-    optimizer : str, default='adam'
-        Optimizer type ('adam' or 'adamw').
-    random_state : int, default=None
-        Random seed.
+    Args:
+        hidden_sizes: Sizes of hidden layers. Defaults to [200, 100].
+        dropout: Dropout probability. Defaults to 0.1.
+        learning_rate: Learning rate for optimizer. Defaults to 0.001.
+        batch_size: Training batch size. Defaults to 256.
+        epochs: Number of training epochs. Defaults to 100.
+        weight_decay: L2 regularization strength. Defaults to 1e-5.
+        activation: Activation function ('relu' or 'elu'). Defaults to 'relu'.
+        optimizer: Optimizer type ('adam' or 'adamw'). Defaults to 'adam'.
+        random_state: Random seed. Defaults to None.
     """
 
     _estimator_type = "regressor"
 
     def __init__(
         self,
-        hidden_sizes=None,
-        dropout=0.1,
-        learning_rate=0.001,
-        batch_size=256,
-        epochs=100,
-        weight_decay=1e-5,
-        activation="relu",
-        optimizer="adam",
-        random_state=None,
-    ):
+        hidden_sizes: list[int] | None = None,
+        dropout: float = 0.1,
+        learning_rate: float = 0.001,
+        batch_size: int = 256,
+        epochs: int = 100,
+        weight_decay: float = 1e-5,
+        activation: str = "relu",
+        optimizer: str = "adam",
+        random_state: int | None = None,
+    ) -> None:
         self.hidden_sizes = hidden_sizes if hidden_sizes is not None else [200, 100]
         self.dropout = dropout
         self.learning_rate = learning_rate
@@ -59,8 +51,15 @@ class TabularNNRegressor(RegressorMixin, BaseEstimator):
         self.optimizer = optimizer
         self.random_state = random_state
 
-    def _detect_categorical_columns(self, X):
-        """Detect categorical columns from DataFrame."""
+    def _detect_categorical_columns(self, X: Any) -> tuple[list[str], list[str]]:
+        """Detect categorical columns from DataFrame.
+
+        Args:
+            X: Input features.
+
+        Returns:
+            A tuple containing (categorical_columns, numerical_columns).
+        """
         if isinstance(X, pd.DataFrame):
             # Use pandas dtypes to detect categorical columns
             cat_cols = X.select_dtypes(include=["object", "category"]).columns.tolist()
@@ -70,8 +69,16 @@ class TabularNNRegressor(RegressorMixin, BaseEstimator):
             # If numpy array, no categorical columns
             return [], list(range(X.shape[1]))
 
-    def fit(self, X, y):
-        """Fit the model."""
+    def fit(self, X: Any, y: Any) -> "TabularNNRegressor":
+        """Fit the model.
+
+        Args:
+            X: Training features.
+            y: Target values.
+
+        Returns:
+            Fitted estimator.
+        """
         if self.random_state is not None:
             torch.manual_seed(self.random_state)
             np.random.seed(self.random_state)
@@ -141,7 +148,14 @@ class TabularNNRegressor(RegressorMixin, BaseEstimator):
 
         # Training
         dataset = TensorDataset(X_cat_tensor, X_num_tensor, y_tensor)
-        dataloader = DataLoader(dataset, batch_size=self.batch_size, shuffle=True)
+
+        # Use generator for reproducible shuffling if random_state is set
+        if self.random_state is not None:
+            generator = torch.Generator()
+            generator.manual_seed(self.random_state)
+            dataloader = DataLoader(dataset, batch_size=self.batch_size, shuffle=True, generator=generator)
+        else:
+            dataloader = DataLoader(dataset, batch_size=self.batch_size, shuffle=True)
 
         # Select optimizer
         if self.optimizer == "adamw":
@@ -179,8 +193,15 @@ class TabularNNRegressor(RegressorMixin, BaseEstimator):
 
         return self
 
-    def predict(self, X):
-        """Predict using the model."""
+    def predict(self, X: Any) -> np.ndarray:
+        """Predict using the model.
+
+        Args:
+            X: Input features.
+
+        Returns:
+            Predicted values.
+        """
         check_is_fitted(self, "model_")
 
         # Convert to DataFrame if needed, using stored feature names
@@ -227,8 +248,12 @@ class TabularNNRegressor(RegressorMixin, BaseEstimator):
 
         return predictions.numpy().flatten()
 
-    def _build_model(self):
-        """Build the neural network."""
+    def _build_model(self) -> "TabularNNModel":
+        """Build the neural network.
+
+        Returns:
+            The constructed PyTorch model.
+        """
         # Calculate actual number of numerical features (including missing indicators)
         n_num_features = len(self.num_cols_) + len(self.missing_indicators_)
 
@@ -257,16 +282,16 @@ class TabularNNModel(nn.Module):
         total_emb_dim = sum(emb_dim for _, emb_dim in embedding_sizes.values())
         input_dim = total_emb_dim + n_num_features
 
-        # Select activation function
-        if activation == "elu":
-            activation_fn = nn.ELU()
-        else:  # default to relu
-            activation_fn = nn.ReLU()
-
         # Build hidden layers with batch normalization
         layers = []
         prev_size = input_dim
         for hidden_size in hidden_sizes:
+            # Create new activation instance for each layer
+            if activation == "elu":
+                activation_fn = nn.ELU()
+            else:  # default to relu
+                activation_fn = nn.ReLU()
+
             layers.extend(
                 [
                     nn.Linear(prev_size, hidden_size),
@@ -282,8 +307,16 @@ class TabularNNModel(nn.Module):
 
         self.network = nn.Sequential(*layers)
 
-    def forward(self, X_cat, X_num):
-        """Forward pass."""
+    def forward(self, X_cat: torch.Tensor, X_num: torch.Tensor) -> torch.Tensor:
+        """Forward pass.
+
+        Args:
+            X_cat: Categorical features.
+            X_num: Numerical features.
+
+        Returns:
+            Model output.
+        """
         # Embed categorical features
         if X_cat.shape[1] > 0:
             embedded = [emb(X_cat[:, i]) for i, emb in enumerate(self.embeddings)]

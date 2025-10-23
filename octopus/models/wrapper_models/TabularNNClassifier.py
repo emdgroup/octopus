@@ -1,5 +1,7 @@
 """Enhanced Tabular Neural Network Classifier with Categorical Embeddings."""
 
+from typing import Any
+
 import numpy as np
 import pandas as pd
 import torch
@@ -16,42 +18,32 @@ class TabularNNClassifier(ClassifierMixin, BaseEstimator):
     This classifier automatically detects whether the problem is binary or multiclass
     and adjusts its architecture and loss function accordingly.
 
-    Parameters
-    ----------
-    hidden_sizes : list of int, default=[200, 100]
-        Sizes of hidden layers.
-    dropout : float, default=0.1
-        Dropout probability.
-    learning_rate : float, default=0.001
-        Learning rate for optimizer.
-    batch_size : int, default=256
-        Training batch size.
-    epochs : int, default=100
-        Number of training epochs.
-    weight_decay : float, default=1e-5
-        L2 regularization strength.
-    activation : str, default='relu'
-        Activation function ('relu' or 'elu').
-    optimizer : str, default='adam'
-        Optimizer type ('adam' or 'adamw').
-    random_state : int, default=None
-        Random seed.
+    Args:
+        hidden_sizes: Sizes of hidden layers. Defaults to [200, 100].
+        dropout: Dropout probability. Defaults to 0.1.
+        learning_rate: Learning rate for optimizer. Defaults to 0.001.
+        batch_size: Training batch size. Defaults to 256.
+        epochs: Number of training epochs. Defaults to 100.
+        weight_decay: L2 regularization strength. Defaults to 1e-5.
+        activation: Activation function ('relu' or 'elu'). Defaults to 'relu'.
+        optimizer: Optimizer type ('adam' or 'adamw'). Defaults to 'adam'.
+        random_state: Random seed. Defaults to None.
     """
 
     _estimator_type = "classifier"
 
     def __init__(
         self,
-        hidden_sizes=None,
-        dropout=0.1,
-        learning_rate=0.001,
-        batch_size=256,
-        epochs=100,
-        weight_decay=1e-5,
-        activation="relu",
-        optimizer="adam",
-        random_state=None,
-    ):
+        hidden_sizes: list[int] | None = None,
+        dropout: float = 0.1,
+        learning_rate: float = 0.001,
+        batch_size: int = 256,
+        epochs: int = 100,
+        weight_decay: float = 1e-5,
+        activation: str = "relu",
+        optimizer: str = "adam",
+        random_state: int | None = None,
+    ) -> None:
         self.hidden_sizes = hidden_sizes if hidden_sizes is not None else [200, 100]
         self.dropout = dropout
         self.learning_rate = learning_rate
@@ -62,17 +54,37 @@ class TabularNNClassifier(ClassifierMixin, BaseEstimator):
         self.optimizer = optimizer
         self.random_state = random_state
 
-    def _detect_categorical_columns(self, X):
-        """Detect categorical columns from DataFrame."""
+    def _detect_categorical_columns(self, X: Any) -> tuple[list[str], list[str]]:
+        """Detect categorical columns from DataFrame.
+
+        Args:
+            X: Input features.
+
+        Returns:
+            A tuple containing (categorical_columns, numerical_columns).
+        """
         if isinstance(X, pd.DataFrame):
+            # Use pandas dtypes to detect categorical columns
             cat_cols = X.select_dtypes(include=["object", "category"]).columns.tolist()
             num_cols = X.select_dtypes(include=[np.number]).columns.tolist()
             return cat_cols, num_cols
         else:
+            # If numpy array, no categorical columns
             return [], list(range(X.shape[1]))
 
-    def fit(self, X, y):
-        """Fit the model."""
+    def fit(self, X: Any, y: Any) -> "TabularNNClassifier":
+        """Fit the model.
+
+        Args:
+            X: Training features.
+            y: Target values.
+
+        Returns:
+            Fitted estimator.
+
+        Raises:
+            ValueError: If fewer than 2 classes are provided.
+        """
         if self.random_state is not None:
             torch.manual_seed(self.random_state)
             np.random.seed(self.random_state)
@@ -85,10 +97,9 @@ class TabularNNClassifier(ClassifierMixin, BaseEstimator):
         if self.n_classes_ < 2:
             raise ValueError(f"Classifier expects at least 2 classes, got {self.n_classes_}")
 
-        # For multiclass, encode target labels to 0, 1, 2, ...
-        if not self.is_binary_:
-            self.target_encoder_ = LabelEncoder()
-            y_encoded = self.target_encoder_.fit_transform(y)
+        # Encode target labels to 0, 1, 2, ... for both binary and multiclass
+        self.target_encoder_ = LabelEncoder()
+        y_encoded = self.target_encoder_.fit_transform(y)
 
         # Convert to DataFrame if needed and store feature names
         if not isinstance(X, pd.DataFrame):
@@ -108,10 +119,12 @@ class TabularNNClassifier(ClassifierMixin, BaseEstimator):
         X_cat_encoded = []
         for col in self.cat_cols_:
             le = LabelEncoder()
+            # Handle NaN by adding a special category
             X_col = X[col].fillna("__NAN__")
             encoded = le.fit_transform(X_col)
             self.label_encoders_[col] = le
 
+            # Improved embedding size: min(50, max(3, (cardinality + 1) // 2))
             cardinality = len(le.classes_)
             emb_dim = min(50, max(3, (cardinality + 1) // 2))
             self.embedding_sizes_[col] = (cardinality, emb_dim)
@@ -127,12 +140,15 @@ class TabularNNClassifier(ClassifierMixin, BaseEstimator):
             col_data = X[col]
             is_missing = col_data.isna()
 
+            # Store median for this column
             median_val = col_data.median()
             self.num_medians_[col] = median_val if not pd.isna(median_val) else 0.0
 
+            # Fill missing with median
             filled_data = col_data.fillna(self.num_medians_[col])
             X_num_list.append(filled_data.values)
 
+            # Add missing indicator if there are any missing values
             if is_missing.any():
                 self.missing_indicators_.append(col)
                 X_num_list.append(is_missing.astype(np.float32).values)
@@ -148,26 +164,31 @@ class TabularNNClassifier(ClassifierMixin, BaseEstimator):
         X_num_tensor = torch.FloatTensor(X_num)
 
         if self.is_binary_:
-            # Binary: labels 0 or 1
             y_array = y.values if isinstance(y, pd.Series) else y
             y_binary = (y_array == self.classes_[1]).astype(np.float32)
             y_tensor = torch.FloatTensor(y_binary).unsqueeze(1)
             criterion = nn.BCEWithLogitsLoss()
         else:
-            # Multiclass: labels 0, 1, 2, ...
             y_tensor = torch.LongTensor(y_encoded)
             criterion = nn.CrossEntropyLoss()
 
         # Training
         dataset = TensorDataset(X_cat_tensor, X_num_tensor, y_tensor)
-        dataloader = DataLoader(dataset, batch_size=self.batch_size, shuffle=True)
+
+        # Use generator for reproducible shuffling if random_state is set
+        if self.random_state is not None:
+            generator = torch.Generator()
+            generator.manual_seed(self.random_state)
+            dataloader = DataLoader(dataset, batch_size=self.batch_size, shuffle=True, generator=generator)
+        else:
+            dataloader = DataLoader(dataset, batch_size=self.batch_size, shuffle=True)
 
         # Select optimizer
         if self.optimizer == "adamw":
             optimizer = torch.optim.AdamW(
                 self.model_.parameters(), lr=self.learning_rate, weight_decay=self.weight_decay
             )
-        else:
+        else:  # adam
             optimizer = torch.optim.Adam(
                 self.model_.parameters(), lr=self.learning_rate, weight_decay=self.weight_decay
             )
@@ -190,13 +211,21 @@ class TabularNNClassifier(ClassifierMixin, BaseEstimator):
                 optimizer.step()
                 epoch_loss += loss.item()
 
+            # Update learning rate based on epoch loss
             avg_loss = epoch_loss / len(dataloader)
             scheduler.step(avg_loss)
 
         return self
 
-    def predict_proba(self, X):
-        """Predict class probabilities."""
+    def predict_proba(self, X: Any) -> np.ndarray:
+        """Predict class probabilities.
+
+        Args:
+            X: Input features.
+
+        Returns:
+            Predicted class probabilities.
+        """
         check_is_fitted(self, "model_")
 
         # Convert to DataFrame if needed, using stored feature names
@@ -212,18 +241,21 @@ class TabularNNClassifier(ClassifierMixin, BaseEstimator):
         for col in self.cat_cols_:
             le = self.label_encoders_[col]
             X_col = X[col].fillna("__NAN__")
+            # Handle unseen categories
             encoded = np.array([le.transform([val])[0] if val in le.classes_ else 0 for val in X_col])
             X_cat_encoded.append(encoded)
 
-        # Prepare numerical features
+        # Prepare numerical features with same missing value handling as fit
         X_num_list = []
         for col in self.num_cols_:
             col_data = X[col]
             is_missing = col_data.isna()
 
+            # Fill missing with stored median
             filled_data = col_data.fillna(self.num_medians_[col])
             X_num_list.append(filled_data.values)
 
+            # Add missing indicator if this column had missing values during training
             if col in self.missing_indicators_:
                 X_num_list.append(is_missing.astype(np.float32).values)
 
@@ -239,17 +271,22 @@ class TabularNNClassifier(ClassifierMixin, BaseEstimator):
             logits = self.model_(X_cat_tensor, X_num_tensor)
 
             if self.is_binary_:
-                # Binary classification
                 probs_class1 = torch.sigmoid(logits).numpy().flatten()
                 probs_class0 = 1 - probs_class1
                 return np.column_stack([probs_class0, probs_class1])
             else:
-                # Multiclass classification
                 probs = torch.softmax(logits, dim=1).numpy()
                 return probs
 
-    def predict(self, X):
-        """Predict class labels."""
+    def predict(self, X: Any) -> np.ndarray:
+        """Predict class labels.
+
+        Args:
+            X: Input features.
+
+        Returns:
+            Predicted class labels.
+        """
         proba = self.predict_proba(X)
         y_pred_encoded = np.argmax(proba, axis=1)
 
@@ -258,8 +295,13 @@ class TabularNNClassifier(ClassifierMixin, BaseEstimator):
         else:
             return self.target_encoder_.inverse_transform(y_pred_encoded)
 
-    def _build_model(self):
-        """Build the neural network."""
+    def _build_model(self) -> "TabularNNClassificationModel":
+        """Build the neural network.
+
+        Returns:
+            The constructed PyTorch model.
+        """
+        # Calculate actual number of numerical features (including missing indicators)
         n_num_features = len(self.num_cols_) + len(self.missing_indicators_)
 
         # Determine output size: 1 for binary, n_classes for multiclass
@@ -277,7 +319,7 @@ class TabularNNClassifier(ClassifierMixin, BaseEstimator):
 
 
 class TabularNNClassificationModel(nn.Module):
-    """PyTorch model for binary and multiclass classification."""
+    """PyTorch model for binary and multiclass classification with batch normalization and configurable activation."""
 
     def __init__(
         self, cat_cols, embedding_sizes, n_num_features, output_size, hidden_sizes, dropout, activation="relu"
@@ -293,16 +335,16 @@ class TabularNNClassificationModel(nn.Module):
         total_emb_dim = sum(emb_dim for _, emb_dim in embedding_sizes.values())
         input_dim = total_emb_dim + n_num_features
 
-        # Select activation function
-        if activation == "elu":
-            activation_fn = nn.ELU()
-        else:
-            activation_fn = nn.ReLU()
-
         # Build hidden layers with batch normalization
         layers = []
         prev_size = input_dim
         for hidden_size in hidden_sizes:
+            # Create new activation instance for each layer
+            if activation == "elu":
+                activation_fn = nn.ELU()
+            else:
+                activation_fn = nn.ReLU()
+
             layers.extend(
                 [
                     nn.Linear(prev_size, hidden_size),
@@ -313,13 +355,21 @@ class TabularNNClassificationModel(nn.Module):
             )
             prev_size = hidden_size
 
-        # Output layer: 1 unit for binary, n_classes for multiclass
+        # Output layer
         layers.append(nn.Linear(prev_size, output_size))
 
         self.network = nn.Sequential(*layers)
 
-    def forward(self, X_cat, X_num):
-        """Forward pass."""
+    def forward(self, X_cat: torch.Tensor, X_num: torch.Tensor) -> torch.Tensor:
+        """Forward pass.
+
+        Args:
+            X_cat: Categorical features.
+            X_num: Numerical features.
+
+        Returns:
+            Model output.
+        """
         # Embed categorical features
         if X_cat.shape[1] > 0:
             embedded = [emb(X_cat[:, i]) for i, emb in enumerate(self.embeddings)]

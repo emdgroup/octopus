@@ -47,7 +47,7 @@ class TestOctoMulticlass:
     @pytest.fixture
     def octo_data_config(self, wine_dataset):
         """Create OctoData configuration for testing."""
-        df, features, wine = wine_dataset
+        df, features, _wine = wine_dataset
 
         return OctoData(
             data=df,
@@ -407,7 +407,7 @@ class TestOctoMulticlass:
 
     def test_synthetic_dataset_properties(self, wine_dataset):
         """Test specific properties of the synthetic dataset."""
-        df, features, wine = wine_dataset
+        df, features, _wine = wine_dataset
 
         # Test feature names
         expected_features = ["feature_0", "feature_1", "feature_2", "feature_3", "feature_4"]

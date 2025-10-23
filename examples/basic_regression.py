@@ -42,25 +42,19 @@ config_study = ConfigStudy(
     silently_overwrite_study=True,
 )
 
-config_manager = ConfigManager(outer_parallelization=True, run_single_experiment_num=-1)
+config_manager = ConfigManager(outer_parallelization=True, run_single_experiment_num=0)
 
 config_sequence = ConfigSequence(
     [
         Octo(
             sequence_id=0,
             input_sequence_id=-1,
-            description="step_1",
+            description="step_1_neural_network",
             models=[
-                "RandomForestRegressor",
-                "XGBRegressor",
-                "XGBRegressor",
-                "ExtraTreesRegressor",
-                "RidgeRegressor",
-                "ElasticNetRegressor",
-                "GradientBoostingRegressor",
-                "CatBoostRegressor",
+                "TabularNNRegressor",
+                # "ExtraTreesRegressor",
             ],
-            n_trials=20,
+            n_trials=40,
         ),
     ]
 )

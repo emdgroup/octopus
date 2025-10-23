@@ -122,11 +122,11 @@ class EnSel:
 
         # created ensembled predictions (all inner models from all bags) for each partition
         predictions["ensemble"] = {}
+        # Load the first bag once to determine target column dtype
+        first_bag_key = bag_keys[0]
+        first_bag = Bag.from_pickle(first_bag_key)
         for part, pool_value in pool.items():
             ensemble = pd.concat(pool_value, axis=0).groupby(by=self.row_column).mean().reset_index()
-            # Get the first bag to determine target column dtype
-            first_bag_key = bag_keys[0]
-            first_bag = Bag.from_pickle(first_bag_key)
             for column in list(self.target_assignments.values()):
                 ensemble[column] = ensemble[column].astype(first_bag.trainings[0].data_train[column].dtype)
             predictions["ensemble"][part] = ensemble
@@ -160,7 +160,7 @@ class EnSel:
             bag_keys = self.model_table[: i + 1]["path"].tolist()
             scores = self._ensemble_models(bag_keys)
             self.scan_table.loc[i] = [
-                i + 1,  # Number of models in ensemble
+                i + 1,
                 scores["dev_pool"],
                 scores["test_pool"],
             ]
@@ -168,10 +168,12 @@ class EnSel:
         logger.info(f"\n{self.scan_table.head(20)}")
 
     def _ensemble_optimization(self):
-        """Ensembling optimization with replacement."""
-        # we start with an best N models example derived from self.scan_table,
-        # assuming that is sorted correctly
-        # When there are multiple rows with the same best value, take the last one (more models)
+        """Ensembling optimization with replacement.
+
+        We start with the best N models derived from self.scan_table,
+        assuming that it is sorted correctly. When there are multiple rows
+        with the same best value, we take the last one (more models).
+        """
         if self.direction == "maximize":
             # Get all indices with the max value, then take the last one
             best_value = self.scan_table["dev_pool"].max()

@@ -1037,17 +1037,16 @@ class OctoDataHealthChecker:
         If a row_id column is specified, ensures that all values in that column
         are unique, as row IDs are used to uniquely identify each data row.
         """
-        if self.row_id and self.row_id in self.data.columns:
-            if not self.data[self.row_id].is_unique:
-                duplicate_count = self.data[self.row_id].duplicated().sum()
-                self.add_issue(
-                    category="columns",
-                    issue_type="duplicate_row_ids",
-                    affected_items=[self.row_id],
-                    severity="Critical",
-                    description=f"Row ID column '{self.row_id}' contains {duplicate_count} duplicate values. Each row ID must be unique.",
-                    action="Investigate and resolve duplicate row IDs. Each row must have a unique identifier.",
-                )
+        if self.row_id and self.row_id in self.data.columns and not self.data[self.row_id].is_unique:
+            duplicate_count = self.data[self.row_id].duplicated().sum()
+            self.add_issue(
+                category="columns",
+                issue_type="duplicate_row_ids",
+                affected_items=[self.row_id],
+                severity="Critical",
+                description=f"Row ID column '{self.row_id}' contains {duplicate_count} duplicate values. Each row ID must be unique.",
+                action="Investigate and resolve duplicate row IDs. Each row must have a unique identifier.",
+            )
 
     def _check_features_not_all_null(self):
         """Check if feature columns are entirely null.

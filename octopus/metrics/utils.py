@@ -146,11 +146,23 @@ def get_performance_from_predictions(
 
             elif ml_type == "multiclass":
                 if prediction_type == "predict_proba":
+                    # Probability columns are class labels (integers: 0, 1, 2, ...)
+                    # They should form a contiguous block of consecutive integers starting from 0
+                    # Filter to only int type columns, excluding target and prediction
                     prob_columns = [
-                        col
-                        for col in pred_df.columns
-                        if isinstance(col, (int | float)) and col not in [target_col, "prediction"]
+                        col for col in pred_df.columns if isinstance(col, int) and col not in [target_col, "prediction"]
                     ]
+
+                    # Additional validation: ensure they form a contiguous sequence starting from 0
+                    if prob_columns:
+                        prob_columns_sorted = sorted(prob_columns)
+                        expected_sequence = list(range(len(prob_columns_sorted)))
+                        if prob_columns_sorted != expected_sequence:
+                            raise ValueError(
+                                f"Probability columns must be consecutive integers starting from 0. "
+                                f"Found: {prob_columns_sorted}, expected: {expected_sequence}"
+                            )
+
                     probabilities = pred_df[prob_columns].values
                     perf_value = metric_function(target, probabilities)
                 else:

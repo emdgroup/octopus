@@ -1,7 +1,9 @@
 """Opto Config module."""
 
 import gzip
+import json
 import pickle
+from pathlib import Path
 
 from attrs import define, field, validators
 
@@ -56,3 +58,30 @@ class OctoConfig:
         """
         with gzip.GzipFile(file_path, "rb") as file:
             return pickle.load(file)
+
+    @classmethod
+    def from_json(cls, config_dir: Path) -> "OctoConfig":
+        """Load config from JSON files in a directory.
+
+        Args:
+            config_dir: Path to the directory containing the JSON config files.
+
+        Returns:
+            OctoConfig: The loaded instance of OctoConfig.
+        """
+        # Load study config
+        with open(config_dir / "config_study.json") as f:
+            study_dict = json.load(f)
+        study = ConfigStudy(**study_dict)
+
+        # Load manager config
+        with open(config_dir / "config_manager.json") as f:
+            manager_dict = json.load(f)
+        manager = ConfigManager(**manager_dict)
+
+        # Load sequence config
+        with open(config_dir / "config_sequence.json") as f:
+            sequence_dict = json.load(f)
+        sequence = ConfigSequence(**sequence_dict)
+
+        return cls(study=study, manager=manager, sequence=sequence)

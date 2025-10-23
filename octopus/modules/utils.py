@@ -133,9 +133,6 @@ def get_fi_permutation(experiment, n_repeat, data) -> pd.DataFrame:
     if not set(feature_columns).issubset(data.columns):
         raise ValueError("Features missing in provided dataset.")
 
-    # check that targets are in dataset
-    # MISSING
-
     # calculate baseline score
     baseline_score = get_score_from_model(model, data, feature_columns, target_metric, target_assignments)
 

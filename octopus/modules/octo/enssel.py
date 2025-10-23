@@ -168,10 +168,12 @@ class EnSel:
         logger.info(f"\n{self.scan_table.head(20)}")
 
     def _ensemble_optimization(self):
-        """Ensembling optimization with replacement."""
-        # we start with an best N models example derived from self.scan_table,
-        # assuming that is sorted correctly
-        # When there are multiple rows with the same best value, take the last one (more models)
+        """Ensembling optimization with replacement.
+
+        We start with the best N models derived from self.scan_table,
+        assuming that it is sorted correctly. When there are multiple rows
+        with the same best value, we take the last one (more models).
+        """
         if self.direction == "maximize":
             # Get all indices with the max value, then take the last one
             best_value = self.scan_table["dev_pool"].max()

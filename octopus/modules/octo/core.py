@@ -316,8 +316,7 @@ class OctoCore:
             callbacks=[logging_callback],
         )
 
-        #      save optuna results as parquet file
-        # how to get the split id?
+        # save optuna results as parquet file
         dict_optuna = []
         for trial in study.get_trials():
             for name, _ in trial.distributions.items():

@@ -20,7 +20,7 @@ from octopus.results import ModuleResults
 # - autogluon: add 3-5 random feature and remove all feature below the lowest random
 # - show removed zero features
 # - pfi, set number of repeats to improve quality of pfi
-# - collect fi_df for all steps for deeper undersanding
+# - collect fi_df for all steps for deeper understanding
 # - set abs_on_fi default to False
 # - Explore RFE2
 #   -- retraining after n eliminations, several modules

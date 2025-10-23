@@ -62,7 +62,7 @@ def _(file_browser, mo):
 def _(file_browser, mo):
     df_configs = mo.sql(
         f"""
-        SELECT * FROM read_parquet('{file_browser.path()}/*/config_study*.parquet', hive_partitioning=true)
+        SELECT * FROM read_parquet('{file_browser.path()}/config/config_study.parquet', hive_partitioning=true)
         """,
         output=False,
     )

@@ -13,7 +13,7 @@ from octopus.modules.mrmr.core import maxrminr
 def generate_sample_data(n_samples, n_features, random_state):
     """Generate sample data."""
     np.random.seed(42)
-    X, y = make_regression(n_samples=n_samples, n_features=n_features, random_state=random_state)
+    X, _y = make_regression(n_samples=n_samples, n_features=n_features, random_state=random_state)
     df_features = pd.DataFrame(X, columns=[f"feature_{i}" for i in range(n_features)])
     df_feature_importances = pd.DataFrame(
         {

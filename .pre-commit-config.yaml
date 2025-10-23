@@ -19,7 +19,7 @@ repos:
       - id: ruff-format
         types_or: [python, pyi ]
   - repo: https://github.com/crate-ci/typos
-    rev: v1
+    rev: v1.38.1
     hooks:
       - id: typos
         args: [--config=typos.toml]

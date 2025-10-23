@@ -5,11 +5,11 @@ import json
 import pickle
 
 import pandas as pd
-from attrs import Factory, define, field, fields, validators
+from attrs import Factory, asdict, define, field, fields, validators
 
 from octopus.logger import LogGroup, get_logger
 
-from .healthChecker import OctoDataHealthChecker
+from .healthChecker import HealthCheckConfig, OctoDataHealthChecker
 from .preparator import OctoDataPreparator
 from .validator import OctoDataValidator
 
@@ -55,6 +55,12 @@ class OctoData:
         validator=validators.optional(validators.instance_of(str)),
     )
     """List of columns used for stratification."""
+
+    health_check_config: HealthCheckConfig = field(
+        factory=HealthCheckConfig,
+        validator=validators.instance_of(HealthCheckConfig),
+    )
+    """Configuration for health check thresholds."""
 
     report: pd.DataFrame = field(
         default=None,
@@ -126,18 +132,22 @@ class OctoData:
             row_id=self.row_id,
             sample_id=self.sample_id,
             stratification_column=self.stratification_column,
+            config=self.health_check_config,
         )
 
         self.report = checker.generate_report()
 
     def save_attributes_to_parquet(self, file_path: str) -> None:
-        """Save attributes to parquet."""
+        """Save attributes to parquet.
+
+        Note: health_check_config is saved separately using save_health_check_config().
+        """
         parameters = []
         values = []
 
         for attr in fields(OctoData):
             attr_name = attr.name
-            if attr_name not in ["data", "report"]:
+            if attr_name not in ["data", "report", "health_check_config"]:
                 value = getattr(self, attr_name)
 
                 if isinstance(value, list):
@@ -153,6 +163,30 @@ class OctoData:
 
         df = pd.DataFrame({"Parameter": parameters, "Value": values})
         df.to_parquet(file_path, index=False)
+
+    def save_health_check_config(self, file_path: str) -> None:
+        """Save health check configuration to JSON file.
+
+        Args:
+            file_path: The path to save the health check configuration JSON file.
+        """
+        config_dict = asdict(self.health_check_config)
+        with open(file_path, "w") as f:
+            json.dump(config_dict, f, indent=2)
+
+    @classmethod
+    def load_health_check_config(cls, file_path: str) -> HealthCheckConfig:
+        """Load health check configuration from JSON file.
+
+        Args:
+            file_path: The path to load the health check configuration JSON file from.
+
+        Returns:
+            HealthCheckConfig: The loaded health check configuration.
+        """
+        with open(file_path) as f:
+            config_dict = json.load(f)
+        return HealthCheckConfig(**config_dict)
 
     def to_pickle(self, file_path: str) -> None:
         """Save object to a compressed pickle file.

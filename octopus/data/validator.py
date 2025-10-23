@@ -5,8 +5,6 @@ from collections import Counter
 import pandas as pd
 from attrs import define
 
-MIN_SAMPLES = 20
-
 
 @define
 class OctoDataValidator:
@@ -54,7 +52,6 @@ class OctoDataValidator:
         """
         validators = [
             self._validate_nonempty_dataframe,
-            self._validate_minimum_samples,
             self._validate_reserved_column_conflicts,
             self._validate_columns_exist,
             self._validate_duplicated_columns,
@@ -63,9 +60,6 @@ class OctoDataValidator:
             self._validate_target_assignments,
             self._validate_number_of_targets,
             self._validate_column_dtypes,
-            self._validate_critical_columns_not_null,
-            self._validate_features_not_all_null,
-            self._validate_row_id_unique,
         ]
 
         errors = []
@@ -237,18 +231,6 @@ class OctoDataValidator:
             non_matching_str = ", ".join(non_matching_columns)
             raise ValueError(f"Columns with wrong dtypes: {non_matching_str}")
 
-    def _validate_row_id_unique(self):
-        """Validate that row_id column contains unique values.
-
-        If a row_id column is specified, ensures that all values in that column
-        are unique, as row IDs are used to uniquely identify each data row.
-
-        Raises:
-            ValueError: If duplicate row IDs are found in the row_id column.
-        """
-        if self.row_id and not self.data[self.row_id].is_unique:
-            raise ValueError("Duplicate row IDs found. Each row ID must be unique.")
-
     def _validate_nonempty_dataframe(self):
         """Validate that the DataFrame is not empty.
 
@@ -259,35 +241,6 @@ class OctoDataValidator:
         """
         if len(self.data) == 0:
             raise ValueError("DataFrame is empty. Cannot proceed with empty dataset.")
-
-    def _validate_minimum_samples(self):
-        """Validate that the DataFrame has a minimum number of samples.
-
-        Ensures the dataset has enough rows for meaningful analysis and modeling.
-        Requires at least MIN_SAMPLES rows.
-
-        Raises:
-            ValueError: If the DataFrame has fewer than MIN_SAMPLES rows.
-        """
-        if len(self.data) < MIN_SAMPLES:
-            raise ValueError(f"Dataset must have at least {MIN_SAMPLES} samples, got {len(self.data)}")
-
-    def _validate_critical_columns_not_null(self):
-        """Validate that critical identifier columns do not contain null values.
-
-        Checks that sample_id and row_id (if specified) do not contain any null
-        values, as these columns are essential for data grouping and identification.
-
-        Raises:
-            ValueError: If any critical identifier column contains null values.
-        """
-        critical_cols = [self.sample_id]
-        if self.row_id:
-            critical_cols.append(self.row_id)
-
-        null_cols = [col for col in critical_cols if self.data[col].isnull().any()]
-        if null_cols:
-            raise ValueError(f"Critical identifier columns cannot contain null values: {', '.join(null_cols)}")
 
     def _validate_feature_target_overlap(self):
         """Validate that no column is both a feature and a target.
@@ -323,16 +276,3 @@ class OctoDataValidator:
                 f"Reserved column names found in data: {', '.join(conflicts)}. "
                 "These column names are used internally by Octopus."
             )
-
-    def _validate_features_not_all_null(self):
-        """Validate that feature columns are not entirely null.
-
-        Checks that each feature column contains at least one non-null value.
-        Features with all null values provide no information for modeling.
-
-        Raises:
-            ValueError: If any feature columns contain only null values.
-        """
-        all_null_features = [col for col in self.feature_columns if self.data[col].isnull().all()]
-        if all_null_features:
-            raise ValueError(f"Feature columns are entirely null: {', '.join(all_null_features)}")

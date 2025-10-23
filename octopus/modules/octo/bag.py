@@ -15,8 +15,7 @@ from sklearn.base import BaseEstimator, ClassifierMixin, RegressorMixin
 
 # sklearn imports for compatibility
 from octopus.logger import LogGroup, get_logger
-from octopus.metrics import metrics_inventory
-from octopus.metrics.utils import add_pooling_performance
+from octopus.metrics.utils import get_performance_from_predictions
 
 # Adjust this import path as needed depending on your package layout
 from octopus.modules.octo.ray_parallel import (
@@ -316,131 +315,86 @@ class BagBase(BaseEstimator):
         self.n_features_used_mean = mean(n_feat_lst)
 
     def get_predictions(self):
-        """Extract bag test predictions."""
+        """Extract bag predictions for train, dev, and test.
+
+        Returns:
+            dict: Dictionary containing predictions for each training and ensemble.
+                 Keys are training IDs plus 'ensemble', values are dicts with 'train', 'dev', 'test' keys.
+        """
         if not self.train_status:
-            print("Running trainings first to be able to get scores")
+            logger.set_log_group(LogGroup.TRAINING)
+            logger.info("Running trainings first to be able to get scores")
             self.fit()
 
         predictions = {}
-        pool = []
+        pool = {key: [] for key in ["train", "dev", "test"]}
+
         for training in self.trainings:
-            # collect all predictions (train/dev/test) from training
             predictions[training.training_id] = training.predictions
-            # pool predictions for ensembling
-            pool.append(training.predictions["test"])
-        pool = pd.concat(pool, axis=0)
-        ensemble = pool.groupby(by=self.row_column).mean().reset_index()
+            for part, pool_value in pool.items():
+                pool_value.append(training.predictions[part])
 
-        # set correct dtype for target columns
-        for column in list(self.target_assignments.values()):
-            ensemble[column] = ensemble[column].astype(self.trainings[0].data_train[column].dtype)
-
-        predictions["ensemble"] = {"test": ensemble}
+        # Create ensemble predictions for each partition
+        predictions["ensemble"] = {}
+        for part, pool_value in pool.items():
+            ensemble = pd.concat(pool_value, axis=0).groupby(by=self.row_column).mean().reset_index()
+            for column in list(self.target_assignments.values()):
+                ensemble[column] = ensemble[column].astype(self.trainings[0].data_train[column].dtype)
+            predictions["ensemble"][part] = ensemble
 
         return predictions
 
     def get_performance(self):
-        """Get performance scores."""
-        if not self.train_status:
-            print("Running trainings first to be able to get scores")
-            self.fit()
+        """Get performance using get_performance_from_predictions utility.
 
-        scores = {}
-        storage = {key: [] for key in ["train", "dev", "test"]}
-        pool = {key: [] for key in ["train", "dev", "test"]}
+        This is a simpler alternative to get_performance() that:
+        1. Gets predictions from bag.get_predictions()
+        2. Calculates performance using get_performance_from_predictions()
+        3. Restructures output to match expected format
 
-        for training in self.trainings:
-            metric_config = metrics_inventory.get_metric_config(self.target_metric)
-            metric_method = metrics_inventory.get_metric_function(self.target_metric)
-            ml_type = metric_config.ml_type
-            prediction_type = metric_config.prediction_type
+        Returns:
+            dict: Dictionary with performance values in the same format as get_performance()
+        """
+        # Get predictions from the bag
+        predictions = self.get_predictions()
 
-            if ml_type == "timetoevent":
-                for part, storage_value in storage.items():
-                    estimate = training.predictions[part]["prediction"]
-                    event_time = training.predictions[part][self.target_assignments["duration"]].astype(float)
-                    event_indicator = training.predictions[part][self.target_assignments["event"]].astype(bool)
-                    ci = metric_method(event_indicator, event_time, estimate)[0]
-                    storage_value.append(float(ci))
-
-            elif ml_type == "classification":
-                if prediction_type == "predict_proba":
-                    for part, values in storage.items():
-                        target_col = list(self.target_assignments.values())[0]
-
-                        # For binary classification, use probability of the positive class
-                        probabilities = training.predictions[part][self.positive_class]
-                        target = training.predictions[part][target_col]
-
-                        metric_result = metric_method(target, probabilities)
-                        values.append(metric_result)
-
-                else:
-                    for part, storage_value in storage.items():
-                        target_col = list(self.target_assignments.values())[0]
-                        predictions = training.predictions[part]["prediction"].astype(int)
-                        target = training.predictions[part][target_col]
-                        storage_value.append(metric_method(target, predictions))
-
-            elif ml_type == "multiclass":
-                if prediction_type == "predict_proba":
-                    for part, values in storage.items():
-                        target_col = list(self.target_assignments.values())[0]
-
-                        # For multiclass, get all class probabilities
-                        # Extract all probability columns (exclude prediction and target columns)
-                        prob_columns = [
-                            col
-                            for col in training.predictions[part].columns
-                            if isinstance(col, (int | float)) and col not in [target_col, "prediction", self.row_column]
-                        ]
-                        probabilities = training.predictions[part][prob_columns].values
-                        target = training.predictions[part][target_col]
-
-                        metric_result = metric_method(target, probabilities)
-                        values.append(metric_result)
-
-                else:
-                    for part, storage_value in storage.items():
-                        target_col = list(self.target_assignments.values())[0]
-                        predictions = training.predictions[part]["prediction"].astype(int)
-                        target = training.predictions[part][target_col]
-                        storage_value.append(metric_method(target, predictions))
-
-            elif ml_type == "regression":
-                if prediction_type == "predict_proba":
-                    raise ValueError("predict_proba not implemented for regression")
-                else:
-                    for part, storage_value in storage.items():
-                        target_col = list(self.target_assignments.values())[0]
-                        predictions = training.predictions[part]["prediction"].astype(int)
-                        target = training.predictions[part][target_col]
-                        storage_value.append(metric_method(target, predictions))
-
-            else:
-                raise ValueError(f"Unknown ml type {ml_type}")
-            # pooling
-            for part, pool_value in pool.items():
-                pool_value.append(training.predictions[part])
-
-        # calculate averaging scores
-        scores["train_avg"] = mean(storage["train"])
-        scores["train_lst"] = storage["train"]
-        scores["dev_avg"] = mean(storage["dev"])
-        scores["dev_lst"] = storage["dev"]
-        scores["test_avg"] = mean(storage["test"])
-        scores["test_lst"] = storage["test"]
-        # stack pooled data and groupby
-        for part, pool_value in pool.items():
-            concatenated = pd.concat(pool_value, axis=0)
-            pool[part] = concatenated.groupby(by=self.row_column).mean()
-
-        # calculate pooling scores (soft and hard)
-        add_pooling_performance(
-            pool, scores, self.target_metric, self.target_assignments, positive_class=self.positive_class
+        # Calculate performance using the utility function
+        performance = get_performance_from_predictions(
+            predictions=predictions,
+            target_metric=self.target_metric,
+            target_assignments=self.target_assignments,
+            positive_class=self.positive_class,
         )
 
-        return scores
+        # Create performance_output dictionary with restructured data
+        performance_output = {}
+
+        # Collect lists for train, dev, test from all non-ensemble trainings
+        train_lst = []
+        dev_lst = []
+        test_lst = []
+
+        for training_id, partitions in performance.items():
+            if training_id != "ensemble":
+                train_lst.append(partitions["train"])
+                dev_lst.append(partitions["dev"])
+                test_lst.append(partitions["test"])
+
+        # Calculate averages
+        performance_output["train_avg"] = mean(train_lst)
+        performance_output["train_lst"] = train_lst
+        performance_output["dev_avg"] = mean(dev_lst)
+        performance_output["dev_lst"] = dev_lst
+        performance_output["test_avg"] = mean(test_lst)
+        performance_output["test_lst"] = test_lst
+
+        # Add ensemble performance with renamed keys
+        if "ensemble" in performance:
+            performance_output["train_pool"] = performance["ensemble"]["train"]
+            performance_output["dev_pool"] = performance["ensemble"]["dev"]
+            performance_output["test_pool"] = performance["ensemble"]["test"]
+
+        return performance_output
 
     def _calculate_fi_parallel(self, fi_type="internal", partition="dev"):
         """Calculate feature importance in parallel using Ray."""
@@ -544,7 +498,8 @@ class BagBase(BaseEstimator):
         elif "constant" in fi_methods:
             fi_df = self.feature_importances["constant_mean"]
         else:
-            print("No features selected, return empty list")
+            logger.set_log_group(LogGroup.RESULTS)
+            logger.info("No features selected, return empty list")
             return []
 
         # only keep nonzero features

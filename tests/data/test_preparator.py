@@ -196,7 +196,7 @@ def test_prepare_full_process(octo_preparator):
 
 def test_row_id_already_exists():
     """Test if row_id already exists."""
-    with pytest.raises(Exception, match="`row_id` is not allowed as column name."):
+    with pytest.raises(Exception, match=r"`row_id` is not allowed as column name\."):
         prep = OctoDataPreparator(
             data=pd.DataFrame({"row_id": [1, 2], "a": [3, 4]}),
             feature_columns=["a"],

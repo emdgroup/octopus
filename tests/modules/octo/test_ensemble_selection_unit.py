@@ -174,13 +174,13 @@ def test_collect_trials_basic(tmp_path):
     assert len(ensel.bags) == 3
 
     # Check that all expected keys are present in bags
-    expected_keys = {"id", "scores", "predictions", "n_features_used_mean"}
+    expected_keys = {"id", "performance", "predictions", "n_features_used_mean"}
     for _bag_path, bag_data in ensel.bags.items():
         assert set(bag_data.keys()) == expected_keys
-        assert isinstance(bag_data["scores"], dict)
+        assert isinstance(bag_data["performance"], dict)
         assert isinstance(bag_data["predictions"], dict)
-        assert "dev_pool" in bag_data["scores"]
-        assert "test_pool" in bag_data["scores"]
+        assert "dev_pool" in bag_data["performance"]
+        assert "test_pool" in bag_data["performance"]
 
 
 # Tests for EnSel._create_model_table() method

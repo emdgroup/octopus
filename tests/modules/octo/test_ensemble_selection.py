@@ -50,7 +50,7 @@ def create_synthetic_data_and_models(n_samples=500):
     # Create global target as sum of all signals plus noise
     y_global = signals["linear"] + signals["rf"] + signals["gb"] + np.random.normal(0, 0.1, n_samples)
 
-    return X, y_global, models, signals
+    return X, y_global, models
 
 
 def create_data_splits(X, y_global, test_size=0.2):
@@ -189,7 +189,7 @@ def test_ensemble_selection_ensembled_data(tmp_path):
     - Ensemble should significantly outperform individual models
     """
     # Generate synthetic data and trained models
-    X, y_global, models, signals = create_synthetic_data_and_models(n_samples=400)  # Smaller for speed
+    X, y_global, models = create_synthetic_data_and_models(n_samples=400)  # Smaller for speed
 
     # Create data splits
     splits = create_data_splits(X, y_global)

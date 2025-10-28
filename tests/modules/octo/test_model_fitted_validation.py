@@ -21,6 +21,12 @@ import numpy as np
 import pandas as pd
 import pytest
 
+from octopus.models.hyperparameter import (
+    CategoricalHyperparameter,
+    FixedHyperparameter,
+    FloatHyperparameter,
+    IntHyperparameter,
+)
 from octopus.models.inventory import ModelInventory
 from octopus.modules.octo.training import Training
 
@@ -128,20 +134,22 @@ def get_default_model_params(model_name: str) -> dict:
     # Extract fixed parameters and reasonable defaults for others
     # This should match exactly how the real framework handles parameters
     for hp in model_config.hyperparameters:
-        if hp.type == "fixed":
+        if isinstance(hp, FixedHyperparameter):
             params[hp.name] = hp.value
-        elif hp.type == "categorical":
+        elif isinstance(hp, CategoricalHyperparameter):
             # Use first choice as default
             params[hp.name] = hp.choices[0] if hp.choices else None
-        elif hp.type == "int":
+        elif isinstance(hp, IntHyperparameter):
             # Use middle value as default
             params[hp.name] = int((hp.low + hp.high) / 2)
-        elif hp.type == "float":
+        elif isinstance(hp, FloatHyperparameter):
             # Use middle value as default (geometric mean for log scale)
             if hp.log:
                 params[hp.name] = np.sqrt(hp.low * hp.high)
             else:
                 params[hp.name] = (hp.low + hp.high) / 2
+        else:
+            raise AssertionError(f"Unsupported Hyperparameter type: {type(hp)}.")
 
     # Add standard parameters
     if model_config.n_jobs:
@@ -334,6 +342,9 @@ def _display_model_info(model_name: str, model_params: dict, verbose: bool = Fal
 
     Returns:
         None: This function only prints information and does not return a value.
+
+    Raises:
+        AssertionError: If an unsupported Hyperparameter type is given
     """
     if not verbose:
         # Minimal output for pytest runs
@@ -357,16 +368,18 @@ def _display_model_info(model_name: str, model_params: dict, verbose: bool = Fal
         numeric_params = []
 
         for hp in model_config.hyperparameters:
-            if hp.type == "fixed":
+            if isinstance(hp, FixedHyperparameter):
                 fixed_params.append(f"{hp.name}={hp.value}")
-            elif hp.type == "categorical":
+            elif isinstance(hp, CategoricalHyperparameter):
                 categorical_params.append(f"{hp.name}={hp.choices[0]} (choices: {hp.choices})")
-            elif hp.type in ["int", "float"]:
-                if hp.type == "int":
+            elif isinstance(hp, IntHyperparameter | FloatHyperparameter):
+                if isinstance(hp, IntHyperparameter):
                     default_val = int((hp.low + hp.high) / 2)
                 else:
                     default_val = np.sqrt(hp.low * hp.high) if hp.log else (hp.low + hp.high) / 2
                 numeric_params.append(f"{hp.name}={default_val:.4f} (range: {hp.low}-{hp.high}, log: {hp.log})")
+            else:
+                raise AssertionError(f"Unsupported Hyperparameter type: {type(hp)}.")
 
         # Add test overrides
         if model_config.n_jobs:

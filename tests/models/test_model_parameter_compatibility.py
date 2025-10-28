@@ -6,6 +6,12 @@ from typing import Any
 
 import pytest
 
+from octopus.models.hyperparameter import (
+    CategoricalHyperparameter,
+    FixedHyperparameter,
+    FloatHyperparameter,
+    IntHyperparameter,
+)
 from octopus.models.inventory import ModelInventory
 
 
@@ -25,16 +31,15 @@ def generate_param_combinations(model_name: str, max_combos: int = 20) -> list[d
 
     # Extract parameters from hyperparameters
     for hp in config.hyperparameters:
-        if hp.type == "fixed":
+        if isinstance(hp, FixedHyperparameter):
             params[hp.name] = hp.value
-        elif hp.type == "categorical":
+        elif isinstance(hp, CategoricalHyperparameter):
             categorical_choices[hp.name] = hp.choices
-        elif hp.type in ["int", "float"]:
+        elif isinstance(hp, IntHyperparameter | FloatHyperparameter):
             # Use boundary values for testing
-            if hp.type == "int":
-                params[hp.name] = hp.low  # Just use low value for simplicity
-            else:
-                params[hp.name] = hp.low
+            params[hp.name] = hp.low
+        else:
+            raise AssertionError(f"Unsupported Hyperparameter type: {type(hp)}.")
 
     # Add standard parameters
     if config.n_jobs:
@@ -120,12 +125,14 @@ def test_model_instantiation_with_default_params():
 
             # Use first choice for categorical, fixed values for fixed params
             for hp in config.hyperparameters:
-                if hp.type == "fixed":
+                if isinstance(hp, FixedHyperparameter):
                     params[hp.name] = hp.value
-                elif hp.type == "categorical" and hp.choices:
+                elif isinstance(hp, CategoricalHyperparameter) and hp.choices:
                     params[hp.name] = hp.choices[0]
-                elif hp.type in ["int", "float"]:
+                elif isinstance(hp, IntHyperparameter | FloatHyperparameter):
                     params[hp.name] = hp.low
+                else:
+                    raise AssertionError(f"Unsupported Hyperparameter type: {type(hp)}.")
 
             # Add standard parameters
             if config.n_jobs:

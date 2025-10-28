@@ -8,7 +8,13 @@ from attrs import define, field
 from octopus.exceptions import UnknownModelError
 
 from .config import ModelConfig
-from .hyperparameter import Hyperparameter
+from .hyperparameter import (
+    CategoricalHyperparameter,
+    FixedHyperparameter,
+    FloatHyperparameter,
+    Hyperparameter,
+    IntHyperparameter,
+)
 from .registry import ModelRegistry
 
 
@@ -103,7 +109,7 @@ class ModelInventory:
             parameter_name = hp.name
             unique_name = f"{hp.name}_{model_item.name}"
 
-            if hp.type == "int":
+            if isinstance(hp, IntHyperparameter):
                 if hp.step is not None:
                     params[parameter_name] = trial.suggest_int(name=unique_name, low=hp.low, high=hp.high, step=hp.step)
                 elif hp.log is not None:
@@ -111,7 +117,7 @@ class ModelInventory:
                 else:
                     params[parameter_name] = trial.suggest_int(name=unique_name, low=hp.low, high=hp.high)
 
-            elif hp.type == "float":
+            elif isinstance(hp, FloatHyperparameter):
                 if hp.step is not None:
                     params[parameter_name] = trial.suggest_float(
                         name=unique_name, low=hp.low, high=hp.high, step=hp.step
@@ -121,12 +127,13 @@ class ModelInventory:
                 else:
                     params[parameter_name] = trial.suggest_float(name=unique_name, low=hp.low, high=hp.high)
 
-            elif hp.type == "categorical":
+            elif isinstance(hp, CategoricalHyperparameter):
                 params[parameter_name] = trial.suggest_categorical(name=unique_name, choices=hp.choices)
-            elif hp.type == "fixed":
+
+            elif isinstance(hp, FixedHyperparameter):
                 params[parameter_name] = hp.value
             else:
-                raise ValueError(f"HP type '{hp.type}' not supported")
+                raise ValueError(f"HP type '{type(hp)}' not supported")
 
         if model_item.n_jobs is not None:
             params[model_item.n_jobs] = n_jobs

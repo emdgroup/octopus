@@ -28,6 +28,12 @@ try:
 except ImportError:
     pytest = None
 
+from octopus.models.hyperparameter import (
+    CategoricalHyperparameter,
+    FixedHyperparameter,
+    FloatHyperparameter,
+    IntHyperparameter,
+)
 from octopus.models.inventory import ModelInventory
 from octopus.modules.octo.training import Training
 
@@ -145,20 +151,22 @@ def get_default_model_params(model_name: str) -> dict:
 
     # Extract fixed parameters and reasonable defaults for others
     for hp in model_config.hyperparameters:
-        if hp.type == "fixed":
+        if isinstance(hp, FixedHyperparameter):
             params[hp.name] = hp.value
-        elif hp.type == "categorical":
+        elif isinstance(hp, CategoricalHyperparameter):
             # Use first choice as default
             params[hp.name] = hp.choices[0] if hp.choices else None
-        elif hp.type == "int":
+        elif isinstance(hp, IntHyperparameter):
             # Use middle value as default
             params[hp.name] = int((hp.low + hp.high) / 2)
-        elif hp.type == "float":
+        elif isinstance(hp, FloatHyperparameter):
             # Use middle value as default (geometric mean for log scale)
             if hp.log:
                 params[hp.name] = np.sqrt(hp.low * hp.high)
             else:
                 params[hp.name] = (hp.low + hp.high) / 2
+        else:
+            raise AssertionError(f"Unsupported Hyperparameter type: {type(hp)}.")
 
     # Add standard parameters
     if model_config.n_jobs:

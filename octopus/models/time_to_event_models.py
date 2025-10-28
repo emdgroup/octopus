@@ -1,7 +1,7 @@
 """Time to event models."""
 
 from .config import ModelConfig
-from .hyperparameter import Hyperparameter
+from .hyperparameter import FloatHyperparameter, IntHyperparameter
 from .registry import ModelRegistry
 
 
@@ -25,11 +25,11 @@ class ExtraTreesSurvModel:
             imputation_required=True,
             categorical_enabled=False,
             hyperparameters=[
-                Hyperparameter(type="int", name="max_depth", low=2, high=32),
-                Hyperparameter(type="int", name="min_samples_split", low=2, high=100),
-                Hyperparameter(type="int", name="min_samples_leaf", low=1, high=50),
-                Hyperparameter(type="float", name="max_features", low=0.1, high=1),
-                Hyperparameter(type="int", name="n_estimators", low=100, high=500, log=False),
+                IntHyperparameter(name="max_depth", low=2, high=32),
+                IntHyperparameter(name="min_samples_split", low=2, high=100),
+                IntHyperparameter(name="min_samples_leaf", low=1, high=50),
+                FloatHyperparameter(name="max_features", low=0.1, high=1),
+                IntHyperparameter(name="n_estimators", low=100, high=500, log=False),
             ],
             n_jobs="n_jobs",
             model_seed="random_state",

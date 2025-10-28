@@ -10,7 +10,7 @@ from sklearn.datasets import load_diabetes
 
 from octopus import OctoData, OctoML
 from octopus.config import ConfigManager, ConfigSequence, ConfigStudy
-from octopus.models.hyperparameter import Hyperparameter
+from octopus.models.hyperparameter import IntHyperparameter
 from octopus.modules import Octo
 
 ### Load the diabetes dataset
@@ -55,8 +55,8 @@ config_sequence = ConfigSequence(
             n_trials=3,
             hyperparameters={
                 "RandomForestRegressor": [
-                    Hyperparameter(type="int", name="max_depth", low=2, high=32),
-                    Hyperparameter(type="int", name="min_samples_split", low=2, high=100),
+                    IntHyperparameter(name="max_depth", low=2, high=32),
+                    IntHyperparameter(name="min_samples_split", low=2, high=100),
                 ]
             },
         ),

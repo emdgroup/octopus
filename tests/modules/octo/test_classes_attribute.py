@@ -5,6 +5,12 @@ import numpy as np
 import pandas as pd
 import pytest
 
+from octopus.models.hyperparameter import (
+    CategoricalHyperparameter,
+    FixedHyperparameter,
+    FloatHyperparameter,
+    IntHyperparameter,
+)
 from octopus.models.inventory import ModelInventory
 from octopus.modules.octo.training import Training
 
@@ -37,17 +43,19 @@ def get_default_params(model_name):
     params = {}
 
     for hp in config.hyperparameters:
-        if hp.type == "fixed":
+        if isinstance(hp, FixedHyperparameter):
             params[hp.name] = hp.value
-        elif hp.type == "categorical":
+        elif isinstance(hp, CategoricalHyperparameter):
             params[hp.name] = hp.choices[0] if hp.choices else None
-        elif hp.type == "int":
+        elif isinstance(hp, IntHyperparameter):
             params[hp.name] = int((hp.low + hp.high) / 2)
-        elif hp.type == "float":
+        elif isinstance(hp, FloatHyperparameter):
             if hp.log:
                 params[hp.name] = np.sqrt(hp.low * hp.high)
             else:
                 params[hp.name] = (hp.low + hp.high) / 2
+        else:
+            raise AssertionError(f"Unsupported Hyperparameter type: {type(hp)}.")
 
     if config.n_jobs:
         params[config.n_jobs] = 1

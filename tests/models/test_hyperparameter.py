@@ -2,70 +2,60 @@
 
 import pytest
 
-from octopus.models.hyperparameter import Hyperparameter
+from octopus.models.hyperparameter import (
+    CategoricalHyperparameter,
+    FixedHyperparameter,
+    FloatHyperparameter,
+    IntHyperparameter,
+)
 
 
 @pytest.mark.parametrize(
-    "hyperparameter_type, name, low, high, step, choices, log, value, expected_exception",
+    "hyperparameter_type, name, kwargs, expected_exception",
     [
         # Valid int hyperparameter
-        ("int", "para1", 1, 10, None, [], False, None, None),
+        (IntHyperparameter, "para1", {"low": 1, "high": 10, "step": None, "log": False, "value": None}, None),
+        # Invalid int hyperparameter: low > high
+        (IntHyperparameter, "para1", {"low": 10, "high": 1, "step": None, "log": False, "value": None}, ValueError),
         # Invalid int hyperparameter with step
-        ("int", "para1", 1, 10, -1, [], False, None, ValueError),
-        # Invalid int hyperparameter with choices
-        ("int", "para1", 1, 10, None, [1, 2, 3], False, None, ValueError),
+        (IntHyperparameter, "para1", {"low": 1, "high": 10, "step": -1, "log": False, "value": None}, ValueError),
         # Valid int hyperparameter step
-        ("int", "para1", 1, 10, 1, [], False, None, None),
-        # Vvalid int hyperparameter log
-        ("int", "para1", 1, 10, None, [], True, None, None),
+        (IntHyperparameter, "para1", {"low": 1, "high": 10, "step": 1, "log": False, "value": None}, None),
+        # Valid int hyperparameter log
+        (IntHyperparameter, "para1", {"low": 1, "high": 10, "step": None, "log": True, "value": None}, None),
         # Invalid int hyperparameter step and log selected
-        ("int", "para1", 1, 10, 1, [], True, None, ValueError),
+        (IntHyperparameter, "para1", {"low": 1, "high": 10, "step": 1, "log": True, "value": None}, ValueError),
         # Valid float hyperparameter
-        ("float", "para1", 0.1, 1.0, None, [], False, None, None),
+        (FloatHyperparameter, "para1", {"low": 0.1, "high": 1.0, "step": None, "log": False, "value": None}, None),
         # Invalid float hyperparameter with high less than low
-        ("float", "param1", 1.0, 0.1, None, [], False, None, ValueError),
-        # Invalid float hyperparameter with choices
-        ("float", "para1", 1, 10, None, [1, 2, 3], False, None, ValueError),
+        (
+            FloatHyperparameter,
+            "param1",
+            {"low": 1.0, "high": 0.1, "step": None, "log": False, "value": None},
+            ValueError,
+        ),
         # Valid float hyperparameter step
-        ("float", "para1", 1, 10, 1, [], False, None, None),
-        # Vvalid float hyperparameter log
-        ("float", "para1", 1, 10, None, [], True, None, None),
+        (FloatHyperparameter, "para1", {"low": 1, "high": 10, "step": 1, "log": False, "value": None}, None),
+        # Valid float hyperparameter log
+        (FloatHyperparameter, "para1", {"low": 1, "high": 10, "step": None, "log": True, "value": None}, None),
         # Invalid float hyperparameter step and log selected
-        ("float", "para1", 1, 10, 1, [], True, None, ValueError),
+        (FloatHyperparameter, "para1", {"low": 1, "high": 10, "step": 1, "log": True, "value": None}, ValueError),
         # Valid categorical hyperparameter
-        ("categorical", "para1", None, None, None, ["a", "b"], False, None, None),
+        (CategoricalHyperparameter, "para1", {"choices": ["a", "b"], "value": None}, None),
         # Invalid categorical hyperparameter without choices
-        ("categorical", "para1", None, None, None, [], False, None, ValueError),
+        (CategoricalHyperparameter, "para1", {"choices": [], "value": None}, ValueError),
+        # Invalid categorical hyperparameter with value not in choices
+        (CategoricalHyperparameter, "para1", {"choices": ["a", "b"], "value": "c"}, ValueError),
         # Valid fixed hyperparameter
-        ("fixed", "para1", None, None, None, [], False, 5, None),
+        (FixedHyperparameter, "para1", {"value": 5}, None),
         # Invalid fixed hyperparameter without value
-        ("fixed", "para1", None, None, None, [], False, None, ValueError),
-        # Invalid type
-        ("unknown", "para1", None, None, None, [], False, None, ValueError),
+        (FixedHyperparameter, "para1", {"value": None}, ValueError),
     ],
 )
-def test_validate_hyperparameters(hyperparameter_type, name, low, high, step, choices, log, value, expected_exception):
+def test_validate_hyperparameters(hyperparameter_type, name, kwargs, expected_exception):
     """Test validate hyperparameters."""
     if expected_exception:
         with pytest.raises(expected_exception):
-            Hyperparameter(
-                type=hyperparameter_type,
-                name=name,
-                low=low,
-                high=high,
-                step=step,
-                choices=choices,
-                log=log,
-                value=value,
-            )
+            hyperparameter_type(name=name, **kwargs)
     else:
-        Hyperparameter(
-            type=hyperparameter_type,
-            name=name,
-            low=low,
-            high=high,
-            step=step,
-            choices=choices,
-            log=log,
-            value=value,
-        )
+        hyperparameter_type(name=name, **kwargs)

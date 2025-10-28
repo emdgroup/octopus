@@ -3,14 +3,14 @@
 import pytest
 
 from octopus.models.config import ModelConfig
-from octopus.models.hyperparameter import Hyperparameter
+from octopus.models.hyperparameter import CategoricalHyperparameter, FloatHyperparameter
 
 
 def test_model_config_initialization():
     """Test initialization of ModelConfig."""
     hyperparameters = [
-        Hyperparameter(type="float", name="alpha", low=1e-5, high=1e5, log=True),
-        Hyperparameter(type="categorical", name="fit_intercept", choices=[True, False]),
+        FloatHyperparameter(name="alpha", low=1e-5, high=1e5, log=True),
+        CategoricalHyperparameter(name="fit_intercept", choices=[True, False]),
     ]
 
     model = ModelConfig(
@@ -36,8 +36,8 @@ def test_model_config_initialization():
 def test_model_config_with_conflict():
     """Test ModelConfig initialization with hyperparameter name conflict."""
     hyperparameters = [
-        Hyperparameter(type="float", name="n_jobs", low=1e-5, high=1e5, log=True),
-        Hyperparameter(type="categorical", name="fit_intercept", choices=[True, False]),
+        FloatHyperparameter(name="n_jobs", low=1e-5, high=1e5, log=True),
+        CategoricalHyperparameter(name="fit_intercept", choices=[True, False]),
     ]
 
     with pytest.raises(

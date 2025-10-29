@@ -1,6 +1,7 @@
 """Metric inventory."""
 
-from typing import Any
+from collections.abc import Callable
+from typing import Protocol
 
 from attrs import define, field
 
@@ -10,21 +11,29 @@ from .config import MetricConfig
 from .registry import MetricRegistry
 
 
+class SupportsGetMetricConfig(Protocol):
+    """Protocol for metric classes."""
+
+    @staticmethod
+    def get_metric_config():
+        """Get metric config."""
+        ...
+
+
 @define
 class MetricsInventory:
     """Metrics inventory."""
 
-    metrics: dict[str, Any] = field(factory=dict)
+    metrics: dict[str, SupportsGetMetricConfig] = field(factory=dict)
     _metric_configs: dict[str, MetricConfig] = field(factory=dict)
 
     def __attrs_post_init__(self):
         self.metrics = MetricRegistry.get_all_metrics()
 
-    def get_metric_config(self, name: str) -> MetricConfig | None:
+    def get_metric_config(self, name: str) -> MetricConfig:
         """Get metric config."""
         if name not in self._metric_configs:
-            metric_class = self.metrics.get(name)
-            if metric_class:
+            if metric_class := self.metrics.get(name):
                 config = metric_class.get_metric_config()
                 config.name = name
                 self._metric_configs[name] = config
@@ -38,16 +47,16 @@ class MetricsInventory:
 
     def get_inventory_item(self, name: str) -> MetricConfig:
         """Get the metric configuration for a given metric name."""
-        for item in self.metrics:
+        for item in self._metric_configs.values():
             if item.name == name:
                 return item
         raise ValueError(f"Metric item with name '{name}' not found")
 
-    def get_metric_by_name(self, name: str) -> type:
+    def get_metric_by_name(self, name: str) -> MetricConfig:
         """Get metric class by name."""
         return self.get_metric_config(name)
 
-    def get_metric_function(self, name: str) -> str:
+    def get_metric_function(self, name: str) -> Callable[..., float]:
         """Get metric function by name."""
         return self.get_metric_config(name).metric_function
 

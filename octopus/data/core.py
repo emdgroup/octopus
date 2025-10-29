@@ -3,6 +3,7 @@
 import gzip
 import json
 import pickle
+from pathlib import Path
 
 import pandas as pd
 from attrs import Factory, asdict, define, field, fields, validators
@@ -137,7 +138,7 @@ class OctoData:
 
         self.report = checker.generate_report()
 
-    def save_attributes_to_parquet(self, file_path: str) -> None:
+    def save_attributes_to_parquet(self, file_path: str | Path) -> None:
         """Save attributes to parquet.
 
         Note: health_check_config is saved separately using save_health_check_config().
@@ -188,7 +189,7 @@ class OctoData:
             config_dict = json.load(f)
         return HealthCheckConfig(**config_dict)
 
-    def to_pickle(self, file_path: str) -> None:
+    def to_pickle(self, file_path: str | Path):
         """Save object to a compressed pickle file.
 
         Args:
@@ -198,7 +199,7 @@ class OctoData:
             pickle.dump(self, file)
 
     @classmethod
-    def from_pickle(cls, file_path: str) -> "OctoData":
+    def from_pickle(cls, file_path: str | Path) -> "OctoData":
         """Load object to a compressed pickle file.
 
         Args:
@@ -206,6 +207,14 @@ class OctoData:
 
         Returns:
             OctoData: The loaded instance of OctoData.
+
+        Raises:
+            TypeError: If the file does not contain an OctoData instance.
         """
         with gzip.GzipFile(file_path, "rb") as file:
-            return pickle.load(file)
+            data = pickle.load(file)
+
+        if not isinstance(data, cls):
+            raise TypeError(f"Loaded object is not of type {cls.__name__}")
+
+        return data

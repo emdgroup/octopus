@@ -4,6 +4,7 @@
 # import logging
 # import gzip
 import pickle
+from pathlib import Path
 from statistics import mean
 from typing import Any
 
@@ -670,7 +671,7 @@ class BagBase(BaseEstimator):
         else:
             return "regressor"
 
-    def to_pickle(self, file_path: str) -> None:
+    def to_pickle(self, file_path: str | Path):
         """Save object to a compressed pickle file.
 
         Args:
@@ -682,7 +683,7 @@ class BagBase(BaseEstimator):
             pickle.dump(self, file)
 
     @classmethod
-    def from_pickle(cls, file_path: str) -> "BagBase":
+    def from_pickle(cls, file_path: str | Path) -> "BagBase":
         """Load object to a compressed pickle file.
 
         Args:
@@ -690,11 +691,19 @@ class BagBase(BaseEstimator):
 
         Returns:
             BagBase: The loaded instance of BagBase.
+
+        Raises:
+            TypeError: If the file does not contain an BagBase instance.
         """
         # with gzip.GzipFile(file_path, "rb") as file:
         #    return pickle.load(file)
         with lz4.frame.open(file_path, "rb") as file:
-            return pickle.load(file)
+            data = pickle.load(file)
+
+        if not isinstance(data, cls):
+            raise TypeError(f"Loaded object is not of type {cls.__name__}")
+
+        return data
 
 
 @define
@@ -719,8 +728,8 @@ class BagRegressor(BagBase, RegressorMixin):
         raise AttributeError("predict_proba is not available for regression tasks")
 
 
-def Bag(**kwargs: Any) -> BagClassifier | BagRegressor:
-    """Create appropriate Bag instance based on ml_type (factory function).
+class _BagFunction:
+    """Class to create appropriate Bag instance based on ml_type (factory function).
 
     Args:
         **kwargs: Arguments to pass to the Bag constructor
@@ -728,27 +737,35 @@ def Bag(**kwargs: Any) -> BagClassifier | BagRegressor:
     Returns:
         BagClassifier or BagRegressor: Appropriate Bag instance based on ml_type
     """
-    ml_type = kwargs.get("ml_type", "regression")
 
-    if ml_type in ["classification", "multiclass"]:
-        return BagClassifier(**kwargs)
-    else:
-        return BagRegressor(**kwargs)
+    def __call__(self, **kwargs: Any) -> BagClassifier | BagRegressor:
+        ml_type = kwargs.get("ml_type", "regression")
+
+        if ml_type in ["classification", "multiclass"]:
+            return BagClassifier(**kwargs)
+        else:
+            return BagRegressor(**kwargs)
+
+    @staticmethod
+    def from_pickle(file_path: str | Path) -> BagClassifier | BagRegressor:
+        """Load a Bag object from a compressed pickle file.
+
+        Args:
+            file_path: The path to the file to load the pickle data from.
+
+        Returns:
+            BagClassifier or BagRegressor: The loaded instance.
+
+        Raises:
+            TypeError: If the file does not contain an BagClassifier | BagRegressor instance.
+        """
+        with lz4.frame.open(file_path, "rb") as file:
+            data = pickle.load(file)
+
+        if not isinstance(data, BagClassifier | BagRegressor):
+            raise TypeError(f"Loaded object is not of type {BagClassifier | BagRegressor}")
+
+        return data
 
 
-# Add from_pickle as a static method to the factory function
-def _bag_from_pickle(file_path: str):
-    """Load a Bag object from a compressed pickle file.
-
-    Args:
-        file_path: The path to the file to load the pickle data from.
-
-    Returns:
-        BagClassifier or BagRegressor: The loaded instance.
-    """
-    with lz4.frame.open(file_path, "rb") as file:
-        return pickle.load(file)
-
-
-# Attach the from_pickle method to the Bag factory function
-Bag.from_pickle = _bag_from_pickle
+Bag = _BagFunction()

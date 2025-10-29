@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pandas as pd
 from attrs import define, field, validators
-from sklearn.model_selection import GridSearchCV, StratifiedKFold
+from sklearn.model_selection import BaseCrossValidator, GridSearchCV, StratifiedKFold
 
 from octopus.experiment import OctoExperiment
 from octopus.metrics.inventory import MetricsInventory
@@ -145,7 +145,7 @@ class SfsCore:
 
     def run_experiment(self):
         """Run SFS module on experiment."""
-        from octopus._optional.modules.sfs import SFS  # noqa: PLC0415
+        from octopus._optional.sfs import SFS  # noqa: PLC0415
 
         # run experiment and return updated experiment object
         # Configuration, define default model
@@ -172,6 +172,7 @@ class SfsCore:
         metric_config = metrics_inventory.get_metric_config(self.target_metric)
         scoring_type = metric_config.scorer_string
 
+        cv: int | BaseCrossValidator
         stratification_column = self.experiment.stratification_column
         if stratification_column:
             cv = StratifiedKFold(n_splits=self.config.cv, shuffle=True, random_state=42)

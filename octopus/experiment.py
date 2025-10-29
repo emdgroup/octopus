@@ -131,7 +131,7 @@ class OctoExperiment[ConfigType: BaseSequenceItem]:
 
         # get groups depending on threshold
         for threshold in auto_group_thresholds:
-            g = nx.Graph()
+            g: nx.Graph = nx.Graph()
             for i in range(len(feature_columns)):
                 for j in range(i + 1, len(feature_columns)):
                     if pos_corr_matrix[i, j] > threshold:

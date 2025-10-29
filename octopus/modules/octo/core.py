@@ -15,6 +15,7 @@ from octopus.logger import LogGroup, get_logger
 from octopus.modules.mrmr.core import maxrminr, relevance_fstats
 from octopus.modules.octo.bag import Bag
 from octopus.modules.octo.enssel import EnSel
+from octopus.modules.octo.module import Octo
 from octopus.modules.octo.objective_optuna import ObjectiveOptuna
 from octopus.modules.octo.training import Training
 from octopus.results import ModuleResults
@@ -24,7 +25,7 @@ logger = get_logger()
 
 
 @define
-class OctoCore:
+class OctoCoreGeneric[OctoConfigType: Octo]:
     """Manages and executes machine learning experiments.
 
     This class integrates all components necessary for conducting
@@ -56,7 +57,7 @@ class OctoCore:
         is incorporated to manage any discrepancies during the experiment phases.
     """
 
-    experiment: OctoExperiment = field(validator=[validators.instance_of(OctoExperiment)])
+    experiment: OctoExperiment[OctoConfigType] = field(validator=[validators.instance_of(OctoExperiment)])
     # model = field(default=None)
     data_splits: dict = field(default=Factory(dict), validator=[validators.instance_of(dict)])
 
@@ -443,3 +444,9 @@ class OctoCore:
             logger.warning("Best bag - all feature importances values are zero. This hints at a model related problem.")
 
         return True
+
+
+class OctoCore(OctoCoreGeneric[Octo]):
+    """Octo Core."""
+
+    pass

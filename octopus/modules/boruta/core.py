@@ -15,6 +15,7 @@ from octopus.experiment import OctoExperiment
 from octopus.metrics.inventory import MetricsInventory
 from octopus.metrics.utils import get_score_from_model
 from octopus.models.inventory import ModelInventory
+from octopus.modules.boruta.module import Boruta
 from octopus.results import ModuleResults
 
 # Ignore all Warnings
@@ -62,7 +63,7 @@ def get_param_grid(model_type):
 class BorutaCore:
     """Boruta Module."""
 
-    experiment: OctoExperiment = field(validator=[validators.instance_of(OctoExperiment)])
+    experiment: OctoExperiment[Boruta] = field(validator=[validators.instance_of(OctoExperiment)])
 
     @property
     def path_module(self) -> Path:
@@ -110,7 +111,7 @@ class BorutaCore:
         return self.experiment.configs.study.target_metric
 
     @property
-    def config(self) -> dict:
+    def config(self) -> Boruta:
         """Module configuration."""
         return self.experiment.ml_config
 

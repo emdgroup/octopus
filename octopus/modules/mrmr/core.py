@@ -14,6 +14,7 @@ from sklearn.feature_selection import f_classif, f_regression
 
 from octopus.experiment import OctoExperiment
 from octopus.logger import LogGroup, get_logger
+from octopus.modules.mrmr.module import Mrmr
 from octopus.modules.utils import rdc_correlation_matrix
 
 logger = get_logger()
@@ -23,7 +24,7 @@ logger = get_logger()
 class MrmrCore:
     """MRMR module."""
 
-    experiment: OctoExperiment = field(validator=[validators.instance_of(OctoExperiment)])
+    experiment: OctoExperiment[Mrmr] = field(validator=[validators.instance_of(OctoExperiment)])
 
     @property
     def data_traindev(self) -> pd.DataFrame:

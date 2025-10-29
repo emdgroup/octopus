@@ -17,6 +17,7 @@ from sklearn.feature_selection import (
 )
 
 from octopus.experiment import OctoExperiment
+from octopus.modules.roc.module import Roc
 from octopus.modules.utils import rdc_correlation_matrix
 
 # TOBEDONE
@@ -48,7 +49,7 @@ filter_inventory = {
 class RocCore:
     """Roc Module."""
 
-    experiment: OctoExperiment = field(validator=[validators.instance_of(OctoExperiment)])
+    experiment: OctoExperiment[Roc] = field(validator=[validators.instance_of(OctoExperiment)])
 
     feature_groups: list = field(init=False, validator=[validators.instance_of(list)])
 
@@ -83,7 +84,7 @@ class RocCore:
         return self.experiment.ml_type
 
     @property
-    def config(self) -> dict:
+    def config(self) -> Roc:
         """Module configuration."""
         return self.experiment.ml_config
 

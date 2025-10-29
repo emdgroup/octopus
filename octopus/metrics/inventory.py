@@ -1,13 +1,12 @@
 """Metric inventory."""
 
-from collections.abc import Callable
 from typing import Protocol
 
 from attrs import define, field
 
 from octopus.exceptions import UnknownMetricError
 
-from .config import MetricConfig
+from .config import MetricConfig, MetricFunction
 from .registry import MetricRegistry
 
 
@@ -56,7 +55,7 @@ class MetricsInventory:
         """Get metric class by name."""
         return self.get_metric_config(name)
 
-    def get_metric_function(self, name: str) -> Callable[..., float]:
+    def get_metric_function(self, name: str) -> MetricFunction:
         """Get metric function by name."""
         return self.get_metric_config(name).metric_function
 

@@ -2,6 +2,7 @@
 
 import re
 from itertools import combinations
+from typing import Literal
 
 import numpy as np
 import pandas as pd
@@ -147,8 +148,8 @@ class OctoDataHealthChecker:
 
     Attributes:
         data: The pandas DataFrame containing the dataset to be checked.
-        feature_columns: List of column names designated as features. Can be None.
-        target_columns: List of column names designated as targets. Can be None.
+        feature_columns: List of column names designated as features. Can be empty.
+        target_columns: List of column names designated as targets. Can be empty.
         row_id: Name of the column containing unique row identifiers. Can be None.
         sample_id: Name of the column containing sample identifiers. Can be None.
         stratification_column: Name of the column used for stratification. Can be None.
@@ -162,29 +163,19 @@ class OctoDataHealthChecker:
     data: pd.DataFrame = field(validator=[validators.instance_of(pd.DataFrame)])
     """DataFrame containing the dataset to check."""
 
-    feature_columns: list[str] | None = field(
-        validator=[validators.optional(validators.instance_of(list))],
-    )
+    feature_columns: list[str] = field(factory=list, validator=validators.instance_of(list))
     """List of feature column names."""
 
-    target_columns: list[str] | None = field(
-        validator=[validators.optional(validators.instance_of(list))],
-    )
+    target_columns: list[str] = field(factory=list, validator=validators.instance_of(list))
     """List of target column names."""
 
-    row_id: str | None = field(
-        validator=[validators.optional(validators.instance_of(str))],
-    )
+    row_id: str | None = field(default=None, validator=validators.optional(validators.instance_of(str)))
     """Name of the row ID column."""
 
-    sample_id: str | None = field(
-        validator=[validators.optional(validators.instance_of(str))],
-    )
+    sample_id: str | None = field(default=None, validator=validators.optional(validators.instance_of(str)))
     """Name of the sample ID column."""
 
-    stratification_column: str | None = field(
-        validator=[validators.optional(validators.instance_of(str))],
-    )
+    stratification_column: str | None = field(default=None, validator=validators.optional(validators.instance_of(str)))
     """Name of the stratification column."""
 
     config: HealthCheckConfig = field(
@@ -278,9 +269,9 @@ class OctoDataHealthChecker:
             self.row_id,
             self.stratification_column,
         ]
-        critical_columns = [col for col in critical_columns if col is not None]
+        critical_columns_not_none = [col for col in critical_columns if col is not None]
 
-        critical_missing = [col for col in critical_columns if missing_value_share_col.get(col, 0) > 0]
+        critical_missing = [col for col in critical_columns_not_none if missing_value_share_col.get(col, 0) > 0]
         if critical_missing:
             self.add_issue(
                 category="columns",
@@ -447,7 +438,7 @@ class OctoDataHealthChecker:
                 ),
             )
 
-    def _check_feature_feature_correlation(self, method: str = "spearman"):
+    def _check_feature_feature_correlation(self, method: Literal["pearson", "kendall", "spearman"] = "spearman"):
         """Detect highly correlated feature pairs.
 
         Calculates pairwise correlations between all numeric features and identifies
@@ -470,7 +461,7 @@ class OctoDataHealthChecker:
         numeric_features = self.data[self.feature_columns].select_dtypes(include=[float, int]).columns
         corr_matrix = self.data[numeric_features].corr(method=method)
 
-        highly_correlated = {}
+        highly_correlated: dict[str, set[str]] = {}
         for col in corr_matrix.columns:
             for row in corr_matrix.index:
                 if col != row and abs(corr_matrix.loc[row, col]) > threshold:
@@ -481,7 +472,7 @@ class OctoDataHealthChecker:
                     highly_correlated[col].add(row)
                     highly_correlated[row].add(col)
 
-        merged_groups = []
+        merged_groups: list[set[str]] = []
         for feature, correlated_features in highly_correlated.items():
             new_group = set(correlated_features) | {feature}
             merged = False
@@ -496,7 +487,7 @@ class OctoDataHealthChecker:
         for group in merged_groups:
             correlation_details = []
             for feat1, feat2 in combinations(sorted(group), 2):
-                corr_value = corr_matrix.loc[feat1, feat2]
+                corr_value: float = corr_matrix.loc[feat1, feat2]  # type: ignore
                 if abs(corr_value) > threshold:
                     correlation_details.append(f"{feat1} - {feat2} ({corr_value:.2f})")
 
@@ -522,7 +513,7 @@ class OctoDataHealthChecker:
             This check is more strict than correlation checking - it identifies
             features that are 100% identical, not just highly correlated.
         """
-        identical_features = {col: [] for col in self.feature_columns}
+        identical_features: dict[str, list[str]] = {col: [] for col in self.feature_columns}
 
         for col in self.feature_columns:
             for other_col in self.feature_columns:
@@ -883,7 +874,7 @@ class OctoDataHealthChecker:
 
             for feature in numeric_features:
                 try:
-                    correlation = self.data[[feature, target_col]].corr().loc[feature, target_col]
+                    correlation: float = self.data[[feature, target_col]].corr().loc[feature, target_col]  # type: ignore
 
                     if pd.notna(correlation) and abs(correlation) > threshold:
                         suspicious_features[feature] = correlation
@@ -944,13 +935,13 @@ class OctoDataHealthChecker:
                     continue
 
             try:
-                target_data = self.data[target_col].dropna()
+                target_data: pd.Series[float | int] = self.data[target_col].dropna()
 
                 if len(target_data) < 3:
                     continue
 
-                skewness = target_data.skew()
-                kurtosis = target_data.kurtosis()
+                skewness: float = target_data.skew()  # type: ignore
+                kurtosis: float = target_data.kurtosis()  # type: ignore
 
                 stats = {
                     "mean": target_data.mean(),

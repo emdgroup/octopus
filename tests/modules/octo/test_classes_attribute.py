@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Test that classification models have classes_ attribute after fitting."""
 
 import numpy as np

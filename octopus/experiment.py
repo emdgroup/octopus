@@ -4,6 +4,7 @@ import gzip
 import logging
 import pickle
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import networkx as nx
 import numpy as np
@@ -11,11 +12,15 @@ import pandas as pd
 import scipy.stats
 from attrs import Factory, define, field, validators
 
+from octopus.config.base_sequence_item import BaseSequenceItem
 from octopus.config.core import OctoConfig
+
+if TYPE_CHECKING:
+    from octopus.results import ModuleResults
 
 
 @define
-class OctoExperiment:
+class OctoExperiment[ConfigType: BaseSequenceItem]:
     """Experiment."""
 
     id: str = field(validator=[validators.instance_of(str)])
@@ -29,7 +34,7 @@ class OctoExperiment:
     )
     """Identifier for the experiment."""
 
-    sequence_id: int = field(
+    sequence_id: int | None = field(
         validator=validators.optional(
             validators.and_(
                 validators.instance_of(int),  # Ensure it's an int if not None
@@ -39,7 +44,7 @@ class OctoExperiment:
     )
     """Identifier for the sequence item."""
 
-    input_sequence_id: int = field(
+    input_sequence_id: int | None = field(
         validator=validators.optional(
             validators.and_(
                 validators.instance_of(int),  # Ensure it's an int if not None
@@ -49,9 +54,7 @@ class OctoExperiment:
     )
     """Identifier for the input sequence item."""
 
-    path_sequence_item: Path = field(
-        validator=validators.optional(validators.instance_of(Path))  # Allow None or Path
-    )
+    path_sequence_item: Path | None = field(validator=validators.optional(validators.instance_of(Path)))
     """File system path to the sequence item."""
 
     configs: OctoConfig = field(validator=[validators.instance_of(OctoConfig)])
@@ -88,7 +91,7 @@ class OctoExperiment:
     num_assigned_cpus: int = field(init=False, default=0, validator=[validators.instance_of(int)])
     """Number of CPUs assigned to the experiment."""
 
-    ml_config: dict = field(init=False, default=None)
+    ml_config: ConfigType = field(init=False, default=None)
     """Configuration settings for the module used by the sequence item."""
 
     selected_features: list = field(default=Factory(list), validator=[validators.instance_of(list)])
@@ -97,10 +100,10 @@ class OctoExperiment:
     feature_groups: dict = field(default=Factory(dict), validator=[validators.instance_of(dict)])
     """Groupings of features based on correlation analysis."""
 
-    results: dict = field(default=Factory(dict), validator=[validators.instance_of(dict)])
+    results: dict[str, "ModuleResults"] = field(default=Factory(dict), validator=[validators.instance_of(dict)])
     """Results of the experiment, keyed by result type."""
 
-    prior_results: dict = field(default=Factory(dict), validator=[validators.instance_of(dict)])
+    prior_results: dict[str, "ModuleResults"] = field(default=Factory(dict), validator=[validators.instance_of(dict)])
     """Results of the experiment used as input, keyed by result type."""
 
     @property

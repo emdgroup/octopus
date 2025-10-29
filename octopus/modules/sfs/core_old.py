@@ -15,6 +15,7 @@ from sklearn.model_selection import GridSearchCV, StratifiedKFold, cross_val_sco
 from octopus.experiment import OctoExperiment
 from octopus.metrics.utils import get_score_from_model
 from octopus.models.models_inventory import model_inventory
+from octopus.modules.sfs.module import Sfs
 from octopus.results import ModuleResults
 
 # Ignore all Warnings
@@ -87,7 +88,7 @@ def get_param_grid(model_type):
 class SfsCore:
     """SFS Module."""
 
-    experiment: OctoExperiment = field(validator=[validators.instance_of(OctoExperiment)])
+    experiment: OctoExperiment[Sfs] = field(validator=[validators.instance_of(OctoExperiment)])
 
     @property
     def path_module(self) -> Path:
@@ -135,7 +136,7 @@ class SfsCore:
         return self.experiment.configs.study.target_metric
 
     @property
-    def config(self) -> dict:
+    def config(self) -> Sfs:
         """Module configuration."""
         return self.experiment.ml_config
 

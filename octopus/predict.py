@@ -57,7 +57,7 @@ class OctoPredict:
     """Results."""
 
     @property
-    def config(self) -> dict:
+    def config(self) -> OctoData:
         """Study configuration."""
         return OctoData.from_pickle(self.study_path.joinpath("config", "config.pkl"))
 

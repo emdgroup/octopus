@@ -155,13 +155,18 @@ class OctoExperiment[ConfigType: BaseSequenceItem]:
 
         return {f"group{i}": group for i, group in enumerate(auto_groups_unique)}
 
-    def to_pickle(self, file_path: str) -> None:
+    def to_pickle(self, file_path: str | Path):
         """Save object to a compressed pickle file."""
         with gzip.GzipFile(file_path, "wb") as file:
             pickle.dump(self, file)
 
     @classmethod
-    def from_pickle(cls, file_path: str) -> "OctoExperiment":
+    def from_pickle(cls, file_path: str | Path) -> "OctoExperiment":
         """Load object from a compressed pickle file."""
         with gzip.GzipFile(file_path, "rb") as file:
-            return pickle.load(file)
+            data = pickle.load(file)
+
+        if not isinstance(data, cls):
+            raise TypeError(f"Loaded object is not of type {cls.__name__}")
+
+        return data

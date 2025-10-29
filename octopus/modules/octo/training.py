@@ -4,6 +4,7 @@ import copy
 import gzip
 import math
 import pickle
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -846,7 +847,7 @@ class Training:
         x_processed = self.preprocessing_pipeline.transform(x)
         return self.model.predict_proba(x_processed)
 
-    def to_pickle(self, file_path: str) -> None:
+    def to_pickle(self, file_path: str | Path):
         """Save object to a compressed pickle file."""
         with gzip.GzipFile(file_path, "wb") as file:
             pickle.dump(self, file)
@@ -874,7 +875,12 @@ class Training:
             ) from e
 
     @classmethod
-    def from_pickle(cls, file_path: str) -> "Training":
+    def from_pickle(cls, file_path: str | Path) -> "Training":
         """Load object from a compressed pickle file."""
         with gzip.GzipFile(file_path, "rb") as file:
-            return pickle.load(file)
+            data = pickle.load(file)
+
+        if not isinstance(data, cls):
+            raise TypeError(f"Loaded object is not of type {cls.__name__}")
+
+        return data

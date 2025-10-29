@@ -25,7 +25,6 @@ class OctoConfig:
     """Main configuration class that holds all other configurations."""
 
     study: ConfigStudy = field(
-        factory=ConfigStudy,
         validator=[validators.instance_of(ConfigStudy), validate_config_study],
     )
     """Configuration for study parameters."""
@@ -36,7 +35,7 @@ class OctoConfig:
     sequence: ConfigSequence = field(factory=ConfigSequence, validator=[validators.instance_of(ConfigSequence)])
     """Configuration for sequence parameters."""
 
-    def to_pickle(self, file_path: str) -> None:
+    def to_pickle(self, file_path: str | Path):
         """Save object to a compressed pickle file.
 
         Args:
@@ -46,7 +45,7 @@ class OctoConfig:
             pickle.dump(self, file)
 
     @classmethod
-    def from_pickle(cls, file_path: str) -> "OctoConfig":
+    def from_pickle(cls, file_path: str | Path) -> "OctoConfig":
         """Load object from a compressed pickle file.
 
         Args:
@@ -55,9 +54,17 @@ class OctoConfig:
 
         Returns:
             OctoConfig: The loaded instance of OctoConfig.
+
+        Raises:
+            TypeError: If the file does not contain an OctoConfig instance.
         """
         with gzip.GzipFile(file_path, "rb") as file:
-            return pickle.load(file)
+            data = pickle.load(file)
+
+        if not isinstance(data, cls):
+            raise TypeError(f"Loaded object is not of type {cls.__name__}")
+
+        return data
 
     @classmethod
     def from_json(cls, config_dir: Path) -> "OctoConfig":

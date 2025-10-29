@@ -1,5 +1,7 @@
 """Regression metrics."""
 
+import math
+
 import numpy as np
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 
@@ -17,7 +19,7 @@ def root_mean_squared_error(y_true: np.ndarray, y_pred: np.ndarray) -> float:
     Returns:
         float: RMSE value
     """
-    return np.sqrt(mean_squared_error(y_true, y_pred))
+    return math.sqrt(mean_squared_error(y_true, y_pred))
 
 
 @MetricRegistry.register("R2")

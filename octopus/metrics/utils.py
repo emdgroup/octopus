@@ -77,7 +77,10 @@ def get_performance_from_model(
     if input_data.empty or not all(col in input_data.columns for col in feature_columns):
         raise ValueError("Input data is empty or does not contain the required feature columns.")
 
-    # Get metric configuration
+    # Get target column
+    target_col = list(target_assignments.values())[0]  # TODO: how/ why is the first target assignment special?
+    target = data[target_col]
+
     metric_config = metrics_inventory.get_metric_config(target_metric)
     metric_function = metrics_inventory.get_metric_function(target_metric)
     ml_type = metric_config.ml_type
@@ -88,7 +91,7 @@ def get_performance_from_model(
         estimate = model.predict(data[feature_columns])
         event_time = data[target_assignments["duration"]].astype(float)
         event_indicator = data[target_assignments["event"]].astype(bool)
-        return float(metric_function(event_indicator, event_time, estimate)[0])
+        performance = metric_function(event_indicator, event_time, estimate)
 
     # Get target for non-time-to-event tasks
     target_col = list(target_assignments.values())[0]
@@ -133,12 +136,12 @@ def get_performance_from_model(
 
 
 def get_performance_from_predictions(
-    predictions: dict,
+    predictions: dict[str, dict[str, pd.DataFrame]],
     target_metric: str,
     target_assignments: dict,
     threshold: float = 0.5,
     positive_class: int | str | None = None,
-) -> dict:
+) -> dict[str, dict[str, float]]:
     """Calculate model performance from predictions dict (from bag.get_predictions()).
 
     Args:
@@ -164,7 +167,7 @@ def get_performance_from_predictions(
     ml_type = metric_config.ml_type
     prediction_type = metric_config.prediction_type
 
-    performance = {}
+    performance: dict[str, dict[str, float]] = {}
 
     for training_id, partitions in predictions.items():
         performance[training_id] = {}
@@ -175,7 +178,7 @@ def get_performance_from_predictions(
                 estimate = pred_df["prediction"]
                 event_time = pred_df[target_assignments["duration"]].astype(float)
                 event_indicator = pred_df[target_assignments["event"]].astype(bool)
-                perf_value = float(metric_function(event_indicator, event_time, estimate)[0])
+                perf_value = metric_function(event_indicator, event_time, estimate)
 
             else:
                 # Get target for non-time-to-event tasks
@@ -195,15 +198,30 @@ def get_performance_from_predictions(
                         predictions_binary = (probabilities >= threshold).astype(int)
                         perf_value = float(metric_function(target, predictions_binary))
 
-                # Multiclass classification
-                elif ml_type == "multiclass":
-                    if prediction_type == "predict_proba":
-                        prob_columns = _get_probability_columns(pred_df, target_col)
-                        probabilities = pred_df[prob_columns].values
-                        perf_value = float(metric_function(target, probabilities))
-                    else:
-                        predictions_class = pred_df["prediction"].astype(int)
-                        perf_value = float(metric_function(target, predictions_class))
+            elif ml_type == "multiclass":
+                if prediction_type == "predict_proba":
+                    # Probability columns are class labels (integers: 0, 1, 2, ...)
+                    # They should form a contiguous block of consecutive integers starting from 0
+                    # Filter to only int type columns, excluding target and prediction
+                    prob_columns = [
+                        col for col in pred_df.columns if isinstance(col, int) and col not in [target_col, "prediction"]
+                    ]
+
+                    # Additional validation: ensure they form a contiguous sequence starting from 0
+                    if prob_columns:
+                        prob_columns_sorted = sorted(prob_columns)
+                        expected_sequence = list(range(len(prob_columns_sorted)))
+                        if prob_columns_sorted != expected_sequence:
+                            raise ValueError(
+                                f"Probability columns must be consecutive integers starting from 0. "
+                                f"Found: {prob_columns_sorted}, expected: {expected_sequence}"
+                            )
+
+                    probabilities = pred_df[prob_columns].to_numpy()
+                    perf_value = metric_function(target, probabilities)
+                else:
+                    predictions_class = pred_df["prediction"].astype(int)
+                    perf_value = metric_function(target, predictions_class)
 
                 # Regression
                 elif ml_type == "regression":
@@ -222,13 +240,13 @@ def get_performance_from_predictions(
 
 
 def get_score_from_prediction(
-    predictions: dict,
+    predictions: dict[str, dict[str, pd.DataFrame]],
     target_metric: str,
     target_assignments: dict,
     threshold: float = 0.5,
     positive_class: int | str | None = None,
-) -> dict:
-    """Calculate scores from predictions with optimization direction applied.
+) -> dict[str, dict[str, float]]:
+    """Calculate model performance scores from predictions dict with optimization direction applied.
 
     Converts performance values to scores by applying the metric's optimization direction.
     For 'maximize' metrics, score = performance. For 'minimize' metrics, score = -performance.
@@ -253,7 +271,7 @@ def get_score_from_prediction(
     )
 
     # Convert performance to score based on optimization direction
-    scores = {}
+    scores: dict[str, dict[str, float]] = {}
     direction = metrics_inventory.get_direction(target_metric)
 
     for training_id, partitions in performance.items():

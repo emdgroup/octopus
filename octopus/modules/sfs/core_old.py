@@ -14,7 +14,7 @@ from sklearn.model_selection import GridSearchCV, StratifiedKFold, cross_val_sco
 
 from octopus.experiment import OctoExperiment
 from octopus.metrics.utils import get_score_from_model
-from octopus.models.models_inventory import model_inventory
+from octopus.models.inventory import ModelInventory
 from octopus.modules.sfs.module import Sfs
 from octopus.results import ModuleResults
 
@@ -175,7 +175,7 @@ class SfsCore:
         print("Model used:", model_type)
 
         # set up model and scoring type
-        model = model_inventory[model_type]["model"](random_state=42)
+        model = ModelInventory().get_model_instance(model_type, {"random_state": 42})
         scoring_type = scorer_string_inventory[self.target_metric]
 
         stratification_column = self.experiment.stratification_column

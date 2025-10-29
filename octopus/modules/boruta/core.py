@@ -116,12 +116,12 @@ class BorutaCore:
         return self.experiment.ml_config
 
     @property
-    def feature_columns(self) -> pd.DataFrame:
+    def feature_columns(self) -> list[str]:
         """Feature Columns."""
         return self.experiment.feature_columns
 
     @property
-    def stratification_column(self) -> list:
+    def stratification_column(self) -> str | None:
         """Stratification Column."""
         return self.experiment.stratification_column
 

@@ -11,7 +11,7 @@ class ModuleResults:
     id: str = field(validator=[validators.instance_of(str)])
     """Results str id."""
 
-    experiment_id: int = field(
+    experiment_id: int | None = field(
         validator=validators.optional(
             validators.and_(
                 validators.instance_of(int),  # Ensure it's an int if not None
@@ -21,7 +21,7 @@ class ModuleResults:
     )
     """Experiment id."""
 
-    sequence_id: int = field(
+    sequence_id: int | None = field(
         validator=validators.optional(
             validators.and_(
                 validators.instance_of(int),  # Ensure it's an int if not None

@@ -1,11 +1,11 @@
 """Machine learning models config."""
 
-from attrs import define, field, validators
+from attrs import Attribute, define, field, validators
 
 from octopus.models.hyperparameter import Hyperparameter
 
 
-def validate_hyperparameters(instance: "ModelConfig", attribute: str, value: list[Hyperparameter]) -> None:
+def validate_hyperparameters(instance: "ModelConfig", attribute: Attribute, value: list[Hyperparameter]) -> None:
     """Validate hyperparameters.
 
     Make sure that the hyperparameters do not contain names

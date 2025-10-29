@@ -60,3 +60,4 @@ htmlcov
 *.tfevents
 .env*
 env*
+*.code-workspace

@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Comprehensive Model Fitted Validation Test Suite for Training Class.
 
 This test suite validates the _validate_model_trained method across all available models:

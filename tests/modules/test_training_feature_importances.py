@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Comprehensive Feature Importance Test Suite for Training Class.
 
 This test suite validates all feature importance methods across all available models:

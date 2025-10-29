@@ -130,7 +130,7 @@ class SfsCore:
         return self.experiment.ml_config
 
     @property
-    def stratification_column(self) -> list:
+    def stratification_column(self) -> str | None:
         """Stratification Column."""
         return self.experiment.stratification_column
 

@@ -28,7 +28,7 @@ class ModelInventory:
     def __attrs_post_init__(self):
         self.models = ModelRegistry.get_all_models()
 
-    def get_model_config(self, name: str) -> ModelConfig | None:
+    def get_model_config(self, name: str) -> ModelConfig:
         """Get model config."""
         if name not in self._model_configs:
             model_class = self.models.get(name)
@@ -42,7 +42,7 @@ class ModelInventory:
                 )
         return self._model_configs[name]
 
-    def get_model_by_name(self, name: str) -> ModelConfig | None:
+    def get_model_by_name(self, name: str) -> ModelConfig:
         """Get model configuration by name.
 
         Args:

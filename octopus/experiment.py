@@ -66,10 +66,10 @@ class OctoExperiment[ConfigType: BaseSequenceItem]:
     row_column: str = field(validator=[validators.instance_of(str)])
     """Column name used as row identifier."""
 
-    feature_columns: list = field(validator=[validators.instance_of(list)])
+    feature_columns: list[str] = field(validator=[validators.instance_of(list)])
     """List of column names used as features in the experiment."""
 
-    target_assignments: dict = field(validator=[validators.instance_of(dict)])
+    target_assignments: dict[str, str] = field(validator=[validators.instance_of(dict)])
     """Mapping of target variables to their assignments."""
 
     data_traindev: pd.DataFrame = field(validator=[validators.instance_of(pd.DataFrame)])
@@ -78,11 +78,8 @@ class OctoExperiment[ConfigType: BaseSequenceItem]:
     data_test: pd.DataFrame = field(validator=[validators.instance_of(pd.DataFrame)])
     """DataFrame containing test data."""
 
-    stratification_column: str | None = field(
-        default=Factory(lambda: None),
-        validator=validators.optional(validators.instance_of(str)),
-    )
-    "Column name used for stratification, if applicable."
+    stratification_column: str | None = field(default=None, validator=validators.optional(validators.instance_of(str)))
+    """Column name used for stratification, if applicable."""
 
     ml_module: str = field(init=False, default="", validator=[validators.instance_of(str)])
     """Name of the machine learning module used."""

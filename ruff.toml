@@ -3,7 +3,7 @@ target-version = "py312"
 respect-gitignore = true
 
 [lint.per-file-ignores]
-"examples/*" = [ 
+"examples/*" = [
     "E266",    # Multiple # signs per row
     "E501",    # Line too long
     "D100",    # Missing module docstrings

@@ -131,7 +131,7 @@ class SfsCore:
         return self.experiment.target_assignments
 
     @property
-    def target_metric(self) -> str:
+    def target_metric(self) -> str | list[str]:
         """Target metric."""
         return self.experiment.configs.study.target_metric
 
@@ -178,6 +178,7 @@ class SfsCore:
         model = ModelInventory().get_model_instance(model_type, {"random_state": 42})
         scoring_type = scorer_string_inventory[self.target_metric]
 
+        cv: int | StratifiedKFold
         stratification_column = self.experiment.stratification_column
         if stratification_column:
             cv = StratifiedKFold(n_splits=self.config.cv, shuffle=True, random_state=42)

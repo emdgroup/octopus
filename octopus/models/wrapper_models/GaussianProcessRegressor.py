@@ -1,7 +1,7 @@
 """Wrapper for Gaussian Process Regressor."""
 
 from collections.abc import Callable
-from typing import Any
+from typing import Any, Literal
 
 from sklearn.base import BaseEstimator, RegressorMixin
 from sklearn.gaussian_process import GaussianProcessRegressor
@@ -16,9 +16,9 @@ class GPRegressorWrapper(RegressorMixin, BaseEstimator):
 
     def __init__(
         self,
-        kernel: str | Kernel = "RBF",
+        kernel: Literal["RBF", "Matern", "RationalQuadratic"] | Kernel = "RBF",
         alpha: float = 1e-10,
-        optimizer: str | Callable | None = "fmin_l_bfgs_b",
+        optimizer: Literal["fmin_l_bfgs_b"] | Callable | None = "fmin_l_bfgs_b",
         n_restarts_optimizer: int = 0,
         normalize_y: bool = False,
         copy_X_train: bool = True,
@@ -54,7 +54,7 @@ class GPRegressorWrapper(RegressorMixin, BaseEstimator):
         X = check_array(X)
         return self.model_.predict(X)
 
-    def _get_kernel(self, kernel_str: str | Kernel) -> Kernel:
+    def _get_kernel(self, kernel_str: Literal["RBF", "Matern", "RationalQuadratic"] | Kernel) -> Kernel:
         """Get the kernel object based on the kernel string."""
         if isinstance(kernel_str, Kernel):
             return kernel_str

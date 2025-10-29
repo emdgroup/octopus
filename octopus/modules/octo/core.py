@@ -139,8 +139,8 @@ class OctoCoreGeneric[OctoConfigType: Octo]:
         # calculate MRMR features for all feature_numbers
         self.mrmr_features = maxrminr(
             features=features,
-            fi_df=re_df,
-            n_features_lst=feature_numbers,
+            relevance=re_df,
+            requested_feature_counts=feature_numbers,
             correlation_type="spearman",
         )
         # add original features

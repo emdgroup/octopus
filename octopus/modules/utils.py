@@ -13,6 +13,7 @@ from attrs import define, field, validators
 from scipy.stats import rankdata
 
 from octopus.metrics.utils import get_score_from_model
+from octopus.models.config import BaseModel
 
 
 @define
@@ -21,7 +22,7 @@ class ExperimentInfo:
 
     id: int | str = field(validator=validators.instance_of((int, str)))
     """Experiment id."""
-    model: type  # TODO: BaseModel = field(validator=validators.instance_of(BaseModel))
+    model: BaseModel
     """Model Name."""
     data_traindev: pd.DataFrame = field(validator=validators.instance_of(pd.DataFrame))
     """Train/Dev dataset."""

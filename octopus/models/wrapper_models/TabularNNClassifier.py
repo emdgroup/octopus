@@ -54,7 +54,7 @@ class TabularNNClassifier(ClassifierMixin, BaseEstimator):
         self.optimizer = optimizer
         self.random_state = random_state
 
-    def _detect_categorical_columns(self, X: Any) -> tuple[list[str], list[str]]:
+    def _detect_categorical_columns(self, X: Any) -> tuple[list[str], list[str] | list[int]]:
         """Detect categorical columns from DataFrame.
 
         Args:
@@ -340,6 +340,7 @@ class TabularNNClassificationModel(nn.Module):
         prev_size = input_dim
         for hidden_size in hidden_sizes:
             # Create new activation instance for each layer
+            activation_fn: nn.Module
             if activation == "elu":
                 activation_fn = nn.ELU()
             else:

@@ -23,7 +23,7 @@ class Boruta(BaseSequenceItem):
     perc: int = field(validator=[validators.instance_of(int)], default=100)
     """Percentile (threshold) for comparison between shadow and real features."""
 
-    alpha: int = field(validator=[validators.instance_of(float)], default=0.05)
+    alpha: float = field(validator=[validators.instance_of(float)], default=0.05)
     """Level at which the corrected p-values will get rejected."""
 
     # two_step: bool = field(

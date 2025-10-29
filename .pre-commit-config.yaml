@@ -2,6 +2,21 @@
 # (pre-commit, environment.yml, requirements.txt, pyproject.toml, ...)
 
 repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: check-merge-conflict
+      - id: debug-statements
+      - id: mixed-line-ending
+        exclude: tests/resources
+      - id: check-case-conflict
+      - id: trailing-whitespace
+        exclude: tests/resources
+      - id: end-of-file-fixer
+        exclude: tests/resources
+      - id: check-executables-have-shebangs
+      - id: check-shebang-scripts-are-executable
+      # - id: check-yaml
   - repo: https://github.com/pycqa/flake8
     rev: 7.3.0
     hooks:
@@ -27,3 +42,34 @@ repos:
     hooks:
       - id: pyupgrade
         args: [--py312-plus]
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: "v1.18.2"
+    hooks:
+      - id: mypy
+        exclude: ^datasets/|examples/|tests/|studies/
+        additional_dependencies:
+          - types-networkx
+          - pandas-stubs
+          - attrs
+          - ray
+          - numpy
+          - scikit-learn-stubs
+          - optuna
+          - pytest
+          #- mlxtend
+          - scipy-stubs
+          - joblib-stubs
+          #- shap
+          #- xgboost
+          #- catboost
+          #- lz4
+          #- autogluon
+          - polars
+          - plotly-stubs
+          - duckdb
+          - altair
+          - marimo
+          - rapidfuzz
+        #- scikit-survival
+        #- tabpfn
+        #- boruta

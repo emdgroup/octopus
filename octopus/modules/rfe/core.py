@@ -14,6 +14,7 @@ from octopus.experiment import OctoExperiment
 from octopus.metrics.inventory import MetricsInventory
 from octopus.metrics.utils import get_score_from_model
 from octopus.models.inventory import ModelInventory
+from octopus.modules.rfe.module import Rfe
 from octopus.results import ModuleResults
 
 supported_models = {
@@ -106,7 +107,7 @@ def get_param_grid(model_type):
 class RfeCore:
     """RFE Module."""
 
-    experiment: OctoExperiment = field(validator=[validators.instance_of(OctoExperiment)])
+    experiment: OctoExperiment[Rfe] = field(validator=[validators.instance_of(OctoExperiment)])
 
     @property
     def path_module(self) -> Path:
@@ -154,7 +155,7 @@ class RfeCore:
         return self.experiment.configs.study.target_metric
 
     @property
-    def config(self) -> dict:
+    def config(self) -> Rfe:
         """Module configuration."""
         return self.experiment.ml_config
 

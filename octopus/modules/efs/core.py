@@ -22,6 +22,7 @@ from octopus.experiment import OctoExperiment
 from octopus.metrics import metrics_inventory
 from octopus.metrics.inventory import MetricsInventory
 from octopus.models.inventory import ModelInventory
+from octopus.modules.efs.module import Efs
 from octopus.results import ModuleResults
 
 supported_models = {
@@ -85,7 +86,7 @@ def get_param_grid(model_type):
 class EfsCore:
     """EFS Module."""
 
-    experiment: OctoExperiment = field(validator=[validators.instance_of(OctoExperiment)])
+    experiment: OctoExperiment[Efs] = field(validator=[validators.instance_of(OctoExperiment)])
 
     model_table: pd.DataFrame = field(
         init=False,
@@ -140,7 +141,7 @@ class EfsCore:
         return self.experiment.data_test[self.experiment.target_assignments.values()]
 
     @property
-    def config(self) -> dict:
+    def config(self) -> Efs:
         """Module configuration."""
         return self.experiment.ml_config
 

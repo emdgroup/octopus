@@ -7,7 +7,8 @@ import pandas as pd
 from attrs import Factory, define, field, validators
 
 from octopus.modules.octo.bag import Bag
-from octopus.modules.octo.core import OctoCore
+from octopus.modules.octo.core import OctoCoreGeneric
+from octopus.modules.rfe2.module import Rfe2
 from octopus.results import ModuleResults
 
 # TOBEDONE
@@ -29,7 +30,7 @@ from octopus.results import ModuleResults
 
 
 @define
-class Rfe2Core(OctoCore):
+class Rfe2Core(OctoCoreGeneric[Rfe2]):
     """Rfe2 Core."""
 
     # Optional attribute (with default value)
@@ -41,7 +42,7 @@ class Rfe2Core(OctoCore):
     """RFE results dataframe."""
 
     @property
-    def config(self) -> dict:
+    def config(self) -> Rfe2:
         """Module configuration."""
         return self.experiment.ml_config
 

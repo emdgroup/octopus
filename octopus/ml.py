@@ -108,7 +108,7 @@ class OctoML:
         warning_issues = False
 
         # Check if report is empty (no issues detected)
-        if self.data.report.empty:
+        if self.data.report is None or self.data.report.empty:
             return
 
         df_sorted = self.data.report.sort_values(

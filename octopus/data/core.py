@@ -4,6 +4,7 @@ import gzip
 import json
 import pickle
 from pathlib import Path
+from typing import Literal
 
 import pandas as pd
 from attrs import Factory, asdict, define, field, fields, validators
@@ -33,8 +34,8 @@ class OctoData:
     only one target is allowed. For time-to-event, two targets need to be provided.
     """
 
-    datasplit_type: str = field(
-        validator=[validators.in_([None, "sample", "group_features", "group_sample_and_features"])]
+    datasplit_type: Literal["sample", "group_features", "group_sample_and_features"] | None = field(
+        validator=validators.optional(validators.in_(["sample", "group_features", "group_sample_and_features"]))
     )
     """Type of datasplit. Allowed are `sample`, `group_features`
     and `group_sample_and_features`."""
@@ -63,9 +64,8 @@ class OctoData:
     )
     """Configuration for health check thresholds."""
 
-    report: pd.DataFrame = field(
-        default=None,
-        validator=validators.optional(validators.instance_of(pd.DataFrame)),
+    report: pd.DataFrame | None = field(
+        default=None, validator=validators.optional(validators.instance_of(pd.DataFrame))
     )
     """Enable data quality check."""
 

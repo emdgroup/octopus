@@ -1,5 +1,7 @@
 """Machine learning models config."""
 
+from typing import Protocol
+
 from attrs import Attribute, define, field, validators
 
 from octopus.models.hyperparameter import Hyperparameter
@@ -26,12 +28,36 @@ def validate_hyperparameters(instance: "ModelConfig", attribute: Attribute, valu
             raise ValueError(f"""Hyperparameter '{hyperparameter.name}' is not allowed in 'hyperparameters'.""")
 
 
+class BaseModel(Protocol):
+    """Base model class."""
+
+    def fit(self, X, y, *args, **kwarfs):
+        """Fit model."""
+        ...
+
+    def predict(self, X, **kwargs):
+        """Predict."""
+        ...
+
+    def predict_proba(self, X, **kwargs):
+        """Predict probabilities."""
+        ...
+
+    def predict_log_proba(self, X):
+        """Predict log probabilities."""
+        ...
+
+    def set_params(self, **kwargs) -> "BaseModel":
+        """Set parameters."""
+        ...
+
+
 @define
 class ModelConfig:
     """Create model config."""
 
     name: str
-    model_class: type
+    model_class: type[BaseModel]
     feature_method: str
     ml_type: str = field(validator=validators.in_(["regression", "classification", "timetoevent"]))
     hyperparameters: list[Hyperparameter] = field(validator=validate_hyperparameters)

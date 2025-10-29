@@ -51,7 +51,7 @@ class TabularNNRegressor(RegressorMixin, BaseEstimator):
         self.optimizer = optimizer
         self.random_state = random_state
 
-    def _detect_categorical_columns(self, X: Any) -> tuple[list[str], list[str]]:
+    def _detect_categorical_columns(self, X: Any) -> tuple[list[str], list[str] | list[int]]:
         """Detect categorical columns from DataFrame.
 
         Args:

@@ -166,7 +166,7 @@ class EfsCore:
         return self.experiment.stratification_column
 
     @property
-    def target_metric(self) -> list:
+    def target_metric(self) -> str | list[str]:
         """Target metric."""
         return self.experiment.configs.study.target_metric
 
@@ -267,6 +267,7 @@ class EfsCore:
         scoring_type = metric_config.scorer_string
 
         # needs general improvements (consider groups and stratification column)
+        cv: KFold | StratifiedKFold
         stratification_column = self.experiment.stratification_column
         if stratification_column:
             cv = StratifiedKFold(n_splits=self.config.cv, shuffle=True, random_state=42)

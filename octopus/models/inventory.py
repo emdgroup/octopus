@@ -7,7 +7,7 @@ from attrs import define, field
 
 from octopus.exceptions import UnknownModelError
 
-from .config import ModelConfig
+from .config import BaseModel, ModelConfig
 from .hyperparameter import (
     CategoricalHyperparameter,
     FixedHyperparameter,
@@ -53,7 +53,7 @@ class ModelInventory:
         """
         return self.get_model_config(name)
 
-    def get_model_instance(self, name: str, params: dict) -> type:
+    def get_model_instance(self, name: str, params: dict) -> BaseModel:
         """Get model class by name and initializes it with the provided parameters.
 
         Args:
@@ -74,7 +74,7 @@ class ModelInventory:
 
         return model_config.model_class(**params)
 
-    def get_feature_method(self, name: str) -> type:
+    def get_feature_method(self, name: str) -> str:
         """Get feature method by name.
 
         If the model is a Gaussian Process, the kernel parameter (if provided)
@@ -104,7 +104,7 @@ class ModelInventory:
         model_seed: int,
     ) -> dict[str, Any]:
         """Create optuna parameters."""
-        params = {}
+        params: dict[str, Any] = {}
         for hp in hyperparameters:
             parameter_name = hp.name
             unique_name = f"{hp.name}_{model_item.name}"

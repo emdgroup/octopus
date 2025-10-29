@@ -1,7 +1,7 @@
 """Wrapper for Gaussian Process Classifier."""
 
 from collections.abc import Callable
-from typing import Any
+from typing import Any, Literal
 
 import numpy as np
 from sklearn.base import BaseEstimator, ClassifierMixin
@@ -18,13 +18,13 @@ class GPClassifierWrapper(ClassifierMixin, BaseEstimator):
     def __init__(
         self,
         kernel: str | Kernel = "RBF",
-        optimizer: str | Callable | None = "fmin_l_bfgs_b",
+        optimizer: Literal["fmin_l_bfgs_b"] | Callable | None = "fmin_l_bfgs_b",
         n_restarts_optimizer: int = 0,
         max_iter_predict: int = 100,
         warm_start: bool = False,
         copy_X_train: bool = True,
         random_state: int | None = None,
-        multi_class: str = "one_vs_rest",
+        multi_class: Literal["one_vs_rest", "one_vs_one"] = "one_vs_rest",
     ) -> None:
         self.kernel = kernel
         self.optimizer = optimizer

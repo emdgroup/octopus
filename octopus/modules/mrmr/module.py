@@ -1,6 +1,6 @@
 """Mrmr module."""
 
-from typing import ClassVar
+from typing import ClassVar, Literal
 
 from attrs import Factory, define, field, validators
 
@@ -17,29 +17,25 @@ class Mrmr(BaseSequenceItem):
     n_features: int = field(validator=[validators.instance_of(int)], default=Factory(lambda: 30))
     """Number of features selected by MRMR."""
 
-    correlation_type: str = field(
-        validator=[validators.in_(["pearson", "rdc", "spearmanr"])],
-        default=Factory(lambda: "spearmanr"),
+    correlation_type: Literal["pearson", "spearman", "rdc"] = field(
+        validator=validators.in_(["pearson", "rdc", "spearmanr"]), default="spearmanr"
     )
     """Selection of correlation type."""
 
-    relevance_type: str = field(
-        validator=[validators.in_(["permutation", "f-statistics"])],
-        default="permutation",
+    relevance_type: Literal["permutation", "f-statistics"] = field(
+        validator=validators.in_(["permutation", "f-statistics"]), default="permutation"
     )
     """Selection of relevance measure."""
 
-    results_key: str = field(
-        validator=[validators.in_(["best", "ensel", "autogluon"])],
-        default=Factory(lambda: "best"),
-    )
+    results_key: str = field(validator=validators.in_(["best", "ensel", "autogluon"]), default="best")
     """Selection of model from with feature importances were created."""
 
-    feature_importance_type: str = field(validator=[validators.in_(["mean", "count"])], default=Factory(lambda: "mean"))
+    feature_importance_type: Literal["mean", "count"] = field(
+        validator=validators.in_(["mean", "count"]), default="mean"
+    )
     """Selection of feature importance type."""
 
-    feature_importance_method: str = field(
-        validator=[validators.in_(["permutation", "shap", "internal", "lofo"])],
-        default=Factory(lambda: "permutation"),
+    feature_importance_method: Literal["permutation", "shap", "internal", "lofo"] = field(
+        validator=validators.in_(["permutation", "shap", "internal", "lofo"]), default="permutation"
     )
     """Selection of feature importance method."""

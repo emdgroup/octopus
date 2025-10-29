@@ -7,6 +7,8 @@ TOBEDONE:
 (4) saving results? any plots?
 """
 
+from typing import Literal
+
 import numpy as np
 import pandas as pd
 from attrs import define, field, validators
@@ -52,7 +54,7 @@ class MrmrCore:
         return self.experiment.ml_type
 
     @property
-    def correlation_type(self) -> str:
+    def correlation_type(self) -> Literal["pearson", "spearman", "rdc"]:
         """Correlation type."""
         return self.experiment.ml_config.correlation_type
 
@@ -166,8 +168,8 @@ class MrmrCore:
         """Calculate MRMR features."""
         return maxrminr(
             features=self.x_traindev,
-            fi_df=relevance_df,
-            n_features_lst=[self.n_features],
+            relevance=relevance_df,
+            requested_feature_counts=[self.n_features],
             correlation_type=self.correlation_type,
         )
 
@@ -197,8 +199,8 @@ def maxrminr(
     features: pd.DataFrame,
     relevance: pd.DataFrame,
     requested_feature_counts: list[int],
-    correlation_type: str = "pearson",
-    method: str = "ratio",
+    correlation_type: Literal["pearson", "spearman", "rdc"] = "pearson",
+    method: Literal["ratio", "difference"] = "ratio",
 ) -> dict[int, list[str]]:
     """Perform mRMR feature selection.
 

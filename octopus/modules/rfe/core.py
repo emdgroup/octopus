@@ -205,6 +205,7 @@ class RfeCore:
         metric_config = metrics_inventory.get_metric_config(self.target_metric)
         scoring_type = metric_config.scorer_string
 
+        cv: int | StratifiedKFold
         stratification_column = self.experiment.stratification_column
         if stratification_column:
             cv = StratifiedKFold(n_splits=self.config.cv, shuffle=True, random_state=42)

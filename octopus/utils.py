@@ -74,6 +74,7 @@ class DataSplit:
         logger.info(f"Number of unique groups (as in column: {self.datasplit_col}): {len(dataset_unique)}")
         logger.info(f"Number of rows in dataset: {len(self.dataset)}")
 
+        kf: KFold | StratifiedKFold
         if self.stratification_col:
             logger.info("Determining split method: Stratified KFold")
             kf = StratifiedKFold(

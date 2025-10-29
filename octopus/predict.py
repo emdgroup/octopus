@@ -4,8 +4,10 @@
 
 import warnings
 from pathlib import Path
+from typing import Literal, overload
 
 import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
 import shap
 from attrs import Factory, define, field, validators
@@ -15,6 +17,7 @@ from matplotlib.backends.backend_pdf import PdfPages
 from octopus import OctoData
 from octopus.experiment import OctoExperiment
 from octopus.modules.utils import (
+    ExperimentInfo,
     get_fi_group_permutation,
     get_fi_group_shap,
     get_fi_permutation,
@@ -50,7 +53,7 @@ class OctoPredict:
     results_key: str = field(default="best", validator=[validators.instance_of(str)])
     """Sequence item id."""
 
-    experiments: dict = field(init=False, validator=[validators.instance_of(dict)])
+    experiments: dict[int, ExperimentInfo] = field(init=False, validator=[validators.instance_of(dict)])
     """Dictionary containing model and corresponding test_dataset."""
 
     results: dict = field(default=Factory(dict), validator=[validators.instance_of(dict)])
@@ -110,16 +113,22 @@ class OctoPredict:
         print(f"{len(experiments)} experiment(s) out of {self.n_experiments} found.")
         return experiments
 
-    def predict(self, data: pd.DataFrame, return_df=False) -> pd.DataFrame:
+    @overload
+    def predict(self, data: pd.DataFrame, return_df: Literal[True]) -> np.ndarray: ...
+
+    @overload
+    def predict(self, data: pd.DataFrame, return_df: Literal[False]) -> pd.DataFrame: ...
+
+    def predict(self, data: pd.DataFrame, return_df=False):
         """Predict on new data."""
         preds_lst = []
-        for _, experiment in self.experiments.items():
-            feature_columns = experiment["feature_columns"]
+        for experiment in self.experiments.values():
+            feature_columns = experiment.feature_columns
 
             if set(feature_columns).issubset(data.columns):
                 df = pd.DataFrame(columns=["row_id", "prediction"])
                 df["row_id"] = data.index
-                df["prediction"] = experiment["model"].predict(data[feature_columns])
+                df["prediction"] = experiment.model.predict(data[feature_columns])
                 preds_lst.append(df)
             else:
                 raise ValueError("Features missing in provided dataset.")
@@ -131,12 +140,18 @@ class OctoPredict:
         else:
             return grouped_df.to_numpy()
 
-    def predict_proba(self, data: pd.DataFrame, return_df=False) -> pd.DataFrame:
+    @overload
+    def predict_proba(self, data: pd.DataFrame, return_df: Literal[True]) -> np.ndarray: ...
+
+    @overload
+    def predict_proba(self, data: pd.DataFrame, return_df: Literal[False]) -> pd.DataFrame: ...
+
+    def predict_proba(self, data: pd.DataFrame, return_df=False):
         """Predict_proba on new data."""
         preds_lst = []
         for _, experiment in self.experiments.items():
-            feature_columns = experiment["feature_columns"]
-            probabilities = experiment["model"].predict_proba(data[feature_columns])
+            feature_columns = experiment.feature_columns
+            probabilities = experiment.model.predict_proba(data[feature_columns])
 
             if set(feature_columns).issubset(data.columns):
                 df = pd.DataFrame()
@@ -159,13 +174,13 @@ class OctoPredict:
         """Predict on available test data."""
         preds_lst = []
         for _, experiment in self.experiments.items():
-            data_test = experiment["data_test"]
-            feature_columns = experiment["feature_columns"]
-            row_column = experiment["row_column"]
+            data_test = experiment.data_test
+            feature_columns = experiment.feature_columns
+            row_column = experiment.row_column
 
             df = pd.DataFrame(columns=["row_id", "prediction"])
             df["row_id"] = data_test[row_column]
-            df["prediction"] = experiment["model"].predict(data_test[feature_columns])
+            df["prediction"] = experiment.model.predict(data_test[feature_columns])
             preds_lst.append(df)
 
         grouped_df = (
@@ -180,18 +195,18 @@ class OctoPredict:
 
         return grouped_df
 
-    def predict_proba_test(self) -> pd.DataFrame:
+    def predict_proba_test(self):
         """Predict_proba on available test data."""
         preds_lst = []
         for _, experiment in self.experiments.items():
-            data_test = experiment["data_test"]
-            feature_columns = experiment["feature_columns"]
-            row_column = experiment["row_column"]
+            data_test = experiment.data_test
+            feature_columns = experiment.feature_columns
+            row_column = experiment.row_column
 
             df = pd.DataFrame(columns=["row_id", "probability"])
             df["row_id"] = data_test[row_column]
             # only binary classification!!
-            df["probability"] = experiment["model"].predict_proba(data_test[feature_columns])[:, 1]
+            df["probability"] = experiment.model.predict_proba(data_test[feature_columns])[:, 1]
             preds_lst.append(df)
 
         grouped_df = (
@@ -210,17 +225,17 @@ class OctoPredict:
         self,
         data: pd.DataFrame,
         n_repeat: int = 10,
-        fi_type: str = "permutation",
-        shap_type: str = "kernel",
-    ) -> pd.DataFrame:
+        fi_type: Literal["permutation", "group_permutation", "shap", "group_shap"] = "permutation",
+        shap_type: Literal["exact", "permutation", "kernel"] = "kernel",
+    ):
         """Calculate feature importances on new data."""
         if shap_type not in ["exact", "permutation", "kernel"]:
             raise ValueError("Specified shap_type not supported.")
 
         # feature importances for every single available experiment/model
         print("Calculating feature importances for every experiment/model.")
-        for _, experiment in self.experiments.items():
-            exp_id = experiment["id"]
+        for experiment in self.experiments.values():
+            exp_id = experiment.id
             if fi_type == "permutation":
                 results_df = get_fi_permutation(experiment, n_repeat, data=data)
                 self.results[f"fi_table_permutation_exp{exp_id}"] = results_df
@@ -230,7 +245,7 @@ class OctoPredict:
                 self.results[f"fi_table_group_permutation_exp{exp_id}"] = results_df
                 self._plot_permutation_fi(exp_id, results_df)
             elif fi_type == "shap":
-                results_df = get_fi_shap(experiment, data=data, shap_type=shap_type)
+                results_df, _shap_values, _shap_data = get_fi_shap(experiment, data=data, shap_type=shap_type)
                 self.results[f"fi_table_shap_exp{exp_id}"] = results_df
             elif fi_type == "group_shap":
                 results_df = get_fi_group_shap(experiment, data=data, shap_type=shap_type)
@@ -243,32 +258,33 @@ class OctoPredict:
         # create combined experiment
         feature_col_lst = []
         for experiment in self.experiments.values():
-            feature_col_lst.extend(experiment["feature_columns"])
+            feature_col_lst.extend(experiment.feature_columns)
 
         # use last experiment in for loop
-        exp_combined = {
-            "id": "_all",
-            "model": self,
-            "data_traindev": pd.concat([experiment["data_traindev"], experiment["data_test"]], axis=0),
-            "feature_columns": list(set(feature_col_lst)),
+        exp_combined = ExperimentInfo(
+            id="_all",
+            model=self,
+            data_traindev=pd.concat([experiment.data_traindev, experiment.data_test], axis=0),
             # same for all experiments
-            "data_test": experiment["data_test"],  # not used
-            "row_column": experiment["row_column"],
-            "target_assignments": experiment["target_assignments"],
-            "target_metric": experiment["target_metric"],
-            "ml_type": experiment["ml_type"],
-        }
+            data_test=experiment.data_test,  # not used
+            feature_columns=list(set(feature_col_lst)),
+            row_column=experiment.row_column,
+            target_assignments=experiment.target_assignments,
+            target_metric=experiment.target_metric,
+            ml_type=experiment.ml_type,
+            feature_group_dict=experiment.feature_group_dict,
+        )
 
         if fi_type == "permutation":
             results_df = get_fi_permutation(exp_combined, n_repeat, data=data)
             self.results["fi_table_permutation_ensemble"] = results_df
-            self._plot_permutation_fi(exp_combined["id"], results_df)
+            self._plot_permutation_fi(exp_combined.id, results_df)
         elif fi_type == "group_permutation":
             results_df = get_fi_group_permutation(exp_combined, n_repeat, data=data)
             self.results["fi_table_group_permutation_ensemble"] = results_df
-            self._plot_permutation_fi(exp_combined["id"], results_df)
+            self._plot_permutation_fi(exp_combined.id, results_df)
         elif fi_type == "shap":
-            results_df = get_fi_shap(exp_combined, data=data, shap_type=shap_type)
+            results_df, _shap_values, _shap_data = get_fi_shap(exp_combined, data=data, shap_type=shap_type)
             self.results["fi_table_shap_ensemble"] = results_df
         elif fi_type == "group_shap":
             results_df = get_fi_group_shap(exp_combined, data=data, shap_type=shap_type)
@@ -279,8 +295,8 @@ class OctoPredict:
         n_repeat: int = 10,
         fi_type: str = "group_permutation",
         experiment_id: int = -1,  # Calculate for all experiments
-        shap_type: str = "kernel",
-    ) -> pd.DataFrame:
+        shap_type: Literal["exact", "permutation", "kernel"] = "kernel",
+    ):
         """Calculate feature importances on available test data."""
         if shap_type not in ["exact", "permutation", "kernel"]:
             raise ValueError("Specified shap_type not supported.")
@@ -288,11 +304,11 @@ class OctoPredict:
         print("Calculating feature importances for every experiment/model.")
 
         # Filter experiments based on experiment_id
-        experiments_to_process = [exp for exp in self.experiments.values() if experiment_id in (-1, exp["id"])]
+        experiments_to_process = [exp for exp in self.experiments.values() if experiment_id in (-1, exp.id)]
 
         # Define a helper function for processing an experiment
         def _process_experiment(exp):
-            exp_id = exp["id"]
+            exp_id = exp.id
             if fi_type == "permutation":
                 results_df = get_fi_permutation(exp, n_repeat, data=None)
                 key = f"fi_table_permutation_exp{exp_id}"

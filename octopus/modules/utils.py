@@ -2,14 +2,43 @@
 
 import contextlib
 import math
+import statistics
+from typing import Any, Literal
 
 import numpy as np
 import pandas as pd
 import scipy.stats
 import shap
+from attrs import define, field, validators
 from scipy.stats import rankdata
 
 from octopus.metrics.utils import get_score_from_model
+
+
+@define
+class ExperimentInfo:
+    """Experiment info."""
+
+    id: int | str = field(validator=validators.instance_of((int, str)))
+    """Experiment id."""
+    model: type  # TODO: BaseModel = field(validator=validators.instance_of(BaseModel))
+    """Model Name."""
+    data_traindev: pd.DataFrame = field(validator=validators.instance_of(pd.DataFrame))
+    """Train/Dev dataset."""
+    data_test: pd.DataFrame = field(validator=validators.instance_of(pd.DataFrame))
+    """Test dataset."""
+    feature_columns: list[str] = field(validator=validators.instance_of(list))
+    """Feature columns."""
+    row_column: str = field(validator=validators.instance_of(str))
+    """Row identifier column."""
+    target_assignments: dict[str, str] = field(validator=validators.instance_of(dict))
+    """Target assignments."""
+    target_metric: Any
+    """Target metric."""
+    ml_type: str = field(validator=validators.instance_of(str))
+    """Machine learning type."""
+    feature_group_dict: dict = field(validator=validators.instance_of(dict))
+    """Feature group dictionary."""
 
 
 def rdc(x, y, f=np.sin, k=20, s=1 / 6.0, n=5):
@@ -34,7 +63,7 @@ def rdc(x, y, f=np.sin, k=20, s=1 / 6.0, n=5):
     if n > 1:
         values = []
         for _ in range(n):
-            with contextlib.suppress(np.linalg.linalg.LinAlgError):
+            with contextlib.suppress(np.linalg.LinAlgError):
                 values.append(rdc(x, y, f, k, s, 1))
         return np.median(values)
 
@@ -116,16 +145,16 @@ def rdc_correlation_matrix(df):
     return rdc_matrix
 
 
-def get_fi_permutation(experiment, n_repeat, data) -> pd.DataFrame:
+def get_fi_permutation(experiment: ExperimentInfo, n_repeat, data: pd.DataFrame | None) -> pd.DataFrame:
     """Calculate permutation feature importances."""
     # fixed confidence level
     confidence_level = 0.95
-    feature_columns = experiment["feature_columns"]
-    data_traindev = experiment["data_traindev"]
-    data_test = experiment["data_test"]
-    target_assignments = experiment["target_assignments"]
-    target_metric = experiment["target_metric"]
-    model = experiment["model"]
+    feature_columns = experiment.feature_columns
+    data_traindev = experiment.data_traindev
+    data_test = experiment.data_test
+    target_assignments = experiment.target_assignments
+    target_metric = experiment.target_metric
+    model = experiment.model
 
     # support prediction on new data as well as test data
     if data is None:  # new data
@@ -162,10 +191,10 @@ def get_fi_permutation(experiment, n_repeat, data) -> pd.DataFrame:
             fi_lst.append(baseline_score - pfi_score)
 
         # calculate statistics
-        pfi_mean = np.mean(fi_lst)
+        pfi_mean = statistics.fmean(fi_lst)
         n = len(fi_lst)
         p_value = np.nan
-        stddev = np.std(fi_lst, ddof=1) if n > 1 else np.nan
+        stddev = statistics.stdev(fi_lst) if n > 1 else np.nan
         if stddev not in (np.nan, 0):
             t_stat = pfi_mean / (stddev / math.sqrt(n))
             p_value = scipy.stats.t.sf(t_stat, n - 1)
@@ -195,17 +224,17 @@ def get_fi_permutation(experiment, n_repeat, data) -> pd.DataFrame:
     return results_df.sort_values(by="importance", ascending=False)
 
 
-def get_fi_group_permutation(experiment, n_repeat, data) -> pd.DataFrame:
+def get_fi_group_permutation(experiment: ExperimentInfo, n_repeat, data: pd.DataFrame | None) -> pd.DataFrame:
     """Calculate permutation feature importances."""
     # fixed confidence level
     confidence_level = 0.95
-    feature_columns = experiment["feature_columns"]
-    data_traindev = experiment["data_traindev"]
-    data_test = experiment["data_test"]
-    target_assignments = experiment["target_assignments"]
-    target_metric = experiment["target_metric"]
-    model = experiment["model"]
-    feature_groups = experiment["feature_group_dict"]
+    feature_columns = experiment.feature_columns
+    data_traindev = experiment.data_traindev
+    data_test = experiment.data_test
+    target_assignments = experiment.target_assignments
+    target_metric = experiment.target_metric
+    model = experiment.model
+    feature_groups = experiment.feature_group_dict
 
     print("Number of feature groups found and included: ", len(feature_groups))
 
@@ -254,10 +283,10 @@ def get_fi_group_permutation(experiment, n_repeat, data) -> pd.DataFrame:
             fi_lst.append(baseline_score - pfi_score)
 
         # calculate statistics
-        pfi_mean = np.mean(fi_lst)
+        pfi_mean = statistics.fmean(fi_lst)
         n = len(fi_lst)
         p_value = np.nan
-        stddev = np.std(fi_lst, ddof=1) if n > 1 else np.nan
+        stddev = statistics.stdev(fi_lst) if n > 1 else np.nan
         if stddev not in (np.nan, 0):
             t_stat = pfi_mean / (stddev / math.sqrt(n))
             p_value = scipy.stats.t.sf(t_stat, n - 1)
@@ -288,8 +317,8 @@ def get_fi_group_permutation(experiment, n_repeat, data) -> pd.DataFrame:
 
 
 def get_fi_shap(
-    experiment: dict,
-    data: pd.DataFrame,
+    experiment: ExperimentInfo,
+    data: pd.DataFrame | None,
     shap_type: str,
 ) -> tuple[pd.DataFrame, np.ndarray, pd.DataFrame]:
     """Calculate SHAP feature importances.
@@ -309,10 +338,10 @@ def get_fi_shap(
         ValueError: If shap_type is not one of 'exact', 'permutation', or 'kernel'.
     """
     # experiment_id = experiment["id"]
-    feature_columns = experiment["feature_columns"]
-    data_test = experiment["data_test"][feature_columns]
-    model = experiment["model"]
-    ml_type = experiment["ml_type"]
+    feature_columns = experiment.feature_columns
+    data_test = experiment.data_test[feature_columns]
+    model = experiment.model
+    ml_type = experiment.ml_type
 
     # support prediction on new data as well as test data
     if data is None:  # no external data, use test data
@@ -325,14 +354,14 @@ def get_fi_shap(
 
     def predict_wrapper(data):
         if isinstance(data, pd.Series):
-            data = data.values.reshape(1, -1)
+            data = data.to_numpy().reshape(1, -1)
         if not isinstance(data, pd.DataFrame):
             data = pd.DataFrame(data, columns=feature_columns)
         return model.predict(data)
 
     def predict_proba_wrapper(data):
         if isinstance(data, pd.Series):
-            data = data.values.reshape(1, -1)
+            data = data.to_numpy().reshape(1, -1)
         if not isinstance(data, pd.DataFrame):
             data = pd.DataFrame(data, columns=feature_columns)
         return model.predict_proba(data)
@@ -375,14 +404,16 @@ def get_fi_shap(
     return shap_fi_df, shap_values, data
 
 
-def get_fi_group_shap(experiment, data, shap_type) -> pd.DataFrame:
+def get_fi_group_shap(
+    experiment: ExperimentInfo, data: pd.DataFrame | None, shap_type: Literal["exact", "permutation", "kernel"]
+) -> pd.DataFrame:
     """Calculate SHAP feature importances for feature groups."""
     # experiment_id = experiment["id"]
-    feature_columns = experiment["feature_columns"]
-    data_test = experiment["data_test"][feature_columns]
-    model = experiment["model"]
-    ml_type = experiment["ml_type"]
-    feature_groups = experiment["feature_group_dict"]
+    feature_columns = experiment.feature_columns
+    data_test = experiment.data_test[feature_columns]
+    model = experiment.model
+    ml_type = experiment.ml_type
+    feature_groups = experiment.feature_group_dict
 
     # Support prediction on new data as well as test data
     if data is None:  # No external data, use test data
@@ -395,14 +426,14 @@ def get_fi_group_shap(experiment, data, shap_type) -> pd.DataFrame:
 
     def predict_wrapper(data):
         if isinstance(data, pd.Series):
-            data = data.values.reshape(1, -1)
+            data = data.to_numpy().reshape(1, -1)
         if not isinstance(data, pd.DataFrame):
             data = pd.DataFrame(data, columns=feature_columns)
         return model.predict(data)
 
     def predict_proba_wrapper(data):
         if isinstance(data, pd.Series):
-            data = data.values.reshape(1, -1)
+            data = data.to_numpy().reshape(1, -1)
         if not isinstance(data, pd.DataFrame):
             data = pd.DataFrame(data, columns=feature_columns)
         return model.predict_proba(data)

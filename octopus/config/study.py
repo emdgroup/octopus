@@ -1,13 +1,11 @@
 """Config study."""
 
-from typing import Any
-
-from attrs import Factory, define, field, validators
+from attrs import Attribute, Factory, define, field, validators
 
 from octopus.metrics import metrics_inventory
 
 
-def validate_metric(instance: "ConfigStudy", attribute: Any, value: str) -> None:
+def validate_metric(instance: "ConfigStudy", attribute: Attribute, value: str | list[str]) -> None:
     """Validate the target_metric based on the ml_type.
 
     Args:
@@ -42,7 +40,7 @@ class ConfigStudy:
     """The type of machine learning model.
     Choose from "classification", "regression" or "timetoevent"."""
 
-    target_metric: str = field(validator=[validate_metric])
+    target_metric: str | list[str] = field(validator=[validate_metric])
     """The primary metric used for model evaluation."""
 
     positive_class: int = field(default=1, validator=validators.instance_of(int))

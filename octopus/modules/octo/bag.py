@@ -22,6 +22,7 @@ from octopus.metrics.utils import get_performance_from_predictions
 from octopus.modules.octo.ray_parallel import (
     run_parallel_inner,
 )
+from octopus.modules.octo.training import Training
 
 logger = get_logger()
 
@@ -107,7 +108,7 @@ class BagBase(BaseEstimator):
     """
 
     bag_id: str = field(validator=[validators.instance_of(str)])
-    trainings: list = field(validator=[validators.instance_of(list)])
+    trainings: list[Training] = field(validator=[validators.instance_of(list)])
     # same config parameters (execution type, num_workers) also used for
     # parallelization of optuna optimizations of individual inner loop trainings
     parallel_execution: bool = field(validator=[validators.instance_of(bool)])
@@ -119,11 +120,11 @@ class BagBase(BaseEstimator):
     train_status: bool = field(default=False)
 
     # bag training outputs, initialized in post_init
-    feature_importances: dict = field(init=False, validator=[validators.instance_of(dict)])
+    feature_importances: dict[str, pd.DataFrame] = field(init=False, validator=[validators.instance_of(dict)])
     n_features_used_mean: float = field(init=False, validator=[validators.instance_of(float)])
 
     @property
-    def feature_groups(self) -> dict:
+    def feature_groups(self) -> dict[str, list[str]]:
         """Experiment wide feature groups."""
         # assuming that there is at least one training
         return self.trainings[0].feature_groups
@@ -303,7 +304,7 @@ class BagBase(BaseEstimator):
         else:
             self._train_sequential()
 
-        self.train_status = (True,)
+        self.train_status = True
 
         # get used features in bag
         n_feat_lst = []
@@ -328,7 +329,7 @@ class BagBase(BaseEstimator):
             self.fit()
 
         predictions = {}
-        pool = {key: [] for key in ["train", "dev", "test"]}
+        pool: dict[str, list[pd.DataFrame]] = {key: [] for key in ["train", "dev", "test"]}
 
         for training in self.trainings:
             predictions[training.training_id] = training.predictions
@@ -368,7 +369,7 @@ class BagBase(BaseEstimator):
         )
 
         # Create performance_output dictionary with restructured data
-        performance_output = {}
+        performance_output: dict[str, list[float] | float] = {}
 
         # Collect lists for train, dev, test from all non-ensemble trainings
         train_lst = []

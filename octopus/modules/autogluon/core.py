@@ -149,12 +149,12 @@ class AGCore:
         return self.experiment.target_assignments
 
     @property
-    def target_metric(self) -> str:
+    def target_metric(self) -> str | list[str]:
         """Target metric."""
         return self.experiment.configs.study.target_metric
 
     @property
-    def metrics(self) -> str:
+    def metrics(self) -> str | list[str]:
         """Metrics."""
         return self.experiment.configs.study.metrics
 
@@ -164,7 +164,7 @@ class AGCore:
         return self.experiment.ml_config
 
     @property
-    def feature_columns(self) -> pd.DataFrame:
+    def feature_columns(self) -> list[str]:
         """Feature Columns."""
         return self.experiment.feature_columns
 

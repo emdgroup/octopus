@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 from attrs import Factory, define, field, validators
 
-from octopus.modules.octo.bag import Bag
+from octopus.modules.octo.bag import Bag, BagBase
 from octopus.modules.octo.core import OctoCoreGeneric
 from octopus.modules.rfe2.module import Rfe2
 from octopus.results import ModuleResults
@@ -202,7 +202,7 @@ class Rfe2Core(OctoCoreGeneric[Rfe2]):
             f", Perf_sem: {last_row['performance_sem']:.4f}"
         )
 
-    def _retrain_and_calc_fi(self, bag: Bag, new_features: list) -> Bag:
+    def _retrain_and_calc_fi(self, bag: BagBase, new_features: list) -> BagBase:
         """Retrain bag using new feature set and calculate feature importances."""
         bag = copy.deepcopy(bag)
 
@@ -222,7 +222,7 @@ class Rfe2Core(OctoCoreGeneric[Rfe2]):
 
         return bag
 
-    def _get_fi(self, bag: Bag) -> pd.DataFrame:
+    def _get_fi(self, bag: BagBase) -> pd.DataFrame:
         """Get relevant feature importances."""
         if self.fi_method == "permutation":
             fi_df = bag.feature_importances["permutation_dev_mean"]

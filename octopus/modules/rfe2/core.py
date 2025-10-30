@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 from attrs import Factory, define, field, validators
 
-from octopus.modules.octo.bag import Bag, BagBase
+from octopus.modules.octo.bag import BagBase
 from octopus.modules.octo.core import OctoCoreGeneric
 from octopus.modules.rfe2.module import Rfe2
 from octopus.results import ModuleResults
@@ -231,7 +231,7 @@ class Rfe2Core(OctoCoreGeneric[Rfe2]):
 
         return fi_df
 
-    def _calculate_new_features(self, bag: Bag) -> list:
+    def _calculate_new_features(self, bag: BagBase) -> list:
         """Perform RFE step and calculate new features."""
         bag = copy.deepcopy(bag)
 

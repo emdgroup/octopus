@@ -45,7 +45,7 @@ class Training:
     target_assignments: dict = field(validator=[validators.instance_of(dict)])
     """Target assignments."""
 
-    feature_columns: list = field(validator=[validators.instance_of(list)])
+    feature_columns: list[str] = field(validator=[validators.instance_of(list)])
     """Feature columns."""
 
     row_column: str = field(validator=[validators.instance_of(str)])
@@ -66,7 +66,7 @@ class Training:
     max_features: int = field(validator=[validators.instance_of(int)])
     """Maximum number of features."""
 
-    feature_groups: dict = field(validator=[validators.instance_of(dict)])
+    feature_groups: dict[str, list[str]] = field(validator=[validators.instance_of(dict)])
     """Feature Groups."""
 
     config_training: dict = field(validator=[validators.instance_of(dict)])
@@ -81,7 +81,9 @@ class Training:
     predictions: dict = field(default=Factory(dict), validator=[validators.instance_of(dict)])
     """Model predictions."""
 
-    feature_importances: dict = field(default=Factory(dict), validator=[validators.instance_of(dict)])
+    feature_importances: dict[str, pd.DataFrame] = field(
+        default=Factory(dict), validator=[validators.instance_of(dict)]
+    )
     """Feature importances."""
 
     features_used: list = field(default=Factory(list), validator=[validators.instance_of(list)])

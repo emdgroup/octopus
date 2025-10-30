@@ -116,7 +116,7 @@ class OctoExperiment[ConfigType: BaseSequenceItem]:
     def __attrs_post_init__(self):
         self.feature_groups = self.calculate_feature_groups(self.feature_columns)
 
-    def calculate_feature_groups(self, feature_columns) -> dict:
+    def calculate_feature_groups(self, feature_columns: list[str]) -> dict[str, list[str]]:
         """Calculate feature groups based on correlation thresholds."""
         if len(feature_columns) <= 2:
             logging.warning("Not enough features to calculate correlations for feature groups.")

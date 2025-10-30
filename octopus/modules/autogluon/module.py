@@ -32,8 +32,7 @@ class AutoGluon(BaseSequenceItem):
     """ Inference time limit in seconds per row to adhere to during fit."""
 
     memory_limit: float | Literal["auto"] = field(
-        default="auto",
-        validator=validators.optional(validators.or_(validators.instance_of(float), validators.in_(["auto"]))),
+        default="auto", validator=validators.or_(validators.instance_of(float), validators.in_(["auto"]))
     )
     """Amount of memory in GB you want AutoGluon predictor to use."""
 
@@ -74,8 +73,7 @@ class AutoGluon(BaseSequenceItem):
     # ignore_text: Disables automated feature generation for text features.
 
     num_cpus: int | Literal["auto"] = field(
-        default="auto",
-        validator=validators.optional(validators.or_(validators.instance_of(int), validators.in_(["auto"]))),
+        default="auto", validator=validators.or_(validators.instance_of(int), validators.in_(["auto"]))
     )
     """Number of CPUs used by Autogluon instance. Can be an integer or "auto"."""
 

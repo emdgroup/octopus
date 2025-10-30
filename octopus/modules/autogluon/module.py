@@ -14,7 +14,7 @@ class AutoGluon(BaseSequenceItem):
     module: ClassVar[str] = "autogluon"
     """Module name."""
 
-    description: str | None = field(default="", validator=validators.instance_of(str))
+    description: str = field(default="", validator=validators.instance_of(str))
     """Description."""
 
     verbosity: int = field(default=2, validator=validators.instance_of(int))
@@ -100,7 +100,7 @@ class AutoGluon(BaseSequenceItem):
                         ]
                     ),
                 ),
-                iterable_validator=validators.optional(validators.instance_of(list)),
+                iterable_validator=validators.instance_of(list),
             )
         ),
     )

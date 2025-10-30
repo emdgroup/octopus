@@ -40,11 +40,13 @@ class ModuleResults:
     predictions: dict = field(default=Factory(dict), validator=[validators.instance_of(dict)])
     """Predictions, dictionary."""
 
-    feature_importances: dict = field(default=Factory(dict), validator=[validators.instance_of(dict)])
+    feature_importances: dict[str, pd.DataFrame] = field(
+        default=Factory(dict), validator=[validators.instance_of(dict)]
+    )
     """Feature importances, dictionary."""
 
-    selected_features: list = field(default=Factory(list), validator=[validators.instance_of(list)])
-    """Feature importances, dictionary."""
+    selected_features: list[str] = field(default=Factory(list), validator=[validators.instance_of(list)])
+    """Selected features, list of strings."""
 
     results: dict = field(default=Factory(dict), validator=[validators.instance_of(dict)])
     """Other results, dictionary."""

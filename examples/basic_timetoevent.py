@@ -96,9 +96,6 @@ config_study = ConfigStudy(
     name="basic_timetoevent_example",
     ml_type="timetoevent",  # Specify time-to-event analysis
     target_metric="CI",  # Concordance Index (C-index)
-    metrics=["CI"],  # Can also include other metrics if needed
-    ignore_data_health_warning=True,
-    silently_overwrite_study=True,
 )
 
 config_manager = ConfigManager(
@@ -111,15 +108,12 @@ config_sequence = ConfigSequence(
         Octo(
             sequence_id=0,
             input_sequence_id=-1,
-            description="step2_octo",
+            description="step1_octo",
             models=[
                 "ExtraTreesSurv",  # Extra Trees for survival analysis
             ],
             n_trials=20,  # Number of hyperparameter optimization trials
             fi_methods_bestbag=["shap"],  # Use SHAP for feature importance
-            max_features=8,  # Maximum number of features to use
-            ensemble_selection=True,  # Enable ensemble selection
-            ensel_n_save_trials=20,  # Save top 15 trials for ensemble
         ),
     ]
 )

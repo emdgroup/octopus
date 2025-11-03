@@ -223,7 +223,7 @@ class EnSel:
                 best_model = df.loc[df["performance_dev"].idxmax()]["model"]
                 best_performance = df.loc[df["performance_dev"].idxmax()]["performance_dev"]
                 performance_test = df.loc[df["performance_dev"].idxmax()]["performance_test"]
-                if best_performance < best_global:  # we continue if results is the same
+                if best_performance < best_global:  # stop if performance worsens
                     break  # stop ensembling
                 else:
                     best_global = best_performance
@@ -234,8 +234,8 @@ class EnSel:
                 best_model = df.loc[df["performance_dev"].idxmin()]["model"]
                 best_performance = df.loc[df["performance_dev"].idxmin()]["performance_dev"]
                 performance_test = df.loc[df["performance_dev"].idxmin()]["performance_test"]
-                if best_performance > best_global:  # we continue if results is the same
-                    break  # stop ensembling
+                if best_performance > best_global:  # stop if performance worsens
+                    break
                 else:
                     best_global = best_performance
                     logger.info(

@@ -6,26 +6,24 @@ repos:
     rev: 7.3.0
     hooks:
       - id: flake8
-        additional_dependencies: [pydoclint==0.7.3]  
+        additional_dependencies: [pydoclint==0.7.3]
         args: [--select=DOC, --config=pydoclint.toml]
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.14.1
     hooks:
-      # Run the linter.
       - id: ruff-check
-        types_or: [python, pyi ]
-        args: [ --fix, --exit-non-zero-on-fix ]
-      # Run the formatter.
+        types_or: [python, pyi]
+        args: [--fix, --exit-non-zero-on-fix]
       - id: ruff-format
-        types_or: [python, pyi ]
+        types_or: [python, pyi]
   - repo: https://github.com/crate-ci/typos
     rev: v1.38.1
     hooks:
       - id: typos
         args: [--config=typos.toml]
-        exclude: ^datasets/|octopus_p312.yml|octopus_autosk_p38.yml|octopus_p310.yml|octopus.yml
+        exclude: octopus.yml
   - repo: https://github.com/asottile/pyupgrade
     rev: v3.21.0
     hooks:
-    - id: pyupgrade
-      args: [--py312-plus]
+      - id: pyupgrade
+        args: [--py312-plus]

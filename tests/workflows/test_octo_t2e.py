@@ -276,39 +276,17 @@ class TestOctoTimeToEvent:
         )
 
         octo_step = config_sequence.sequence_items[0]
-        assert octo_step.n_trials == 12
-        assert octo_step.max_features == 6
-        assert octo_step.optuna_seed == 42
-        assert octo_step.n_optuna_startup_trials == 5
-        assert octo_step.penalty_factor == 1.5
-
-    def test_timetoevent_specific_configuration(self):
-        """Test time-to-event specific configuration parameters."""
-        config_sequence = ConfigSequence(
-            [
-                Octo(
-                    sequence_id=0,
-                    input_sequence_id=-1,
-                    description="step_1",
-                    models=["ExtraTreesSurv"],
-                    n_trials=12,
-                    max_features=6,
-                    ensemble_selection=True,
-                    ensel_n_save_trials=10,
-                )
-            ]
-        )
-
-        octo_step = config_sequence.sequence_items[0]
 
         # Verify time-to-event model is included
         assert "ExtraTreesSurv" in octo_step.models
-
         # Verify key parameters
         assert octo_step.n_trials == 12
         assert octo_step.max_features == 6
         assert octo_step.ensemble_selection is True
         assert octo_step.ensel_n_save_trials == 10
+        assert octo_step.optuna_seed == 42
+        assert octo_step.n_optuna_startup_trials == 5
+        assert octo_step.penalty_factor == 1.5
 
     @pytest.mark.slow
     def test_octo_timetoevent_actual_execution(self, octo_data_config):

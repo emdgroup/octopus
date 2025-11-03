@@ -84,6 +84,39 @@ class OctoData:
 
         return list(set(relevant_columns))
 
+    @property
+    def num_features(self) -> list[str]:
+        """Get numerical feature columns."""
+        return [
+            col
+            for col in self.feature_columns
+            if col in self.data.columns
+            and pd.api.types.is_numeric_dtype(self.data[col])
+            and not isinstance(self.data[col].dtype, pd.CategoricalDtype)
+        ]
+
+    @property
+    def cat_nominal_features(self) -> list[str]:
+        """Get categorical nominal feature columns."""
+        cat_nominal_features = []
+        for col in self.feature_columns:
+            if col in self.data.columns:
+                dtype = self.data[col].dtype
+                if isinstance(dtype, pd.CategoricalDtype) and not dtype.ordered:
+                    cat_nominal_features.append(col)
+        return cat_nominal_features
+
+    @property
+    def cat_ordinal_features(self) -> list[str]:
+        """Get categorical ordinal feature columns."""
+        cat_ordinal_features = []
+        for col in self.feature_columns:
+            if col in self.data.columns:
+                dtype = self.data[col].dtype
+                if isinstance(dtype, pd.CategoricalDtype) and dtype.ordered:
+                    cat_ordinal_features.append(col)
+        return cat_ordinal_features
+
     def __attrs_post_init__(self):
         logger.set_log_group(LogGroup.DATA_PREPARATION)
         logger.info("Initializing OctoData")

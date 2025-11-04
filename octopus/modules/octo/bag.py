@@ -15,12 +15,10 @@ from sklearn.base import BaseEstimator, ClassifierMixin, RegressorMixin
 
 # sklearn imports for compatibility
 from octopus.logger import LogGroup, get_logger
-from octopus.metrics.utils import get_performance_from_predictions
 
 # Adjust this import path as needed depending on your package layout
-from octopus.modules.octo.ray_parallel import (
-    run_parallel_inner,
-)
+from octopus.manager.ray_parallel import run_parallel_inner
+from octopus.metrics.utils import get_performance_from_predictions
 
 logger = get_logger()
 

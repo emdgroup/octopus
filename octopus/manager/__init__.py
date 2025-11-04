@@ -11,10 +11,9 @@ from attrs import define, field, validators
 
 from octopus.config.core import OctoConfig
 from octopus.experiment import OctoExperiment
+from octopus.logger import LogGroup, get_logger
+from octopus.manager.ray_parallel import init_ray, run_parallel_outer_ray, shutdown_ray
 from octopus.modules import modules_inventory
-from octopus.modules.octo.ray_parallel import init_ray, run_parallel_outer_ray, shutdown_ray
-
-from .logger import LogGroup, get_logger
 
 logger = get_logger()
 

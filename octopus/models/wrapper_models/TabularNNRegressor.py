@@ -11,6 +11,8 @@ from sklearn.utils.validation import check_is_fitted
 from torch import nn
 from torch.utils.data import DataLoader, TensorDataset
 
+from octopus.models.config import OctoArrayLike, OctoMatrixLike
+
 
 class TabularNNRegressor(RegressorMixin, BaseEstimator):
     """Enhanced neural network for tabular regression with categorical embeddings.
@@ -69,7 +71,7 @@ class TabularNNRegressor(RegressorMixin, BaseEstimator):
             # If numpy array, no categorical columns
             return [], list(range(X.shape[1]))
 
-    def fit(self, X: Any, y: Any) -> "TabularNNRegressor":
+    def fit(self, X: OctoMatrixLike, y: OctoArrayLike) -> "TabularNNRegressor":
         """Fit the model.
 
         Args:
@@ -95,21 +97,21 @@ class TabularNNRegressor(RegressorMixin, BaseEstimator):
         self.cat_cols_, self.num_cols_ = self._detect_categorical_columns(X)
 
         # Encode categorical features
-        self.label_encoders_ = {}
-        self.embedding_sizes_ = {}
+        self.label_encoders_: dict[str, LabelEncoder] = {}
+        self.embedding_sizes_: dict[str, tuple[int, int]] = {}
 
         X_cat_encoded = []
-        for col in self.cat_cols_:
+        for cat_col in self.cat_cols_:
             le = LabelEncoder()
             # Handle NaN by adding a special category
-            X_col = X[col].fillna("__NAN__")
+            X_col = X[cat_col].fillna("__NAN__")
             encoded = le.fit_transform(X_col)
-            self.label_encoders_[col] = le
+            self.label_encoders_[cat_col] = le
 
             # Improved embedding size: min(50, max(3, (cardinality + 1) // 2))
             cardinality = len(le.classes_)
             emb_dim = min(50, max(3, (cardinality + 1) // 2))
-            self.embedding_sizes_[col] = (cardinality, emb_dim)
+            self.embedding_sizes_[cat_col] = (cardinality, emb_dim)
 
             X_cat_encoded.append(encoded)
 
@@ -118,22 +120,22 @@ class TabularNNRegressor(RegressorMixin, BaseEstimator):
         self.missing_indicators_ = []
 
         X_num_list = []
-        for col in self.num_cols_:
-            col_data = X[col]
+        for num_col in self.num_cols_:
+            col_data = X[num_col]
             is_missing = col_data.isna()
 
             # Store median for this column
             median_val = col_data.median()
-            self.num_medians_[col] = median_val if not pd.isna(median_val) else 0.0
+            self.num_medians_[num_col] = median_val if not pd.isna(median_val) else 0.0
 
             # Fill missing with median
-            filled_data = col_data.fillna(self.num_medians_[col])
-            X_num_list.append(filled_data.values)
+            filled_data = col_data.fillna(self.num_medians_[num_col])
+            X_num_list.append(filled_data.to_numpy())
 
             # Add missing indicator if there are any missing values
             if is_missing.any():
-                self.missing_indicators_.append(col)
-                X_num_list.append(is_missing.astype(np.float32).values)
+                self.missing_indicators_.append(num_col)
+                X_num_list.append(is_missing.astype(np.float32).to_numpy())
 
         X_num = np.column_stack(X_num_list).astype(np.float32) if X_num_list else np.zeros((len(X), 0))
         X_cat = np.column_stack(X_cat_encoded) if X_cat_encoded else np.zeros((len(X), 0), dtype=np.int64)
@@ -158,6 +160,7 @@ class TabularNNRegressor(RegressorMixin, BaseEstimator):
             dataloader = DataLoader(dataset, batch_size=self.batch_size, shuffle=True)
 
         # Select optimizer
+        optimizer: torch.optim.AdamW | torch.optim.Adam
         if self.optimizer == "adamw":
             optimizer = torch.optim.AdamW(
                 self.model_.parameters(), lr=self.learning_rate, weight_decay=self.weight_decay
@@ -214,25 +217,25 @@ class TabularNNRegressor(RegressorMixin, BaseEstimator):
 
         # Encode categorical features
         X_cat_encoded = []
-        for col in self.cat_cols_:
-            le = self.label_encoders_[col]
-            X_col = X[col].fillna("__NAN__")
+        for cat_col in self.cat_cols_:
+            le = self.label_encoders_[cat_col]
+            X_col = X[cat_col].fillna("__NAN__")
             # Handle unseen categories
             encoded = np.array([le.transform([val])[0] if val in le.classes_ else 0 for val in X_col])
             X_cat_encoded.append(encoded)
 
         # Prepare numerical features with same missing value handling as fit
         X_num_list = []
-        for col in self.num_cols_:
-            col_data = X[col]
+        for num_col in self.num_cols_:
+            col_data = X[num_col]
             is_missing = col_data.isna()
 
             # Fill missing with stored median
-            filled_data = col_data.fillna(self.num_medians_[col])
+            filled_data = col_data.fillna(self.num_medians_[num_col])
             X_num_list.append(filled_data.values)
 
             # Add missing indicator if this column had missing values during training
-            if col in self.missing_indicators_:
+            if num_col in self.missing_indicators_:
                 X_num_list.append(is_missing.astype(np.float32).values)
 
         X_num = np.column_stack(X_num_list).astype(np.float32) if X_num_list else np.zeros((len(X), 0))
@@ -285,6 +288,7 @@ class TabularNNModel(nn.Module):
         # Build hidden layers with batch normalization
         layers = []
         prev_size = input_dim
+        activation_fn: nn.ELU | nn.ReLU
         for hidden_size in hidden_sizes:
             # Create new activation instance for each layer
             if activation == "elu":

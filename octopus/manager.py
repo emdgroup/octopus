@@ -30,6 +30,22 @@ class OctoManager:
         validator=[validators.instance_of(OctoConfig)],
     )
 
+    @property
+    def num_available_cpus(self) -> int:
+        """Get available CPUs after reservation.
+
+        Returns total CPUs minus reserve_cpus from config, with minimum of 1.
+        """
+        total_cpus = cpu_count() or 1
+        return max(1, total_cpus - self.configs.manager.reserve_cpus)
+
+    @property
+    def num_outer_workers(self) -> int:
+        """Calculate number of parallel outer workers."""
+        if self.configs.manager.run_single_experiment_num != -1:
+            return 1
+        return min(self.configs.study.n_folds_outer, self.num_available_cpus)
+
     def run_outer_experiments(self):
         """Run outer experiments."""
         # start local ray instance
@@ -52,27 +68,26 @@ class OctoManager:
         self._close()
 
     def _init_ray(self):
-        """Initialize ray."""
-        # reserve num_workers for outer processes
-        num_workers = min(self.configs.study.n_folds_outer, cpu_count())
-        if self.configs.manager.run_single_experiment_num != -1:
-            num_workers = 1
-        # start exactly ONE local head here; export its address for children
-        init_ray(start_local_if_missing=True, num_cpus=cpu_count() - num_workers)
+        """Initialize Ray with available CPUs.
+
+        CPUs reserved via config.manager.reserve_cpus are excluded.
+        """
+        init_ray(start_local_if_missing=True, num_cpus=self.num_available_cpus)
 
     def _close(self):
-        # shutdown ray instance
+        """Shutdown ray instance."""
         shutdown_ray()
 
     def _log_execution_info(self):
-        num_workers = min(self.configs.study.n_folds_outer, cpu_count())
+        """Log execution configuration and CPU allocation."""
         logger.info(
             f"Preparing execution of experiments | "
             f"Outer parallelization: {self.configs.manager.outer_parallelization} | "
-            f"Run single experiment: {self.configs.manager.run_single_experiment_num} |"
+            f"Run single experiment: {self.configs.manager.run_single_experiment_num} | "
             f"Number of outer folds: {self.configs.study.n_folds_outer} | "
-            f"Number of logical CPUs: {cpu_count()} | "
-            f"Number of outer fold workers: {num_workers}"
+            f"Available CPUs: {self.num_available_cpus} | "
+            f"Outer workers: {self.num_outer_workers} | "
+            f"CPUs per experiment: {self._calculate_assigned_cpus()}"
         )
 
     def _validate_experiments(self):
@@ -92,10 +107,8 @@ class OctoManager:
             self.create_execute_mlmodules(base_experiment)
 
     def _run_parallel_ray(self):
-        # Choose concurrency similar to your previous joblib setting
-        num_workers = min(self.configs.study.n_folds_outer, os.cpu_count() or 1)
+        """Run experiments in parallel using Ray."""
 
-        # Wrap your existing per-experiment logic into a callable that matches (base_experiment, index)
         def create_execute_mlmodules_fn(base_experiment, index: int):
             # Keep your logging the same
             logger.set_log_group(LogGroup.PROCESSING, f"EXP {index}")
@@ -114,7 +127,7 @@ class OctoManager:
         results = run_parallel_outer_ray(
             base_experiments=self.base_experiments,
             create_execute_mlmodules=create_execute_mlmodules_fn,
-            num_workers=num_workers,
+            num_workers=self.num_outer_workers,
         )
         return results
 
@@ -166,15 +179,25 @@ class OctoManager:
         experiment.num_assigned_cpus = self._calculate_assigned_cpus()
         return experiment
 
-    def _calculate_assigned_cpus(self):
+    def _calculate_assigned_cpus(self) -> int:
+        """Calculate CPUs assigned to each individual experiment for inner parallelization.
+
+        Each experiment uses these CPUs to parallelize its internal trainings (Bag).
+
+        Strategy:
+        - Outer parallelization: Distribute CPUs (after reservation) evenly across outer workers
+        - Sequential/Single: Use all CPUs (after reservation)
+
+        Returns:
+            Number of CPUs each experiment can use for inner parallelization.
+        """
         if self.configs.manager.outer_parallelization:
-            n_outer = self.configs.study.n_folds_outer
-            # reserve 2 CPUs for the outer processes
-            return math.floor((cpu_count() - 2) / n_outer)
-        elif self.configs.manager.run_single_experiment_num != -1:
-            return cpu_count() - 1
+            # Distribute CPUs evenly among outer workers
+            cpus_per_experiment = max(1, math.floor(self.num_available_cpus / self.num_outer_workers))
+            return cpus_per_experiment
         else:
-            return cpu_count() - 1
+            # Sequential or single experiment: use all available CPUs
+            return self.num_available_cpus
 
     def _create_sequence_directory(self, experiment):
         path_study_sequence = experiment.path_study.joinpath(experiment.sequence_path)

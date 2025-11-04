@@ -42,7 +42,7 @@ config_study = ConfigStudy(
     silently_overwrite_study=True,
 )
 
-config_manager = ConfigManager(outer_parallelization=True, run_single_experiment_num=0)
+config_manager = ConfigManager(outer_parallelization=True, run_single_experiment_num=-1)
 
 config_sequence = ConfigSequence(
     [

@@ -131,7 +131,7 @@ def get_model_configs():
         "multiclass": {
             "models": available_models["multiclass"],
             "target_assignments": {"target": "target_multiclass"},
-            "target_metric": "Accuracy",
+            "target_metric": "ACCBAL_MC",
         },
     }
 

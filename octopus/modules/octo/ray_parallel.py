@@ -2,9 +2,10 @@
 
 import os
 from collections.abc import Callable, Iterable
-from typing import Any
+from typing import Any, cast
 
 import ray
+from ray import ObjectRef
 
 
 def _get_env_address() -> str | None:
@@ -78,11 +79,11 @@ def setup_ray_for_external_library() -> None:
         os.environ.pop("RAY_ADDRESS", None)
 
 
-def run_parallel_outer_ray(
+def run_parallel_outer_ray[T](
     base_experiments: Iterable[Any],
-    create_execute_mlmodules: Callable[[Any, int], Any],
+    create_execute_mlmodules: Callable[[Any, int], T],
     num_workers: int,
-) -> list[Any]:
+) -> list[T]:
     """Execute create_execute_mlmodules(base_experiment, index) in parallel using Ray.
 
     Preserves input order and limits concurrency to num_workers. Outer tasks reserve
@@ -95,7 +96,7 @@ def run_parallel_outer_ray(
         num_workers: Maximum number of concurrent outer tasks.
 
     Returns:
-        List[Any]: Results from create_execute_mlmodules in the same order as base_experiments.
+        Results from create_execute_mlmodules in the same order as base_experiments.
     """
     # Ensure Ray is ready in the driver (connect or start local)
     init_ray(start_local_if_missing=True)
@@ -113,8 +114,8 @@ def run_parallel_outer_ray(
         return []
 
     max_concurrent = max(1, min(num_workers, n))
-    results: list[Any] = [None] * n  # type: ignore[assignment]
-    inflight = []
+    results: list[T | None] = [None] * n
+    inflight: list[ObjectRef] = []
     next_i = 0
 
     # Prime up to max_concurrent tasks
@@ -131,7 +132,7 @@ def run_parallel_outer_ray(
             inflight.append(_outer_task.remote(next_i, items[next_i]))
             next_i += 1
 
-    return results
+    return cast("list[T]", results)
 
 
 def _execute_training(training: Any, idx: int) -> Any:

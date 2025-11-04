@@ -330,11 +330,11 @@ class EfsCore:
             feature_importance_df = pd.DataFrame({"feature": subset, "importance": feature_importances})
 
             # ensemble metric
-            metric_function = metrics_inventory.get_metric_function(self.target_metric)
+            metric_config = metrics_inventory.get_metric_config(self.target_metric)
             if self.metric_input == "probabilities":
-                best_ensel_performance = metric_function(y, cv_preds_df["probabilities"])
+                best_ensel_performance = metric_config.compute(y, cv_preds_df["probabilities"])
             else:
-                best_ensel_performance = metric_function(y, cv_preds_df["predictions"])
+                best_ensel_performance = metric_config.compute(y, cv_preds_df["predictions"])
             print(f"Subset {i}, best ensemble performance: {best_ensel_performance:.4f}")
 
             # Select features with non-zero importance
@@ -387,11 +387,11 @@ class EfsCore:
             else groupby_df["predictions"]
         )
 
-        metric_function = metrics_inventory.get_metric_function(self.target_metric)
+        metric_config = metrics_inventory.get_metric_config(self.target_metric)
         ensel_performance = (
-            metric_function(y, model_predictions)
+            metric_config.compute(y, model_predictions)
             if self.metric_input == "predictions"
-            else metric_function(y, groupby_df["probabilities"])
+            else metric_config.compute(y, groupby_df["probabilities"])
         )
 
         return ensel_performance

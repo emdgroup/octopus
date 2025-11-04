@@ -1,7 +1,5 @@
 """Multiclass metrics."""
 
-from functools import partial
-
 from sklearn.metrics import balanced_accuracy_score, roc_auc_score
 
 from .config import MetricConfig
@@ -34,7 +32,8 @@ class AUCROCMacroMulticlassMetric:
         """Create metric config."""
         return MetricConfig(
             name="AUCROC_MACRO",
-            metric_function=partial(roc_auc_score, multi_class="ovr", average="macro"),
+            metric_function=roc_auc_score,
+            metric_params={"multi_class": "ovr", "average": "macro"},
             ml_type="multiclass",
             higher_is_better=True,
             prediction_type="predict_proba",
@@ -51,7 +50,8 @@ class AUCROCWeightedMulticlassMetric:
         """Create metric config."""
         return MetricConfig(
             name="AUCROC_WEIGHTED",
-            metric_function=partial(roc_auc_score, multi_class="ovr", average="weighted"),
+            metric_function=roc_auc_score,
+            metric_params={"multi_class": "ovr", "average": "weighted"},
             ml_type="multiclass",
             higher_is_better=True,
             prediction_type="predict_proba",

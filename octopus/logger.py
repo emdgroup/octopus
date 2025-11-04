@@ -147,7 +147,7 @@ def setup_logger(name="OctoManager", log_file="octo_manager.log", level=logging.
         else:
             raise ValueError("Group must be an instance of LogGroup")
 
-    logger.set_log_group = set_log_group
+    logger.set_log_group = set_log_group  # type: ignore[attr-defined]
 
     return logger
 

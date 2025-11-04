@@ -183,12 +183,12 @@ def relevance_fstats(
 ) -> pd.DataFrame:
     """Calculate f-statistics based relevance."""
     features = features[feature_columns]
-    target = target.to_numpy().ravel()
+    target_array = target.to_numpy().ravel()
 
     if ml_type == "classification":
-        values, _ = f_classif(features, target)
+        values, _ = f_classif(features, target_array)
     elif ml_type == "regression":
-        values, _ = f_regression(features, target)
+        values, _ = f_regression(features, target_array)
     else:
         raise ValueError(f"ML-type {ml_type} not supported.")
 

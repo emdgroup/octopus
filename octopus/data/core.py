@@ -34,14 +34,13 @@ class OctoData:
     only one target is allowed. For time-to-event, two targets need to be provided.
     """
 
-    datasplit_type: Literal["sample", "group_features", "group_sample_and_features"] | None = field(
-        validator=validators.optional(validators.in_(["sample", "group_features", "group_sample_and_features"]))
-    )
-    """Type of datasplit. Allowed are `sample`, `group_features`
-    and `group_sample_and_features`."""
-
     sample_id: str = field(validator=validators.instance_of(str))
     """Identifier for sample instances."""
+
+    datasplit_type: Literal["sample", "group_features", "group_sample_and_features"] = field(
+        default="sample", validator=validators.in_(["sample", "group_features", "group_sample_and_features"])
+    )
+    """Type of datasplit. Allowed are `sample`, `group_features` and `group_sample_and_features`."""
 
     row_id: str | None = field(
         default=Factory(lambda: None),

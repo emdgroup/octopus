@@ -68,7 +68,7 @@ class BorutaCore:
     @property
     def path_module(self) -> Path:
         """Module path."""
-        return self.experiment.path_study.joinpath(self.experiment.path_sequence_item)
+        return self.experiment.path_study.joinpath(self.experiment.sequence_path)
 
     @property
     def path_results(self) -> Path:

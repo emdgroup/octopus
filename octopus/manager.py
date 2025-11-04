@@ -161,7 +161,8 @@ class OctoManager:
         experiment.id = f"{experiment.id}_{element.sequence_id}"
         experiment.sequence_id = element.sequence_id
         experiment.input_sequence_id = element.input_sequence_id
-        experiment.path_sequence_item = Path(f"experiment{experiment.experiment_id}", f"sequence{element.sequence_id}")
+        # Note: attrs strips underscore from init param, so we assign directly to the private field
+        experiment._sequence_path = Path(f"experiment{experiment.experiment_id}", f"sequence{element.sequence_id}")
         experiment.num_assigned_cpus = self._calculate_assigned_cpus()
         return experiment
 
@@ -176,7 +177,7 @@ class OctoManager:
             return cpu_count() - 1
 
     def _create_sequence_directory(self, experiment):
-        path_study_sequence = experiment.path_study.joinpath(experiment.path_sequence_item)
+        path_study_sequence = experiment.path_study.joinpath(experiment.sequence_path)
         path_study_sequence.mkdir(parents=True, exist_ok=True)
         return path_study_sequence
 

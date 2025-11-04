@@ -75,7 +75,7 @@ def mock_octo_experiment(correlated_data, octo_config):
         experiment_id=1,
         sequence_id=2,
         input_sequence_id=3,
-        path_sequence_item=Path("/mock/path"),
+        sequence_path=Path("/mock/path"),
         configs=octo_config,
         datasplit_column="split",
         row_column="row_id",

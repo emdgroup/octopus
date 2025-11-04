@@ -154,7 +154,7 @@ def get_performance_from_model(
                 predictions = predictions.to_numpy()  # Convert to NumPy array if it's a DataFrame
             performance = metric_config.compute(target, predictions)
 
-    raise ValueError(f"Unknown ml_type: {ml_type}")
+    return float(performance)
 
 
 def get_performance_from_predictions(

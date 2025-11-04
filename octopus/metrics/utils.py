@@ -120,7 +120,7 @@ def get_performance_from_model(
             performance = metric_config.compute(target, probabilities)
 
         else:
-            probabilities = model.predict_proba(input_data)
+            probabilities = model.predict_proba(input_data)  # FIXME: this should be predict(), not predict_proba()
             if isinstance(probabilities, pd.DataFrame):
                 probabilities = probabilities.to_numpy()  # Convert to NumPy array
 

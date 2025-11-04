@@ -184,7 +184,7 @@ class ObjectiveOptuna:
     def _save_topn_trials(self, bag, target_value, n_trial):
         max_n_trials = self.experiment.ml_config.ensel_n_save_trials
         path_save = self.experiment.path_study.joinpath(
-            self.experiment.path_sequence_item,
+            self.experiment.sequence_path,
             "trials",
             f"study{self.study_name}trial{n_trial}_bag.pkl",
         )

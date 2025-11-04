@@ -21,41 +21,36 @@ if TYPE_CHECKING:
 
 @define
 class OctoExperiment[ConfigType: BaseSequenceItem]:
-    """Experiment."""
+    """Represents an Octopus experiment for ML pipeline execution.
+
+    An OctoExperiment exists in two distinct states representing different stages of the
+    ML workflow. The lifecycle begins with base experiments created during cross-validation
+    data splitting. These base experiments serve as templates containing only the train/test
+    data splits. When the pipeline executes, the manager deep copies base experiments and
+    transforms them into sequence experiments by attaching ML module configurations (e.g.,
+    feature selection, model training). This two-stage design separates data preparation
+    from pipeline execution, allowing the same data splits to be reused across different
+    pipeline configurations.
+    """
 
     id: str = field(validator=[validators.instance_of(str)])
     """ID"""
 
-    experiment_id: int = field(
-        validator=[
-            validators.instance_of(int),  # Ensure it's an int
-            validators.ge(0),  # Ensure int is >= 0
-        ]
-    )
+    experiment_id: int = field(validator=[validators.instance_of(int), validators.ge(0)])
     """Identifier for the experiment."""
 
     sequence_id: int | None = field(
-        validator=validators.optional(
-            validators.and_(
-                validators.instance_of(int),  # Ensure it's an int if not None
-                validators.ge(0),  # Ensure int is >= 0
-            )
-        )
+        validator=validators.optional(validators.and_(validators.instance_of(int), validators.ge(0)))
     )
     """Identifier for the sequence item."""
 
     input_sequence_id: int | None = field(
-        validator=validators.optional(
-            validators.and_(
-                validators.instance_of(int),  # Ensure it's an int if not None
-                validators.ge(-1),  # Ensure int is >= -1
-            )
-        )
+        validator=validators.optional(validators.and_(validators.instance_of(int), validators.ge(-1)))
     )
     """Identifier for the input sequence item."""
 
-    path_sequence_item: Path | None = field(validator=validators.optional(validators.instance_of(Path)))
-    """File system path to the sequence item."""
+    _sequence_path: Path | None = field(validator=validators.optional(validators.instance_of(Path)))
+    """Internal path storage. Use sequence_path property to access safely."""
 
     configs: OctoConfig = field(validator=[validators.instance_of(OctoConfig)])
     """Configuration settings for the experiment."""
@@ -84,7 +79,6 @@ class OctoExperiment[ConfigType: BaseSequenceItem]:
     ml_module: str = field(init=False, default="", validator=[validators.instance_of(str)])
     """Name of the machine learning module used."""
 
-    # number of cpus available for each experiment
     num_assigned_cpus: int = field(init=False, default=0, validator=[validators.instance_of(int)])
     """Number of CPUs assigned to the experiment."""
 
@@ -109,12 +103,77 @@ class OctoExperiment[ConfigType: BaseSequenceItem]:
         return Path(self.configs.study.path, self.configs.study.name)
 
     @property
+    def is_base_experiment(self) -> bool:
+        """Check if this is a base experiment (no sequence_id)."""
+        return self.sequence_id is None
+
+    @property
+    def is_sequence_experiment(self) -> bool:
+        """Check if this is a sequence experiment (has sequence_id)."""
+        return self.sequence_id is not None
+
+    @property
+    def sequence_path(self) -> Path:
+        """Get the sequence item path.
+
+        Use this in modules that require a fully initialized experiment
+        (not a base experiment).
+
+        Returns:
+            Path: The sequence item path
+
+        Raises:
+            ValueError: If this is a base experiment.
+            RuntimeError: If validation failed and _sequence_path is None for a sequence experiment.
+        """
+        if self.is_base_experiment:
+            raise ValueError(
+                "Cannot access sequence_path on a base experiment. "
+                "This operation requires a sequence experiment with sequence_path set."
+            )
+        if self._sequence_path is None:
+            raise RuntimeError(
+                "Validation failed: sequence experiment has no sequence_path set. "
+                f"This should not happen (sequence_id={self.sequence_id})"
+            )
+        return self._sequence_path
+
+    @property
     def ml_type(self) -> str:
         """Get ml_type from config."""
         return self.configs.study.ml_type
 
     def __attrs_post_init__(self):
+        self._validate_experiment_state()
         self.feature_groups = self.calculate_feature_groups(self.feature_columns)
+
+    def _validate_experiment_state(self) -> None:
+        """Validate consistency between base and sequence experiment fields.
+
+        Ensures that sequence-related fields (sequence_id, input_sequence_id,
+        _sequence_path) are consistent with the experiment type (base vs sequence).
+
+        Raises:
+            ValueError: If fields are inconsistent with the experiment type.
+        """
+        if self.sequence_id is None:
+            if self._sequence_path is not None:
+                raise ValueError(
+                    "Base experiments (sequence_id=None) cannot have _sequence_path set. "
+                    f"Got _sequence_path={self._sequence_path}"
+                )
+            if self.input_sequence_id is not None:
+                raise ValueError(
+                    "Base experiments (sequence_id=None) cannot have input_sequence_id set. "
+                    f"Got input_sequence_id={self.input_sequence_id}"
+                )
+        else:
+            if self._sequence_path is None:
+                raise ValueError(f"Sequence experiments (sequence_id={self.sequence_id}) must have _sequence_path set")
+            if self.input_sequence_id is None:
+                raise ValueError(
+                    f"Sequence experiments (sequence_id={self.sequence_id}) must have input_sequence_id set"
+                )
 
     def calculate_feature_groups(self, feature_columns: list[str]) -> dict[str, list[str]]:
         """Calculate feature groups based on correlation thresholds."""

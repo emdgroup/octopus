@@ -43,7 +43,7 @@ def octo_experiment(sample_data):
         experiment_id=1,
         sequence_id=1,
         input_sequence_id=1,
-        path_sequence_item=Path("/path/to/sequence_item"),
+        sequence_path=Path("/path/to/sequence_item"),
         configs=config,
         datasplit_column="target",
         row_column="row_id",
@@ -60,7 +60,7 @@ def test_initialization(octo_experiment):
     assert octo_experiment.experiment_id == 1
     assert octo_experiment.sequence_id == 1
     assert octo_experiment.input_sequence_id == 1
-    assert octo_experiment.path_sequence_item == Path("/path/to/sequence_item")
+    assert octo_experiment.sequence_path == Path("/path/to/sequence_item")
     assert octo_experiment.datasplit_column == "target"
     assert octo_experiment.row_column == "row_id"
     assert octo_experiment.feature_columns == ["feature1", "feature2", "feature3"]

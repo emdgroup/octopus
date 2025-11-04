@@ -17,6 +17,7 @@ def mock_config():
     config = Mock(spec=OctoConfig)
     config.manager.outer_parallelization = False
     config.manager.run_single_experiment_num = -1
+    config.manager.reserve_cpus = 1
     config.study.n_folds_outer = 3
     config.sequence.sequence_items = [
         Mock(

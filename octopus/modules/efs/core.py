@@ -216,20 +216,23 @@ class EfsCore:
         # Report performance on test set
 
         # Save results to JSON
-        results = {
-            # "best_cv_score": best_cv_score,
-            # "best_params": best_params,
-            # "optimal_features": int(optimal_features),
-            # "selected_features": self.experiment.selected_features,
-            # "Best Mean CV Score": max(rfecv.cv_results_["mean_test_score"]),
-            # "Dev set performance": test_score,
-        }
         with open(
             self.path_results.joinpath("results.json"),
             "w",
             encoding="utf-8",
         ) as f:
-            json.dump(results, f, indent=4)
+            json.dump(
+                {
+                    # "best_cv_score": best_cv_score,
+                    # "best_params": best_params,
+                    # "optimal_features": int(optimal_features),
+                    # "selected_features": self.experiment.selected_features,
+                    # "Best Mean CV Score": max(rfecv.cv_results_["mean_test_score"]),
+                    # "Dev set performance": test_score,
+                },
+                f,
+                indent=4,
+            )
 
         return self.experiment
 

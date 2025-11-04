@@ -68,8 +68,8 @@ def test_run_outer_experiments_parallel_A(octo_manager):
 
     with (
         patch.object(type(octo_manager), "_run_parallel_ray") as mock_run,
-        patch("octopus.manager.init_ray"),
-        patch("octopus.manager.shutdown_ray"),
+        patch("octopus.manager.core.init_ray"),
+        patch("octopus.manager.core.shutdown_ray"),
     ):
         # Act
         octo_manager.run_outer_experiments()
@@ -81,9 +81,9 @@ def test_run_outer_experiments_parallel_B(octo_manager):
     octo_manager.configs.manager.outer_parallelization = True
 
     with (
-        patch("octopus.manager.init_ray"),
-        patch("octopus.manager.shutdown_ray"),
-        patch("octopus.manager.run_parallel_outer_ray", return_value=[True]) as mock_run,
+        patch("octopus.manager.core.init_ray"),
+        patch("octopus.manager.core.shutdown_ray"),
+        patch("octopus.manager.core.run_parallel_outer_ray", return_value=[True]) as mock_run,
     ):
         octo_manager.run_outer_experiments()
 

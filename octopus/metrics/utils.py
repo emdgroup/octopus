@@ -82,7 +82,6 @@ def get_performance_from_model(
     target = data[target_col]
 
     metric_config = metrics_inventory.get_metric_config(target_metric)
-    metric_function = metrics_inventory.get_metric_function(target_metric)
     ml_type = metric_config.ml_type
     prediction_type = metric_config.prediction_type
 
@@ -91,6 +90,8 @@ def get_performance_from_model(
         estimate = model.predict(data[feature_columns])
         event_time = data[target_assignments["duration"]].astype(float)
         event_indicator = data[target_assignments["event"]].astype(bool)
+        # For timetoevent, we pass three arguments, so we cannot use compute()
+        metric_function = metrics_inventory.get_metric_function(target_metric)
         performance = metric_function(event_indicator, event_time, estimate)
 
     # Get target for non-time-to-event tasks
@@ -110,27 +111,48 @@ def get_performance_from_model(
         probabilities = _to_numpy(model.predict_proba(input_data))[:, positive_class_idx]
 
         if prediction_type == "predict_proba":
-            return float(metric_function(target, probabilities))
+            probabilities = model.predict_proba(input_data)
+            # Convert to NumPy array if it's a DataFrame
+            if isinstance(probabilities, pd.DataFrame):
+                probabilities = probabilities.to_numpy()  # Convert to NumPy array
 
-        predictions = (probabilities >= threshold).astype(int)
-        return float(metric_function(target, predictions))
+            probabilities = probabilities[:, positive_class_idx]  # Get probabilities for positive class
+            performance = metric_config.compute(target, probabilities)
+
+        else:
+            probabilities = model.predict_proba(input_data)
+            if isinstance(probabilities, pd.DataFrame):
+                probabilities = probabilities.to_numpy()  # Convert to NumPy array
+
+            probabilities = probabilities[:, positive_class_idx]  # Get probabilities for positive class
+            predictions = (probabilities >= threshold).astype(int)
+            performance = metric_config.compute(target, predictions)
 
     # Multiclass classification
     if ml_type == "multiclass":
         if prediction_type == "predict_proba":
-            probabilities = _to_numpy(model.predict_proba(input_data))
-            return float(metric_function(target, probabilities))
+            probabilities = model.predict_proba(input_data)
+            # Convert to NumPy array if it's a DataFrame
+            if isinstance(probabilities, pd.DataFrame):
+                probabilities = probabilities.to_numpy()  # Convert to NumPy array
+            performance = metric_config.compute(target, probabilities)
 
-        predictions = _to_numpy(model.predict(input_data))
-        return float(metric_function(target, predictions))
+        else:
+            predictions = model.predict(input_data)
+            if isinstance(predictions, pd.DataFrame):
+                predictions = predictions.to_numpy()  # Convert to NumPy array if it's a DataFrame
+            performance = metric_config.compute(target, predictions)
 
     # Regression
     if ml_type == "regression":
         if prediction_type == "predict_proba":
             raise ValueError("predict_proba not supported for regression")
 
-        predictions = _to_numpy(model.predict(input_data))
-        return float(metric_function(target, predictions))
+        else:
+            predictions = model.predict(input_data)
+            if isinstance(predictions, pd.DataFrame):
+                predictions = predictions.to_numpy()  # Convert to NumPy array if it's a DataFrame
+            performance = metric_config.compute(target, predictions)
 
     raise ValueError(f"Unknown ml_type: {ml_type}")
 
@@ -163,7 +185,6 @@ def get_performance_from_predictions(
     """
     # Get metric configuration
     metric_config = metrics_inventory.get_metric_config(target_metric)
-    metric_function = metrics_inventory.get_metric_function(target_metric)
     ml_type = metric_config.ml_type
     prediction_type = metric_config.prediction_type
 
@@ -178,6 +199,8 @@ def get_performance_from_predictions(
                 estimate = pred_df["prediction"]
                 event_time = pred_df[target_assignments["duration"]].astype(float)
                 event_indicator = pred_df[target_assignments["event"]].astype(bool)
+                # For timetoevent, we pass three arguments, so we cannot use compute()
+                metric_function = metrics_inventory.get_metric_function(target_metric)
                 perf_value = metric_function(event_indicator, event_time, estimate)
 
             else:
@@ -191,12 +214,11 @@ def get_performance_from_predictions(
                         raise ValueError("positive_class must be provided for classification tasks")
 
                     probabilities = pred_df[positive_class]
-
-                    if prediction_type == "predict_proba":
-                        perf_value = float(metric_function(target, probabilities))
-                    else:
-                        predictions_binary = (probabilities >= threshold).astype(int)
-                        perf_value = float(metric_function(target, predictions_binary))
+                    perf_value = metric_config.compute(target, probabilities)
+                else:
+                    probabilities = pred_df[positive_class]
+                    predictions_binary = (probabilities >= threshold).astype(int)
+                    perf_value = metric_config.compute(target, predictions_binary)
 
             elif ml_type == "multiclass":
                 if prediction_type == "predict_proba":
@@ -217,19 +239,17 @@ def get_performance_from_predictions(
                                 f"Found: {prob_columns_sorted}, expected: {expected_sequence}"
                             )
 
-                    probabilities = pred_df[prob_columns].to_numpy()
-                    perf_value = metric_function(target, probabilities)
+                    probabilities_array = pred_df[prob_columns].to_numpy()
+                    perf_value = metric_config.compute(target, probabilities_array)
                 else:
                     predictions_class = pred_df["prediction"].astype(int)
-                    perf_value = metric_function(target, predictions_class)
+                    perf_value = metric_config.compute(target, predictions_class)
 
-                # Regression
-                elif ml_type == "regression":
-                    if prediction_type == "predict_proba":
-                        raise ValueError("predict_proba not supported for regression")
-
-                    predictions_reg = pred_df["prediction"]
-                    perf_value = float(metric_function(target, predictions_reg))
+            elif ml_type == "regression":
+                if prediction_type == "predict_proba":
+                    raise ValueError("predict_proba not supported for regression")
+                predictions_reg = pred_df["prediction"]
+                perf_value = metric_config.compute(target, predictions_reg)
 
                 else:
                     raise ValueError(f"Unknown ml_type: {ml_type}")

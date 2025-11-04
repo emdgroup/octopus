@@ -98,7 +98,8 @@ class OctoML:
     def _save_data_report(self, path_study: Path) -> None:
         """Save data report."""
         report_df = self.data.report
-        report_df.to_csv(path_study.joinpath("data", "data_health_report.csv"), sep=";")
+        if report_df is not None and not report_df.empty:
+            report_df.to_csv(path_study.joinpath("data", "data_health_report.csv"), sep=";")
 
     def _check_for_data_issues(self):
         """Check for data issues."""

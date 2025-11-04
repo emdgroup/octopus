@@ -193,7 +193,7 @@ class TestRocCore:
             mock_experiment.target_assignments = target_assignments
             mock_experiment.ml_config = roc_config
             mock_experiment.path_study = Path(temp_dir)
-            mock_experiment.path_sequence_item = "roc_test"
+            mock_experiment.sequence_path = Path("roc_test")
             mock_experiment.selected_features = []
 
             return mock_experiment
@@ -539,7 +539,7 @@ class TestRocIntegration:
             mock_experiment.target_assignments = target_cols
             mock_experiment.ml_config = roc_config
             mock_experiment.path_study = Path(temp_dir)
-            mock_experiment.path_sequence_item = "roc_test"
+            mock_experiment.sequence_path = Path("roc_test")
             mock_experiment.selected_features = []
 
             with patch("shutil.rmtree"), patch("pathlib.Path.mkdir"):

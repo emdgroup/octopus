@@ -1,8 +1,9 @@
 """Machine learning models config."""
 
-from typing import Protocol
-
+import numpy as np
+import pandas as pd
 from attrs import Attribute, define, field, validators
+from sklearn.base import BaseEstimator
 
 from octopus.models.hyperparameter import Hyperparameter
 
@@ -28,7 +29,11 @@ def validate_hyperparameters(instance: "ModelConfig", attribute: Attribute, valu
             raise ValueError(f"""Hyperparameter '{hyperparameter.name}' is not allowed in 'hyperparameters'.""")
 
 
-class BaseModel(Protocol):
+type OctoArrayLike = np.typing.ArrayLike
+type OctoMatrixLike = np.ndarray | pd.DataFrame
+
+
+class BaseModel(BaseEstimator):
     """Base model class."""
 
     def fit(self, X, y, *args, **kwarfs):
@@ -49,7 +54,7 @@ class BaseModel(Protocol):
 
     def set_params(self, **kwargs) -> "BaseModel":
         """Set parameters."""
-        ...
+        return self
 
 
 @define

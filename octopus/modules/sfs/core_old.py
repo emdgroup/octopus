@@ -1,3 +1,4 @@
+# type: ignore
 """SFS Core (sequential feature selection)."""
 
 import copy

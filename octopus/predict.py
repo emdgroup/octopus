@@ -1,3 +1,4 @@
+# type: ignore
 """Octopus prediction."""
 
 # import itertools

@@ -13,12 +13,12 @@ def _to_numpy(data: Any) -> np.ndarray:
     return data.to_numpy() if isinstance(data, pd.DataFrame) else np.asarray(data)
 
 
-def _get_probability_columns(pred_df: pd.DataFrame, target_col: Any) -> list[int]:
+def _get_probability_columns(pred_df: pd.DataFrame, target_col: str) -> list[int]:
     """Extract and validate probability columns for multiclass predictions.
 
     Args:
         pred_df: Prediction DataFrame
-        target_col: Target column name to exclude
+        target_col: Target column name (string) to exclude
 
     Returns:
         Sorted list of probability column indices

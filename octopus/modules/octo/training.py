@@ -468,12 +468,11 @@ class Training:
         model = self.model
         feature_groups = self.feature_groups
 
+        target_cols = list(target_assignments.values())
         if partition == "dev":
             # concat processed input + target columns
-            target_cols = list(target_assignments.values())
             data = pd.concat([self.x_dev_processed, self.data_dev[target_cols]], axis=1)
         elif partition == "test":
-            target_cols = list(target_assignments.values())
             data = pd.concat([self.x_test_processed, self.data_test[target_cols]], axis=1)
 
         if not set(feature_columns).issubset(data.columns):

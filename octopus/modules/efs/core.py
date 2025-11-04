@@ -121,7 +121,7 @@ class EfsCore:
         return self.experiment.data_traindev[self.experiment.feature_columns]
 
     @property
-    def row_ids_traindev(self) -> pd.DataFrame:
+    def row_ids_traindev(self) -> pd.Series:
         """Row IDs for traindev."""
         return self.experiment.data_traindev[self.row_column]
 
@@ -365,7 +365,7 @@ class EfsCore:
 
         self.model_table = self.model_table.sort_values(by="performance", ascending=ascending).reset_index(drop=True)
 
-    def _ensemble_models(self, model_ids):
+    def _ensemble_models(self, model_ids) -> float:
         """Ensemble predictions of models in model_table."""
         # Filter the model_table to include only the specified IDs
         filtered_df = self.model_table[self.model_table["id"].isin(model_ids)]
@@ -378,12 +378,12 @@ class EfsCore:
         # print("groupby_df", groupby_df.head(20)["predictions"])
 
         # calculate ensemble performance
-        ensel_performance = {}
+
         y = self.y_traindev.squeeze(axis=1)
         # print("y", y)
         # print("-----------------------------------")
 
-        # needs improvement!!
+        # TODO: needs improvement!!
         model_predictions = (
             groupby_df["predictions"].round().astype(int)
             if self.target_metric in ["ACC", "ACCBAL"]

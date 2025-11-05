@@ -3,7 +3,7 @@
 import contextlib
 import math
 import statistics
-from typing import Any, Literal
+from typing import Literal
 
 import numpy as np
 import pandas as pd
@@ -34,7 +34,7 @@ class ExperimentInfo:
     """Row identifier column."""
     target_assignments: dict[str, str] = field(validator=validators.instance_of(dict))
     """Target assignments."""
-    target_metric: Any
+    target_metric: str = field(validator=validators.instance_of(str))
     """Target metric."""
     ml_type: str = field(validator=validators.instance_of(str))
     """Machine learning type."""

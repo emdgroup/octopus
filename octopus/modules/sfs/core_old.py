@@ -132,7 +132,7 @@ class SfsCore:
         return self.experiment.target_assignments
 
     @property
-    def target_metric(self) -> str | list[str]:
+    def target_metric(self) -> str:
         """Target metric."""
         return self.experiment.configs.study.target_metric
 

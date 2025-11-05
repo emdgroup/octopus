@@ -60,7 +60,7 @@ class Training:
     data_test: pd.DataFrame = field(validator=[validators.instance_of(pd.DataFrame)])
     """Data test."""
 
-    target_metric: str | list[str] = field(validator=[validators.instance_of((str, list))])
+    target_metric: str = field(validator=[validators.instance_of(str)])
     """Target metric."""
 
     max_features: int = field(validator=[validators.instance_of(int)])

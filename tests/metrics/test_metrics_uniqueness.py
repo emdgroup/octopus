@@ -10,6 +10,7 @@ import pytest
 
 from octopus.metrics.inventory import MetricsInventory
 from octopus.metrics.registry import MetricRegistry
+from octopus.models.config import ML_TYPES
 
 
 class TestMetricsUniqueness:
@@ -96,7 +97,7 @@ class TestMetricsUniqueness:
 
         Ensures utils functions can properly deduce ML types.
         """
-        valid_ml_types = {"regression", "classification", "multiclass", "timetoevent"}
+        valid_ml_types = set(ML_TYPES)
         invalid_metrics = []
         ml_type_distribution = defaultdict(list)
 

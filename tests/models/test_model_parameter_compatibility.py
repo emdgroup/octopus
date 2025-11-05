@@ -6,6 +6,7 @@ from typing import Any
 
 import pytest
 
+from octopus.models.config import ML_TYPES
 from octopus.models.hyperparameter import (
     CategoricalHyperparameter,
     FixedHyperparameter,
@@ -106,7 +107,7 @@ def test_all_models_have_valid_configs():
             config = inventory.get_model_config(model_name)
             assert config.name == model_name
             assert config.model_class is not None
-            assert config.ml_type in ["classification", "regression", "timetoevent"]
+            assert config.ml_type in ML_TYPES
         except Exception as e:
             config_errors.append(f"{model_name}: {e!s}")
 

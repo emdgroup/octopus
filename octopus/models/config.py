@@ -1,5 +1,7 @@
 """Machine learning models config."""
 
+from typing import Literal
+
 import numpy as np
 import pandas as pd
 from attrs import Attribute, define, field, validators
@@ -31,6 +33,12 @@ def validate_hyperparameters(instance: "ModelConfig", attribute: Attribute, valu
 
 type OctoArrayLike = np.typing.ArrayLike
 type OctoMatrixLike = np.ndarray | pd.DataFrame
+
+ML_TYPES = ["classification", "multiclass", "regression", "timetoevent"]
+type MLType = Literal["classification", "multiclass", "regression", "timetoevent"]
+
+PRED_TYPES = ["predict", "predict_proba"]
+type PredType = Literal["predict", "predict_proba"]
 
 
 class BaseModel(BaseEstimator):
@@ -64,7 +72,7 @@ class ModelConfig:
     name: str
     model_class: type[BaseModel]
     feature_method: str
-    ml_type: str = field(validator=validators.in_(["regression", "classification", "timetoevent"]))
+    ml_type: MLType = field(validator=validators.in_(ML_TYPES))
     hyperparameters: list[Hyperparameter] = field(validator=validate_hyperparameters)
     n_repeats: None | int = field(factory=lambda: None)
     n_jobs: None | str = field(factory=lambda: "n_jobs")

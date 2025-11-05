@@ -28,7 +28,7 @@ logger = get_logger()
 class EnSel:
     """Ensemble Selection."""
 
-    target_metric: str | list[str] = field(validator=[validators.instance_of((str, list))])
+    target_metric: str = field(validator=[validators.instance_of(str)])
     target_assignments: dict = field(validator=[validators.instance_of(dict)])
     path_trials: Path = field(validator=[validators.instance_of(Path)])
     max_n_iterations: int = field(validator=[validators.instance_of(int)])

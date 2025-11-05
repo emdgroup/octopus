@@ -3,6 +3,7 @@
 from attrs import Attribute, Factory, define, field, validators
 
 from octopus.metrics import metrics_inventory
+from octopus.models.config import ML_TYPES, MLType
 
 
 def validate_metric(instance: "ConfigStudy", attribute: Attribute, value: str | list[str]) -> None:
@@ -32,13 +33,8 @@ class ConfigStudy:
     name: str = field(validator=[validators.instance_of(str)])
     """The name of the study."""
 
-    ml_type: str = field(
-        validator=[
-            validators.in_(["classification", "multiclass", "regression", "timetoevent"]),
-        ]
-    )
-    """The type of machine learning model.
-    Choose from "classification", "regression" or "timetoevent"."""
+    ml_type: MLType = field(validator=[validators.in_(ML_TYPES)])
+    """The type of machine learning model."""
 
     target_metric: str | list[str] = field(validator=[validate_metric])
     """The primary metric used for model evaluation."""

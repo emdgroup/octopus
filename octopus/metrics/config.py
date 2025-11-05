@@ -4,7 +4,8 @@ from collections.abc import Callable
 from typing import Any
 
 from attrs import define, field, validators
-from numpy.typing import ArrayLike
+
+from octopus.models.config import ML_TYPES, PRED_TYPES, MLType, OctoArrayLike, PredType
 
 # Type alias for metric functions
 # Metric functions should accept (y_true, y_pred, **kwargs) and return a numeric value.
@@ -25,13 +26,13 @@ class MetricConfig:
 
     name: str
     metric_function: MetricFunction = field(validator=validators.is_callable())
-    ml_type: str = field(validator=validators.in_(["regression", "classification", "multiclass", "timetoevent"]))
+    ml_type: MLType = field(validator=validators.in_(ML_TYPES))
     higher_is_better: bool = field(validator=validators.instance_of(bool))
-    prediction_type: str = field(validator=validators.in_(["predict", "predict_proba"]))
+    prediction_type: PredType = field(validator=validators.in_(PRED_TYPES))
     scorer_string: str = field(validator=validators.instance_of(str))  # needed for some sklearn functionalities
     metric_params: dict[str, Any] = field(factory=dict)
 
-    def compute(self, y_true: ArrayLike, y_pred: ArrayLike) -> float:
+    def compute(self, y_true: OctoArrayLike, y_pred: OctoArrayLike) -> float:
         """Compute the metric with stored parameters.
 
         Args:

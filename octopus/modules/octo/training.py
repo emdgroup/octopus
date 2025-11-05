@@ -468,13 +468,12 @@ class Training:
         model = self.model
         feature_groups = self.feature_groups
 
+        target_cols = list(target_assignments.values())
         if partition == "dev":
             # concat processed input + target columns
-            target_col = list(target_assignments.values())[0]
-            data = pd.concat([self.x_dev_processed, self.data_dev[[target_col]]], axis=1)
+            data = pd.concat([self.x_dev_processed, self.data_dev[target_cols]], axis=1)
         elif partition == "test":
-            target_col = list(target_assignments.values())[0]
-            data = pd.concat([self.x_test_processed, self.data_test[[target_col]]], axis=1)
+            data = pd.concat([self.x_test_processed, self.data_test[target_cols]], axis=1)
 
         if not set(feature_columns).issubset(data.columns):
             raise ValueError("Features missing in provided dataset.")
@@ -603,9 +602,9 @@ class Training:
         feature_columns = self.feature_columns
         target_assignments = self.target_assignments
         # calculate dev+test baseline scores
-        target_col = list(target_assignments.values())[0]
-        data_dev = pd.concat([self.x_dev_processed, self.data_dev[[target_col]]], axis=1)
-        data_test = pd.concat([self.x_test_processed, self.data_test[[target_col]]], axis=1)
+        target_cols = list(target_assignments.values())
+        data_dev = pd.concat([self.x_dev_processed, self.data_dev[target_cols]], axis=1)
+        data_test = pd.concat([self.x_test_processed, self.data_test[target_cols]], axis=1)
 
         baseline_dev = get_score_from_model(
             self.model,
@@ -677,9 +676,6 @@ class Training:
         by shap. The main advantage is that for linear and tree model the feature importances are calculated
         much faster.
         """
-        if getattr(self, "ml_type", None) == "timetoevent":
-            raise ValueError("SHAP feature importance not supported for timetoevent")
-
         # Select eval data
         X_eval_df = {"dev": self.x_dev_processed, "test": self.x_test_processed}.get(partition)
         if X_eval_df is None:

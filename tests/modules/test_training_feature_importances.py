@@ -72,7 +72,7 @@ class ModelCache:
         inventory = ModelInventory()
         all_models = inventory.models
 
-        models_by_type = {"classification": [], "regression": [], "timetoevent": []}
+        models_by_type = {"classification": [], "regression": [], "timetoevent": [], "multiclass": []}
         skipped_tabpfn_models = []
 
         for model_name in all_models:
@@ -123,12 +123,16 @@ def get_model_configs():
             "target_assignments": {"target": "target_reg"},
             "target_metric": "R2",
         },
-        # Removed timetoevent models to avoid ExtraTreesSurv issues
-        # "timetoevent": {
-        #     "models": available_models["timetoevent"],
-        #     "target_assignments": {"duration": "duration", "event": "event"},
-        #     "target_metric": "CI",
-        # },
+        "timetoevent": {
+            "models": available_models["timetoevent"],
+            "target_assignments": {"duration": "duration", "event": "event"},
+            "target_metric": "CI",
+        },
+        "multiclass": {
+            "models": available_models["multiclass"],
+            "target_assignments": {"target": "target_multiclass"},
+            "target_metric": "ACCBAL_MC",
+        },
     }
 
 
@@ -195,6 +199,7 @@ def test_data():
 
     # Generate targets
     data["target_class"] = np.random.choice([0, 1], n_samples)
+    data["target_multiclass"] = np.random.choice([0, 1, 2], n_samples)
     data["target_reg"] = (
         0.5 * data["num_col1"].fillna(data["num_col1"].mean())
         + 0.3 * data["num_col2"].fillna(data["num_col2"].mean())
@@ -375,6 +380,7 @@ def run_comprehensive_feature_importance_tests():
 
     # Generate targets
     data["target_class"] = np.random.choice([0, 1], n_samples)
+    data["target_multiclass"] = np.random.choice([0, 1, 2], n_samples)
     data["target_reg"] = (
         0.5 * data["num_col1"].fillna(data["num_col1"].mean())
         + 0.3 * data["num_col2"].fillna(data["num_col2"].mean())

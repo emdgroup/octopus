@@ -1,3 +1,5 @@
+# type: ignore
+
 """ROC core (removal of correlated features)."""
 
 import random

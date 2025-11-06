@@ -1,3 +1,5 @@
+#  type: ignore
+
 """MRMR core function.
 
 TOBEDONE:

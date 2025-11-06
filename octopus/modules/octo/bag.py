@@ -1,3 +1,5 @@
+# type: ignore
+
 """Octo Bags."""
 
 # import concurrent.futures

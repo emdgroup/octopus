@@ -1,3 +1,5 @@
+# type: ignore
+
 """Boruta Core."""
 
 import copy

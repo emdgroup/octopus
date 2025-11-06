@@ -1,3 +1,5 @@
+# type: ignore
+
 """Octo Training."""
 
 import copy

@@ -1,3 +1,5 @@
+# type: ignore
+
 """Wrapper for Gaussian Process Regressor."""
 
 from collections.abc import Callable

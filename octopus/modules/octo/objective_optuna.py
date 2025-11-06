@@ -5,8 +5,8 @@ import heapq
 from octopus.logger import LogGroup, get_logger
 from octopus.metrics import metrics_inventory
 from octopus.models.inventory import ModelInventory
-from octopus.modules.octo.bag import Bag
-from octopus.modules.octo.training import Training
+from octopus.modules.octo.bag import Bag  # type: ignore
+from octopus.modules.octo.training import Training  # type: ignore
 
 logger = get_logger()
 

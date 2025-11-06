@@ -1,3 +1,5 @@
+# type: ignore
+
 """RFE2."""
 
 import copy

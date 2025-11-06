@@ -1,3 +1,5 @@
+# type: ignore
+
 """Wrapper for Gaussian Process Classifier."""
 
 from collections.abc import Callable

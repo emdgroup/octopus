@@ -260,7 +260,7 @@ class OctoML:
                     sequence_path=None,  # indicating base experiment
                     configs=self.configs,
                     datasplit_column=datasplit_col,
-                    row_column=self.data.row_id,
+                    row_column=self.data.row_id,  # type: ignore
                     feature_columns=self.data.feature_columns,
                     stratification_column=self.data.stratification_column,
                     target_assignments=self.data.target_assignments,

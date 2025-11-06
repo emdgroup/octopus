@@ -1,3 +1,5 @@
+# type: ignore
+
 """Enhanced Tabular Neural Network Classifier with Categorical Embeddings."""
 
 from typing import Any

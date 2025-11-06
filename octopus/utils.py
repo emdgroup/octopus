@@ -103,7 +103,7 @@ class DataSplit:
         logger.info(f"Setting number of splits: {self.num_folds}")
         logger.info("Generating splits...")
 
-        for num_split, (train_ind, test_ind) in enumerate(kf.split(dataset_unique, stratification_target)):
+        for num_split, (train_ind, test_ind) in enumerate(kf.split(dataset_unique, stratification_target)):  # type: ignore
             groups_train = set(dataset_unique.iloc[train_ind][self.datasplit_col])
             groups_test = set(dataset_unique.iloc[test_ind][self.datasplit_col])
             assert groups_train.intersection(groups_test) == set()

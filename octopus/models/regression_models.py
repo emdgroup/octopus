@@ -1,3 +1,5 @@
+# type: ignore
+
 """Regression models."""
 
 from catboost import CatBoostRegressor

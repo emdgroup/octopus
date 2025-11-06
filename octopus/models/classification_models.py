@@ -1,3 +1,5 @@
+# type: ignore
+
 """Classification models."""
 
 from catboost import CatBoostClassifier

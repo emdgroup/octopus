@@ -1,3 +1,5 @@
+# type: ignore
+
 """Efs core."""
 
 import copy

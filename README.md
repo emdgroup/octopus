@@ -6,33 +6,23 @@ Octopus is a lightweight AutoML framework specifically designed for small datase
 
 For maximum speed it is recommended to run Octopus on a compute node with n\*m Cpus for a nxm nested cross validation. Octopus development is done, for example, on a c5.9xlarge EC2 instance.
 
-Before installation please create a new environment, for example:
+### Installation
 
-    conda create -n "your_environment_name" python=3.12
+Install the package (requires [uv](https://docs.astral.sh/uv/)):
 
-The package can be installed via
+    uv sync
 
-    pip install -e "."
+Activate the virtual environment:
 
-If you need to install additional packages (extras), you can specify them like
+    # Linux/macOS
+    source .venv/bin/activate
 
-    pip install -e ".[extra_package]"
+    # Windows
+    .venv\Scripts\activate
 
-Available extra packages are:
+Install with extras:
 
-- autogluon (inclusion of Autogluon, as a reference)
-- tabpfn (inclusion of TabPFN model, as a reference)
-- boruta (Boruta feature selection module)
-- dev (all packages + dependencies required for development)
-
-### Note for Developers
-
-Install development setup
-
-    pip install -e ".[dev]"
-
-and make sure that pre-commit and pytest complete without errors after changes
-
-    pre-commit run --all-files
-
-    pytest
+    uv sync --extra autogluon     # AutoGluon reference
+    uv sync --extra tabpfn        # TabPFN model
+    uv sync --extra boruta        # Boruta feature selection
+    uv sync --all-extras          # All extras

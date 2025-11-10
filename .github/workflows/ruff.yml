@@ -1,5 +1,6 @@
 name: Pre-commit Checks
 on: [push, pull_request]
+
 jobs:
   pre-commit:
     runs-on: ubuntu-latest
@@ -9,7 +10,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.12'
+          python-version: "3.12"
 
       - name: Install uv
         uses: astral-sh/setup-uv@v5

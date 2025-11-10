@@ -62,6 +62,7 @@ boruta = [
 autogluon = [
     "autogluon.tabular[all]>=1.4",
     "bokeh>=3.8", # missed and required by ag=1.4
+    "tokenizers>=0.13.0", # Override old tokenizers, use version with Python 3.12 wheels
 ]
 survival = [
     "scikit-survival>=0.25"

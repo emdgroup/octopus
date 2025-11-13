@@ -196,8 +196,8 @@ class TestAutogluonWorkflows:
         """Test that specific keys exist in the experiment results."""
         print("\n=== Testing Specific Keys ===")
 
-        # Find experiment directories
-        path_experiments = [f for f in study_path.glob("experiment*") if f.is_dir()]
+        # Find experiment directories (now called datasplit)
+        path_experiments = [f for f in study_path.glob("datasplit*") if f.is_dir()]
 
         assert len(path_experiments) > 0, "No experiment directories found"
 

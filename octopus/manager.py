@@ -3,7 +3,6 @@
 import copy
 import math
 import os
-from os import cpu_count
 from pathlib import Path
 
 import ray
@@ -32,12 +31,11 @@ class OctoManager:
 
     @property
     def num_available_cpus(self) -> int:
-        """Get available CPUs after reservation.
-
-        Returns total CPUs minus reserve_cpus from config, with minimum of 1.
-        """
-        total_cpus = cpu_count() or 1
-        return max(1, total_cpus - self.configs.manager.reserve_cpus)
+        """Get available CPUs after reservation."""
+        total_cpus = os.cpu_count()
+        if total_cpus is None:
+            raise RuntimeError("Could not determine number of CPUs available on the system.")
+        return total_cpus
 
     @property
     def num_outer_workers(self) -> int:
@@ -175,7 +173,7 @@ class OctoManager:
         experiment.sequence_id = element.sequence_id
         experiment.input_sequence_id = element.input_sequence_id
         # Note: attrs strips underscore from init param, so we assign directly to the private field
-        experiment._sequence_path = Path(f"experiment{experiment.experiment_id}", f"sequence{element.sequence_id}")
+        experiment._sequence_item_path = Path(f"experiment{experiment.experiment_id}", f"sequence{element.sequence_id}")
         experiment.num_assigned_cpus = self._calculate_assigned_cpus()
         return experiment
 
@@ -200,7 +198,7 @@ class OctoManager:
             return self.num_available_cpus
 
     def _create_sequence_directory(self, experiment):
-        path_study_sequence = experiment.path_study.joinpath(experiment.sequence_path)
+        path_study_sequence = experiment.path_study.joinpath(experiment.sequence_item_path)
         path_study_sequence.mkdir(parents=True, exist_ok=True)
         return path_study_sequence
 

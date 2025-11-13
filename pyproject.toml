@@ -84,8 +84,8 @@ lint = [
     "flake8==7.3.0", # see DEV TOOLS NOTE
     "pre-commit==4.3.0", # see DEV TOOLS NOTE
     "pydoclint==0.7.3", # see DEV TOOLS NOTE
-    "pyupgrade==3.20.0", # see DEV TOOLS NOTE
-    "ruff==0.12.12", # see DEV TOOLS NOTE
+    "pyupgrade==3.21.0", # see DEV TOOLS NOTE
+    "ruff==0.14.1", # see DEV TOOLS NOTE
 ]
 test = [
     "pytest>=8.4.2",

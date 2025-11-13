@@ -15,6 +15,3 @@ class ConfigManager:
 
     run_single_experiment_num: int = field(default=Factory(lambda: -1), validator=[validators.instance_of(int)])
     """Select a single experiment to execute. Defaults to -1 to run all experiments"""
-
-    reserve_cpus: int = field(default=Factory(lambda: 1), validator=[validators.instance_of(int), validators.ge(0)])
-    """Number of CPUs to reserve for system overhead."""

@@ -49,8 +49,8 @@ class OctoExperiment[ConfigType: BaseSequenceItem]:
     )
     """Identifier for the input sequence item."""
 
-    _sequence_path: Path | None = field(validator=validators.optional(validators.instance_of(Path)))
-    """Internal path storage. Use sequence_path property to access safely."""
+    _sequence_item_path: Path | None = field(validator=validators.optional(validators.instance_of(Path)))
+    """Internal path storage. Use sequence_item_path property to access safely."""
 
     configs: OctoConfig = field(validator=[validators.instance_of(OctoConfig)])
     """Configuration settings for the experiment."""
@@ -113,7 +113,7 @@ class OctoExperiment[ConfigType: BaseSequenceItem]:
         return self.sequence_id is not None
 
     @property
-    def sequence_path(self) -> Path:
+    def sequence_item_path(self) -> Path:
         """Get the sequence item path.
 
         Use this in modules that require a fully initialized experiment
@@ -124,19 +124,19 @@ class OctoExperiment[ConfigType: BaseSequenceItem]:
 
         Raises:
             ValueError: If this is a base experiment.
-            RuntimeError: If validation failed and _sequence_path is None for a sequence experiment.
+            RuntimeError: If validation failed and _sequence_item_path is None for a sequence experiment.
         """
         if self.is_base_experiment:
             raise ValueError(
-                "Cannot access sequence_path on a base experiment. "
-                "This operation requires a sequence experiment with sequence_path set."
+                "Cannot access sequence_item_path on a base experiment. "
+                "This operation requires a sequence experiment with sequence_item_path set."
             )
-        if self._sequence_path is None:
+        if self._sequence_item_path is None:
             raise RuntimeError(
-                "Validation failed: sequence experiment has no sequence_path set. "
+                "Validation failed: sequence experiment has no sequence_item_path set. "
                 f"This should not happen (sequence_id={self.sequence_id})"
             )
-        return self._sequence_path
+        return self._sequence_item_path
 
     @property
     def ml_type(self) -> str:
@@ -151,16 +151,16 @@ class OctoExperiment[ConfigType: BaseSequenceItem]:
         """Validate consistency between base and sequence experiment fields.
 
         Ensures that sequence-related fields (sequence_id, input_sequence_id,
-        _sequence_path) are consistent with the experiment type (base vs sequence).
+        _sequence_item_path) are consistent with the experiment type (base vs sequence).
 
         Raises:
             ValueError: If fields are inconsistent with the experiment type.
         """
         if self.sequence_id is None:
-            if self._sequence_path is not None:
+            if self._sequence_item_path is not None:
                 raise ValueError(
-                    "Base experiments (sequence_id=None) cannot have _sequence_path set. "
-                    f"Got _sequence_path={self._sequence_path}"
+                    "Base experiments (sequence_id=None) cannot have _sequence_item_path set. "
+                    f"Got _sequence_item_path={self._sequence_item_path}"
                 )
             if self.input_sequence_id is not None:
                 raise ValueError(
@@ -168,8 +168,10 @@ class OctoExperiment[ConfigType: BaseSequenceItem]:
                     f"Got input_sequence_id={self.input_sequence_id}"
                 )
         else:
-            if self._sequence_path is None:
-                raise ValueError(f"Sequence experiments (sequence_id={self.sequence_id}) must have _sequence_path set")
+            if self._sequence_item_path is None:
+                raise ValueError(
+                    f"Sequence experiments (sequence_id={self.sequence_id}) must have _sequence_item_path set"
+                )
             if self.input_sequence_id is None:
                 raise ValueError(
                     f"Sequence experiments (sequence_id={self.sequence_id}) must have input_sequence_id set"

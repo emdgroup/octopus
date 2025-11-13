@@ -8,4 +8,3 @@ def test_config_manager_defaults():
     config = ConfigManager()
     assert config.outer_parallelization is True
     assert config.run_single_experiment_num == -1
-    assert config.reserve_cpus == 1

@@ -84,7 +84,7 @@ class SfsCore:
     @property
     def path_module(self) -> Path:
         """Module path."""
-        return self.experiment.path_study.joinpath(self.experiment.sequence_path)
+        return self.experiment.path_study.joinpath(self.experiment.sequence_item_path)
 
     @property
     def path_results(self) -> Path:

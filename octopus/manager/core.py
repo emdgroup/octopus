@@ -106,7 +106,7 @@ class OctoManager:
     def _run_parallel_ray(self):
         """Run experiments in parallel using Ray."""
 
-        def create_execute_mlmodules_fn(base_experiment, index: int):
+        def create_execute_mlmodules_fn(base_experiment: OctoExperiment, index: int):
             # Keep your logging the same
             logger.set_log_group(LogGroup.PROCESSING, f"EXP {index}")
             logger.info("Starting execution")

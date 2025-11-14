@@ -2,15 +2,44 @@
 
 import os
 from collections.abc import Callable, Iterable
-from typing import Any, cast
+from typing import TYPE_CHECKING, Any, cast
 
 import ray
+import threadpoolctl
 from ray import ObjectRef
+
+if TYPE_CHECKING:
+    from octopus.experiment import OctoExperiment
 
 
 def _get_env_address() -> str | None:
     """Return Ray address from environment or None if not set."""
     return os.environ.get("RAY_ADDRESS") or os.environ.get("RAY_HEAD_ADDRESS")
+
+
+def _check_parallelization_disabled() -> None:
+    """Raise an error any kind of active parallelization (OMP, MKL, threadpools, ...) can be detected.
+
+    This is required to prevent accidental OMP paralleliztion inside ray processes that can lead to oversubscription.
+    """
+    from octopus.modules import _PARALLELIZATION_ENV_VARS  # noqa: PLC0415
+
+    for lib in threadpoolctl.threadpool_info():
+        if lib["num_threads"] > 1:
+            raise RuntimeError(
+                f"Active thread-level parallelization detected in {lib}."
+                "This may lead to resource oversubscription and slow execution. "
+                "Please disable thread-level parallelization by setting respective "
+                "environment variables."
+            )
+
+    for env_var in _PARALLELIZATION_ENV_VARS:
+        if os.environ.get(env_var, None) != "1":
+            raise RuntimeError(
+                f"Environment variable {env_var} is set to {os.environ.get(env_var)}. "
+                "This may lead to resource oversubscription and slow execution. "
+                "Please set it to 1 to disable thread-level parallelization."
+            )
 
 
 def init_ray(
@@ -39,11 +68,19 @@ def init_ray(
 
     addr = address or _get_env_address()
     if addr:
-        ray.init(address=addr, **kwargs)
+        ray.init(
+            address=addr,
+            runtime_env={"worker_process_setup_hook": _check_parallelization_disabled},
+            **kwargs,
+        )
         return
 
     if start_local_if_missing:
-        ray.init(num_cpus=num_cpus, **kwargs)
+        ray.init(
+            num_cpus=num_cpus,
+            runtime_env={"worker_process_setup_hook": _check_parallelization_disabled},
+            **kwargs,
+        )
         return
 
     raise RuntimeError(
@@ -80,8 +117,8 @@ def setup_ray_for_external_library() -> None:
 
 
 def run_parallel_outer_ray[T](
-    base_experiments: Iterable[Any],
-    create_execute_mlmodules: Callable[[Any, int], T],
+    base_experiments: Iterable["OctoExperiment"],
+    create_execute_mlmodules: Callable[["OctoExperiment", int], T],
     num_workers: int,
 ) -> list[T]:
     """Execute create_execute_mlmodules(base_experiment, index) in parallel using Ray.
@@ -104,7 +141,7 @@ def run_parallel_outer_ray[T](
     # ff outerjobs do non-trivial CPU tasks - use a small fractional CPU for outers,
     # e.g., num_cpus=0.1. This limits oversubscription.
     @ray.remote(num_cpus=0)
-    def _outer_task(idx: int, base_exp: Any):
+    def _outer_task(idx: int, base_exp: "OctoExperiment"):
         # Do not re-initialize Ray here; workers already have a Ray context.
         return idx, create_execute_mlmodules(base_exp, idx)
 

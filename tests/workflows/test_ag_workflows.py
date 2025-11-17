@@ -11,7 +11,7 @@ import pytest
 from sklearn.datasets import make_classification, make_regression
 
 from octopus import OctoData, OctoML
-from octopus.config import ConfigManager, ConfigSequence, ConfigStudy
+from octopus.config import ConfigManager, ConfigStudy, ConfigWorkflow
 from octopus.experiment import OctoExperiment
 from octopus.modules import AutoGluon
 
@@ -79,12 +79,12 @@ class TestAutogluonWorkflows:
             run_single_experiment_num=0,  # Run experiment 0
         )
 
-        config_sequence = ConfigSequence(
+        config_workflow = ConfigWorkflow(
             [
                 AutoGluon(
                     description="ag_test",
-                    sequence_id=0,
-                    input_sequence_id=-1,
+                    task_id=0,
+                    depends_on_task=-1,
                     presets=["medium_quality"],
                     time_limit=15,  # Time limit for testing
                     verbosity=0,  # Minimize AutoGluon output
@@ -97,7 +97,7 @@ class TestAutogluonWorkflows:
             octo_data,
             config_study=config_study,
             config_manager=config_manager,
-            config_sequence=config_sequence,
+            config_workflow=config_workflow,
         )
 
         # This should complete without errors
@@ -158,12 +158,12 @@ class TestAutogluonWorkflows:
             run_single_experiment_num=0,  # Run single experiment
         )
 
-        config_sequence = ConfigSequence(
+        config_workflow = ConfigWorkflow(
             [
                 AutoGluon(
                     description="ag_regression_test",
-                    sequence_id=0,
-                    input_sequence_id=-1,
+                    task_id=0,
+                    depends_on_task=-1,
                     presets=["medium_quality"],
                     time_limit=15,  # Time limit for testing
                     verbosity=0,  # Minimize AutoGluon output
@@ -176,7 +176,7 @@ class TestAutogluonWorkflows:
             octo_data,
             config_study=config_study,
             config_manager=config_manager,
-            config_sequence=config_sequence,
+            config_workflow=config_workflow,
         )
 
         # This should complete without errors
@@ -211,17 +211,17 @@ class TestAutogluonWorkflows:
             match = re.search(r"\d+", exp_name)
             exp_num = int(match.group()) if match else None
 
-            # Find sequence directories
-            path_sequences = [f for f in path_exp.glob("sequence*") if f.is_dir()]
+            # Find workflow directories
+            path_workflows = [f for f in path_exp.glob("workflowtask*") if f.is_dir()]
 
             # Iterate through sequences
-            for path_seq in path_sequences:
-                seq_name = str(path_seq.name)
+            for path_workflow in path_workflows:
+                seq_name = str(path_workflow.name)
                 match = re.search(r"\d+", seq_name)
                 seq_num = int(match.group()) if match else None
 
                 # Look for experiment pickle file
-                path_exp_pkl = path_seq.joinpath(f"exp{exp_num}_{seq_num}.pkl")
+                path_exp_pkl = path_workflow.joinpath(f"exp{exp_num}_{seq_num}.pkl")
 
                 if path_exp_pkl.exists():
                     try:

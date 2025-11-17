@@ -139,40 +139,40 @@ class OctoManager:
 
         exp_path_dict: dict[int, Path] = {}
 
-        for element in self.configs.sequence.sequence_items:
-            self._log_sequence_item_info(element)
+        for element in self.configs.workflow.tasks:
+            self._log_workflow_task_info(element)
 
-            # load from sequence item
-            if element.load_sequence_item:
+            # load from workflow task
+            if element.load_task:
                 self._load_existing_experiment(base_experiment, element)
             # create new experiment
             else:
                 experiment = self._create_new_experiment(base_experiment, element)
-                path_study_sequence = self._create_sequence_directory(experiment)
-                path_save = self._get_save_path(path_study_sequence, experiment)
-                exp_path_dict[experiment.sequence_id] = path_save
+                path_study_workflow = self._create_workflow_directory(experiment)
+                path_save = self._get_save_path(path_study_workflow, experiment)
+                exp_path_dict[experiment.task_id] = path_save
 
                 self._update_experiment_if_needed(experiment, exp_path_dict)
-                self._run_and_save_experiment(experiment, path_study_sequence, path_save)
+                self._run_and_save_experiment(experiment, path_study_workflow, path_save)
 
-    def _log_sequence_item_info(self, element):
+    def _log_workflow_task_info(self, element):
         logger.info(
-            f"Processing sequence item: {element.sequence_id} | "
-            f"Input item: {element.input_sequence_id} | "
+            f"Processing workflow task: {element.task_id} | "
+            f"Input item: {element.depends_on_task} | "
             f"Module: {element.module} | "
             f"Description: {element.description} | "
-            f"Load existing sequence item: {element.load_sequence_item}"
+            f"Load existing workflow task: {element.load_task}"
         )
 
     def _create_new_experiment(self, base_experiment: OctoExperiment, element):
         experiment = copy.deepcopy(base_experiment)
         experiment.ml_module = element.module
         experiment.ml_config = element
-        experiment.id = f"{experiment.id}_{element.sequence_id}"
-        experiment.sequence_id = element.sequence_id
-        experiment.input_sequence_id = element.input_sequence_id
+        experiment.id = f"{experiment.id}_{element.task_id}"
+        experiment.task_id = element.task_id
+        experiment.depends_on_task = element.depends_on_task
         # Note: attrs strips underscore from init param, so we assign directly to the private field
-        experiment._sequence_item_path = Path(f"experiment{experiment.experiment_id}", f"sequence{element.sequence_id}")
+        experiment._task_path = Path(f"experiment{experiment.experiment_id}", f"workflowtask{element.task_id}")
         experiment.num_assigned_cpus = self._calculate_assigned_cpus()
         return experiment
 
@@ -196,24 +196,24 @@ class OctoManager:
             # Sequential or single experiment: use all available CPUs
             return self.num_available_cpus
 
-    def _create_sequence_directory(self, experiment):
-        path_study_sequence = experiment.path_study.joinpath(experiment.sequence_item_path)
-        path_study_sequence.mkdir(parents=True, exist_ok=True)
-        return path_study_sequence
+    def _create_workflow_directory(self, experiment):
+        path_study_workflow = experiment.path_study.joinpath(experiment.task_path)
+        path_study_workflow.mkdir(parents=True, exist_ok=True)
+        return path_study_workflow
 
-    def _get_save_path(self, path_study_sequence, experiment):
-        return path_study_sequence.joinpath(f"exp{experiment.experiment_id}_{experiment.sequence_id}.pkl")
+    def _get_save_path(self, path_study_workflow, experiment):
+        return path_study_workflow.joinpath(f"exp{experiment.experiment_id}_{experiment.task_id}.pkl")
 
     def _update_experiment_if_needed(self, experiment, exp_path_dict):
         """Update from input item.
 
         Not for item with base input.
         """
-        if experiment.input_sequence_id >= 0:
+        if experiment.depends_on_task >= 0:
             self._update_from_input_item(experiment, exp_path_dict)
         experiment.feature_groups = experiment.calculate_feature_groups(experiment.feature_columns)
 
-    def _run_and_save_experiment(self, experiment, path_study_sequence, path_save):
+    def _run_and_save_experiment(self, experiment, path_study_workflow, path_save):
         logger.info(f"Running experiment: {experiment.id}")
         experiment.to_pickle(path_save)
 
@@ -225,15 +225,15 @@ class OctoManager:
             for key in experiment.results:
                 # save predictions
                 experiment.results[key].create_prediction_df().to_parquet(
-                    path_study_sequence.joinpath(
-                        f"predictions_{experiment.experiment_id}_{experiment.sequence_id}_{key}.parquet"
+                    path_study_workflow.joinpath(
+                        f"predictions_{experiment.experiment_id}_{experiment.task_id}_{key}.parquet"
                     )
                 )
 
                 # save feature importance
                 experiment.results[key].create_feature_importance_df().to_parquet(
-                    path_study_sequence.joinpath(
-                        f"feature-importance_{experiment.experiment_id}_{experiment.sequence_id}_{key}.parquet"
+                    path_study_workflow.joinpath(
+                        f"feature-importance_{experiment.experiment_id}_{experiment.task_id}_{key}.parquet"
                     )
                 )
 
@@ -246,14 +246,14 @@ class OctoManager:
             raise ValueError(f"ml_module {experiment.ml_module} not supported")
 
     def _load_existing_experiment(self, base_experiment, element):
-        path_study_sequence = base_experiment.path_study.joinpath(
+        path_study_workflow = base_experiment.path_study.joinpath(
             f"experiment{base_experiment.experiment_id}",
-            f"sequence{element.sequence_id}",
+            f"workflowtask{element.task_id}",
         )
-        path_load = path_study_sequence.joinpath(f"exp{base_experiment.experiment_id}_{element.sequence_id}.pkl")
+        path_load = path_study_workflow.joinpath(f"exp{base_experiment.experiment_id}_{element.task_id}.pkl")
 
         if not path_load.exists():
-            raise FileNotFoundError("Sequence item to be loaded does not exist")
+            raise FileNotFoundError("Workflow task to be loaded does not exist")
 
         experiment = OctoExperiment.from_pickle(path_load)
         logger.info(f"Loaded existing experiment from: {path_load}")
@@ -266,10 +266,10 @@ class OctoManager:
             - selected features
             - prior feature importances
         """
-        input_path = path_dict[experiment.input_sequence_id]
+        input_path = path_dict[experiment.depends_on_task]
 
         if not input_path.exists():
-            raise FileNotFoundError("Sequence item to be loaded does not exist")
+            raise FileNotFoundError("Workflow task to be loaded does not exist")
 
         input_experiment = OctoExperiment.from_pickle(input_path)
 

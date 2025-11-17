@@ -9,7 +9,7 @@
 from sklearn.datasets import load_diabetes
 
 from octopus import OctoData, OctoML
-from octopus.config import ConfigManager, ConfigSequence, ConfigStudy
+from octopus.config import ConfigManager, ConfigStudy, ConfigWorkflow
 from octopus.models.hyperparameter import IntHyperparameter
 from octopus.modules import Octo
 
@@ -33,7 +33,7 @@ octo_data = OctoData(
 # 2. `ConfigManager`: Manages how the machine learning will be executed.
 # We use the default settings.
 
-# 3. `ConfigSequence`: Defines the sequences to be executed. In this example,
+# 3. `ConfigWorkflow`: Defines the workflows to be executed. In this example,
 # we use `RandomForestRegressor` with custom hyperparameter ranges defined using
 # the `Hyperparameter` class.
 
@@ -47,10 +47,10 @@ config_study = ConfigStudy(
 
 config_manager = ConfigManager(outer_parallelization=False, run_single_experiment_num=0)
 
-config_sequence = ConfigSequence(
+config_workflow = ConfigWorkflow(
     [
         Octo(
-            sequence_id=0,
+            task_id=0,
             models=["RandomForestRegressor"],
             n_trials=3,
             hyperparameters={
@@ -72,7 +72,7 @@ octo_ml = OctoML(
     octo_data,
     config_study=config_study,
     config_manager=config_manager,
-    config_sequence=config_sequence,
+    config_workflow=config_workflow,
 )
 octo_ml.run_study()
 

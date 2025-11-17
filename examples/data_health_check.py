@@ -9,7 +9,7 @@ from attrs import define, field
 from sklearn.datasets import make_classification
 
 from octopus import OctoData, OctoML
-from octopus.config import ConfigManager, ConfigSequence, ConfigStudy
+from octopus.config import ConfigManager, ConfigStudy, ConfigWorkflow
 from octopus.modules import Octo
 
 
@@ -220,14 +220,14 @@ config_study = ConfigStudy(
 
 config_manager = ConfigManager(outer_parallelization=True)
 
-config_sequence = ConfigSequence(
-    sequence_items=[
+config_workflow = ConfigWorkflow(
+    tasks=[
         Octo(
             description="step_1_octo",
             models=["RandomForestClassifier"],
             n_trials=3,
-            sequence_id=0,
-            input_sequence_id=-1,
+            task_id=0,
+            depends_on_task=-1,
         )
     ]
 )
@@ -242,6 +242,6 @@ octo_ml = OctoML(
     octo_data,
     config_study=config_study,
     config_manager=config_manager,
-    config_sequence=config_sequence,
+    config_workflow=config_workflow,
 )
 octo_ml.run_study()

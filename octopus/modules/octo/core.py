@@ -72,7 +72,7 @@ class OctoCoreGeneric[OctoConfigType: Octo]:
     @property
     def path_module(self) -> Path:
         """Module path."""
-        return self.experiment.path_study.joinpath(self.experiment.sequence_item_path)
+        return self.experiment.path_study.joinpath(self.experiment.task_path)
 
     @property
     def path_trials(self) -> Path:
@@ -256,7 +256,7 @@ class OctoCoreGeneric[OctoConfigType: Octo]:
         self.experiment.results["ensel"] = ModuleResults(
             id="ensel",
             experiment_id=self.experiment.experiment_id,
-            sequence_id=self.experiment.sequence_id,
+            task_id=self.experiment.task_id,
             model=ensel_bag,
             scores=ensel_scores,
             feature_importances=ensel_bag_fi,
@@ -270,7 +270,7 @@ class OctoCoreGeneric[OctoConfigType: Octo]:
 
         # Optimize splits.
         splits = self.data_splits
-        study_name = f"optuna_{self.experiment.experiment_id}_{self.experiment.sequence_id}"
+        study_name = f"optuna_{self.experiment.experiment_id}_{self.experiment.task_id}"
 
         # set up Optuna study
         objective = ObjectiveOptuna(
@@ -333,7 +333,7 @@ class OctoCoreGeneric[OctoConfigType: Octo]:
                 dict_optuna.append(
                     {
                         "experiment_id": self.experiment.experiment_id,
-                        "sequence_id": self.experiment.sequence_id,
+                        "task_id": self.experiment.task_id,
                         "trial": trial.number,
                         "value": trial.value,
                         "model_type": model_type,
@@ -428,7 +428,7 @@ class OctoCoreGeneric[OctoConfigType: Octo]:
         self.experiment.results["best"] = ModuleResults(
             id="best",
             experiment_id=self.experiment.experiment_id,
-            sequence_id=self.experiment.sequence_id,
+            task_id=self.experiment.task_id,
             model=best_bag,
             scores=best_bag_performance,
             feature_importances=best_bag_fi,

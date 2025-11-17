@@ -176,7 +176,7 @@ class Rfe2Core(OctoCoreGeneric[Rfe2]):
         self.experiment.results["Rfe2"] = ModuleResults(
             id="rfe2",
             experiment_id=self.experiment.experiment_id,
-            sequence_id=self.experiment.sequence_id,
+            task_id=self.experiment.task_id,
             model=best_model,
             scores=best_model.get_performance(),
             feature_importances={

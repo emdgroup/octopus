@@ -19,11 +19,11 @@ class TestRocModule:
 
     def test_roc_module_initialization_defaults(self):
         """Test ROC module initialization with default parameters."""
-        roc = Roc(sequence_id=0)
+        roc = Roc(task_id=0)
 
-        assert roc.sequence_id == 0
-        assert roc.input_sequence_id == -1
-        assert roc.load_sequence_item is False
+        assert roc.task_id == 0
+        assert roc.depends_on_task == -1
+        assert roc.load_task is False
         assert roc.description == ""
         assert roc.threshold == 0.8
         assert roc.correlation_type == "spearmanr"
@@ -33,18 +33,18 @@ class TestRocModule:
     def test_roc_module_initialization_custom_params(self):
         """Test ROC module initialization with custom parameters."""
         roc = Roc(
-            sequence_id=1,
-            input_sequence_id=0,
-            load_sequence_item=True,
+            task_id=1,
+            depends_on_task=0,
+            load_task=True,
             description="test_roc",
             threshold=0.9,
             correlation_type="rdc",
             filter_type="mutual_info",
         )
 
-        assert roc.sequence_id == 1
-        assert roc.input_sequence_id == 0
-        assert roc.load_sequence_item is True
+        assert roc.task_id == 1
+        assert roc.depends_on_task == 0
+        assert roc.load_task is True
         assert roc.description == "test_roc"
         assert roc.threshold == 0.9
         assert roc.correlation_type == "rdc"
@@ -53,39 +53,39 @@ class TestRocModule:
     def test_roc_module_invalid_correlation_type(self):
         """Test ROC module with invalid correlation type."""
         with pytest.raises(ValueError, match="must be in"):
-            Roc(sequence_id=0, correlation_type="invalid_correlation")
+            Roc(task_id=0, correlation_type="invalid_correlation")
 
     def test_roc_module_invalid_filter_type(self):
         """Test ROC module with invalid filter type."""
         with pytest.raises(ValueError, match="must be in"):
-            Roc(sequence_id=0, filter_type="invalid_filter")
+            Roc(task_id=0, filter_type="invalid_filter")
 
     def test_roc_module_invalid_threshold_type(self):
         """Test ROC module with invalid threshold type."""
         with pytest.raises(TypeError):
-            Roc(sequence_id=0, threshold="invalid")
+            Roc(task_id=0, threshold="invalid")
 
-    def test_roc_module_negative_sequence_id(self):
+    def test_roc_module_negative_task_id(self):
         """Test ROC module with negative sequence ID."""
         with pytest.raises(ValueError):
-            Roc(sequence_id=-1)
+            Roc(task_id=-1)
 
     @pytest.mark.parametrize("threshold", [0.0, 0.5, 0.8, 0.95, 1.0])
     def test_roc_module_threshold_range(self, threshold):
         """Test ROC module with different threshold values."""
-        roc = Roc(sequence_id=0, threshold=threshold)
+        roc = Roc(task_id=0, threshold=threshold)
         assert roc.threshold == threshold
 
     @pytest.mark.parametrize("correlation_type", ["spearmanr", "rdc"])
     def test_roc_module_correlation_types(self, correlation_type):
         """Test ROC module with different correlation types."""
-        roc = Roc(sequence_id=0, correlation_type=correlation_type)
+        roc = Roc(task_id=0, correlation_type=correlation_type)
         assert roc.correlation_type == correlation_type
 
     @pytest.mark.parametrize("filter_type", ["mutual_info", "f_statistics"])
     def test_roc_module_filter_types(self, filter_type):
         """Test ROC module with different filter types."""
-        roc = Roc(sequence_id=0, filter_type=filter_type)
+        roc = Roc(task_id=0, filter_type=filter_type)
         assert roc.filter_type == filter_type
 
 
@@ -193,7 +193,7 @@ class TestRocCore:
             mock_experiment.target_assignments = target_assignments
             mock_experiment.ml_config = roc_config
             mock_experiment.path_study = Path(temp_dir)
-            mock_experiment.sequence_item_path = Path("roc_test")
+            mock_experiment.task_path = Path("roc_test")
             mock_experiment.selected_features = []
 
             return mock_experiment
@@ -202,7 +202,7 @@ class TestRocCore:
         """Test ROC core with classification data, Spearman correlation, and F-statistics."""
         data, feature_columns = sample_classification_data
 
-        roc_config = Roc(sequence_id=0, threshold=0.8, correlation_type="spearmanr", filter_type="f_statistics")
+        roc_config = Roc(task_id=0, threshold=0.8, correlation_type="spearmanr", filter_type="f_statistics")
 
         target_assignments = {"target": "target"}
         mock_experiment = self.create_mock_experiment(
@@ -225,7 +225,7 @@ class TestRocCore:
         """Test ROC core with classification data, RDC correlation, and mutual information."""
         data, feature_columns = sample_classification_data
 
-        roc_config = Roc(sequence_id=0, threshold=0.7, correlation_type="rdc", filter_type="mutual_info")
+        roc_config = Roc(task_id=0, threshold=0.7, correlation_type="rdc", filter_type="mutual_info")
 
         target_assignments = {"target": "target"}
         mock_experiment = self.create_mock_experiment(
@@ -245,7 +245,7 @@ class TestRocCore:
         """Test ROC core with regression data, Spearman correlation, and F-statistics."""
         data, feature_columns = sample_regression_data
 
-        roc_config = Roc(sequence_id=0, threshold=0.85, correlation_type="spearmanr", filter_type="f_statistics")
+        roc_config = Roc(task_id=0, threshold=0.85, correlation_type="spearmanr", filter_type="f_statistics")
 
         target_assignments = {"target": "target"}
         mock_experiment = self.create_mock_experiment(
@@ -265,7 +265,7 @@ class TestRocCore:
         """Test ROC core with regression data, RDC correlation, and mutual information."""
         data, feature_columns = sample_regression_data
 
-        roc_config = Roc(sequence_id=0, threshold=0.9, correlation_type="rdc", filter_type="mutual_info")
+        roc_config = Roc(task_id=0, threshold=0.9, correlation_type="rdc", filter_type="mutual_info")
 
         target_assignments = {"target": "target"}
         mock_experiment = self.create_mock_experiment(
@@ -285,7 +285,7 @@ class TestRocCore:
         data, feature_columns = sample_timetoevent_data
 
         roc_config = Roc(
-            sequence_id=0,
+            task_id=0,
             threshold=0.8,
             correlation_type="spearmanr",
             filter_type="f_statistics",  # This should be ignored for timetoevent
@@ -310,7 +310,7 @@ class TestRocCore:
         """Test ROC core with different correlation thresholds."""
         data, feature_columns = sample_classification_data
 
-        roc_config = Roc(sequence_id=0, threshold=threshold, correlation_type="spearmanr", filter_type="f_statistics")
+        roc_config = Roc(task_id=0, threshold=threshold, correlation_type="spearmanr", filter_type="f_statistics")
 
         target_assignments = {"target": "target"}
         mock_experiment = self.create_mock_experiment(
@@ -345,7 +345,7 @@ class TestRocCore:
         data["target"] = y
         data["sample_id"] = range(len(data))
 
-        roc_config = Roc(sequence_id=0, threshold=0.8, correlation_type="spearmanr", filter_type="f_statistics")
+        roc_config = Roc(task_id=0, threshold=0.8, correlation_type="spearmanr", filter_type="f_statistics")
 
         target_assignments = {"target": "target"}
         mock_experiment = self.create_mock_experiment(
@@ -381,7 +381,7 @@ class TestRocCore:
         data["target"] = y
         data["sample_id"] = range(len(data))
 
-        roc_config = Roc(sequence_id=0, threshold=0.8, correlation_type="spearmanr", filter_type="f_statistics")
+        roc_config = Roc(task_id=0, threshold=0.8, correlation_type="spearmanr", filter_type="f_statistics")
 
         target_assignments = {"target": "target"}
         mock_experiment = self.create_mock_experiment(
@@ -399,7 +399,7 @@ class TestRocCore:
         """Test ROC core properties."""
         data, feature_columns = sample_classification_data
 
-        roc_config = Roc(sequence_id=0)
+        roc_config = Roc(task_id=0)
         target_assignments = {"target": "target"}
         mock_experiment = self.create_mock_experiment(
             data, feature_columns, "classification", target_assignments, roc_config
@@ -456,7 +456,7 @@ class TestRocCore:
         data["sample_id"] = range(len(data))
 
         # Use mutual_info filter which can handle NaN values better, or expect ValueError for f_statistics
-        roc_config = Roc(sequence_id=0, threshold=0.8, correlation_type="spearmanr", filter_type="f_statistics")
+        roc_config = Roc(task_id=0, threshold=0.8, correlation_type="spearmanr", filter_type="f_statistics")
 
         target_assignments = {"target": "target"}
         mock_experiment = self.create_mock_experiment(
@@ -488,7 +488,7 @@ class TestRocIntegration:
 
         # Create ROC module configuration
         roc_module = Roc(
-            sequence_id=0,
+            task_id=0,
             description="integration_test",
             threshold=0.85,
             correlation_type="spearmanr",
@@ -529,7 +529,7 @@ class TestRocIntegration:
 
         data["sample_id"] = range(len(data))
 
-        roc_config = Roc(sequence_id=0, threshold=0.8)
+        roc_config = Roc(task_id=0, threshold=0.8)
 
         with tempfile.TemporaryDirectory() as temp_dir:
             mock_experiment = Mock(spec=OctoExperiment)
@@ -539,7 +539,7 @@ class TestRocIntegration:
             mock_experiment.target_assignments = target_cols
             mock_experiment.ml_config = roc_config
             mock_experiment.path_study = Path(temp_dir)
-            mock_experiment.sequence_item_path = Path("roc_test")
+            mock_experiment.task_path = Path("roc_test")
             mock_experiment.selected_features = []
 
             with patch("shutil.rmtree"), patch("pathlib.Path.mkdir"):

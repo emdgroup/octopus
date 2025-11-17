@@ -4,7 +4,7 @@ from typing import ClassVar
 
 from attrs import Factory, define, field, validators
 
-from octopus.config.base_sequence_item import BaseSequenceItem
+from octopus.config.base_workflow_task import BaseWorkflowTask
 from octopus.logger import get_logger
 from octopus.models.inventory import ModelInventory
 
@@ -17,8 +17,8 @@ def _unique_unordered(seq):
 
 
 @define
-class Octo(BaseSequenceItem):
-    """Octofull sequence config."""
+class Octo(BaseWorkflowTask):
+    """Octofull workflow task config."""
 
     models: list[str] = field(
         default=Factory(lambda: ["ExtraTreesClassifier"]),

@@ -8,7 +8,7 @@ import pandas as pd
 from attrs import Factory, asdict, define, field, validators
 
 from octopus import OctoData
-from octopus.config import ConfigManager, ConfigSequence, ConfigStudy
+from octopus.config import ConfigManager, ConfigStudy, ConfigWorkflow
 from octopus.config.core import OctoConfig
 from octopus.experiment import OctoExperiment
 from octopus.manager import OctoManager
@@ -27,7 +27,7 @@ class OctoML:
         data (OctoData): The data used in the experiments.
         config_study (ConfigStudy): Configuration for the study.
         config_manager (ConfigManager): Configuration for the manager.
-        config_sequence (ConfigSequence): Configuration for the sequence.
+        config_workflow (ConfigWorkflow): Configuration for the workflow.
         configs (OctoConfig): The configuration settings for the experiments.
         experiments (List): A list to store experiment details.
         manager (Optional[OctoManager]): An optional manager for the experiments.
@@ -36,7 +36,7 @@ class OctoML:
     data: OctoData = field(validator=[validators.instance_of(OctoData)])
     config_study: ConfigStudy = field(validator=[validators.instance_of(ConfigStudy)])
     config_manager: ConfigManager = field(validator=[validators.instance_of(ConfigManager)])
-    config_sequence: ConfigSequence = field(validator=[validators.instance_of(ConfigSequence)])
+    config_workflow: ConfigWorkflow = field(validator=[validators.instance_of(ConfigWorkflow)])
     configs: OctoConfig = field(default=None)
     experiments: list = field(default=Factory(list))
     manager: OctoManager = field(init=False, default=None)
@@ -46,7 +46,7 @@ class OctoML:
         self.configs = OctoConfig(
             study=self.config_study,
             manager=self.config_manager,
-            sequence=self.config_sequence,
+            workflow=self.config_workflow,
         )
         # initialize ray
 
@@ -231,9 +231,9 @@ class OctoML:
         ).to_parquet(config_path.joinpath("config_manager.parquet"))
 
         pd.DataFrame(
-            [(k, str(v)) for k, v in asdict(self.configs.sequence).items()],
+            [(k, str(v)) for k, v in asdict(self.configs.workflow).items()],
             columns=["Parameter", "Value"],
-        ).to_parquet(config_path.joinpath("config_sequence.parquet"))
+        ).to_parquet(config_path.joinpath("config_workflow.parquet"))
 
         self.configs.to_pickle(config_path / "config.pkl")
 
@@ -255,9 +255,9 @@ class OctoML:
                 OctoExperiment(
                     id=str(key),
                     experiment_id=int(key),
-                    sequence_id=None,  # indicating base experiment
-                    input_sequence_id=None,  # indicating base experiment
-                    sequence_item_path=None,  # indicating base experiment
+                    task_id=None,  # indicating base experiment
+                    depends_on_task=None,  # indicating base experiment
+                    task_path=None,  # indicating base experiment
                     configs=self.configs,
                     datasplit_column=datasplit_col,
                     row_column=self.data.row_id,  # type: ignore

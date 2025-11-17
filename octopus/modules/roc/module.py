@@ -4,11 +4,11 @@ from typing import ClassVar
 
 from attrs import define, field, validators
 
-from octopus.config.base_sequence_item import BaseSequenceItem
+from octopus.config.base_workflow_task import BaseWorkflowTask
 
 
 @define
-class Roc(BaseSequenceItem):
+class Roc(BaseWorkflowTask):
     """Roc Config."""
 
     module: ClassVar[str] = "roc"

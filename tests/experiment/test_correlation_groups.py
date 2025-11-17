@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from octopus.config.core import ConfigManager, ConfigSequence, ConfigStudy, OctoConfig
+from octopus.config.core import ConfigManager, ConfigStudy, ConfigWorkflow, OctoConfig
 from octopus.experiment import OctoExperiment
 from octopus.modules import Octo
 
@@ -53,18 +53,18 @@ def correlated_data():
 def octo_config():
     """Create config for correlation grouping test."""
     config_study = ConfigStudy(name="test", ml_type="regression", target_metric="R2")
-    config_sequence = ConfigSequence(
-        sequence_items=[
+    config_workflow = ConfigWorkflow(
+        tasks=[
             Octo(
-                sequence_id=0,
-                input_sequence_id=-1,
+                task_id=0,
+                depends_on_task=-1,
                 description="step_1_octo",
                 models=["RandomForestClassifier"],
                 n_trials=1,
             )
         ]
     )
-    return OctoConfig(study=config_study, manager=ConfigManager(), sequence=config_sequence)
+    return OctoConfig(study=config_study, manager=ConfigManager(), workflow=config_workflow)
 
 
 @pytest.fixture
@@ -73,9 +73,9 @@ def mock_octo_experiment(correlated_data, octo_config):
     return OctoExperiment(
         id="test_id",
         experiment_id=1,
-        sequence_id=2,
-        input_sequence_id=3,
-        sequence_item_path=Path("/mock/path"),
+        task_id=2,
+        depends_on_task=3,
+        task_path=Path("/mock/path"),
         configs=octo_config,
         datasplit_column="split",
         row_column="row_id",

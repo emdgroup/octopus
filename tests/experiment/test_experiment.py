@@ -5,7 +5,7 @@ from pathlib import Path
 import pandas as pd
 import pytest
 
-from octopus.config.core import ConfigManager, ConfigSequence, ConfigStudy, OctoConfig
+from octopus.config.core import ConfigManager, ConfigStudy, ConfigWorkflow, OctoConfig
 from octopus.experiment import OctoExperiment
 from octopus.modules import Octo
 
@@ -26,24 +26,24 @@ def sample_data():
 def octo_experiment(sample_data):
     """Fixture to create an instance of OctoExperiment."""
     config_study = ConfigStudy(name="test", ml_type="regression", target_metric="R2")
-    config_sequence = ConfigSequence(
-        sequence_items=[
+    config_workflow = ConfigWorkflow(
+        tasks=[
             Octo(
-                sequence_id=0,
-                input_sequence_id=-1,
+                task_id=0,
+                depends_on_task=-1,
                 description="step_1_octo",
                 models=["RandomForestClassifier"],
                 n_trials=1,
             )
         ]
     )
-    config = OctoConfig(study=config_study, manager=ConfigManager(), sequence=config_sequence)
+    config = OctoConfig(study=config_study, manager=ConfigManager(), workflow=config_workflow)
     return OctoExperiment(
         id="experiment_1",
         experiment_id=1,
-        sequence_id=1,
-        input_sequence_id=1,
-        sequence_item_path=Path("/path/to/sequence_item"),
+        task_id=1,
+        depends_on_task=1,
+        task_path=Path("/path/to/sequence_item"),
         configs=config,
         datasplit_column="target",
         row_column="row_id",
@@ -58,9 +58,9 @@ def test_initialization(octo_experiment):
     """Test the initialization of the OctoExperiment class."""
     assert octo_experiment.id == "experiment_1"
     assert octo_experiment.experiment_id == 1
-    assert octo_experiment.sequence_id == 1
-    assert octo_experiment.input_sequence_id == 1
-    assert octo_experiment.sequence_item_path == Path("/path/to/sequence_item")
+    assert octo_experiment.task_id == 1
+    assert octo_experiment.depends_on_task == 1
+    assert octo_experiment.task_path == Path("/path/to/sequence_item")
     assert octo_experiment.datasplit_column == "target"
     assert octo_experiment.row_column == "row_id"
     assert octo_experiment.feature_columns == ["feature1", "feature2", "feature3"]

@@ -10,7 +10,7 @@ import pytest
 from sklearn.datasets import make_classification
 
 from octopus import OctoData, OctoML
-from octopus.config import ConfigManager, ConfigSequence, ConfigStudy
+from octopus.config import ConfigManager, ConfigStudy, ConfigWorkflow
 from octopus.modules import Octo
 
 
@@ -131,13 +131,13 @@ class TestOctoMulticlass:
 
     def test_multiclass_sequence_configuration(self):
         """Test that multiclass Octo sequence can be properly configured."""
-        config_sequence = ConfigSequence(
+        config_workflow = ConfigWorkflow(
             [
                 Octo(
                     description="step_1_octo_multiclass",
-                    sequence_id=0,
-                    input_sequence_id=-1,
-                    load_sequence_item=False,
+                    task_id=0,
+                    depends_on_task=-1,
+                    load_task=False,
                     n_folds_inner=5,
                     models=[
                         "ExtraTreesClassifier",
@@ -157,13 +157,13 @@ class TestOctoMulticlass:
         )
 
         # Verify sequence configuration
-        assert len(config_sequence.sequence_items) == 1
+        assert len(config_workflow.tasks) == 1
 
         # Verify Octo step configuration
-        octo_step = config_sequence.sequence_items[0]
+        octo_step = config_workflow.tasks[0]
         assert isinstance(octo_step, Octo)
-        assert octo_step.sequence_id == 0
-        assert octo_step.input_sequence_id == -1
+        assert octo_step.task_id == 0
+        assert octo_step.depends_on_task == -1
         assert octo_step.description == "step_1_octo_multiclass"
         assert octo_step.n_folds_inner == 5
         assert set(octo_step.models) == {
@@ -196,12 +196,12 @@ class TestOctoMulticlass:
     def test_multiclass_workflow_initialization(self, mock_run_study, octo_data_config, config_study, config_manager):
         """Test that the multiclass workflow can be initialized and configured properly."""
         # Create the sequence configuration (simplified for testing)
-        config_sequence = ConfigSequence(
+        config_workflow = ConfigWorkflow(
             [
                 Octo(
                     description="step_1_octo_multiclass",
-                    sequence_id=0,
-                    input_sequence_id=-1,
+                    task_id=0,
+                    depends_on_task=-1,
                     n_folds_inner=3,  # Reduced for testing
                     models=["ExtraTreesClassifier"],
                     model_seed=0,
@@ -217,17 +217,17 @@ class TestOctoMulticlass:
             octo_data_config,
             config_study=config_study,
             config_manager=config_manager,
-            config_sequence=config_sequence,
+            config_workflow=config_workflow,
         )
 
         # Verify initialization
         assert octo_ml.data is octo_data_config
         assert octo_ml.config_study == config_study
         assert octo_ml.config_manager == config_manager
-        assert octo_ml.config_sequence == config_sequence
+        assert octo_ml.config_workflow == config_workflow
 
         # Verify sequence structure
-        assert len(octo_ml.config_sequence.sequence_items) == 1
+        assert len(octo_ml.config_workflow.tasks) == 1
 
         # Test that run_study can be called (mocked)
         octo_ml.run_study()
@@ -238,12 +238,12 @@ class TestOctoMulticlass:
     )
     def test_multiclass_single_model_configuration(self, model):
         """Test configuration with different single multiclass models."""
-        config_sequence = ConfigSequence(
+        config_workflow = ConfigWorkflow(
             [
                 Octo(
                     description="step_1_octo_multiclass",
-                    sequence_id=0,
-                    input_sequence_id=-1,
+                    task_id=0,
+                    depends_on_task=-1,
                     models=[model],
                     n_trials=5,  # Minimal for testing
                     n_folds_inner=3,
@@ -251,18 +251,18 @@ class TestOctoMulticlass:
             ]
         )
 
-        octo_step = config_sequence.sequence_items[0]
+        octo_step = config_workflow.tasks[0]
         assert octo_step.models == [model]
 
     def test_multiclass_multiple_models_configuration(self):
         """Test configuration with multiple multiclass models."""
         models = ["ExtraTreesClassifier", "RandomForestClassifier", "XGBClassifier", "CatBoostClassifier"]
-        config_sequence = ConfigSequence(
+        config_workflow = ConfigWorkflow(
             [
                 Octo(
                     description="step_1_octo_multiclass",
-                    sequence_id=0,
-                    input_sequence_id=-1,
+                    task_id=0,
+                    depends_on_task=-1,
                     models=models,
                     n_trials=10,
                     n_folds_inner=3,
@@ -270,7 +270,7 @@ class TestOctoMulticlass:
             ]
         )
 
-        octo_step = config_sequence.sequence_items[0]
+        octo_step = config_workflow.tasks[0]
         assert set(octo_step.models) == set(models)
 
     def test_multiclass_metrics_configuration(self):
@@ -293,12 +293,12 @@ class TestOctoMulticlass:
     def test_feature_importance_configuration(self):
         """Test feature importance method configuration for multiclass."""
         fi_methods = ["permutation"]
-        config_sequence = ConfigSequence(
+        config_workflow = ConfigWorkflow(
             [
                 Octo(
                     description="step_1_octo_multiclass",
-                    sequence_id=0,
-                    input_sequence_id=-1,
+                    task_id=0,
+                    depends_on_task=-1,
                     models=["ExtraTreesClassifier"],
                     fi_methods_bestbag=fi_methods,
                     n_trials=5,
@@ -306,17 +306,17 @@ class TestOctoMulticlass:
             ]
         )
 
-        octo_step = config_sequence.sequence_items[0]
+        octo_step = config_workflow.tasks[0]
         assert octo_step.fi_methods_bestbag == fi_methods
 
     def test_hyperparameter_optimization_configuration(self):
         """Test hyperparameter optimization configuration for multiclass."""
-        config_sequence = ConfigSequence(
+        config_workflow = ConfigWorkflow(
             [
                 Octo(
                     description="step_1_octo_multiclass",
-                    sequence_id=0,
-                    input_sequence_id=-1,
+                    task_id=0,
+                    depends_on_task=-1,
                     models=["ExtraTreesClassifier"],
                     n_trials=25,
                     n_folds_inner=5,
@@ -324,7 +324,7 @@ class TestOctoMulticlass:
             ]
         )
 
-        octo_step = config_sequence.sequence_items[0]
+        octo_step = config_workflow.tasks[0]
         assert octo_step.n_trials == 25
         assert octo_step.n_folds_inner == 5
 
@@ -352,13 +352,13 @@ class TestOctoMulticlass:
             )
 
             # Create the Octo sequence with minimal settings for speed
-            config_sequence = ConfigSequence(
+            config_workflow = ConfigWorkflow(
                 [
                     Octo(
                         description="step_1_octo_multiclass",
-                        sequence_id=0,
-                        input_sequence_id=-1,
-                        load_sequence_item=False,
+                        task_id=0,
+                        depends_on_task=-1,
+                        load_task=False,
                         n_folds_inner=3,  # Reduced for testing
                         models=["ExtraTreesClassifier"],  # Single model for speed
                         model_seed=0,
@@ -377,7 +377,7 @@ class TestOctoMulticlass:
                 octo_data_config,
                 config_study=config_study,
                 config_manager=config_manager,
-                config_sequence=config_sequence,
+                config_workflow=config_workflow,
             )
 
             # This will actually execute the multiclass workflow
@@ -392,18 +392,18 @@ class TestOctoMulticlass:
             assert (study_path / "config").exists(), "Config directory should exist"
             assert (study_path / "experiment0").exists(), "Experiment directory should exist"
 
-            # Verify that the Octo step was executed by checking for sequence directories
+            # Verify that the Octo step was executed by checking for workflow directories
             experiment_path = study_path / "experiment0"
-            sequence_dirs = [d for d in experiment_path.iterdir() if d.is_dir() and d.name.startswith("sequence")]
+            workflow_dirs = [d for d in experiment_path.iterdir() if d.is_dir() and d.name.startswith("workflowtask")]
 
-            # Should have at least one sequence directory for the Octo step
-            assert len(sequence_dirs) >= 1, (
-                f"Should have at least 1 sequence directory, found: {[d.name for d in sequence_dirs]}"
+            # Should have at least one workflow directory for the Octo step
+            assert len(workflow_dirs) >= 1, (
+                f"Should have at least 1 workflow directory, found: {[d.name for d in workflow_dirs]}"
             )
 
             # Verify the Octo step was executed
-            sequence_dir = sequence_dirs[0]
-            assert sequence_dir.exists(), "Multiclass Octo sequence step should have been executed"
+            workflow_dir = workflow_dirs[0]
+            assert workflow_dir.exists(), "Multiclass Octo workflow step should have been executed"
 
     def test_synthetic_dataset_properties(self, wine_dataset):
         """Test specific properties of the synthetic dataset."""
@@ -425,13 +425,13 @@ class TestOctoMulticlass:
 
     def test_full_multiclass_configuration_parameters(self):
         """Test that all configuration parameters from the multiclass workflow are supported."""
-        config_sequence = ConfigSequence(
+        config_workflow = ConfigWorkflow(
             [
                 Octo(
                     description="step_1_octo_multiclass",
-                    sequence_id=0,
-                    input_sequence_id=-1,
-                    load_sequence_item=False,
+                    task_id=0,
+                    depends_on_task=-1,
+                    load_task=False,
                     n_folds_inner=5,
                     models=[
                         "ExtraTreesClassifier",
@@ -451,13 +451,13 @@ class TestOctoMulticlass:
         )
 
         # Verify all parameters are set correctly
-        octo_step = config_sequence.sequence_items[0]
+        octo_step = config_workflow.tasks[0]
 
         # Basic configuration
         assert octo_step.description == "step_1_octo_multiclass"
-        assert octo_step.sequence_id == 0
-        assert octo_step.input_sequence_id == -1
-        assert octo_step.load_sequence_item is False
+        assert octo_step.task_id == 0
+        assert octo_step.depends_on_task == -1
+        assert octo_step.load_task is False
 
         # Data splitting
         assert octo_step.n_folds_inner == 5

@@ -8,16 +8,16 @@ from pathlib import Path
 from attrs import define, field, validators
 
 from octopus.config.manager import ConfigManager
-from octopus.config.sequence import ConfigSequence
 from octopus.config.study import ConfigStudy
+from octopus.config.workflow import ConfigWorkflow
 
 
 def validate_config_study(instance, attribute, value):
-    """Validate if start_with_empty_study is consistent with sequence items."""
+    """Validate if start_with_empty_study is consistent with workflow tasks."""
     if value.start_with_empty_study:
-        for item in instance.sequence.sequence_items:
-            if item.load_sequence_item:
-                raise ValueError("Loading sequence items requires start_with_empty_study=False")
+        for item in instance.workflow.tasks:
+            if item.load_task:
+                raise ValueError("Loading workflow tasks requires start_with_empty_study=False")
 
 
 @define
@@ -32,8 +32,8 @@ class OctoConfig:
     manager: ConfigManager = field(factory=ConfigManager, validator=[validators.instance_of(ConfigManager)])
     """Configuration for manager parameters."""
 
-    sequence: ConfigSequence = field(factory=ConfigSequence, validator=[validators.instance_of(ConfigSequence)])
-    """Configuration for sequence parameters."""
+    workflow: ConfigWorkflow = field(factory=ConfigWorkflow, validator=[validators.instance_of(ConfigWorkflow)])
+    """Configuration for workflow parameters."""
 
     def to_pickle(self, file_path: str | Path):
         """Save object to a compressed pickle file.
@@ -86,9 +86,9 @@ class OctoConfig:
             manager_dict = json.load(f)
         manager = ConfigManager(**manager_dict)
 
-        # Load sequence config
-        with open(config_dir / "config_sequence.json") as f:
-            sequence_dict = json.load(f)
-        sequence = ConfigSequence(**sequence_dict)
+        # Load workflow config
+        with open(config_dir / "config_workflow.json") as f:
+            workflow_dict = json.load(f)
+        workflow = ConfigWorkflow(**workflow_dict)
 
-        return cls(study=study, manager=manager, sequence=sequence)
+        return cls(study=study, manager=manager, workflow=workflow)

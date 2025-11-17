@@ -94,7 +94,7 @@ class SfsCore:
     @property
     def path_module(self) -> Path:
         """Module path."""
-        return self.experiment.path_study.joinpath(self.experiment.path_sequence_item)
+        return self.experiment.path_study.joinpath(self.experiment.path_workflow_item)
 
     @property
     def path_results(self) -> Path:
@@ -305,7 +305,7 @@ class SfsCore:
         self.experiment.results["Sfs"] = ModuleResults(
             id="SFS",
             experiment_id=self.experiment.experiment_id,
-            sequence_id=self.experiment.sequence_id,
+            task_id=self.experiment.task_id,
             model=best_gs_estimator,
             scores=scores,
             feature_importances={

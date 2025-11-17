@@ -15,7 +15,7 @@ from octopus import (
     OctoData,
     OctoML,
 )
-from octopus.config import ConfigManager, ConfigSequence, ConfigStudy
+from octopus.config import ConfigManager, ConfigStudy, ConfigWorkflow
 from octopus.modules import Octo, Roc
 
 print("Notebook kernel is running on server:", socket.gethostname())
@@ -73,14 +73,14 @@ config_manager = ConfigManager(
 )
 
 # Define the two-step sequence: ROC filtering followed by Octo training
-config_sequence = ConfigSequence(
+config_workflow = ConfigWorkflow(
     [
         # Step 0: ROC - Remove highly correlated features and apply statistical filtering
         Roc(
             description="step_0_roc",
-            sequence_id=0,
-            input_sequence_id=-1,  # First step, no input dependency
-            load_sequence_item=False,
+            task_id=0,
+            depends_on_task=-1,  # First step, no input dependency
+            load_task=False,
             threshold=0.85,  # Remove features with correlation > 0.85
             correlation_type="spearmanr",  # Use Spearman correlation
             filter_type="f_statistics",  # Apply F-statistics filtering
@@ -88,9 +88,9 @@ config_sequence = ConfigSequence(
         # Step 1: Octo - Train models on filtered features from ROC step
         Octo(
             description="step_1_octo",
-            sequence_id=1,
-            input_sequence_id=0,  # Use output from ROC step
-            load_sequence_item=False,
+            task_id=1,
+            depends_on_task=0,  # Use output from ROC step
+            load_task=False,
             # Cross-validation settings
             n_folds_inner=5,
             # Model selection - using ExtraTreesClassifier for this example
@@ -132,7 +132,7 @@ octo_ml = OctoML(
     octo_data,
     config_study=config_study,
     config_manager=config_manager,
-    config_sequence=config_sequence,
+    config_workflow=config_workflow,
 )
 octo_ml.run_study()
 

@@ -9,7 +9,7 @@ import pandas as pd
 import pytest
 
 from octopus import OctoData, OctoML
-from octopus.config import ConfigManager, ConfigSequence, ConfigStudy
+from octopus.config import ConfigManager, ConfigStudy, ConfigWorkflow
 from octopus.modules import Octo
 
 
@@ -138,11 +138,11 @@ class TestOctoTimeToEvent:
 
     def test_octo_sequence_configuration(self):
         """Test that Octo sequence can be properly configured for time-to-event."""
-        config_sequence = ConfigSequence(
+        config_workflow = ConfigWorkflow(
             [
                 Octo(
-                    sequence_id=0,
-                    input_sequence_id=-1,
+                    task_id=0,
+                    depends_on_task=-1,
                     description="step_1",
                     models=["ExtraTreesSurv"],
                     n_trials=12,
@@ -154,13 +154,13 @@ class TestOctoTimeToEvent:
         )
 
         # Verify sequence configuration
-        assert len(config_sequence.sequence_items) == 1
+        assert len(config_workflow.tasks) == 1
 
         # Verify Octo step configuration
-        octo_step = config_sequence.sequence_items[0]
+        octo_step = config_workflow.tasks[0]
         assert isinstance(octo_step, Octo)
-        assert octo_step.sequence_id == 0
-        assert octo_step.input_sequence_id == -1
+        assert octo_step.task_id == 0
+        assert octo_step.depends_on_task == -1
         assert octo_step.description == "step_1"
         assert octo_step.n_trials == 12
         assert octo_step.max_features == 6
@@ -174,11 +174,11 @@ class TestOctoTimeToEvent:
     def test_workflow_initialization(self, mock_run_study, octo_data_config, config_study, config_manager):
         """Test that the time-to-event workflow can be initialized and configured properly."""
         # Create the sequence configuration
-        config_sequence = ConfigSequence(
+        config_workflow = ConfigWorkflow(
             [
                 Octo(
-                    sequence_id=0,
-                    input_sequence_id=-1,
+                    task_id=0,
+                    depends_on_task=-1,
                     description="step_1",
                     models=["ExtraTreesSurv"],
                     n_trials=12,
@@ -194,17 +194,17 @@ class TestOctoTimeToEvent:
             octo_data_config,
             config_study=config_study,
             config_manager=config_manager,
-            config_sequence=config_sequence,
+            config_workflow=config_workflow,
         )
 
         # Verify initialization
         assert octo_ml.data is octo_data_config
         assert octo_ml.config_study == config_study
         assert octo_ml.config_manager == config_manager
-        assert octo_ml.config_sequence == config_sequence
+        assert octo_ml.config_workflow == config_workflow
 
         # Verify sequence structure
-        assert len(octo_ml.config_sequence.sequence_items) == 1
+        assert len(octo_ml.config_workflow.tasks) == 1
 
         # Test that run_study can be called (mocked)
         octo_ml.run_study()
@@ -212,11 +212,11 @@ class TestOctoTimeToEvent:
 
     def test_single_model_configuration(self):
         """Test configuration with ExtraTreesSurv model."""
-        config_sequence = ConfigSequence(
+        config_workflow = ConfigWorkflow(
             [
                 Octo(
-                    sequence_id=0,
-                    input_sequence_id=-1,
+                    task_id=0,
+                    depends_on_task=-1,
                     description="step_1",
                     models=["ExtraTreesSurv"],
                     n_trials=12,
@@ -227,7 +227,7 @@ class TestOctoTimeToEvent:
             ]
         )
 
-        octo_step = config_sequence.sequence_items[0]
+        octo_step = config_workflow.tasks[0]
         assert octo_step.models == ["ExtraTreesSurv"]
         assert octo_step.n_trials == 12
         assert octo_step.max_features == 6
@@ -236,11 +236,11 @@ class TestOctoTimeToEvent:
 
     def test_ensemble_selection_configuration(self):
         """Test ensemble selection configuration."""
-        config_sequence = ConfigSequence(
+        config_workflow = ConfigWorkflow(
             [
                 Octo(
-                    sequence_id=0,
-                    input_sequence_id=-1,
+                    task_id=0,
+                    depends_on_task=-1,
                     description="step_1",
                     models=["ExtraTreesSurv"],
                     n_trials=12,
@@ -251,17 +251,17 @@ class TestOctoTimeToEvent:
             ]
         )
 
-        octo_step = config_sequence.sequence_items[0]
+        octo_step = config_workflow.tasks[0]
         assert octo_step.ensemble_selection is True
         assert octo_step.ensel_n_save_trials == 10
 
     def test_hyperparameter_optimization_configuration(self):
         """Test hyperparameter optimization configuration."""
-        config_sequence = ConfigSequence(
+        config_workflow = ConfigWorkflow(
             [
                 Octo(
-                    sequence_id=0,
-                    input_sequence_id=-1,
+                    task_id=0,
+                    depends_on_task=-1,
                     description="step_1",
                     models=["ExtraTreesSurv"],
                     n_trials=12,
@@ -275,7 +275,7 @@ class TestOctoTimeToEvent:
             ]
         )
 
-        octo_step = config_sequence.sequence_items[0]
+        octo_step = config_workflow.tasks[0]
 
         # Verify time-to-event model is included
         assert "ExtraTreesSurv" in octo_step.models
@@ -312,11 +312,11 @@ class TestOctoTimeToEvent:
             )
 
             # Create the Octo sequence with specified settings
-            config_sequence = ConfigSequence(
+            config_workflow = ConfigWorkflow(
                 [
                     Octo(
-                        sequence_id=0,
-                        input_sequence_id=-1,
+                        task_id=0,
+                        depends_on_task=-1,
                         description="step_1",
                         models=["ExtraTreesSurv"],
                         n_trials=12,
@@ -341,7 +341,7 @@ class TestOctoTimeToEvent:
                 octo_data_config,
                 config_study=config_study,
                 config_manager=config_manager,
-                config_sequence=config_sequence,
+                config_workflow=config_workflow,
             )
 
             # This will actually execute the Octopus time-to-event workflow
@@ -356,26 +356,26 @@ class TestOctoTimeToEvent:
             assert (study_path / "config").exists(), "Config directory should exist"
             assert (study_path / "experiment0").exists(), "Experiment directory should exist"
 
-            # Verify that the Octo step was executed by checking for sequence directories
+            # Verify that the Octo step was executed by checking for workflow directories
             experiment_path = study_path / "experiment0"
-            sequence_dirs = [d for d in experiment_path.iterdir() if d.is_dir() and d.name.startswith("sequence")]
+            workflow_dirs = [d for d in experiment_path.iterdir() if d.is_dir() and d.name.startswith("workflowtask")]
 
-            # Should have at least one sequence directory for the Octo step
-            assert len(sequence_dirs) >= 1, (
-                f"Should have at least 1 sequence directory, found: {[d.name for d in sequence_dirs]}"
+            # Should have at least one workflow directory for the Octo step
+            assert len(workflow_dirs) >= 1, (
+                f"Should have at least 1 workflow directory, found: {[d.name for d in workflow_dirs]}"
             )
 
             # Verify the Octo step was executed
-            sequence_dir = sequence_dirs[0]
-            assert sequence_dir.exists(), "Octo sequence step should have been executed"
+            workflow_dir = workflow_dirs[0]
+            assert workflow_dir.exists(), "Octo workflow step should have been executed"
 
     def test_full_configuration_parameters(self):
         """Test that all configuration parameters are supported."""
-        config_sequence = ConfigSequence(
+        config_workflow = ConfigWorkflow(
             [
                 Octo(
-                    sequence_id=0,
-                    input_sequence_id=-1,
+                    task_id=0,
+                    depends_on_task=-1,
                     description="step_1",
                     models=["ExtraTreesSurv"],
                     n_trials=12,
@@ -398,11 +398,11 @@ class TestOctoTimeToEvent:
         )
 
         # Verify all parameters are set correctly
-        octo_step = config_sequence.sequence_items[0]
+        octo_step = config_workflow.tasks[0]
 
         # Basic configuration
-        assert octo_step.sequence_id == 0
-        assert octo_step.input_sequence_id == -1
+        assert octo_step.task_id == 0
+        assert octo_step.depends_on_task == -1
         assert octo_step.description == "step_1"
 
         # Model configuration

@@ -9,7 +9,7 @@
 from sklearn.datasets import load_diabetes
 
 from octopus import OctoData, OctoML
-from octopus.config import ConfigManager, ConfigSequence, ConfigStudy
+from octopus.config import ConfigManager, ConfigStudy, ConfigWorkflow
 from octopus.modules import Octo
 
 ### Load the diabetes dataset
@@ -31,8 +31,8 @@ octo_data = OctoData(
 # 2. `ConfigManager`: Manages how the machine learning will be executed.
 # We use the default settings.
 
-# 3. `ConfigSequence`: Defines the sequences to be executed. In this example,
-# we use one sequence with the `RandomForestRegressor` and `XGBRegressor` model.
+# 3. `ConfigWorkflow`: Defines the workflows to be executed. In this example,
+# we use one workflow with the `RandomForestRegressor` and `XGBRegressor` model.
 
 config_study = ConfigStudy(
     name="basic_regression_example",
@@ -44,11 +44,11 @@ config_study = ConfigStudy(
 
 config_manager = ConfigManager(outer_parallelization=True, run_single_experiment_num=-1)
 
-config_sequence = ConfigSequence(
+config_workflow = ConfigWorkflow(
     [
         Octo(
-            sequence_id=0,
-            input_sequence_id=-1,
+            task_id=0,
+            depends_on_task=-1,
             description="step_1_neural_network",
             models=[
                 "TabularNNRegressor",
@@ -68,7 +68,7 @@ octo_ml = OctoML(
     octo_data,
     config_study=config_study,
     config_manager=config_manager,
-    config_sequence=config_sequence,
+    config_workflow=config_workflow,
 )
 octo_ml.run_study()
 

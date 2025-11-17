@@ -246,7 +246,7 @@ class OctoML:
             datasplit_col: The column used for data splitting.
         """
         for key, value in data_splits.items():
-            path_experiment = Path(f"datasplit{key}")
+            path_experiment = Path(f"outerdatasplit{key}")
             path_study.joinpath(path_experiment).mkdir(parents=True, exist_ok=True)
             # Changed: Imputation takes place in training
             # feature_columns = self.data.feature_columns

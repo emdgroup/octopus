@@ -114,7 +114,7 @@ class RfeCore:
     @property
     def path_module(self) -> Path:
         """Module path."""
-        return self.experiment.path_study.joinpath(self.experiment.sequence_item_path)
+        return self.experiment.path_study.joinpath(self.experiment.task_path)
 
     @property
     def path_results(self) -> Path:
@@ -326,7 +326,7 @@ class RfeCore:
         self.experiment.results["Rfe"] = ModuleResults(
             id="rfe",
             experiment_id=self.experiment.experiment_id,
-            sequence_id=self.experiment.sequence_id,
+            task_id=self.experiment.task_id,
             model=best_gs_estimator,
             scores=scores,
             feature_importances={

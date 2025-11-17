@@ -20,7 +20,7 @@ import numpy as np
 import pandas as pd
 
 from octopus import OctoData, OctoML
-from octopus.config import ConfigManager, ConfigSequence, ConfigStudy
+from octopus.config import ConfigManager, ConfigStudy, ConfigWorkflow
 from octopus.modules import Octo
 
 ### Generate synthetic time-to-event dataset
@@ -88,8 +88,8 @@ octo_data = OctoData(
 # 2. `ConfigManager`: Manages how the machine learning will be executed.
 #    We use the default settings.
 
-# 3. `ConfigSequence`: Defines the sequences to be executed. In this example,
-#    we use one sequence with survival analysis models.
+# 3. `ConfigWorkflow`: Defines the workflows to be executed. In this example,
+#    we use one workflow with survival analysis models.
 #    Available models: ExtraTreesSurv, RandomSurvivalForest, GradientBoostingSurv, etc.
 
 config_study = ConfigStudy(
@@ -103,11 +103,11 @@ config_manager = ConfigManager(
     run_single_experiment_num=0,  # 0: only first experiment, -1 runs all experiments
 )
 
-config_sequence = ConfigSequence(
+config_workflow = ConfigWorkflow(
     [
         Octo(
-            sequence_id=0,
-            input_sequence_id=-1,
+            task_id=0,
+            depends_on_task=-1,
             description="step1_octo",
             models=[
                 "ExtraTreesSurv",  # Extra Trees for survival analysis
@@ -129,7 +129,7 @@ octo_ml = OctoML(
     octo_data,
     config_study=config_study,
     config_manager=config_manager,
-    config_sequence=config_sequence,
+    config_workflow=config_workflow,
 )
 
 octo_ml.run_study()

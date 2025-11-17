@@ -4,11 +4,11 @@ from typing import ClassVar
 
 from attrs import define, field, validators
 
-from octopus.config.base_sequence_item import BaseSequenceItem
+from octopus.config.base_workflow_task import BaseWorkflowTask
 
 
 @define
-class Sfs(BaseSequenceItem):
+class Sfs(BaseWorkflowTask):
     """SFS Config."""
 
     module: ClassVar[str] = "sfs"

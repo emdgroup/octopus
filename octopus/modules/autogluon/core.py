@@ -109,14 +109,14 @@ except Exception as e:  # pylint: disable=W0718 # noqa: F841
 class AGCore:
     """Autogluon."""
 
-    experiment: OctoExperiment[AutoGluon] = field(validator=[validators.instance_of(OctoExperiment)])
+    experiment: "OctoExperiment[AutoGluon]" = field(validator=[validators.instance_of(OctoExperiment)])
     model = field(init=False)
     num_cpus = field(init=False)  # TODO: this is also in the AutoGluon class
 
     @property
     def path_module(self) -> Path:
         """Module path."""
-        return self.experiment.path_study.joinpath(self.experiment.sequence_item_path)
+        return self.experiment.path_study.joinpath(self.experiment.task_path)
 
     @property
     def path_results(self) -> Path:
@@ -256,7 +256,7 @@ class AGCore:
         self.experiment.results["autogluon"] = ModuleResults(
             id="autogluon",
             experiment_id=self.experiment.experiment_id,
-            sequence_id=self.experiment.sequence_id,
+            task_id=self.experiment.task_id,
             model=self._get_sklearn_model(),
             feature_importances=self._get_feature_importances(),
             scores=self._get_scores(),

@@ -4,11 +4,11 @@ from typing import ClassVar
 
 from attrs import define, field, validators
 
-from octopus.config.base_sequence_item import BaseSequenceItem
+from octopus.config.base_workflow_task import BaseWorkflowTask
 
 
 @define
-class Boruta(BaseSequenceItem):
+class Boruta(BaseWorkflowTask):
     """Boruta Config."""
 
     module: ClassVar[str] = "boruta"

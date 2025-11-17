@@ -93,7 +93,7 @@ def _(file_browser, mo, pl):
             output=False,
         )
         .with_columns(pl.col("experiment_id").cast(pl.Int64))
-        .with_columns(pl.col("sequence_id").cast(pl.Int64))
+        .with_columns(pl.col("task_id").cast(pl.Int64))
     )
     return (df_feature_importances,)
 
@@ -103,7 +103,7 @@ def _(df_predictions, mo, pl):
     unique_id_values = {
         k: sorted(v)
         for k, v in df_predictions.select(pl.all().cast(pl.Utf8))
-        .select(["experiment_id", "sequence_id", "split_id"])
+        .select(["experiment_id", "task_id", "split_id"])
         .unique()
         .to_dict(as_series=False)
         .items()
@@ -116,9 +116,9 @@ def _(df_predictions, mo, pl):
     )
 
     dropdown_seq_id = mo.ui.dropdown(
-        options=unique_id_values["sequence_id"],
-        value=unique_id_values["sequence_id"][0],
-        label="Sequence ID ",
+        options=unique_id_values["task_id"],
+        value=unique_id_values["task_id"][0],
+        label="Task ID ",
     )
 
     dropdown_split_id = mo.ui.dropdown(
@@ -158,7 +158,7 @@ def _(df_optuna, mo, pl):
     unique_id_values_optuna = {
         k: sorted(v)
         for k, v in df_optuna.select(pl.all().cast(pl.Utf8))
-        .select(["experiment_id", "sequence_id", "model_type"])
+        .select(["experiment_id", "task_id", "model_type"])
         .unique()
         .to_dict(as_series=False)
         .items()
@@ -191,7 +191,7 @@ def _(
 ):
     df_fi_plot = df_feature_importances.filter(
         (pl.col("experiment_id") == int(dropdown_exp_id.value))
-        & (pl.col("sequence_id") == int(dropdown_seq_id.value))
+        & (pl.col("task_id") == int(dropdown_seq_id.value))
         & (pl.col("split_id") == dropdown_split_id.value)
         & (pl.col("fi_type") == dropdown_fi_types.value)
     )
@@ -248,7 +248,7 @@ def _(
 ):
     df_confusion_matrix = df_predictions.filter(
         (pl.col("experiment_id") == int(dropdown_exp_id.value))
-        & (pl.col("sequence_id") == int(dropdown_seq_id.value))
+        & (pl.col("task_id") == int(dropdown_seq_id.value))
         & (pl.col("split_id") == dropdown_split_id.value)
         & (pl.col("split") == "test")
     )
@@ -339,11 +339,11 @@ def _(mo):
 
 @app.cell(hide_code=True)
 def _(alt, df_optuna, pl):
-    # Group by experiment_id, sequence_id, and model_type
+    # Group by experiment_id, task_id, and model_type
     df_chart_optuna_count = (
-        df_optuna.group_by(["experiment_id", "sequence_id", "model_type"])
+        df_optuna.group_by(["experiment_id", "task_id", "model_type"])
         .agg(pl.col("trial").n_unique().alias("trial_count"))
-        .sort(["sequence_id", "experiment_id"])
+        .sort(["task_id", "experiment_id"])
     )
 
     # Create the base chart
@@ -384,8 +384,8 @@ def _(alt, df_optuna, pl):
     )
 
     # Create the faceted chart
-    chart_optuna_count = base.facet(row="sequence_id:N", column="experiment_id:N").properties(
-        title="Number of Unique Trials by Model Type, Sequence ID, and Experiment ID"
+    chart_optuna_count = base.facet(row="task_id:N", column="experiment_id:N").properties(
+        title="Number of Unique Trials by Model Type, Task ID, and Experiment ID"
     )
 
     # Adjust the spacing of the facets
@@ -419,7 +419,7 @@ def _(alt, df_optuna, dropdown_exp_id, dropdown_seq_id, mo, pl):
         return df_optuna_trials_best
 
     df_optuna_filtered = df_optuna.filter(
-        (pl.col("experiment_id") == int(dropdown_exp_id.value)) & (pl.col("sequence_id") == int(dropdown_seq_id.value))
+        (pl.col("experiment_id") == int(dropdown_exp_id.value)) & (pl.col("task_id") == int(dropdown_seq_id.value))
     )
 
     df_best_optuna_trails = get_best_optuna_trials(df_optuna_filtered, "minimize")
@@ -479,7 +479,7 @@ def _(
 ):
     df_optuna_hp = df_optuna.filter(
         (pl.col("experiment_id") == int(dropdown_exp_id.value))
-        & (pl.col("sequence_id") == int(dropdown_seq_id.value))
+        & (pl.col("task_id") == int(dropdown_seq_id.value))
         & (pl.col("model_type") == dropdown_model.value)
     )
 

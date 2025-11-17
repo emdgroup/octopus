@@ -94,14 +94,14 @@ class MrmrCore:
     def _validate_configuration(self):
         """Validate MRMR configuration.
 
-        1. MRMR should not be the first sequence item
+        1. MRMR should not be the first workflow task
         2. Check if results_key exists
         3. Check if feature_importance key exists
 
         """
         if self.relevance_type == "permutation":
-            if self.experiment.sequence_id == 0:
-                raise ValueError("MRMR module should not be the first sequence item.")
+            if self.experiment.task_id == 0:
+                raise ValueError("MRMR module should not be the first workflow task.")
             if self.results_key not in self.experiment.prior_results:
                 raise ValueError(
                     f"Specified results key not found: {self.results_key}. "
@@ -133,7 +133,7 @@ class MrmrCore:
         """Log basic MRMR Info."""
         logger.info("MRMR-Module")
         logger.info(f"Experiment: {self.experiment.experiment_id}")
-        logger.info(f"Sequence item: {self.experiment.sequence_id}")
+        logger.info(f"Workflow task: {self.experiment.task_id}")
         logger.info(f"Number of features selected by MRMR: {self.n_features}")
         logger.info(f"Correlation type used by MRMR: {self.correlation_type}")
         logger.info(f"Relevance type used by MRMR: {self.relevance_type}")
@@ -229,7 +229,7 @@ def maxrminr(
          as the MRMR module may be preprocessing step for later model trainings.
          In this module the  features are taken from the traindev dataset.
 
-      4. We ignore selected_features from the previous sequence item. The features
+      4. We ignore selected_features from the previous workflow task. The features
          used are extracted from the feature importance table
 
     Literature:

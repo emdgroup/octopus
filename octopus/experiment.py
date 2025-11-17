@@ -12,7 +12,7 @@ import pandas as pd
 import scipy.stats
 from attrs import Factory, define, field, validators
 
-from octopus.config.base_sequence_item import BaseSequenceItem
+from octopus.config.base_workflow_task import BaseWorkflowTask
 from octopus.config.core import OctoConfig
 
 if TYPE_CHECKING:
@@ -20,14 +20,14 @@ if TYPE_CHECKING:
 
 
 @define
-class OctoExperiment[ConfigType: BaseSequenceItem]:
+class OctoExperiment[ConfigType: BaseWorkflowTask]:
     """Represents an Octopus experiment for ML pipeline execution.
 
     An OctoExperiment exists in two distinct states representing different stages of the
     ML workflow. The lifecycle begins with base experiments created during cross-validation
     data splitting. These base experiments serve as templates containing only the train/test
     data splits. When the pipeline executes, the manager deep copies base experiments and
-    transforms them into sequence experiments by attaching ML module configurations (e.g.,
+    transforms them into workflow experiments by attaching ML module configurations (e.g.,
     feature selection, model training). This two-stage design separates data preparation
     from pipeline execution, allowing the same data splits to be reused across different
     pipeline configurations.
@@ -39,18 +39,18 @@ class OctoExperiment[ConfigType: BaseSequenceItem]:
     experiment_id: int = field(validator=[validators.instance_of(int), validators.ge(0)])
     """Identifier for the experiment."""
 
-    sequence_id: int | None = field(
+    task_id: int | None = field(
         validator=validators.optional(validators.and_(validators.instance_of(int), validators.ge(0)))
     )
-    """Identifier for the sequence item."""
+    """Identifier for the workflow task."""
 
-    input_sequence_id: int | None = field(
+    depends_on_task: int | None = field(
         validator=validators.optional(validators.and_(validators.instance_of(int), validators.ge(-1)))
     )
-    """Identifier for the input sequence item."""
+    """Identifier for the input workflow task."""
 
-    _sequence_item_path: Path | None = field(validator=validators.optional(validators.instance_of(Path)))
-    """Internal path storage. Use sequence_item_path property to access safely."""
+    _task_path: Path | None = field(validator=validators.optional(validators.instance_of(Path)))
+    """Internal path storage. Use task_path property to access safely."""
 
     configs: OctoConfig = field(validator=[validators.instance_of(OctoConfig)])
     """Configuration settings for the experiment."""
@@ -83,7 +83,7 @@ class OctoExperiment[ConfigType: BaseSequenceItem]:
     """Number of CPUs assigned to the experiment."""
 
     ml_config: ConfigType = field(init=False, default=None)
-    """Configuration settings for the module used by the sequence item."""
+    """Configuration settings for the module used by the workflow task."""
 
     selected_features: list = field(default=Factory(list), validator=[validators.instance_of(list)])
     """List of features selected for the experiment."""
@@ -104,39 +104,39 @@ class OctoExperiment[ConfigType: BaseSequenceItem]:
 
     @property
     def is_base_experiment(self) -> bool:
-        """Check if this is a base experiment (no sequence_id)."""
-        return self.sequence_id is None
+        """Check if this is a base experiment (no task_id)."""
+        return self.task_id is None
 
     @property
-    def is_sequence_experiment(self) -> bool:
-        """Check if this is a sequence experiment (has sequence_id)."""
-        return self.sequence_id is not None
+    def is_workflow_experiment(self) -> bool:
+        """Check if this is a workflow experiment (has task_id)."""
+        return self.task_id is not None
 
     @property
-    def sequence_item_path(self) -> Path:
-        """Get the sequence item path.
+    def task_path(self) -> Path:
+        """Get the workflow task path.
 
         Use this in modules that require a fully initialized experiment
         (not a base experiment).
 
         Returns:
-            Path: The sequence item path
+            Path: The workflow task path
 
         Raises:
             ValueError: If this is a base experiment.
-            RuntimeError: If validation failed and _sequence_item_path is None for a sequence experiment.
+            RuntimeError: If validation failed and _task_path is None for a workflow experiment.
         """
         if self.is_base_experiment:
             raise ValueError(
-                "Cannot access sequence_item_path on a base experiment. "
-                "This operation requires a sequence experiment with sequence_item_path set."
+                "Cannot access task_path on a base experiment. "
+                "This operation requires a workflow experiment with task_path set."
             )
-        if self._sequence_item_path is None:
+        if self._task_path is None:
             raise RuntimeError(
-                "Validation failed: sequence experiment has no sequence_item_path set. "
-                f"This should not happen (sequence_id={self.sequence_id})"
+                "Validation failed: workflow experiment has no task_path set. "
+                f"This should not happen (task_id={self.task_id})"
             )
-        return self._sequence_item_path
+        return self._task_path
 
     @property
     def ml_type(self) -> str:
@@ -148,34 +148,29 @@ class OctoExperiment[ConfigType: BaseSequenceItem]:
         self.feature_groups = self.calculate_feature_groups(self.feature_columns)
 
     def _validate_experiment_state(self) -> None:
-        """Validate consistency between base and sequence experiment fields.
+        """Validate consistency between base and workflow experiment fields.
 
-        Ensures that sequence-related fields (sequence_id, input_sequence_id,
-        _sequence_item_path) are consistent with the experiment type (base vs sequence).
+        Ensures that workflow-related fields (task_id, depends_on_task,
+        _task_path) are consistent with the experiment type (base vs sequence).
 
         Raises:
             ValueError: If fields are inconsistent with the experiment type.
         """
-        if self.sequence_id is None:
-            if self._sequence_item_path is not None:
+        if self.task_id is None:
+            if self._task_path is not None:
                 raise ValueError(
-                    "Base experiments (sequence_id=None) cannot have _sequence_item_path set. "
-                    f"Got _sequence_item_path={self._sequence_item_path}"
+                    f"Base experiments (task_id=None) cannot have _task_path set. Got _task_path={self._task_path}"
                 )
-            if self.input_sequence_id is not None:
+            if self.depends_on_task is not None:
                 raise ValueError(
-                    "Base experiments (sequence_id=None) cannot have input_sequence_id set. "
-                    f"Got input_sequence_id={self.input_sequence_id}"
+                    "Base experiments (task_id=None) cannot have depends_on_task set. "
+                    f"Got depends_on_task={self.depends_on_task}"
                 )
         else:
-            if self._sequence_item_path is None:
-                raise ValueError(
-                    f"Sequence experiments (sequence_id={self.sequence_id}) must have _sequence_item_path set"
-                )
-            if self.input_sequence_id is None:
-                raise ValueError(
-                    f"Sequence experiments (sequence_id={self.sequence_id}) must have input_sequence_id set"
-                )
+            if self._task_path is None:
+                raise ValueError(f"Workflow experiments (task_id={self.task_id}) must have _task_path set")
+            if self.depends_on_task is None:
+                raise ValueError(f"Workflow experiments (task_id={self.task_id}) must have depends_on_task set")
 
     def calculate_feature_groups(self, feature_columns: list[str]) -> dict[str, list[str]]:
         """Calculate feature groups based on correlation thresholds."""

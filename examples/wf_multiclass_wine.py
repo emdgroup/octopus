@@ -17,7 +17,7 @@ from octopus import (
     OctoData,
     OctoML,
 )
-from octopus.config import ConfigManager, ConfigSequence, ConfigStudy
+from octopus.config import ConfigManager, ConfigStudy, ConfigWorkflow
 from octopus.modules import Octo
 
 print("Notebook kernel is running on server:", socket.gethostname())
@@ -63,8 +63,8 @@ octo_data = OctoData(
 # 2. `ConfigManager`: Manages how the machine learning will be executed.
 # We use the default settings.
 
-# 3. `ConfigSequence`: Defines the sequences to be executed. In this example,
-# we use one sequence with multiclass classification models.
+# 3. `ConfigWorkflow`: Defines the workflows to be executed. In this example,
+# we use one workflow with multiclass classification models.
 
 config_study = ConfigStudy(
     name="multiclass_wine",
@@ -86,15 +86,15 @@ config_manager = ConfigManager(
     run_single_experiment_num=0,
 )
 
-config_sequence = ConfigSequence(
+config_workflow = ConfigWorkflow(
     [
         # Step1: octo multiclass
         Octo(
             description="step_1_octo_multiclass",
-            sequence_id=0,
-            input_sequence_id=-1,
+            task_id=0,
+            depends_on_task=-1,
             # loading of existing results
-            load_sequence_item=False,
+            load_task=False,
             # datasplit
             n_folds_inner=5,
             # model selection - using models that work well with multiclass
@@ -125,7 +125,7 @@ octo_ml = OctoML(
     octo_data,
     config_study=config_study,
     config_manager=config_manager,
-    config_sequence=config_sequence,
+    config_workflow=config_workflow,
 )
 octo_ml.run_study()
 

@@ -21,7 +21,7 @@ class ModuleResults:
     )
     """Experiment id."""
 
-    sequence_id: int | None = field(
+    task_id: int | None = field(
         validator=validators.optional(
             validators.and_(
                 validators.instance_of(int),  # Ensure it's an int if not None
@@ -76,7 +76,7 @@ class ModuleResults:
                     df_prediction = pd.concat([df_prediction, temp_df], ignore_index=True)
 
         df_prediction["experiment_id"] = self.experiment_id
-        df_prediction["sequence_id"] = self.sequence_id
+        df_prediction["task_id"] = self.task_id
         return df_prediction
 
     def create_feature_importance_df(self):
@@ -90,7 +90,7 @@ class ModuleResults:
                     temp_df = df.copy()
                     temp_df["fi_type"] = fi_type
                     temp_df["experiment_id"] = self.experiment_id
-                    temp_df["sequence_id"] = self.sequence_id
+                    temp_df["task_id"] = self.task_id
                     temp_df["split_id"] = split_id
 
                     df_feature_importance = pd.concat([df_feature_importance, temp_df], ignore_index=True)

@@ -454,10 +454,10 @@ class TestRocOctoRocWorkflow:
             # Check for expected subdirectories
             assert (study_path / "data").exists(), "Data directory should exist"
             assert (study_path / "config").exists(), "Config directory should exist"
-            assert (study_path / "experiment0").exists(), "Experiment directory should exist"
+            assert (study_path / "outerdatasplit0").exists(), "Experiment directory should exist"
 
             # Verify that sequence steps were executed by checking for workflow directories
-            experiment_path = study_path / "experiment0"
+            experiment_path = study_path / "outerdatasplit0"
             workflow_dirs = [d for d in experiment_path.iterdir() if d.is_dir() and d.name.startswith("workflowtask")]
 
             # Should have directories for each sequence step

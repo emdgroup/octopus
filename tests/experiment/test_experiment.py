@@ -1,9 +1,8 @@
 """Test experiment initialization."""
 
-from pathlib import Path
-
 import pandas as pd
 import pytest
+from upath import UPath
 
 from octopus.experiment import OctoExperiment
 
@@ -28,7 +27,7 @@ def octo_experiment(sample_data):
         experiment_id=1,
         task_id=1,
         depends_on_task=1,
-        task_path=Path("/path/to/sequence_item"),
+        task_path=UPath("/path/to/sequence_item"),
         study_path="./studies/",
         study_name="test",
         ml_type="regression",
@@ -51,7 +50,7 @@ def test_initialization(octo_experiment):
     assert octo_experiment.experiment_id == 1
     assert octo_experiment.task_id == 1
     assert octo_experiment.depends_on_task == 1
-    assert octo_experiment.task_path == Path("/path/to/sequence_item")
+    assert octo_experiment.task_path == UPath("/path/to/sequence_item")
     assert octo_experiment.datasplit_column == "target"
     assert octo_experiment.row_column == "row_id"
     assert octo_experiment.feature_columns == ["feature1", "feature2", "feature3"]
@@ -69,7 +68,7 @@ def test_calculate_feature_groups(octo_experiment):
 
 def test_path_study(octo_experiment):
     """Test the path_study property."""
-    expected_path = Path(octo_experiment.study_path, octo_experiment.study_name)
+    expected_path = UPath(octo_experiment.study_path, octo_experiment.study_name)
     assert octo_experiment.path_study == expected_path
 
 

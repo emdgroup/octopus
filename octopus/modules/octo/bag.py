@@ -15,6 +15,7 @@ import numpy as np
 import pandas as pd
 from attrs import define, field, validators
 from sklearn.base import BaseEstimator, ClassifierMixin, RegressorMixin
+from upath import UPath
 
 # sklearn imports for compatibility
 from octopus.logger import LogGroup, get_logger
@@ -681,19 +682,20 @@ class BagBase(BaseEstimator):
         else:
             return "regressor"
 
-    def to_pickle(self, file_path: str | Path):
+    def to_pickle(self, file_path: str | Path | UPath):
         """Save object to a compressed pickle file.
 
         Args:
             file_path: The name of the file to save the pickle data to.
         """
-        # with gzip.GzipFile(file_path, "wb") as file:
-        #    pickle.dump(self, file)
-        with lz4.frame.open(file_path, "wb") as file:
-            pickle.dump(self, file)
+        # Gzip was too slow, switched to lz4
+        # with file_path.open("wb") as file, gzip.GzipFile(fileobj=file, mode="wb") as gzip_file:
+        #    pickle.dump(self, gzip_file)
+        with file_path.open("wb") as file, lz4.frame.open(file, mode="wb") as lz4_file:
+            pickle.dump(self, lz4_file)
 
     @classmethod
-    def from_pickle(cls, file_path: str | Path) -> "BagBase":
+    def from_pickle(cls, file_path: str | Path | UPath) -> "BagBase":
         """Load object to a compressed pickle file.
 
         Args:
@@ -705,10 +707,11 @@ class BagBase(BaseEstimator):
         Raises:
             TypeError: If the file does not contain an BagBase instance.
         """
-        # with gzip.GzipFile(file_path, "rb") as file:
-        #    return pickle.load(file)
-        with lz4.frame.open(file_path, "rb") as file:
-            data = pickle.load(file)
+        # Gzip was too slow, switched to lz4
+        # with file_path.open("rb") as file, gzip.GzipFile(fileobj=file, mode="rb") as gzip_file:
+        #    return pickle.load(gzip_file)
+        with file_path.open("rb") as file, lz4.frame.open(file, mode="rb") as lz4_file:
+            data = pickle.load(lz4_file)
 
         if not isinstance(data, cls):
             raise TypeError(f"Loaded object is not of type {cls.__name__}")
@@ -757,7 +760,7 @@ class _BagFunction:
             return BagRegressor(**kwargs)
 
     @staticmethod
-    def from_pickle(file_path: str | Path) -> BagClassifier | BagRegressor:
+    def from_pickle(file_path: str | Path | UPath) -> BagClassifier | BagRegressor:
         """Load a Bag object from a compressed pickle file.
 
         Args:
@@ -769,8 +772,8 @@ class _BagFunction:
         Raises:
             TypeError: If the file does not contain an BagClassifier | BagRegressor instance.
         """
-        with lz4.frame.open(file_path, "rb") as file:
-            data = pickle.load(file)
+        with file_path.open("rb") as file, lz4.frame.open(file, mode="rb") as lz4_file:
+            data = pickle.load(lz4_file)
 
         if not isinstance(data, BagClassifier | BagRegressor):
             raise TypeError(f"Loaded object is not of type {BagClassifier | BagRegressor}")

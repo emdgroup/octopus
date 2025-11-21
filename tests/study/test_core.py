@@ -1,11 +1,11 @@
 """Test OctoStudy core class."""
 
 import tempfile
-from pathlib import Path
 
 import numpy as np
 import pandas as pd
 import pytest
+from upath import UPath
 
 from octopus import OctoStudy
 from octopus.modules import Octo
@@ -98,7 +98,7 @@ def test_output_path_property():
             sample_id="id",
             path=temp_dir,
         )
-        assert study.output_path == Path(temp_dir) / "my_study"
+        assert study.output_path == UPath(temp_dir) / "my_study"
 
 
 def test_default_workflow():

@@ -4,7 +4,6 @@
 
 import json
 import warnings
-from pathlib import Path
 from typing import Any, Literal, overload
 
 import matplotlib.pyplot as plt
@@ -14,6 +13,7 @@ import shap
 from attrs import Factory, define, field, validators
 from joblib import Parallel, delayed
 from matplotlib.backends.backend_pdf import PdfPages
+from upath import UPath
 
 from octopus.experiment import OctoExperiment
 from octopus.modules.utils import (
@@ -44,7 +44,7 @@ warnings.filterwarnings(
 class OctoPredict:
     """OctoPredict."""
 
-    study_path: Path = field(validator=[validators.instance_of(Path)])
+    study_path: UPath = field(validator=[validators.instance_of(UPath)], converter=lambda x: UPath(x))
     """Path to study."""
 
     task_id: int = field(default=-1, validator=[validators.instance_of(int)])
@@ -62,9 +62,13 @@ class OctoPredict:
     @property
     def config(self) -> dict[str, Any]:
         """Study configuration."""
-        config_path = self.study_path / "config.json"
-        with open(config_path) as f:
-            return json.load(f)  # type: ignore[no-any-return]
+        with UPath(self.study_path / "config.json").open("r") as f:
+            data = json.load(f)
+
+        if not isinstance(data, dict):
+            raise TypeError("Loaded object is not a dict")
+
+        return data
 
     @property
     def n_experiments(self) -> int:
@@ -97,11 +101,13 @@ class OctoPredict:
         experiments = {}
 
         for experiment_id in range(self.n_experiments):
-            path_exp = self.study_path.joinpath(
-                f"outersplit{experiment_id}",
-                f"workflowtask{self.task_id}",
-                f"exp{experiment_id}_{self.task_id}.pkl",
+            path_exp = (
+                self.study_path
+                / f"outersplit{experiment_id}"
+                / f"workflowtask{self.task_id}"
+                / f"exp{experiment_id}_{self.task_id}.pkl"
             )
+
             # extract best model. test dataset, feature columns
             if path_exp.exists():
                 print(f"Experiment{experiment_id}, task{self.task_id} found.")
@@ -356,18 +362,12 @@ class OctoPredict:
 
     def _plot_shap_fi(self, experiment_id, shapfi_df, shap_values, data):
         """Create plot for shape fi and save to file."""
-        results_path = self.study_path.joinpath(
-            f"outersplit{experiment_id}",
-            f"workflowtask{self.task_id}",
-            "results",
-        )
+        results_path = self.study_path / f"outersplit{experiment_id}" / f"workflowtask{self.task_id}" / "results"
         # create directories if needed, required for id="all"
         results_path.parent.mkdir(parents=True, exist_ok=True)
 
         # (A) Bar plot
-        save_path = results_path.joinpath(
-            f"model_shap_fi_barplot_exp{experiment_id}_{self.task_id}.pdf",
-        )
+        save_path = results_path / f"model_shap_fi_barplot_exp{experiment_id}_{self.task_id}.pdf"
         with PdfPages(save_path) as pdf:
             plt.figure(figsize=(8.27, 11.69))  # portrait orientation (A4)
             shap.summary_plot(shap_values, data, plot_type="bar", show=False)
@@ -376,9 +376,8 @@ class OctoPredict:
             plt.close()
 
         # (B) Beeswarm plot
-        save_path = results_path.joinpath(
-            f"model_shap_fi_beeswarm_exp{experiment_id}_{self.task_id}.pdf",
-        )
+        save_path = results_path / f"model_shap_fi_beeswarm_exp{experiment_id}_{self.task_id}.pdf"
+
         with PdfPages(save_path) as pdf:
             plt.figure(figsize=(8.27, 11.69))  # portrait orientation (A4)
             shap.summary_plot(shap_values, data, plot_type="dot", show=False)
@@ -396,11 +395,12 @@ class OctoPredict:
         upper_error = df["ci_high_95"] - df["importance"]
         error = [lower_error.values, upper_error.values]
 
-        save_path = self.study_path.joinpath(
-            f"outersplit{experiment_id}",
-            f"workflowtask{self.task_id}",
-            "results",
-            f"model_permutation_fi_exp{experiment_id}_{self.task_id}.pdf",
+        save_path = (
+            self.study_path
+            / f"outersplit{experiment_id}"
+            / f"workflowtask{self.task_id}"
+            / "results"
+            / f"model_permutation_fi_exp{experiment_id}_{self.task_id}.pdf"
         )
         # create directories if needed, required for id="all"
         save_path.parent.mkdir(parents=True, exist_ok=True)

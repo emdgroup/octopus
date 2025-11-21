@@ -16,7 +16,8 @@ class TestOctoIntroClassification:
 
     @pytest.fixture
     def breast_cancer_dataset(self):
-        """Create synthetic binary classification dataset for testing."""
+        """Create synthetic binary classification dataset for testing (faster than breast cancer dataset)."""
+        # Create synthetic binary classification dataset with reduced size for faster testing
         X, y = make_classification(
             n_samples=30,
             n_features=5,
@@ -26,6 +27,7 @@ class TestOctoIntroClassification:
             random_state=42,
         )
 
+        # Create DataFrame similar to breast cancer dataset structure
         feature_names = [f"feature_{i}" for i in range(5)]
         df = pd.DataFrame(X, columns=feature_names)
         df["target"] = y

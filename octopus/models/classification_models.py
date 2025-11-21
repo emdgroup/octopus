@@ -263,7 +263,7 @@ class TabPFNClassifierModel:
                 FixedHyperparameter(name="ignore_pretraining_limits", value=False),
                 FixedHyperparameter(name="fit_mode", value="fit_preprocessors"),
                 FixedHyperparameter(name="memory_saving_mode", value="auto"),
-                FixedHyperparameter(name="model_path", value=get_tabpfn_model_path("classifier")),
+                FixedHyperparameter(name="model_path", value=str(get_tabpfn_model_path("classifier"))),
             ],
             n_jobs="n_jobs",
             model_seed="random_state",

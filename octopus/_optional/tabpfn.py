@@ -1,7 +1,5 @@
 """Optional tabpfn imports."""
 
-from pathlib import Path
-
 from octopus.exceptions import OptionalImportError
 
 try:
@@ -24,8 +22,8 @@ def _check_tabpfn_models():
         # If utils are not available, skip the check
         return
 
-    classifier_path = Path(get_tabpfn_model_path("classifier"))
-    regressor_path = Path(get_tabpfn_model_path("regressor"))
+    classifier_path = get_tabpfn_model_path("classifier")
+    regressor_path = get_tabpfn_model_path("regressor")
 
     missing_models = []
     if not classifier_path.exists():

@@ -4,11 +4,11 @@ import os
 import re
 import shutil
 import tempfile
-from pathlib import Path
 
 import pandas as pd
 import pytest
 from sklearn.datasets import make_classification, make_regression
+from upath import UPath
 
 from octopus import OctoStudy
 from octopus.experiment import OctoExperiment
@@ -79,7 +79,7 @@ class TestAutogluonWorkflows:
         study.fit(data=self.df)
 
         # Verify that study files were created
-        study_path = Path(self.studies_path) / "test_classification_workflow"
+        study_path = UPath(self.studies_path) / "test_classification_workflow"
         assert study_path.exists(), "Study directory should be created"
 
         # Test specific keys exist
@@ -134,7 +134,7 @@ class TestAutogluonWorkflows:
         study.fit(data=df_regression)
 
         # Verify that study files were created
-        study_path = Path(self.studies_path) / "test_regression_workflow"
+        study_path = UPath(self.studies_path) / "test_regression_workflow"
         assert study_path.exists(), "Study directory should be created"
 
         # Test specific keys exist
@@ -172,7 +172,7 @@ class TestAutogluonWorkflows:
                 seq_num = int(match.group()) if match else None
 
                 # Look for experiment pickle file
-                path_exp_pkl = path_workflow.joinpath(f"exp{exp_num}_{seq_num}.pkl")
+                path_exp_pkl = path_workflow / f"exp{exp_num}_{seq_num}.pkl"
 
                 if path_exp_pkl.exists():
                     try:

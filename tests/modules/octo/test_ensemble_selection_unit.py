@@ -1,10 +1,9 @@
 """Unit tests for EnSel (Ensemble Selection) individual methods."""
 
-from pathlib import Path
-
 import numpy as np
 import pandas as pd
 from sklearn.linear_model import LinearRegression
+from upath import UPath
 
 from octopus.modules.octo.bag import Bag
 from octopus.modules.octo.enssel import EnSel
@@ -109,8 +108,8 @@ def create_mock_bag(bag_id, target_dev_mae, target_test_mae, n_trainings=3, exac
 
 
 def create_mock_trial_directory(
-    tmp_path: Path, bag_performances: list[tuple[str, float, float]], exact_performance: bool = False
-) -> Path:
+    tmp_path: UPath, bag_performances: list[tuple[str, float, float]], exact_performance: bool = False
+) -> UPath:
     """Create directory with mock trial bags.
 
     Args:
@@ -127,7 +126,7 @@ def create_mock_trial_directory(
     for i, (bag_id, dev_mae, test_mae) in enumerate(bag_performances):
         bag = create_mock_bag(bag_id, dev_mae, test_mae, exact_performance=exact_performance)
         bag_file = trials_path / f"trial{i}_bag.pkl"
-        bag.to_pickle(str(bag_file))
+        bag.to_pickle(bag_file)
 
     return trials_path
 

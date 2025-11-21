@@ -533,9 +533,7 @@ def get_fi_group_shap(
     # results_path = self.path_results
 
     # (A) Bar plot
-    # save_path = results_path.joinpath(
-    #    f"model_groupshap_fi_barplot_exp{experiment_id}.pdf",
-    # )
+    # save_path = results_path / f"model_groupshap_fi_barplot_exp{experiment_id}.pdf"
     # with PdfPages(save_path) as pdf:
     #    shap.summary_plot(
     #        combined_shap_values, combined_df, plot_type="bar", show=False
@@ -546,9 +544,7 @@ def get_fi_group_shap(
     #    plt.close()
     #
     # (B) Beeswarm plot
-    # save_path = results_path.joinpath(
-    #    f"model_groupshap_fi_beeswarm_exp{experiment_id}.pdf",
-    # )
+    # save_path = results_path / f"model_groupshap_fi_beeswarm_exp{experiment_id}.pdf"
     # with PdfPages(save_path) as pdf:
     #    plt.figure(figsize=(8.27, 11.69))  # portrait orientation (A4)
     #    shap.summary_plot(

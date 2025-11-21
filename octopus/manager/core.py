@@ -3,10 +3,10 @@
 import copy
 import math
 import os
-from pathlib import Path
 
 import ray
 from attrs import define, field, validators
+from upath import UPath
 
 from octopus.experiment import OctoExperiment
 from octopus.logger import LogGroup, get_logger
@@ -145,7 +145,7 @@ class OctoManager:
             # Only used when you call this function outside of Ray.
             init_ray(address=os.environ.get("RAY_ADDRESS"), start_local_if_missing=False)
 
-        exp_path_dict: dict[int, Path] = {}
+        exp_path_dict: dict[int, UPath] = {}
 
         for element in self.workflow:
             self._log_workflow_task_info(element)
@@ -180,7 +180,7 @@ class OctoManager:
         experiment.task_id = element.task_id
         experiment.depends_on_task = element.depends_on_task
         # Note: attrs strips underscore from init param, so we assign directly to the private field
-        experiment._task_path = Path(f"outersplit{experiment.experiment_id}", f"workflowtask{element.task_id}")
+        experiment._task_path = UPath(f"outersplit{experiment.experiment_id}", f"workflowtask{element.task_id}")
         experiment.num_assigned_cpus = self._calculate_assigned_cpus()
         return experiment
 
@@ -205,12 +205,12 @@ class OctoManager:
             return self.num_available_cpus
 
     def _create_workflow_directory(self, experiment):
-        path_study_workflow = experiment.path_study.joinpath(experiment.task_path)
+        path_study_workflow = experiment.path_study / experiment.task_path
         path_study_workflow.mkdir(parents=True, exist_ok=True)
         return path_study_workflow
 
     def _get_save_path(self, path_study_workflow, experiment):
-        return path_study_workflow.joinpath(f"exp{experiment.experiment_id}_{experiment.task_id}.pkl")
+        return path_study_workflow / f"exp{experiment.experiment_id}_{experiment.task_id}.pkl"
 
     def _update_experiment_if_needed(self, experiment, exp_path_dict):
         """Update from input item.
@@ -221,7 +221,7 @@ class OctoManager:
             self._update_from_input_item(experiment, exp_path_dict)
         experiment.feature_groups = experiment.calculate_feature_groups(experiment.feature_columns)
 
-    def _run_and_save_experiment(self, experiment, path_study_workflow, path_save):
+    def _run_and_save_experiment(self, experiment: OctoExperiment, path_study_workflow: UPath, path_save: UPath):
         logger.info(f"Running experiment: {experiment.id}")
         experiment.to_pickle(path_save)
 
@@ -232,17 +232,22 @@ class OctoManager:
             # save predictions and feature importance for all keys
             for key in experiment.results:
                 # save predictions
+                predictions_path = (
+                    path_study_workflow / f"predictions_{experiment.experiment_id}_{experiment.task_id}_{key}.parquet"
+                )
                 experiment.results[key].create_prediction_df().to_parquet(
-                    path_study_workflow.joinpath(
-                        f"predictions_{experiment.experiment_id}_{experiment.task_id}_{key}.parquet"
-                    )
+                    str(predictions_path),
+                    storage_options=predictions_path.storage_options,
                 )
 
                 # save feature importance
+                feature_importance_path = (
+                    path_study_workflow
+                    / f"feature-importance_{experiment.experiment_id}_{experiment.task_id}_{key}.parquet"
+                )
                 experiment.results[key].create_feature_importance_df().to_parquet(
-                    path_study_workflow.joinpath(
-                        f"feature-importance_{experiment.experiment_id}_{experiment.task_id}_{key}.parquet"
-                    )
+                    str(feature_importance_path),
+                    storage_options=feature_importance_path.storage_options,
                 )
 
         experiment.to_pickle(path_save)
@@ -254,11 +259,11 @@ class OctoManager:
             raise ValueError(f"ml_module {experiment.ml_module} not supported")
 
     def _load_existing_experiment(self, base_experiment, element):
-        path_study_workflow = base_experiment.path_study.joinpath(
-            f"outersplit{base_experiment.experiment_id}",
-            f"workflowtask{element.task_id}",
+        path_study_workflow = (
+            base_experiment.path_study / f"outersplit{base_experiment.experiment_id}" / f"workflowtask{element.task_id}"
         )
-        path_load = path_study_workflow.joinpath(f"exp{base_experiment.experiment_id}_{element.task_id}.pkl")
+
+        path_load = path_study_workflow / f"exp{base_experiment.experiment_id}_{element.task_id}.pkl"
 
         if not path_load.exists():
             raise FileNotFoundError("Workflow task to be loaded does not exist")

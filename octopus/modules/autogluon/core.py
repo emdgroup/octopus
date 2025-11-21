@@ -1,8 +1,6 @@
 """Module: Autogluon Tabular."""
 
 import json
-import shutil
-from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -23,6 +21,7 @@ from autogluon.core.metrics import (
 )
 from autogluon.tabular import TabularPredictor
 from sklearn.base import BaseEstimator, ClassifierMixin, RegressorMixin
+from upath import UPath
 
 from octopus.experiment import OctoExperiment
 from octopus.logger import LogGroup, get_logger
@@ -114,14 +113,14 @@ class AGCore:
     num_cpus = field(init=False)  # TODO: this is also in the AutoGluon class
 
     @property
-    def path_module(self) -> Path:
+    def path_module(self) -> UPath:
         """Module path."""
-        return self.experiment.path_study.joinpath(self.experiment.task_path)
+        return self.experiment.path_study / self.experiment.task_path
 
     @property
-    def path_results(self) -> Path:
+    def path_results(self) -> UPath:
         """Results path."""
-        return self.path_module.joinpath("results")
+        return self.path_module / "results"
 
     @property
     def x_traindev(self) -> pd.DataFrame:
@@ -183,7 +182,7 @@ class AGCore:
         # create directory if it does not exist
         for directory in [self.path_results]:
             if directory.exists():
-                shutil.rmtree(directory)
+                directory.rmdir(recursive=True)
             directory.mkdir(parents=True, exist_ok=True)
 
         # set and validate resources assigned to the experiment
@@ -246,7 +245,7 @@ class AGCore:
         logger.info("Fitting completed")
 
         # save failure info in case of crashes
-        with open(self.path_results.joinpath("debug_info.txt"), "w", encoding="utf-8") as text_file:
+        with (self.path_results / "debug_info.txt").open("w", encoding="utf-8") as text_file:
             print(self.model.model_failures(), file=text_file)
 
         # save leaderboard and model information
@@ -377,11 +376,7 @@ class AGCore:
             }
 
         # print combined feature_importance
-        with open(
-            self.path_results.joinpath("combined_feature_importances.json"),
-            "w",
-            encoding="utf-8",
-        ) as f:
+        with (self.path_results / "combined_feature_importances.json").open("w", encoding="utf-8") as f:
             json.dump(combined_importances, f, indent=4)
 
         return fi
@@ -431,11 +426,7 @@ class AGCore:
             for key, value in combined_performance.items():
                 if isinstance(value, pd.DataFrame):
                     combined_performance[key] = value.to_dict(orient="records")
-        with open(
-            self.path_results.joinpath("performance_results.json"),
-            "w",
-            encoding="utf-8",
-        ) as f:
+        with (self.path_results / "performance_results.json").open("w", encoding="utf-8") as f:
             json.dump(combined_performance, f, indent=4)
 
         return combined_performance
@@ -449,24 +440,31 @@ class AGCore:
             # extra_metrics=
             # display=True
         )
-        leaderboard.to_csv(self.path_results.joinpath("leaderboard.csv"))
+        leaderboard_path = self.path_results / "leaderboard.csv"
+        leaderboard.to_csv(
+            str(leaderboard_path),
+            storage_options=leaderboard_path.storage_options,
+        )
 
         # Best test result
         best_model = leaderboard.iloc[0]
         best_result_df = pd.DataFrame(best_model).transpose()
-        best_result_df.to_csv(self.path_results.joinpath("best_model_result.csv"))
-        # print(best_result_df)
+        best_result_path = self.path_results / "best_model_result.csv"
+        best_result_df.to_csv(
+            str(best_result_path),
+            storage_options=best_result_path.storage_options,
+        )
 
         # save model info
         model_info = self.model.info()
-        with open(self.path_results.joinpath("model_info.json"), "w", encoding="utf-8") as f:
+        with (self.path_results / "model_info.json").open("w", encoding="utf-8") as f:
             json.dump(model_info, f, default=str, indent=4)
 
         # show and save model summary
         fit_summary = self.model.fit_summary(
             # show_plot=True
         )
-        with open(self.path_results.joinpath("model_stats.txt"), "w", encoding="utf-8") as text_file:
+        with (self.path_results / "model_stats.txt").open("w", encoding="utf-8") as text_file:
             print(fit_summary, file=text_file)
 
     def _get_predictions(self):

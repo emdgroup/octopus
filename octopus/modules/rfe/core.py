@@ -4,13 +4,12 @@
 
 import copy
 import json
-import shutil
-from pathlib import Path
 
 import pandas as pd
 from attrs import define, field, validators
 from sklearn.feature_selection import RFECV
 from sklearn.model_selection import GridSearchCV, StratifiedKFold
+from upath import UPath
 
 from octopus.experiment import OctoExperiment
 from octopus.metrics.inventory import MetricsInventory
@@ -112,14 +111,14 @@ class RfeCore:
     experiment: OctoExperiment[Rfe] = field(validator=[validators.instance_of(OctoExperiment)])
 
     @property
-    def path_module(self) -> Path:
+    def path_module(self) -> UPath:
         """Module path."""
-        return self.experiment.path_study.joinpath(self.experiment.task_path)
+        return self.experiment.path_study / self.experiment.task_path
 
     @property
-    def path_results(self) -> Path:
+    def path_results(self) -> UPath:
         """Results path."""
-        return self.path_module.joinpath("results")
+        return self.path_module / "results"
 
     @property
     def x_traindev(self) -> pd.DataFrame:
@@ -177,7 +176,7 @@ class RfeCore:
         # create directory if it does not exist
         for directory in [self.path_results]:
             if directory.exists():
-                shutil.rmtree(directory)
+                directory.rmdir(recursive=True)
             directory.mkdir(parents=True, exist_ok=True)
 
     def run_experiment(self):
@@ -346,11 +345,7 @@ class RfeCore:
             "Test set (refit) performance": test_score_refit,
             "Test set (gs+refit) performance": test_score_gsrefit,
         }
-        with open(
-            self.path_results.joinpath("results.json"),
-            "w",
-            encoding="utf-8",
-        ) as f:
+        with (self.path_results / "results.json").open("w", encoding="utf-8") as f:
             json.dump(results, f, indent=4)
 
         return self.experiment

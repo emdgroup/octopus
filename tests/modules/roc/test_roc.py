@@ -1,13 +1,13 @@
 """Comprehensive test suite for ROC (Remove Outliers and Correlations) module."""
 
 import tempfile
-from pathlib import Path
 from unittest.mock import Mock, patch
 
 import numpy as np
 import pandas as pd
 import pytest
 from sklearn.datasets import make_classification, make_regression
+from upath import UPath
 
 from octopus.experiment import OctoExperiment
 from octopus.modules.roc.core import RocCore
@@ -192,8 +192,8 @@ class TestRocCore:
             mock_experiment.ml_type = ml_type
             mock_experiment.target_assignments = target_assignments
             mock_experiment.ml_config = roc_config
-            mock_experiment.path_study = Path(temp_dir)
-            mock_experiment.task_path = Path("roc_test")
+            mock_experiment.path_study = UPath(temp_dir)
+            mock_experiment.task_path = UPath("roc_test")
             mock_experiment.selected_features = []
 
             return mock_experiment
@@ -538,8 +538,8 @@ class TestRocIntegration:
             mock_experiment.ml_type = ml_type
             mock_experiment.target_assignments = target_cols
             mock_experiment.ml_config = roc_config
-            mock_experiment.path_study = Path(temp_dir)
-            mock_experiment.task_path = Path("roc_test")
+            mock_experiment.path_study = UPath(temp_dir)
+            mock_experiment.task_path = UPath("roc_test")
             mock_experiment.selected_features = []
 
             with patch("shutil.rmtree"), patch("pathlib.Path.mkdir"):

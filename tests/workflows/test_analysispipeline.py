@@ -1,12 +1,11 @@
 """Test analysis pipeline for OctoPredict functionality."""
 
-from pathlib import Path
-
 import numpy as np
 import pandas as pd
 import pytest
 from sklearn.datasets import make_classification
 from sklearn.metrics import auc, roc_curve
+from upath import UPath
 
 from octopus import OctoStudy
 from octopus.metrics.utils import get_performance_from_model
@@ -87,7 +86,7 @@ def trained_study(classification_dataset, tmp_path_factory):
     # Run the study
     study.fit(df)
 
-    study_path = Path(temp_dir) / "test_analysis_pipeline"
+    study_path = UPath(temp_dir) / "test_analysis_pipeline"
     yield study_path
 
 

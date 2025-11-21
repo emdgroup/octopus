@@ -11,6 +11,7 @@ import numpy as np
 import pandas as pd
 import scipy.stats
 from attrs import Factory, define, field, validators
+from upath import UPath
 
 from octopus.task import Task
 
@@ -48,10 +49,13 @@ class OctoExperiment[ConfigType: Task]:
     )
     """Identifier for the input workflow task."""
 
-    _task_path: Path | None = field(validator=validators.optional(validators.instance_of(Path)))
+    _task_path: UPath | None = field(
+        validator=validators.optional(validators.instance_of(UPath)),
+        converter=lambda x: UPath(x) if x is not None else None,
+    )
     """Internal path storage. Use task_path property to access safely."""
 
-    study_path: str = field(validator=[validators.instance_of(str)])
+    study_path: UPath = field(validator=[validators.instance_of(UPath)], converter=lambda x: UPath(x))
     """Path where the study is stored."""
 
     study_name: str = field(validator=[validators.instance_of(str)])
@@ -115,9 +119,9 @@ class OctoExperiment[ConfigType: Task]:
     """Results of the experiment used as input, keyed by result type."""
 
     @property
-    def path_study(self) -> Path:
+    def path_study(self) -> UPath:
         """Get study path."""
-        return Path(self.study_path, self.study_name)
+        return UPath(self.study_path, self.study_name)
 
     @property
     def is_base_experiment(self) -> bool:
@@ -130,14 +134,14 @@ class OctoExperiment[ConfigType: Task]:
         return self.task_id is not None
 
     @property
-    def task_path(self) -> Path:
+    def task_path(self) -> UPath:
         """Get the workflow task path.
 
         Use this in modules that require a fully initialized experiment
         (not a base experiment).
 
         Returns:
-            Path: The workflow task path
+            UPath: The workflow task path
 
         Raises:
             ValueError: If this is a base experiment.
@@ -220,16 +224,16 @@ class OctoExperiment[ConfigType: Task]:
 
         return {f"group{i}": group for i, group in enumerate(auto_groups_unique)}
 
-    def to_pickle(self, file_path: str | Path):
+    def to_pickle(self, file_path: str | Path | UPath):
         """Save object to a compressed pickle file."""
-        with gzip.GzipFile(file_path, "wb") as file:
-            pickle.dump(self, file)
+        with UPath(file_path).open("wb") as file, gzip.GzipFile(fileobj=file, mode="wb") as gzip_file:
+            pickle.dump(self, gzip_file)
 
     @classmethod
-    def from_pickle(cls, file_path: str | Path) -> "OctoExperiment":
+    def from_pickle(cls, file_path: str | Path | UPath) -> "OctoExperiment":
         """Load object from a compressed pickle file."""
-        with gzip.GzipFile(file_path, "rb") as file:
-            data = pickle.load(file)
+        with UPath(file_path).open("rb") as file, gzip.GzipFile(fileobj=file, mode="rb") as gzip_file:
+            data = pickle.load(gzip_file)
 
         if not isinstance(data, cls):
             raise TypeError(f"Loaded object is not of type {cls.__name__}")

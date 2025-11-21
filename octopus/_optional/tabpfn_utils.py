@@ -28,7 +28,7 @@ def get_tabpfn_cache_dir() -> Path:
     return cache_base / "tabpfn"
 
 
-def get_tabpfn_model_path(model_type: str) -> str:
+def get_tabpfn_model_path(model_type: str) -> Path:
     """Get the full path to a TabPFN model file.
 
     Args:
@@ -46,4 +46,4 @@ def get_tabpfn_model_path(model_type: str) -> str:
     cache_dir = get_tabpfn_cache_dir()
     model_filename = f"tabpfn-v2-{model_type}.ckpt"
 
-    return str(cache_dir / model_filename)
+    return cache_dir / model_filename

@@ -13,10 +13,10 @@
 
 import copy
 from collections import Counter
-from pathlib import Path
 
 import pandas as pd
 from attrs import define, field, validators
+from upath import UPath
 
 from octopus.logger import get_logger
 from octopus.metrics import metrics_inventory
@@ -32,7 +32,7 @@ class EnSel:
 
     target_metric: str = field(validator=[validators.instance_of(str)])
     target_assignments: dict = field(validator=[validators.instance_of(dict)])
-    path_trials: Path = field(validator=[validators.instance_of(Path)])
+    path_trials: UPath = field(validator=[validators.instance_of(UPath)], converter=UPath)
     max_n_iterations: int = field(validator=[validators.instance_of(int)])
     row_column: str = field(validator=[validators.instance_of(str)])
     positive_class = field(default=None)

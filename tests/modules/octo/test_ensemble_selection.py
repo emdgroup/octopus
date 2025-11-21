@@ -212,7 +212,7 @@ def test_ensemble_selection_ensembled_data(tmp_path):
     for trial_idx, (_model_name, bag) in enumerate(bags.items()):
         filename = f"trial{trial_idx}_bag.pkl"
         filepath = trials_path / filename
-        bag.to_pickle(str(filepath))
+        bag.to_pickle(filepath)
 
     # Get individual model performance
     individual_performances = []

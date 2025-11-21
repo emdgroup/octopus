@@ -2,10 +2,11 @@
 
 import heapq
 
+from octopus.experiment import OctoExperiment
 from octopus.logger import LogGroup, get_logger
 from octopus.metrics import metrics_inventory
 from octopus.models.inventory import ModelInventory
-from octopus.modules.octo.bag import Bag  # type: ignore
+from octopus.modules.octo.bag import Bag, BagClassifier, BagRegressor  # type: ignore
 from octopus.modules.octo.training import Training  # type: ignore
 
 logger = get_logger()
@@ -19,7 +20,7 @@ class ObjectiveOptuna:
 
     def __init__(
         self,
-        experiment,
+        experiment: OctoExperiment,
         data_splits,
         study_name,
         top_trials,
@@ -181,12 +182,13 @@ class ObjectiveOptuna:
 
         return optuna_target
 
-    def _save_topn_trials(self, bag, target_value, n_trial):
+    def _save_topn_trials(self, bag: BagClassifier | BagRegressor, target_value, n_trial):
         max_n_trials = self.experiment.ml_config.ensel_n_save_trials
-        path_save = self.experiment.path_study.joinpath(
-            self.experiment.task_path,
-            "trials",
-            f"study{self.study_name}trial{n_trial}_bag.pkl",
+        path_save = (
+            self.experiment.path_study
+            / self.experiment.task_path
+            / "trials"
+            / f"study{self.study_name}trial{n_trial}_bag.pkl"
         )
 
         # saving top n_trials to disk

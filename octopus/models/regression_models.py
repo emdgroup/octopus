@@ -310,7 +310,7 @@ class TabPFNRegressorModel:
                 FixedHyperparameter(name="ignore_pretraining_limits", value=False),
                 FixedHyperparameter(name="fit_mode", value="fit_preprocessors"),
                 FixedHyperparameter(name="memory_saving_mode", value="auto"),
-                FixedHyperparameter(name="model_path", value=get_tabpfn_model_path("regressor")),
+                FixedHyperparameter(name="model_path", value=str(get_tabpfn_model_path("regressor"))),
             ],
             n_jobs="n_jobs",
             model_seed="random_state",

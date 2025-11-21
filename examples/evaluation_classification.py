@@ -6,8 +6,6 @@ app = marimo.App(width="medium")
 
 @app.cell
 def _():
-    from pathlib import Path
-
     import altair as alt
     import duckdb
     import marimo as mo
@@ -16,7 +14,7 @@ def _():
     import polars as pl
     from sklearn.metrics import confusion_matrix
 
-    return Path, alt, confusion_matrix, duckdb, go, mo, np, pl
+    return alt, confusion_matrix, duckdb, go, mo, np, pl
 
 
 @app.cell(hide_code=True)

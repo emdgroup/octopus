@@ -3,8 +3,6 @@
 """ROC core (removal of correlated features)."""
 
 import random
-import shutil
-from pathlib import Path
 
 import networkx as nx
 import numpy as np
@@ -17,6 +15,7 @@ from sklearn.feature_selection import (
     mutual_info_classif,
     mutual_info_regression,
 )
+from upath import UPath
 
 from octopus.experiment import OctoExperiment
 from octopus.modules.roc.module import Roc
@@ -56,14 +55,14 @@ class RocCore:
     feature_groups: list = field(init=False, validator=[validators.instance_of(list)])
 
     @property
-    def path_module(self) -> Path:
+    def path_module(self) -> UPath:
         """Module path."""
-        return self.experiment.path_study.joinpath(self.experiment.task_path)
+        return self.experiment.path_study / self.experiment.task_path
 
     @property
-    def path_results(self) -> Path:
+    def path_results(self) -> UPath:
         """Results path."""
-        return self.path_module.joinpath("results")
+        return self.path_module / "results"
 
     @property
     def x_traindev(self) -> pd.DataFrame:
@@ -102,7 +101,7 @@ class RocCore:
         # create directory if it does not exist
         for directory in [self.path_results]:
             if directory.exists():
-                shutil.rmtree(directory)
+                directory.rmdir(recursive=True)
             directory.mkdir(parents=True, exist_ok=True)
 
     def run_experiment(self):

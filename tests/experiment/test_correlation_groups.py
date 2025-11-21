@@ -1,7 +1,5 @@
 """Test creation of correlation groups."""
 
-from pathlib import Path
-
 import numpy as np
 import pandas as pd
 import pytest
@@ -55,7 +53,7 @@ def mock_octo_experiment(correlated_data):
         experiment_id=1,
         task_id=2,
         depends_on_task=3,
-        task_path=Path("/mock/path"),
+        task_path="/mock/path",
         study_path="./studies/",
         study_name="test",
         ml_type="regression",

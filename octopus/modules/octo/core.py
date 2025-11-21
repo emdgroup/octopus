@@ -4,13 +4,13 @@
 
 import copy
 import json
-import shutil
-from pathlib import Path
 
 import optuna
+import optuna.storages.journal
 import pandas as pd
 from attrs import Factory, define, field, validators
 from optuna.trial import TrialState
+from upath import UPath
 
 from octopus.experiment import OctoExperiment
 from octopus.logger import LogGroup, get_logger
@@ -22,6 +22,8 @@ from octopus.modules.octo.objective_optuna import ObjectiveOptuna
 from octopus.modules.octo.training import Training
 from octopus.results import ModuleResults
 from octopus.utils import DataSplit
+
+from .optuna_storage_backend import JournalFsspecFileBackend
 
 logger = get_logger()
 
@@ -63,26 +65,26 @@ class OctoCoreGeneric[TaskConfigType: Octo]:
     # model = field(default=None)
     data_splits: dict = field(default=Factory(dict), validator=[validators.instance_of(dict)])
 
-    paths_optuna_db: dict = field(default=Factory(dict), validator=[validators.instance_of(dict)])
+    paths_optuna_db: dict[str, UPath] = field(default=Factory(dict), validator=[validators.instance_of(dict)])
 
     top_trials: list = field(default=Factory(list), validator=[validators.instance_of(list)])
 
     mrmr_features: dict = field(default=Factory(dict), validator=[validators.instance_of(dict)])
 
     @property
-    def path_module(self) -> Path:
+    def path_module(self) -> UPath:
         """Module path."""
-        return self.experiment.path_study.joinpath(self.experiment.task_path)
+        return self.experiment.path_study / self.experiment.task_path
 
     @property
-    def path_trials(self) -> Path:
+    def path_trials(self) -> UPath:
         """Trials path."""
-        return self.path_module.joinpath("trials")
+        return self.path_module / "trials"
 
     @property
-    def path_results(self) -> Path:
+    def path_results(self) -> UPath:
         """Results path."""
-        return self.path_module.joinpath("results")
+        return self.path_module / "results"
 
     def __attrs_post_init__(self):
         # create datasplit during init
@@ -101,7 +103,7 @@ class OctoCoreGeneric[TaskConfigType: Octo]:
         # create directory if it does not exist
         for directory in [self.path_trials, self.path_results]:
             if not self.experiment.ml_config.resume_optimization and directory.exists():
-                shutil.rmtree(directory)
+                directory.rmdir(recursive=True)
             directory.mkdir(parents=True, exist_ok=True)
 
         # check if there is a mismatch between configured resources
@@ -221,7 +223,7 @@ class OctoCoreGeneric[TaskConfigType: Octo]:
             ml_type=self.experiment.ml_type,
         )
         # save ensel bag
-        ensel_bag.to_pickle(self.path_results.joinpath("ensel_bag.pkl"))
+        ensel_bag.to_pickle(self.path_results / "ensel_bag.pkl")
 
         # save performance values of best bag
         ensel_scores = ensel_bag.get_performance()
@@ -237,11 +239,7 @@ class OctoCoreGeneric[TaskConfigType: Octo]:
             f"Test {ensel_scores['test_pool']:.3f}"
         )
 
-        with open(
-            self.path_results.joinpath("ensel_scores_scores.json"),
-            "w",
-            encoding="utf-8",
-        ) as f:
+        with (self.path_results / "ensel_scores_scores.json").open("w", encoding="utf-8") as f:
             json.dump(ensel_scores, f)
 
         # calculate feature importances of best bag
@@ -291,8 +289,8 @@ class OctoCoreGeneric[TaskConfigType: Octo]:
         )
 
         # create study with unique name and database
-        db_path = self.path_module.joinpath(study_name + ".db")
-        storage = optuna.storages.RDBStorage(url=f"sqlite:///{db_path}")
+        db_path = self.path_module / (study_name + "_optuna.log")
+        storage = optuna.storages.JournalStorage(JournalFsspecFileBackend(db_path))
         study = optuna.create_study(
             study_name=study_name,
             direction="maximize",  # metric adjustment in optuna objective
@@ -341,7 +339,11 @@ class OctoCoreGeneric[TaskConfigType: Octo]:
                         "param_value": str(trial.params[name]),
                     }
                 )
-        pd.DataFrame(dict_optuna).to_parquet(self.path_module.joinpath(f"{study_name}.parquet"))
+        dict_optuna_path = self.path_module / f"{study_name}_optuna_results.parquet"
+        pd.DataFrame(dict_optuna).to_parquet(
+            str(dict_optuna_path),
+            storage_options=dict_optuna_path.storage_options,
+        )
 
         # display results
         logger.set_log_group(LogGroup.SCORES, f"EXP {self.experiment.experiment_id} SQE TBD")
@@ -396,7 +398,7 @@ class OctoCoreGeneric[TaskConfigType: Octo]:
         best_bag.fit()
 
         # save best bag
-        best_bag.to_pickle(self.path_results.joinpath("best_bag.pkl"))
+        best_bag.to_pickle(self.path_results / "best_bag.pkl")
 
         # save performance values of best bag
         best_bag_performance = best_bag.get_performance()
@@ -414,7 +416,7 @@ class OctoCoreGeneric[TaskConfigType: Octo]:
         )
 
         # save best bag performance
-        with open(self.path_results.joinpath("best_bag_performance.json"), "w", encoding="utf-8") as f:
+        with (self.path_results / "best_bag_performance.json").open("w", encoding="utf-8") as f:
             json.dump(best_bag_performance, f)
 
         # calculate feature importances of best bag

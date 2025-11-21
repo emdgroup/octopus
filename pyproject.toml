@@ -43,6 +43,8 @@ dependencies = [
     "shap>=0.48",
     "xgboost>=3.0",
     "fastparquet>=2024.11.0",
+    "fsspec>=2025.10.0",
+    "universal_pathlib>=0.3.6",
 ]
 
 [project.urls]
@@ -108,6 +110,9 @@ test = [
     "octopus[boruta]",
     "octopus[survival]",
     "octopus[lint]",
+    "moto[server,s3]>=5.1.17",
+    "s3fs>=2025.10.0",
+    "fastparquet>=2024.11.0",
 ]
 
 [build-system]

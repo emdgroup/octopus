@@ -1,10 +1,11 @@
 """Test octo manager."""
 
 import os
-from pathlib import Path
 from unittest.mock import Mock, patch
 
 import pytest
+from upath import UPath
+from upath.implementations.local import PosixUPath
 
 from octopus.experiment import OctoExperiment
 from octopus.manager import OctoManager
@@ -36,7 +37,7 @@ def mock_experiment():
     """Create mock experiment."""
     experiment = Mock(spec=OctoExperiment)
     experiment.experiment_id = "test_exp"
-    experiment.path_study = Path("/tmp/test_study")
+    experiment.path_study = UPath("/tmp/test_study")
     experiment.feature_columns = ["feature1", "feature2"]
     experiment.calculate_feature_groups = Mock(return_value=["group1"])
     return experiment
@@ -115,10 +116,10 @@ def test_update_from_input_item(octo_manager, mock_experiment):
     input_experiment.selected_features = ["new_feature"]
 
     with (
-        patch.object(Path, "exists", return_value=True),
+        patch.object(PosixUPath, "exists", return_value=True),
         patch.object(OctoExperiment, "from_pickle", return_value=input_experiment),
     ):
-        exp_path_dict = {1: Path("/tmp/input_exp.pkl")}
+        exp_path_dict = {1: UPath("/tmp/input_exp.pkl")}
         mock_experiment.depends_on_task = 1
         octo_manager._update_from_input_item(mock_experiment, exp_path_dict)
         assert mock_experiment.feature_columns == ["new_feature"]
@@ -128,7 +129,7 @@ def test_load_existing_experiment(octo_manager, mock_experiment):
     """Test load existing experiment."""
     element = Mock(task_id=3)
     with (
-        patch.object(Path, "exists", return_value=True),
+        patch.object(PosixUPath, "exists", return_value=True),
         patch.object(OctoExperiment, "from_pickle", return_value=mock_experiment),
     ):
         loaded_experiment = octo_manager._load_existing_experiment(mock_experiment, element)
@@ -138,5 +139,5 @@ def test_load_existing_experiment(octo_manager, mock_experiment):
 def test_load_existing_experiment_not_found(octo_manager, mock_experiment):
     """Test experiment not found."""
     element = Mock(task_id=3)
-    with patch.object(Path, "exists", return_value=False), pytest.raises(FileNotFoundError):
+    with patch.object(UPath, "exists", return_value=False), pytest.raises(FileNotFoundError):
         octo_manager._load_existing_experiment(mock_experiment, element)

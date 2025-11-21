@@ -20,6 +20,7 @@ from sklearn.inspection import permutation_importance
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import FunctionTransformer, StandardScaler
 from sklearn.utils.validation import check_is_fitted
+from upath import UPath
 
 from octopus.logger import LogGroup, get_logger
 from octopus.metrics.inventory import MetricsInventory
@@ -865,10 +866,10 @@ class Training:
         x_processed = self.preprocessing_pipeline.transform(x)
         return self.model.predict_proba(x_processed)
 
-    def to_pickle(self, file_path: str | Path):
+    def to_pickle(self, file_path: str | Path | UPath):
         """Save object to a compressed pickle file."""
-        with gzip.GzipFile(file_path, "wb") as file:
-            pickle.dump(self, file)
+        with file_path.open("wb") as file, gzip.GzipFile(fileobj=file, mode="wb") as gzip_file:
+            pickle.dump(self, gzip_file)
 
     def _validate_model_trained(self):
         """Validate that the model actually trained using sklearn's check_is_fitted utility.
@@ -893,10 +894,10 @@ class Training:
             ) from e
 
     @classmethod
-    def from_pickle(cls, file_path: str | Path) -> "Training":
+    def from_pickle(cls, file_path: str | Path | UPath) -> "Training":
         """Load object from a compressed pickle file."""
-        with gzip.GzipFile(file_path, "rb") as file:
-            data = pickle.load(file)
+        with file_path.open("rb") as file, gzip.GzipFile(fileobj=file, mode="rb") as gzip_file:
+            data = pickle.load(gzip_file)
 
         if not isinstance(data, cls):
             raise TypeError(f"Loaded object is not of type {cls.__name__}")

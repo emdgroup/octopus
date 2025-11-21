@@ -1,12 +1,11 @@
 """Octo Study."""
 
 import json
-import shutil
 import sys
-from pathlib import Path
 
 import pandas as pd
 from attrs import Factory, asdict, define, field, fields, has, validators
+from upath import UPath
 
 from octopus.experiment import OctoExperiment
 from octopus.logger import get_logger
@@ -118,16 +117,16 @@ class OctoStudy:
     silently_overwrite_study: bool = field(default=Factory(lambda: False), validator=[validators.instance_of(bool)])
     """If False, prompts user for confirmation when overwriting existing study. Defaults to False."""
 
-    path: str = field(default="./studies/")
+    path: UPath = field(default=UPath("./studies/"), converter=lambda x: UPath(x))
     """The path where study outputs are saved. Defaults to "./studies/"."""
 
     prepared: PreparedData = field(init=False)
     """Container for prepared study data and metadata after data preparation."""
 
     @property
-    def output_path(self) -> Path:
+    def output_path(self) -> UPath:
         """Full output path for this study (path/name)."""
-        return Path(self.path) / self.name
+        return self.path / self.name
 
     @property
     def relevant_columns(self) -> list[str]:
@@ -172,7 +171,7 @@ class OctoStudy:
 
             if self.start_with_empty_study:
                 print("Overwriting existing study....")
-                shutil.rmtree(self.output_path)
+                self.output_path.rmdir(recursive=True)
             else:
                 print("Resume existing study....")
 
@@ -182,7 +181,7 @@ class OctoStudy:
             """Convert a value to JSON-serializable format."""
             if hasattr(value, "value"):
                 return value.value
-            elif isinstance(value, Path):
+            elif isinstance(value, UPath):
                 return str(value)
             elif has(type(value)):
                 return asdict(value, value_serializer=lambda _, __, v: serialize_value(v))
@@ -206,19 +205,22 @@ class OctoStudy:
         }
 
         config_path = self.output_path / "config.json"
-        with open(config_path, "w") as f:
+        with config_path.open("w") as f:
             json.dump(config, f, indent=2)
 
+        data_path = self.output_path / "data.parquet"
         data.to_parquet(
-            self.output_path / "data.parquet",
+            str(data_path),
             index=False,
             engine="fastparquet",
+            storage_options=data_path.storage_options,
         )
-
+        prepared_data_path = self.output_path / "data_prepared.parquet"
         self.prepared.data.to_parquet(
-            self.output_path / "data_prepared.parquet",
+            str(prepared_data_path),
             index=False,
             engine="fastparquet",
+            storage_options=prepared_data_path.storage_options,
         )
 
     def _prepare_data(self, data: pd.DataFrame) -> pd.DataFrame:
@@ -306,7 +308,11 @@ class OctoStudy:
         )
         report = checker.generate_report()
         report_path = self.output_path / "health_check_report.csv"
-        report.to_csv(report_path, index=False)
+        report.to_csv(
+            str(report_path),
+            index=False,
+            storage_options=report_path.storage_options,
+        )
 
         if report.empty:
             return

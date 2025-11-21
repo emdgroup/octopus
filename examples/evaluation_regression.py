@@ -6,15 +6,13 @@ app = marimo.App(width="medium")
 
 @app.cell
 def _():
-    from pathlib import Path
-
     import altair as alt
     import duckdb
     import marimo as mo
     import plotly.graph_objects as go
     import polars as pl
 
-    return Path, alt, duckdb, go, mo, pl
+    return alt, duckdb, go, mo, pl
 
 
 @app.cell(hide_code=True)

@@ -6,9 +6,7 @@ import copy
 import itertools
 import json
 import random
-import shutil
 from collections import Counter
-from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -19,6 +17,7 @@ from sklearn.model_selection import (
     StratifiedKFold,
     cross_val_predict,
 )
+from upath import UPath
 
 from octopus.experiment import OctoExperiment
 from octopus.metrics import metrics_inventory
@@ -103,14 +102,14 @@ class EfsCore:
     optimized_ensemble: dict = field(default=Factory(dict), validator=[validators.instance_of(dict)])
 
     @property
-    def path_module(self) -> Path:
+    def path_module(self) -> UPath:
         """Module path."""
-        return self.experiment.path_study.joinpath(self.experiment.task_path)
+        return self.experiment.path_study / self.experiment.task_path
 
     @property
-    def path_results(self) -> Path:
+    def path_results(self) -> UPath:
         """Results path."""
-        return self.path_module.joinpath("results")
+        return self.path_module / "results"
 
     @property
     def ml_type(self) -> str:
@@ -196,7 +195,7 @@ class EfsCore:
         # create directory if it does not exist
         for directory in [self.path_results]:
             if directory.exists():
-                shutil.rmtree(directory)
+                directory.rmdir(recursive=True)
             directory.mkdir(parents=True, exist_ok=True)
 
     def run_experiment(self):
@@ -218,11 +217,7 @@ class EfsCore:
         # Report performance on test set
 
         # Save results to JSON
-        with open(
-            self.path_results.joinpath("results.json"),
-            "w",
-            encoding="utf-8",
-        ) as f:
+        with (self.path_results / "results.json").open("w", encoding="utf-8") as f:
             json.dump(
                 {
                     # "best_cv_score": best_cv_score,

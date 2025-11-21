@@ -1,13 +1,13 @@
 """Tests for octopus/predict.py."""
 
 import json
-from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
 import numpy as np
 import pandas as pd
 import pytest
+from upath import UPath
 
 from octopus.experiment import OctoExperiment
 from octopus.predict import OctoPredict
@@ -60,7 +60,7 @@ def mock_experiment(sample_data, mock_model):
     experiment.experiment_id = 0
     experiment.task_id = 0
     experiment.depends_on_task = -1
-    experiment._task_path = Path("outersplit0/workflowtask0")
+    experiment._task_path = UPath("outersplit0/workflowtask0")
     experiment.datasplit_column = "target"
     experiment.row_column = "row_id"
     experiment.feature_columns = ["feature1", "feature2", "feature3"]

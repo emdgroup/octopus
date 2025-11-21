@@ -8,47 +8,25 @@
 ### Necessary imports for this example
 from sklearn.datasets import load_diabetes
 
-from octopus import OctoData, OctoML
-from octopus.config import ConfigManager, ConfigStudy, ConfigWorkflow
+from octopus import OctoStudy
 from octopus.models.hyperparameter import IntHyperparameter
 from octopus.modules import Octo
 
 ### Load the diabetes dataset
 diabetes = load_diabetes(as_frame=True)
 
-### Create OctoData Object
-octo_data = OctoData(
-    data=diabetes["frame"].reset_index(),
-    target_columns=["target"],
-    feature_columns=diabetes["feature_names"],
-    sample_id="index",
-    datasplit_type="sample",
-)
-
-### Create Configuration
-
-# We create three types of configurations:
-# 1. `ConfigStudy`: Sets the name, machine learning type (regression), and target metric.
-
-# 2. `ConfigManager`: Manages how the machine learning will be executed.
-# We use the default settings.
-
-# 3. `ConfigWorkflow`: Defines the workflows to be executed. In this example,
-# we use `RandomForestRegressor` with custom hyperparameter ranges defined using
-# the `Hyperparameter` class.
-
-config_study = ConfigStudy(
+### Create and run OctoStudy with custom hyperparameters
+study = OctoStudy(
     name="use_own_hyperparameters_example",
     ml_type="regression",
     target_metric="MAE",
+    feature_columns=diabetes["feature_names"],
+    target_columns=["target"],
+    sample_id="index",
     ignore_data_health_warning=True,
-    silently_overwrite_study=True,
-)
-
-config_manager = ConfigManager(outer_parallelization=False, run_single_experiment_num=0)
-
-config_workflow = ConfigWorkflow(
-    [
+    outer_parallelization=False,
+    run_single_experiment_num=0,
+    tasks=[
         Octo(
             task_id=0,
             models=["RandomForestRegressor"],
@@ -60,21 +38,10 @@ config_workflow = ConfigWorkflow(
                 ]
             },
         ),
-    ]
+    ],
 )
 
-## Execute the Machine Learning Workflow
-
-# We add the data and the configurations defined earlier
-# and run the machine learning workflow.
-
-octo_ml = OctoML(
-    octo_data,
-    config_study=config_study,
-    config_manager=config_manager,
-    config_workflow=config_workflow,
-)
-octo_ml.run_study()
+study.fit(data=diabetes["frame"].reset_index())
 
 print("Workflow completed")
 

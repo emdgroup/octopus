@@ -3,7 +3,7 @@
 from collections import Counter
 
 import pandas as pd
-from attrs import define
+from attrs import define, field
 
 
 @define
@@ -33,8 +33,27 @@ class OctoDataValidator:
     target_assignments: dict[str, str]
     """Mapping of target assignments."""
 
-    relevant_columns: list[str]
-    """Relevant columns of the dataset."""
+    ml_type: str
+    """Machine learning type (classification, regression, etc.)."""
+
+    positive_class: int
+    """The positive class label for binary classification."""
+
+    relevant_columns: list[str] = field(init=False)
+    """Relevant columns of the dataset. Computed automatically."""
+
+    def __attrs_post_init__(self):
+        """Compute relevant columns after initialization."""
+        relevant_columns = list(set(self.feature_columns + self.target_columns))
+        if self.sample_id:
+            relevant_columns.append(self.sample_id)
+        if self.row_id:
+            relevant_columns.append(self.row_id)
+        if self.stratification_column:
+            relevant_columns.append(self.stratification_column)
+        # Note: group_features/group_sample_and_features are added during preparation,
+        # so they don't exist yet at validation time
+        object.__setattr__(self, "relevant_columns", list(set(relevant_columns)))
 
     def validate(self):
         """Run all validation checks on the OctoData configuration.
@@ -60,6 +79,7 @@ class OctoDataValidator:
             self._validate_target_assignments,
             self._validate_number_of_targets,
             self._validate_column_dtypes,
+            self._validate_positive_class,
         ]
 
         errors = []
@@ -276,3 +296,41 @@ class OctoDataValidator:
                 f"Reserved column names found in data: {', '.join(conflicts)}. "
                 "These column names are used internally by Octopus."
             )
+
+    def _validate_positive_class(self):
+        """Validate positive class for binary classification.
+
+        For classification tasks, validates that:
+        - Target column is integer type
+        - Target has exactly 2 unique values (binary)
+        - positive_class value exists in target column
+
+        Returns:
+            None: Returns early for non-classification ml_types.
+
+        Raises:
+            ValueError: If any validation fails for binary classification.
+        """
+        if self.ml_type != "classification":
+            return
+
+        # Get target column - for single target, use target_columns[0]
+        # For assigned targets, use the first assignment value
+        if self.target_assignments:
+            target_col = list(self.target_assignments.values())[0]
+        else:
+            target_col = self.target_columns[0]
+
+        target_data = self.data[target_col]
+
+        if not pd.api.types.is_integer_dtype(target_data):
+            raise ValueError(f"Target column must be integer type for binary classification, got {target_data.dtype}")
+
+        unique_values = target_data.dropna().unique()
+        if len(unique_values) != 2:
+            raise ValueError(
+                f"Binary classification requires exactly 2 unique values, found {len(unique_values)}: {unique_values}"
+            )
+
+        if self.positive_class not in unique_values:
+            raise ValueError(f"positive_class {self.positive_class} not found in target. Available: {unique_values}")

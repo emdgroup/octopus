@@ -170,7 +170,7 @@ class EfsCore:
     @property
     def target_metric(self) -> str:
         """Target metric."""
-        return self.experiment.configs.study.target_metric
+        return self.experiment.target_metric
 
     @property
     def metric_input(self) -> str:

@@ -5,9 +5,7 @@ from pathlib import Path
 import pandas as pd
 import pytest
 
-from octopus.config.core import ConfigManager, ConfigStudy, ConfigWorkflow, OctoConfig
 from octopus.experiment import OctoExperiment
-from octopus.modules import Octo
 
 
 @pytest.fixture
@@ -25,26 +23,19 @@ def sample_data():
 @pytest.fixture
 def octo_experiment(sample_data):
     """Fixture to create an instance of OctoExperiment."""
-    config_study = ConfigStudy(name="test", ml_type="regression", target_metric="R2")
-    config_workflow = ConfigWorkflow(
-        tasks=[
-            Octo(
-                task_id=0,
-                depends_on_task=-1,
-                description="step_1_octo",
-                models=["RandomForestClassifier"],
-                n_trials=1,
-            )
-        ]
-    )
-    config = OctoConfig(study=config_study, manager=ConfigManager(), workflow=config_workflow)
     return OctoExperiment(
         id="experiment_1",
         experiment_id=1,
         task_id=1,
         depends_on_task=1,
         task_path=Path("/path/to/sequence_item"),
-        configs=config,
+        study_path="./studies/",
+        study_name="test",
+        ml_type="regression",
+        target_metric="R2",
+        positive_class=1,
+        metrics=["R2"],
+        imputation_method="median",
         datasplit_column="target",
         row_column="row_id",
         feature_columns=["feature1", "feature2", "feature3"],
@@ -78,10 +69,10 @@ def test_calculate_feature_groups(octo_experiment):
 
 def test_path_study(octo_experiment):
     """Test the path_study property."""
-    expected_path = Path(octo_experiment.configs.study.path, octo_experiment.configs.study.name)
+    expected_path = Path(octo_experiment.study_path, octo_experiment.study_name)
     assert octo_experiment.path_study == expected_path
 
 
 def test_ml_type(octo_experiment):
     """Test the ml_type property."""
-    assert octo_experiment.ml_type == octo_experiment.configs.study.ml_type
+    assert octo_experiment.ml_type == "regression"

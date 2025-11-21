@@ -8,28 +8,12 @@
 # Please ensure your dataset is clean, with no missing values (`NaN`),
 # and that all features are numeric.
 
-import os
-import socket
-
 from sklearn.datasets import load_wine
 
-from octopus import (
-    OctoData,
-    OctoML,
-)
-from octopus.config import ConfigManager, ConfigStudy, ConfigWorkflow
+from octopus import OctoStudy
 from octopus.modules import Octo
 
-print("Notebook kernel is running on server:", socket.gethostname())
-print("Conda environment on server:", os.environ["CONDA_DEFAULT_ENV"])
-print("Working directory: ", os.getcwd())
-
 ### Load and Preprocess Data
-
-# First, we load the Wine dataset and preprocess it
-# to ensure it's clean and suitable for analysis.
-
-### Load the wine dataset
 wine = load_wine(as_frame=True)
 
 df = wine["frame"].reset_index()
@@ -43,61 +27,28 @@ print(f"  Samples: {df.shape[0]}")
 print(f"  Classes: {len(wine.target_names)} - {wine.target_names}")
 print(f"  Target distribution: {df['target'].value_counts().sort_index().to_dict()}")
 
-### Create OctoData Object
-octo_data = OctoData(
-    data=df,
-    target_columns=["target"],
-    feature_columns=features,
-    sample_id="index",
-    datasplit_type="sample",
-    stratification_column="target",
-)
-
-
-### Create Configuration
-
-# We create three types of configurations:
-# 1. `ConfigStudy`: Sets the name, machine learning type (multiclass),
-# and target metric.
-
-# 2. `ConfigManager`: Manages how the machine learning will be executed.
-# We use the default settings.
-
-# 3. `ConfigWorkflow`: Defines the workflows to be executed. In this example,
-# we use one workflow with multiclass classification models.
-
-config_study = ConfigStudy(
+### Create and run OctoStudy for multiclass classification
+study = OctoStudy(
     name="multiclass_wine",
     ml_type="multiclass",
     target_metric="AUCROC_MACRO",
+    feature_columns=features,
+    target_columns=["target"],
+    sample_id="index",
+    stratification_column="target",
     metrics=["AUCROC_MACRO", "AUCROC_WEIGHTED", "ACCBAL_MC"],
     datasplit_seed_outer=1234,
     n_folds_outer=5,
-    start_with_empty_study=True,
-    path="./studies/",
-    silently_overwrite_study=True,
     ignore_data_health_warning=True,
-)
-
-config_manager = ConfigManager(
-    # outer loop parallelization
     outer_parallelization=True,
-    # only process first outer loop experiment, for quick testing
-    run_single_experiment_num=0,
-)
-
-config_workflow = ConfigWorkflow(
-    [
-        # Step1: octo multiclass
+    run_single_experiment_num=0,  # only process first outer loop experiment, for quick testing
+    tasks=[
         Octo(
-            description="step_1_octo_multiclass",
             task_id=0,
             depends_on_task=-1,
-            # loading of existing results
+            description="step_1_octo_multiclass",
             load_task=False,
-            # datasplit
             n_folds_inner=5,
-            # model selection - using models that work well with multiclass
             models=[
                 "ExtraTreesClassifier",
                 "RandomForestClassifier",
@@ -108,26 +59,14 @@ config_workflow = ConfigWorkflow(
             n_jobs=1,
             max_outl=0,
             fi_methods_bestbag=["permutation"],
-            # parallelization
             inner_parallelization=True,
             n_workers=5,
-            # HPO
             n_trials=20,
         ),
-    ]
+    ],
 )
 
-### Execute the Machine Learning Workflow
-
-# We add the data and the configurations defined earlier
-# and run the machine learning workflow.
-octo_ml = OctoML(
-    octo_data,
-    config_study=config_study,
-    config_manager=config_manager,
-    config_workflow=config_workflow,
-)
-octo_ml.run_study()
+study.fit(data=df)
 
 print("Multiclass workflow completed")
-print("Results saved to: ./studies/multiclass_wine/")
+print(f"Results saved to: ./studies/{study.name}/")

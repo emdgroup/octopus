@@ -10,8 +10,7 @@ import pandas as pd
 import pytest
 from sklearn.datasets import make_classification, make_regression
 
-from octopus import OctoData, OctoML
-from octopus.config import ConfigManager, ConfigStudy, ConfigWorkflow
+from octopus import OctoStudy
 from octopus.experiment import OctoExperiment
 from octopus.modules import AutoGluon
 
@@ -50,58 +49,34 @@ class TestAutogluonWorkflows:
 
     def test_full_classification_workflow(self):
         """Test the complete classification workflow execution."""
-        # Create OctoData object
-        octo_data = OctoData(
-            data=self.df,
-            target_columns=["target"],
-            feature_columns=self.features,
-            sample_id="index",
-            datasplit_type="sample",
-            stratification_column="target",
-        )
-
-        # Create configurations
-        config_study = ConfigStudy(
+        study = OctoStudy(
             name="test_classification_workflow",
             ml_type="classification",
             target_metric="ACCBAL",
+            feature_columns=self.features,
+            target_columns=["target"],
+            sample_id="index",
+            stratification_column="target",
             metrics=["AUCROC", "ACCBAL", "ACC", "LOGLOSS"],
             datasplit_seed_outer=1234,
-            n_folds_outer=5,  # Increased to 5 outer folds
-            start_with_empty_study=True,
+            n_folds_outer=5,
             path=self.studies_path,
-            silently_overwrite_study=True,
             ignore_data_health_warning=True,
-        )
-
-        config_manager = ConfigManager(
-            outer_parallelization=True,  # Enable parallelization
-            run_single_experiment_num=0,  # Run experiment 0
-        )
-
-        config_workflow = ConfigWorkflow(
-            [
+            outer_parallelization=True,
+            run_single_experiment_num=0,
+            tasks=[
                 AutoGluon(
                     description="ag_test",
                     task_id=0,
                     depends_on_task=-1,
                     presets=["medium_quality"],
-                    time_limit=15,  # Time limit for testing
-                    verbosity=0,  # Minimize AutoGluon output
+                    time_limit=15,
+                    verbosity=0,
                 ),
-            ]
+            ],
         )
 
-        # Execute the workflow
-        octo_ml = OctoML(
-            octo_data,
-            config_study=config_study,
-            config_manager=config_manager,
-            config_workflow=config_workflow,
-        )
-
-        # This should complete without errors
-        octo_ml.run_study()
+        study.fit(data=self.df)
 
         # Verify that study files were created
         study_path = Path(self.studies_path) / "test_classification_workflow"
@@ -130,57 +105,33 @@ class TestAutogluonWorkflows:
         df_regression["target"] = y
         df_regression = df_regression.reset_index()
 
-        # Create OctoData object for regression
-        octo_data = OctoData(
-            data=df_regression,
-            target_columns=["target"],
-            feature_columns=feature_names,
-            sample_id="index",
-            datasplit_type="sample",
-        )
-
-        # Create configurations for regression
-        config_study = ConfigStudy(
+        study = OctoStudy(
             name="test_regression_workflow",
             ml_type="regression",
             target_metric="MAE",
-            metrics=["MAE", "MSE", "R2"],  # Use only available metrics
+            feature_columns=feature_names,
+            target_columns=["target"],
+            sample_id="index",
+            metrics=["MAE", "MSE", "R2"],
             datasplit_seed_outer=1234,
-            n_folds_outer=2,  # Reduced for faster testing
-            start_with_empty_study=True,
+            n_folds_outer=2,
             path=self.studies_path,
-            silently_overwrite_study=True,
             ignore_data_health_warning=True,
-        )
-
-        config_manager = ConfigManager(
-            outer_parallelization=False,  # Disabled for regression test
-            run_single_experiment_num=0,  # Run single experiment
-        )
-
-        config_workflow = ConfigWorkflow(
-            [
+            outer_parallelization=False,
+            run_single_experiment_num=0,
+            tasks=[
                 AutoGluon(
                     description="ag_regression_test",
                     task_id=0,
                     depends_on_task=-1,
                     presets=["medium_quality"],
-                    time_limit=15,  # Time limit for testing
-                    verbosity=0,  # Minimize AutoGluon output
+                    time_limit=15,
+                    verbosity=0,
                 ),
-            ]
+            ],
         )
 
-        # Execute the workflow
-        octo_ml = OctoML(
-            octo_data,
-            config_study=config_study,
-            config_manager=config_manager,
-            config_workflow=config_workflow,
-        )
-
-        # This should complete without errors
-        octo_ml.run_study()
+        study.fit(data=df_regression)
 
         # Verify that study files were created
         study_path = Path(self.studies_path) / "test_regression_workflow"

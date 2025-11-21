@@ -1,50 +1,29 @@
 """Example for using a multi workflow."""
 
-# TBD
+# This example demonstrates how to chain multiple workflow tasks together
+# using Octopus with the diabetes dataset.
 
 ### Necessary imports for this example
 from sklearn.datasets import load_diabetes
 
-from octopus import OctoData, OctoML
-from octopus.config import ConfigManager, ConfigStudy, ConfigWorkflow
+from octopus import OctoStudy
 from octopus.modules import Mrmr, Octo
-
-# Regression Analysis on Diabetes Dataset
-# http://statweb.lsu.edu/faculty/li/teach/exst7142/diabetes.html
-# https://shap.readthedocs.io/en/latest/example_notebooks/tabular_examples/model_agnostic/Diabetes%20regression.html
-# https://automl.github.io/auto-sklearn/master/examples/20_basic/example_regression.html
 
 ### Load the diabetes dataset
 diabetes = load_diabetes(as_frame=True)
 
-### Create OctoData Object
-octo_data = OctoData(
-    data=diabetes["frame"].reset_index(),
-    target_columns=["target"],
-    feature_columns=diabetes["feature_names"],
-    sample_id="index",
-    datasplit_type="sample",
-)
-
-### Create Configuration
-
-# TDB
-
-config_study = ConfigStudy(
+### Create and run OctoStudy with multi-step workflow
+study = OctoStudy(
     name="example_multiworkflow",
     ml_type="regression",
     target_metric="R2",
-    silently_overwrite_study=True,
+    feature_columns=diabetes["feature_names"],
+    target_columns=["target"],
+    sample_id="index",
     ignore_data_health_warning=True,
-)
-
-config_manager = ConfigManager(
     outer_parallelization=False,
     run_single_experiment_num=1,
-)
-
-config_workflow = ConfigWorkflow(
-    [
+    tasks=[
         Octo(
             description="step1_octofull",
             task_id=0,
@@ -61,22 +40,16 @@ config_workflow = ConfigWorkflow(
             correlation_type="rdc",
         ),
         Octo(
-            description="step1_octofull",
+            description="step3_octo_reduced",
             task_id=2,
             depends_on_task=1,
             models=["ExtraTreesRegressor", "RandomForestRegressor"],
             n_trials=1,
             max_features=70,
         ),
-    ]
+    ],
 )
 
-### Execute the Machine Learning Workflow
+study.fit(data=diabetes["frame"].reset_index())
 
-octo_ml = OctoML(
-    octo_data,
-    config_study=config_study,
-    config_manager=config_manager,
-    config_workflow=config_workflow,
-)
-octo_ml.run_study()
+print("Multi-workflow completed")

@@ -27,7 +27,7 @@ logger = get_logger()
 
 
 @define
-class OctoCoreGeneric[OctoConfigType: Octo]:
+class OctoCoreGeneric[TaskConfigType: Octo]:
     """Manages and executes machine learning experiments.
 
     This class integrates all components necessary for conducting
@@ -59,7 +59,7 @@ class OctoCoreGeneric[OctoConfigType: Octo]:
         is incorporated to manage any discrepancies during the experiment phases.
     """
 
-    experiment: OctoExperiment[OctoConfigType] = field(validator=[validators.instance_of(OctoExperiment)])
+    experiment: OctoExperiment[TaskConfigType] = field(validator=[validators.instance_of(OctoExperiment)])
     # model = field(default=None)
     data_splits: dict = field(default=Factory(dict), validator=[validators.instance_of(dict)])
 
@@ -176,12 +176,12 @@ class OctoCoreGeneric[OctoConfigType: Octo]:
     def _run_ensemble_selection(self):
         """Run ensemble selection."""
         ensel = EnSel(
-            target_metric=self.experiment.configs.study.target_metric,
+            target_metric=self.experiment.target_metric,
             path_trials=self.path_trials,
             max_n_iterations=100,
             row_column=self.experiment.row_column,
             target_assignments=self.experiment.target_assignments,
-            positive_class=self.experiment.configs.study.positive_class,
+            positive_class=self.experiment.positive_class,
         )
         ensemble_paths_dict = ensel.start_ensemble
         # ensemble_paths_dict = ensel.optimized_ensemble
@@ -216,7 +216,7 @@ class OctoCoreGeneric[OctoConfigType: Octo]:
             target_assignments=self.experiment.target_assignments,
             parallel_execution=self.experiment.ml_config.inner_parallelization,
             num_workers=self.experiment.ml_config.n_workers,
-            target_metric=self.experiment.configs.study.target_metric,
+            target_metric=self.experiment.target_metric,
             row_column=self.experiment.row_column,
             ml_type=self.experiment.ml_type,
         )
@@ -225,7 +225,7 @@ class OctoCoreGeneric[OctoConfigType: Octo]:
 
         # save performance values of best bag
         ensel_scores = ensel_bag.get_performance()
-        target_metric = self.experiment.configs.study.target_metric
+        target_metric = self.experiment.target_metric
         # show and save test results
         logger.set_log_group(LogGroup.RESULTS)
         logger.info("Ensemble selection performance")
@@ -374,7 +374,7 @@ class OctoCoreGeneric[OctoConfigType: Octo]:
                     data_dev=split["test"],  # inner datasplit, dev
                     data_test=self.experiment.data_test,
                     config_training=user_attrs["config_training"],
-                    target_metric=self.experiment.configs.study.target_metric,
+                    target_metric=self.experiment.target_metric,
                     max_features=self.experiment.ml_config.max_features,
                     feature_groups=self.experiment.feature_groups,
                 )
@@ -386,7 +386,7 @@ class OctoCoreGeneric[OctoConfigType: Octo]:
             target_assignments=self.experiment.target_assignments,
             parallel_execution=self.experiment.ml_config.inner_parallelization,
             num_workers=self.experiment.ml_config.n_workers,
-            target_metric=self.experiment.configs.study.target_metric,
+            target_metric=self.experiment.target_metric,
             row_column=self.experiment.row_column,
             ml_type=self.experiment.ml_type,
             # path?
@@ -401,7 +401,7 @@ class OctoCoreGeneric[OctoConfigType: Octo]:
         # save performance values of best bag
         best_bag_performance = best_bag.get_performance()
         logger.info(f"Best bag performance {best_bag_performance}")
-        target_metric = self.experiment.configs.study.target_metric
+        target_metric = self.experiment.target_metric
 
         # show and save test results
         logger.set_log_group(LogGroup.RESULTS)

@@ -151,12 +151,12 @@ class AGCore:
     @property
     def target_metric(self) -> str:
         """Target metric."""
-        return self.experiment.configs.study.target_metric
+        return self.experiment.target_metric
 
     @property
     def metrics(self) -> list[str]:
         """Metrics."""
-        return self.experiment.configs.study.metrics
+        return self.experiment.metrics
 
     @property
     def config(self) -> AutoGluon:
@@ -414,7 +414,7 @@ class AGCore:
                 self.feature_columns,
                 metric,
                 self.target_assignments,
-                positive_class=self.experiment.configs.study.positive_class,
+                positive_class=self.experiment.positive_class,
             )
             test_performance_octo[metric + "_test_octo"] = performance
 

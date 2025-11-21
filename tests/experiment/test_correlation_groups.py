@@ -6,9 +6,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from octopus.config.core import ConfigManager, ConfigStudy, ConfigWorkflow, OctoConfig
 from octopus.experiment import OctoExperiment
-from octopus.modules import Octo
 
 
 @pytest.fixture
@@ -50,25 +48,7 @@ def correlated_data():
 
 
 @pytest.fixture
-def octo_config():
-    """Create config for correlation grouping test."""
-    config_study = ConfigStudy(name="test", ml_type="regression", target_metric="R2")
-    config_workflow = ConfigWorkflow(
-        tasks=[
-            Octo(
-                task_id=0,
-                depends_on_task=-1,
-                description="step_1_octo",
-                models=["RandomForestClassifier"],
-                n_trials=1,
-            )
-        ]
-    )
-    return OctoConfig(study=config_study, manager=ConfigManager(), workflow=config_workflow)
-
-
-@pytest.fixture
-def mock_octo_experiment(correlated_data, octo_config):
+def mock_octo_experiment(correlated_data):
     """Create octo experiment for correlation grouping test."""
     return OctoExperiment(
         id="test_id",
@@ -76,7 +56,13 @@ def mock_octo_experiment(correlated_data, octo_config):
         task_id=2,
         depends_on_task=3,
         task_path=Path("/mock/path"),
-        configs=octo_config,
+        study_path="./studies/",
+        study_name="test",
+        ml_type="regression",
+        target_metric="R2",
+        positive_class=1,
+        metrics=["R2"],
+        imputation_method="median",
         datasplit_column="split",
         row_column="row_id",
         feature_columns=["x1", "x2", "x3", "x4", "x5", "x6", "x7"],

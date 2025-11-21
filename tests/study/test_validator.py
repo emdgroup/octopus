@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from octopus.data.validator import OctoDataValidator
+from octopus.study.data_validator import OctoDataValidator
 
 
 @pytest.fixture
@@ -36,7 +36,8 @@ def validator_factory(sample_data):
         row_id="id",
         stratification_column="strat",
         target_assignments=None,
-        relevant_columns=None,
+        ml_type="classification",
+        positive_class=1,
     ):
         if data is None:
             data = sample_data
@@ -46,15 +47,6 @@ def validator_factory(sample_data):
             target_columns = ["target"]
         if target_assignments is None:
             target_assignments = {}
-        if relevant_columns is None:
-            relevant_columns = list(
-                set(
-                    [sample_id, row_id]
-                    + feature_columns
-                    + target_columns
-                    + ([stratification_column] if stratification_column else [])
-                )
-            )
 
         return OctoDataValidator(
             data=data,
@@ -64,7 +56,8 @@ def validator_factory(sample_data):
             row_id=row_id,
             stratification_column=stratification_column,
             target_assignments=target_assignments,
-            relevant_columns=relevant_columns,
+            ml_type=ml_type,
+            positive_class=positive_class,
         )
 
     return _create_validator
@@ -86,22 +79,16 @@ def test_validate(valid_validator):
     valid_validator.validate()
 
 
-@pytest.mark.parametrize(
-    "extra_columns,should_fail",
-    [
-        ([], False),
-        (["non_existent_column"], True),
-    ],
-)
-def test_validate_columns_exist(validator_factory, extra_columns, should_fail):
-    """Test column exists validation."""
+def test_validate_columns_exist_valid(validator_factory):
+    """Test column exists validation with valid columns."""
     validator = validator_factory()
-    validator.relevant_columns.extend(extra_columns)
+    validator._validate_columns_exist()  # Should not raise
 
-    if should_fail:
-        with pytest.raises(ValueError):
-            validator._validate_columns_exist()
-    else:
+
+def test_validate_columns_exist_missing(validator_factory):
+    """Test column exists validation with missing column."""
+    validator = validator_factory(feature_columns=["feature1", "non_existent_column"])
+    with pytest.raises(ValueError):
         validator._validate_columns_exist()
 
 

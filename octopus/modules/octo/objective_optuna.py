@@ -97,7 +97,7 @@ class ObjectiveOptuna:
             "n_input_features": len(feature_columns),
             "ml_model_type": ml_model_type,
             "ml_model_params": model_params,
-            "positive_class": self.experiment.configs.study.positive_class,
+            "positive_class": self.experiment.positive_class,
         }
 
         # create trainings
@@ -114,7 +114,7 @@ class ObjectiveOptuna:
                     data_dev=split["test"],  # inner datasplit, dev
                     data_test=self.experiment.data_test,
                     config_training=config_training,
-                    target_metric=self.experiment.configs.study.target_metric,
+                    target_metric=self.experiment.target_metric,
                     max_features=self.experiment.ml_config.max_features,
                     feature_groups=self.experiment.feature_groups,
                 )
@@ -127,7 +127,7 @@ class ObjectiveOptuna:
             target_assignments=self.experiment.target_assignments,
             parallel_execution=self.parallel_execution,
             num_workers=self.num_workers,
-            target_metric=self.experiment.configs.study.target_metric,
+            target_metric=self.experiment.target_metric,
             row_column=self.experiment.row_column,
             ml_type=self.experiment.ml_type,
             # path?
@@ -160,7 +160,7 @@ class ObjectiveOptuna:
             optuna_target = bag_performance["dev_avg"]
 
         # adjust direction, optuna in octofull always minimizes
-        target_metric = self.experiment.configs.study.target_metric
+        target_metric = self.experiment.target_metric
         if metrics_inventory.get_direction(target_metric) == "minimize":
             optuna_target = -optuna_target
 
@@ -205,7 +205,7 @@ class ObjectiveOptuna:
     def _log_trial_scores(self, experiment, scores):
         logger.set_log_group(LogGroup.SCORES, f"EXP {self.experiment.experiment_id} SQE TBD")
         # Log the target metric
-        logger.info(f"Trial scores for metric: {experiment.configs.study.target_metric}")
+        logger.info(f"Trial scores for metric: {experiment.target_metric}")
 
         # Separate list and non-list values
         list_items = {}

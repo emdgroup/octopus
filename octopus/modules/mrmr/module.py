@@ -4,7 +4,7 @@ from typing import ClassVar, Literal
 
 from attrs import Factory, define, field, validators
 
-from octopus.config.base_workflow_task import BaseWorkflowTask
+from octopus.task import BaseWorkflowTask
 
 
 @define

@@ -4,9 +4,9 @@ from typing import ClassVar
 
 from attrs import Factory, define, field, validators
 
-from octopus.config.base_workflow_task import BaseWorkflowTask
 from octopus.logger import get_logger
 from octopus.models.inventory import ModelInventory
+from octopus.task import BaseWorkflowTask
 
 logger = get_logger()
 

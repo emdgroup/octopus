@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from octopus.data.healthChecker import OctoDataHealthChecker
+from octopus.study.healthChecker import OctoDataHealthChecker
 
 
 @pytest.fixture

@@ -6,21 +6,10 @@
 # 1. ROC module for feature correlation analysis and filtering
 # 2. Octo module for model training and hyperparameter optimization
 
-import os
-import socket
-
 from sklearn.datasets import load_breast_cancer
 
-from octopus import (
-    OctoData,
-    OctoML,
-)
-from octopus.config import ConfigManager, ConfigStudy, ConfigWorkflow
+from octopus import OctoStudy
 from octopus.modules import Octo, Roc
-
-print("Notebook kernel is running on server:", socket.gethostname())
-print("Conda environment on server:", os.environ["CONDA_DEFAULT_ENV"])
-print("Working directory: ", os.getcwd())
 
 ### Load and Preprocess Data
 
@@ -35,46 +24,23 @@ df.columns = df.columns.str.replace(" ", "_")
 features = list(breast_cancer["feature_names"])
 features = [feature.replace(" ", "_") for feature in features]
 
-### Create OctoData Object
+### Create and run OctoStudy with ROC + Octo workflow
 
-# Configure the data object with target and feature columns
-# Use stratified sampling to maintain class balance across folds
-octo_data = OctoData(
-    data=df,
-    target_columns=["target"],
-    feature_columns=features,
-    sample_id="index",
-    datasplit_type="sample",
-    stratification_column="target",
-)
-
-### Create Configuration
-
-# Configure the study parameters for breast cancer classification
-config_study = ConfigStudy(
+study = OctoStudy(
     name="example_roc_octo",
     ml_type="classification",
     target_metric="ACCBAL",  # Balanced accuracy for binary classification
+    feature_columns=features,
+    target_columns=["target"],
+    sample_id="index",
+    stratification_column="target",
     metrics=["AUCROC", "ACCBAL", "ACC", "LOGLOSS"],
     datasplit_seed_outer=1234,
     n_folds_outer=5,
-    start_with_empty_study=True,
-    path="./studies/",
-    silently_overwrite_study=True,
     ignore_data_health_warning=True,
-)
-
-# Configure parallel execution settings
-config_manager = ConfigManager(
-    # Enable outer loop parallelization for faster execution
     outer_parallelization=True,
-    # Process only first outer loop experiment for quick testing
-    run_single_experiment_num=0,
-)
-
-# Define the two-step sequence: ROC filtering followed by Octo training
-config_workflow = ConfigWorkflow(
-    [
+    run_single_experiment_num=0,  # Process only first outer loop experiment for quick testing
+    tasks=[
         # Step 0: ROC - Remove highly correlated features and apply statistical filtering
         Roc(
             description="step_0_roc",
@@ -93,15 +59,11 @@ config_workflow = ConfigWorkflow(
             load_task=False,
             # Cross-validation settings
             n_folds_inner=5,
-            # Model selection - using ExtraTreesClassifier for this example
+            # Model selection
             models=[
                 "ExtraTreesClassifier",
-                # Additional models can be uncommented as needed:
                 # "TabPFNClassifier",
                 # "RandomForestClassifier",
-                # "GaussianProcessClassifier",
-                # "CatBoostClassifier",
-                # "XGBClassifier",
             ],
             model_seed=0,
             n_jobs=1,
@@ -117,23 +79,10 @@ config_workflow = ConfigWorkflow(
             n_trials=12,  # Number of hyperparameter optimization trials
             max_features=12,  # Maximum number of features to select
             penalty_factor=1.0,
-            # Ensemble selection settings (commented out)
-            # ensemble_selection=False,
-            # ensel_n_save_trials=75,
-            # mrmr_feature_numbers=[3, 4, 5, 6],
         ),
-    ]
+    ],
 )
 
-### Execute the Machine Learning Workflow
-
-# Initialize and run the complete ROC + Octo workflow
-octo_ml = OctoML(
-    octo_data,
-    config_study=config_study,
-    config_manager=config_manager,
-    config_workflow=config_workflow,
-)
-octo_ml.run_study()
+study.fit(data=df)
 
 print("ROC + Octo workflow completed successfully")

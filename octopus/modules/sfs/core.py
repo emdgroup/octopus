@@ -124,7 +124,7 @@ class SfsCore:
     @property
     def target_metric(self) -> str:
         """Target metric."""
-        return self.experiment.configs.study.target_metric
+        return self.experiment.target_metric
 
     @property
     def config(self) -> Sfs:
@@ -254,7 +254,7 @@ class SfsCore:
             self.experiment.selected_features,
             self.target_metric,
             self.target_assignments,
-            positive_class=self.experiment.configs.study.positive_class,
+            positive_class=self.experiment.positive_class,
         )
         print(f"Test set (refit) performance: {test_score_refit:.3f}")
 
@@ -269,7 +269,7 @@ class SfsCore:
             self.experiment.selected_features,
             self.target_metric,
             self.target_assignments,
-            positive_class=self.experiment.configs.study.positive_class,
+            positive_class=self.experiment.positive_class,
         )
         print(f"Test set (gridsearch+refit) performance: {test_score_gsrefit:.3f}")
 

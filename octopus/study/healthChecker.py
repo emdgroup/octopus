@@ -1,5 +1,6 @@
 """OctoData Health Checker."""
 
+import logging
 import re
 from itertools import combinations
 from typing import Literal
@@ -573,7 +574,7 @@ class OctoDataHealthChecker:
             being ignored. This ensures robust checking across mixed data types.
         """
         numeric_df = self.data[self.feature_columns].apply(pd.to_numeric, errors="coerce")
-        infinity_mask = numeric_df.map(lambda x: np.isinf(x))
+        infinity_mask = numeric_df.map(np.isinf)
         infinity_value_share = infinity_mask.mean()
         infinity_value_dict = {col: share for col, share in infinity_value_share.items() if share > 0}
 
@@ -706,8 +707,8 @@ class OctoDataHealthChecker:
                     ]
                     if long_strings:
                         long_string[column] = long_strings
-                except Exception:
-                    pass
+                except Exception as e:
+                    logging.warning(f"Failed to process column '{column}' in _check_string_out_of_bounds: {e}")
 
         if long_string:
             for column, long_strings in long_string.items():

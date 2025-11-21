@@ -1,13 +1,52 @@
-"""Config workflow."""
+"""Validation functions for OctoStudy attributes."""
 
-from typing import Any
+from typing import TYPE_CHECKING
 
-from attrs import Factory, define, field, validators
+from attrs import Attribute
 
-from octopus.config.base_workflow_task import BaseWorkflowTask
+from octopus.metrics import metrics_inventory
+from octopus.task import Task
+
+if TYPE_CHECKING:
+    from octopus.study.core import OctoStudy
 
 
-def validate_tasks(_instance: Any, attribute: Any, value: list[BaseWorkflowTask]) -> None:
+def validate_metric(instance: "OctoStudy", attribute: Attribute, value: str) -> None:
+    """Validate a single target_metric based on the ml_type.
+
+    Args:
+        instance: The ConfigStudy instance being validated.
+        attribute: The name of the attribute being validated.
+        value: The value of the target_metric being validated.
+
+    Raises:
+        ValueError: If the target_metric is not valid for the given ml_type.
+    """
+    metric_ml_type = metrics_inventory.get_metric_config(value).ml_type
+
+    if metric_ml_type != instance.ml_type:
+        raise ValueError(f"Invalid target metric '{value}' for ml_type '{instance.ml_type}'.")
+
+
+def validate_metrics_list(instance: "OctoStudy", attribute: Attribute, value: list[str]) -> None:
+    """Validate a list of metrics based on the ml_type.
+
+    Args:
+        instance: The ConfigStudy instance being validated.
+        attribute: The name of the attribute being validated.
+        value: The list of metrics being validated.
+
+    Raises:
+        ValueError: If any metric is not valid for the given ml_type.
+    """
+    for metric in value:
+        metric_ml_type = metrics_inventory.get_metric_config(metric).ml_type
+
+        if metric_ml_type != instance.ml_type:
+            raise ValueError(f"Invalid metric '{metric}' for ml_type '{instance.ml_type}'.")
+
+
+def validate_tasks(_instance: "OctoStudy", attribute: Attribute, value: list[Task]) -> None:
     """Validate the `tasks` attribute.
 
     Ensures that the value is a non-empty list where each item is an
@@ -37,13 +76,13 @@ def validate_tasks(_instance: Any, attribute: Any, value: list[BaseWorkflowTask]
     """
     # Condition 1: Non-Empty List
     if not value:
-        raise ValueError(f"'{attribute.name}' must contain at least one instance of 'BaseWorkflowTask'.")
+        raise ValueError(f"'{attribute.name}' must contain at least one Task.")
 
     # Condition 2: All Items are Instances of BaseWorkflowTask
     for item in value:
-        if not isinstance(item, BaseWorkflowTask):
+        if not isinstance(item, Task):
             raise TypeError(
-                f"Each item in '{attribute.name}' must be an instance of 'BaseWorkflowTask', but got '{type(item).__name__}'."
+                f"Each item in '{attribute.name}' must be an instance of 'Task', but got '{type(item).__name__}'."
             )
 
     # Condition 2.5: First Item Must Have task_id=0
@@ -118,19 +157,3 @@ def validate_tasks(_instance: Any, attribute: Any, value: list[BaseWorkflowTask]
                     " that comes after it in the workflow. 'depends_on_task' must"
                     " refer to a preceding 'task_id'."
                 )
-
-
-@define
-class ConfigWorkflow:
-    """Configuration for workflow parameters.
-
-    Attributes:
-        tasks (List[BaseWorkflowTask]):
-    """
-
-    tasks: list[BaseWorkflowTask] = field(
-        default=Factory(list),
-        validator=[validators.instance_of(list), validate_tasks],
-    )
-    """A list of workflow tasks that defines the processing workflow.
-    Each item in the list is an instance of `BaseWorkflowTask` or its subclasses."""

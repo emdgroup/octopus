@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from octopus.data.preparator import OctoDataPreparator
+from octopus.study.data_preparator import OctoDataPreparator
 
 
 @pytest.fixture

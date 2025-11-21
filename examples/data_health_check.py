@@ -8,8 +8,7 @@ import pandas as pd
 from attrs import define, field
 from sklearn.datasets import make_classification
 
-from octopus import OctoData, OctoML
-from octopus.config import ConfigManager, ConfigStudy, ConfigWorkflow
+from octopus import OctoStudy
 from octopus.modules import Octo
 
 
@@ -200,48 +199,28 @@ df_warnings = generator_warnings.get_dataframe()
 
 print(df_warnings)
 
-octo_data = OctoData(
-    data=df_warnings,
-    target_columns=["target"],
-    feature_columns=df_warnings.columns.drop("target").drop("id").drop("sample_id").drop("stratification").tolist(),
-    # row_id="id",
-    sample_id="sample_id",
-    datasplit_type="group_sample_and_features",
-    stratification_column="target",
-)
+### Create and run OctoStudy with health check
 
-config_study = ConfigStudy(
+study = OctoStudy(
     name="health_check",
     ml_type="classification",
     target_metric="AUCROC",
-    silently_overwrite_study=True,
-    ignore_data_health_warning=False,
-)
-
-config_manager = ConfigManager(outer_parallelization=True)
-
-config_workflow = ConfigWorkflow(
+    feature_columns=df_warnings.columns.drop("target").drop("id").drop("sample_id").drop("stratification").tolist(),
+    target_columns=["target"],
+    sample_id="sample_id",
+    datasplit_type="group_sample_and_features",
+    stratification_column="target",
+    ignore_data_health_warning=False,  # Will stop if health check finds issues
+    outer_parallelization=True,
     tasks=[
         Octo(
+            task_id=0,
+            depends_on_task=-1,
             description="step_1_octo",
             models=["RandomForestClassifier"],
             n_trials=3,
-            task_id=0,
-            depends_on_task=-1,
         )
-    ]
+    ],
 )
 
-
-### Execute the Machine Learning Workflow
-
-# We add the data and the configurations defined earlier
-# and run the machine learning workflow.
-
-octo_ml = OctoML(
-    octo_data,
-    config_study=config_study,
-    config_manager=config_manager,
-    config_workflow=config_workflow,
-)
-octo_ml.run_study()
+study.fit(data=df_warnings)

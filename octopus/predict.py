@@ -2,9 +2,10 @@
 
 # import itertools
 
+import json
 import warnings
 from pathlib import Path
-from typing import Literal, overload
+from typing import Any, Literal, overload
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -14,7 +15,6 @@ from attrs import Factory, define, field, validators
 from joblib import Parallel, delayed
 from matplotlib.backends.backend_pdf import PdfPages
 
-from octopus.config.core import OctoConfig
 from octopus.experiment import OctoExperiment
 from octopus.modules.utils import (
     ExperimentInfo,
@@ -60,14 +60,16 @@ class OctoPredict:
     """Results."""
 
     @property
-    def config(self) -> OctoConfig:
+    def config(self) -> dict[str, Any]:
         """Study configuration."""
-        return OctoConfig.from_pickle(self.study_path.joinpath("config", "config.pkl"))
+        config_path = self.study_path / "config.json"
+        with open(config_path) as f:
+            return json.load(f)  # type: ignore[no-any-return]
 
     @property
     def n_experiments(self) -> int:
         """Number of experiments."""
-        return self.config.study.n_folds_outer
+        return int(self.config["n_folds_outer"])
 
     @property
     def classes_(self):
@@ -85,7 +87,7 @@ class OctoPredict:
     def __attrs_post_init__(self):
         # set last workflow task as default
         if self.task_id < 0:
-            self.task_id = len(self.config.workflow.tasks) - 1
+            self.task_id = len(self.config["tasks"]) - 1
         # get models
         self.experiments = self._get_models()
 
@@ -119,10 +121,10 @@ class OctoPredict:
                     feature_columns=experiment.feature_columns,
                     row_column=experiment.row_column,
                     target_assignments=experiment.target_assignments,
-                    target_metric=experiment.configs.study.target_metric,
-                    ml_type=experiment.configs.study.ml_type,
+                    target_metric=experiment.target_metric,
+                    ml_type=experiment.ml_type,
                     feature_group_dict=experiment.feature_groups,
-                    positive_class=experiment.configs.study.positive_class,
+                    positive_class=experiment.positive_class,
                 )
         print(f"{len(experiments)} experiment(s) out of {self.n_experiments} found.")
         return experiments

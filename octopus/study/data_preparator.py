@@ -36,7 +36,7 @@ class OctoDataPreparator:
     target_assignments: dict[str, str]
     """Mapping of target assignments."""
 
-    def prepare(self):
+    def prepare(self) -> tuple[pd.DataFrame, list[str], str | None, dict[str, str]]:
         """Run all data preparation steps."""
         self._sort_features()
         self._standardize_null_values()

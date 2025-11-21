@@ -8,11 +8,11 @@ from pathlib import Path
 import ray
 from attrs import define, field, validators
 
-from octopus.config.core import OctoConfig
 from octopus.experiment import OctoExperiment
 from octopus.logger import LogGroup, get_logger
 from octopus.manager.ray_parallel import init_ray, run_parallel_outer_ray, shutdown_ray
 from octopus.modules import modules_inventory
+from octopus.task import Task
 
 logger = get_logger()
 
@@ -24,8 +24,19 @@ class OctoManager:
     base_experiments: list[OctoExperiment] = field(
         validator=[validators.instance_of(list)],
     )
-    configs: OctoConfig = field(
-        validator=[validators.instance_of(OctoConfig)],
+    tasks: list[Task] = field(
+        validator=[validators.instance_of(list)],
+    )
+    n_folds_outer: int = field(
+        validator=[validators.instance_of(int)],
+    )
+    outer_parallelization: bool = field(
+        default=True,
+        validator=[validators.instance_of(bool)],
+    )
+    run_single_experiment_num: int = field(
+        default=-1,
+        validator=[validators.instance_of(int)],
     )
 
     @property
@@ -39,9 +50,9 @@ class OctoManager:
     @property
     def num_outer_workers(self) -> int:
         """Calculate number of parallel outer workers."""
-        if self.configs.manager.run_single_experiment_num != -1:
+        if self.run_single_experiment_num != -1:
             return 1
-        return min(self.configs.study.n_folds_outer, self.num_available_cpus)
+        return min(self.n_folds_outer, self.num_available_cpus)
 
     def run_outer_experiments(self):
         """Run outer experiments."""
@@ -50,13 +61,13 @@ class OctoManager:
         self._log_execution_info()
         self._validate_experiments()
 
-        single_exp = self.configs.manager.run_single_experiment_num
+        single_exp = self.run_single_experiment_num
 
         # run single experiment
         if single_exp != -1:
             self._run_single_experiment(single_exp)
         # run multiple experiments
-        elif self.configs.manager.outer_parallelization:
+        elif self.outer_parallelization:
             self._run_parallel_ray()
         else:
             self._run_sequential()
@@ -79,9 +90,9 @@ class OctoManager:
         """Log execution configuration and CPU allocation."""
         logger.info(
             f"Preparing execution of experiments | "
-            f"Outer parallelization: {self.configs.manager.outer_parallelization} | "
-            f"Run single experiment: {self.configs.manager.run_single_experiment_num} | "
-            f"Number of outer folds: {self.configs.study.n_folds_outer} | "
+            f"Outer parallelization: {self.outer_parallelization} | "
+            f"Run single experiment: {self.run_single_experiment_num} | "
+            f"Number of outer folds: {self.n_folds_outer} | "
             f"Available CPUs: {self.num_available_cpus} | "
             f"Outer workers: {self.num_outer_workers} | "
             f"CPUs per experiment: {self._calculate_assigned_cpus()}"
@@ -139,7 +150,7 @@ class OctoManager:
 
         exp_path_dict: dict[int, Path] = {}
 
-        for element in self.configs.workflow.tasks:
+        for element in self.tasks:
             self._log_workflow_task_info(element)
 
             # load from workflow task
@@ -188,7 +199,7 @@ class OctoManager:
         Returns:
             Number of CPUs each experiment can use for inner parallelization.
         """
-        if self.configs.manager.outer_parallelization:
+        if self.outer_parallelization:
             # Distribute CPUs evenly among outer workers
             cpus_per_experiment = max(1, math.floor(self.num_available_cpus / self.num_outer_workers))
             return cpus_per_experiment

@@ -12,8 +12,7 @@ import pandas as pd
 import scipy.stats
 from attrs import Factory, define, field, validators
 
-from octopus.config.base_workflow_task import BaseWorkflowTask
-from octopus.config.core import OctoConfig
+from octopus.task import BaseWorkflowTask
 
 if TYPE_CHECKING:
     from octopus.results import ModuleResults
@@ -52,8 +51,26 @@ class OctoExperiment[ConfigType: BaseWorkflowTask]:
     _task_path: Path | None = field(validator=validators.optional(validators.instance_of(Path)))
     """Internal path storage. Use task_path property to access safely."""
 
-    configs: OctoConfig = field(validator=[validators.instance_of(OctoConfig)])
-    """Configuration settings for the experiment."""
+    study_path: str = field(validator=[validators.instance_of(str)])
+    """Path where the study is stored."""
+
+    study_name: str = field(validator=[validators.instance_of(str)])
+    """Name of the study."""
+
+    ml_type: str = field(validator=[validators.instance_of(str)])
+    """Type of machine learning task."""
+
+    target_metric: str = field(validator=[validators.instance_of(str)])
+    """Primary metric for model evaluation."""
+
+    positive_class: int = field(validator=[validators.instance_of(int)])
+    """Positive class label for binary classification."""
+
+    metrics: list[str] = field(validator=[validators.instance_of(list)])
+    """List of metrics to calculate."""
+
+    imputation_method: str = field(validator=[validators.instance_of(str)])
+    """Method used for imputing missing values."""
 
     datasplit_column: str = field(validator=[validators.instance_of(str)])
     """Column name used for data splitting."""
@@ -100,7 +117,7 @@ class OctoExperiment[ConfigType: BaseWorkflowTask]:
     @property
     def path_study(self) -> Path:
         """Get study path."""
-        return Path(self.configs.study.path, self.configs.study.name)
+        return Path(self.study_path, self.study_name)
 
     @property
     def is_base_experiment(self) -> bool:
@@ -137,11 +154,6 @@ class OctoExperiment[ConfigType: BaseWorkflowTask]:
                 f"This should not happen (task_id={self.task_id})"
             )
         return self._task_path
-
-    @property
-    def ml_type(self) -> str:
-        """Get ml_type from config."""
-        return self.configs.study.ml_type
 
     def __attrs_post_init__(self):
         self._validate_experiment_state()

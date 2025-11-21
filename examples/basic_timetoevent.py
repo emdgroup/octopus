@@ -19,8 +19,7 @@
 import numpy as np
 import pandas as pd
 
-from octopus import OctoData, OctoML
-from octopus.config import ConfigManager, ConfigStudy, ConfigWorkflow
+from octopus import OctoStudy
 from octopus.modules import Octo
 
 ### Generate synthetic time-to-event dataset
@@ -63,48 +62,26 @@ print(f"Events observed: {event.sum()} ({100 * event.mean():.1f}%)")
 print(f"Censored observations: {(1 - event).sum()} ({100 * (1 - event.mean()):.1f}%)")
 print(f"Mean survival time: {observed_time.mean():.2f}")
 
-### Create OctoData Object
+### Create and run OctoStudy
 
 # For time-to-event analysis, we need to specify:
 # - target_columns: Both 'duration' and 'event' columns
 # - target_assignments: Mapping to identify which column is which
 #   {"duration": "duration", "event": "event"}
 
-octo_data = OctoData(
-    data=df,
-    target_columns=["duration", "event"],
-    feature_columns=features,
-    sample_id="index",
-    datasplit_type="sample",
-    target_assignments={"duration": "duration", "event": "event"},
-)
+print("\nStarting Octopus time-to-event workflow...")
 
-### Create Configuration
-
-# We create three types of configurations:
-# 1. `ConfigStudy`: Sets the name, machine learning type (timetoevent),
-#    and target metric (CI = Concordance Index, similar to AUC for survival data).
-
-# 2. `ConfigManager`: Manages how the machine learning will be executed.
-#    We use the default settings.
-
-# 3. `ConfigWorkflow`: Defines the workflows to be executed. In this example,
-#    we use one workflow with survival analysis models.
-#    Available models: ExtraTreesSurv, RandomSurvivalForest, GradientBoostingSurv, etc.
-
-config_study = ConfigStudy(
+study = OctoStudy(
     name="basic_timetoevent_example",
     ml_type="timetoevent",  # Specify time-to-event analysis
     target_metric="CI",  # Concordance Index (C-index)
-)
-
-config_manager = ConfigManager(
-    outer_parallelization=True,  # Set to True for parallel execution across folds
+    feature_columns=features,
+    target_columns=["duration", "event"],
+    sample_id="index",
+    target_assignments={"duration": "duration", "event": "event"},
+    outer_parallelization=True,
     run_single_experiment_num=0,  # 0: only first experiment, -1 runs all experiments
-)
-
-config_workflow = ConfigWorkflow(
-    [
+    tasks=[
         Octo(
             task_id=0,
             depends_on_task=-1,
@@ -115,24 +92,10 @@ config_workflow = ConfigWorkflow(
             n_trials=20,  # Number of hyperparameter optimization trials
             fi_methods_bestbag=["shap"],  # Use SHAP for feature importance
         ),
-    ]
+    ],
 )
 
-### Execute the Machine Learning Workflow
-
-# We add the data and the configurations defined earlier
-# and run the machine learning workflow.
-
-print("\nStarting Octopus time-to-event workflow...")
-
-octo_ml = OctoML(
-    octo_data,
-    config_study=config_study,
-    config_manager=config_manager,
-    config_workflow=config_workflow,
-)
-
-octo_ml.run_study()
+study.fit(data=df)
 
 print("\nWorkflow completed successfully!")
-print(f"Results saved to: studies/{config_study.name}/")
+print(f"Results saved to: studies/{study.name}/")

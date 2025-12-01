@@ -21,6 +21,7 @@ from octopus.logger import LogGroup, get_logger
 
 # Adjust this import path as needed depending on your package layout
 from octopus.manager.ray_parallel import (
+    init_ray,
     run_parallel_inner,
 )
 from octopus.metrics.utils import get_performance_from_predictions
@@ -255,6 +256,9 @@ class BagBase(BaseEstimator):
 
     def _train_parallel(self):
         """Run trainings in parallel using Ray (delegated to ray_parallel)."""
+        # Ensure Ray is initialized before parallel execution
+        init_ray(start_local_if_missing=True)
+
         # Prepare wrapped trainings with logging
         wrapped = [
             TrainingWithLogging(t, idx, logger, LogGroup, log_prefix="EXP") for idx, t in enumerate(self.trainings)
@@ -402,6 +406,9 @@ class BagBase(BaseEstimator):
 
     def _calculate_fi_parallel(self, fi_type="internal", partition="dev"):
         """Calculate feature importance in parallel using Ray."""
+        # Ensure Ray is initialized before parallel execution
+        init_ray(start_local_if_missing=True)
+
         # Prepare wrapped trainings with logging for feature importance calculation
         wrapped = [
             FeatureImportanceWithLogging(

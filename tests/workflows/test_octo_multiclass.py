@@ -390,10 +390,10 @@ class TestOctoMulticlass:
             # Check for expected subdirectories
             assert (study_path / "data").exists(), "Data directory should exist"
             assert (study_path / "config").exists(), "Config directory should exist"
-            assert (study_path / "outerdatasplit0").exists(), "Experiment directory should exist"
+            assert (study_path / "outersplit0").exists(), "Experiment directory should exist"
 
             # Verify that the Octo step was executed by checking for workflow directories
-            experiment_path = study_path / "outerdatasplit0"
+            experiment_path = study_path / "outersplit0"
             workflow_dirs = [d for d in experiment_path.iterdir() if d.is_dir() and d.name.startswith("workflowtask")]
 
             # Should have at least one workflow directory for the Octo step

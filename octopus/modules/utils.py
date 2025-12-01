@@ -40,6 +40,8 @@ class ExperimentInfo:
     """Machine learning type."""
     feature_group_dict: dict = field(validator=validators.instance_of(dict))
     """Feature group dictionary."""
+    positive_class: int | str | None = field(default=None)
+    """Positive class for binary classification."""
 
 
 def rdc(x, y, f=np.sin, k=20, s=1 / 6.0, n=5):
@@ -164,7 +166,9 @@ def get_fi_permutation(experiment: ExperimentInfo, n_repeat, data: pd.DataFrame 
         raise ValueError("Features missing in provided dataset.")
 
     # calculate baseline score
-    baseline_score = get_score_from_model(model, data, feature_columns, target_metric, target_assignments)
+    baseline_score = get_score_from_model(
+        model, data, feature_columns, target_metric, target_assignments, positive_class=experiment.positive_class
+    )
 
     # get all data select random feature values
     data_all = pd.concat([data_traindev, data], axis=0)
@@ -188,7 +192,14 @@ def get_fi_permutation(experiment: ExperimentInfo, n_repeat, data: pd.DataFrame 
             # replace column with random selection from that column of data_all
             # we use data_all as the validation dataset may be small
             data_pfi[feature] = np.random.choice(data_all[feature], len(data_pfi), replace=False)
-            pfi_score = get_score_from_model(model, data_pfi, feature_columns, target_metric, target_assignments)
+            pfi_score = get_score_from_model(
+                model,
+                data_pfi,
+                feature_columns,
+                target_metric,
+                target_assignments,
+                positive_class=experiment.positive_class,
+            )
             fi_lst.append(baseline_score - pfi_score)
 
         # calculate statistics
@@ -254,7 +265,9 @@ def get_fi_group_permutation(experiment: ExperimentInfo, n_repeat, data: pd.Data
     features_dict = {**feature_columns_dict, **feature_groups}
 
     # calculate baseline score
-    baseline_score = get_score_from_model(model, data, feature_columns, target_metric, target_assignments)
+    baseline_score = get_score_from_model(
+        model, data, feature_columns, target_metric, target_assignments, positive_class=experiment.positive_class
+    )
 
     # get all data select random feature values
     data_all = pd.concat([data_traindev, data], axis=0)
@@ -280,7 +293,14 @@ def get_fi_group_permutation(experiment: ExperimentInfo, n_repeat, data: pd.Data
             # we use data_all as the validation dataset may be small
             for feat in feature:
                 data_pfi[feat] = np.random.choice(data_all[feat], len(data_pfi), replace=False)
-            pfi_score = get_score_from_model(model, data_pfi, feature_columns, target_metric, target_assignments)
+            pfi_score = get_score_from_model(
+                model,
+                data_pfi,
+                feature_columns,
+                target_metric,
+                target_assignments,
+                positive_class=experiment.positive_class,
+            )
             fi_lst.append(baseline_score - pfi_score)
 
         # calculate statistics

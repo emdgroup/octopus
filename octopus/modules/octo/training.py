@@ -834,6 +834,13 @@ class Training:
         Returns:
             Predictions from the model.
         """
+        # Ensure x is a DataFrame with proper column names for ColumnTransformer
+        if isinstance(x, np.ndarray):
+            x = pd.DataFrame(x, columns=self.feature_columns)
+        elif isinstance(x, pd.DataFrame):
+            # Reset index to avoid sklearn ColumnTransformer issues
+            x = x.reset_index(drop=True)
+
         # Apply the same preprocessing pipeline used during training
         x_processed = self.preprocessing_pipeline.transform(x)
         return self.model.predict(x_processed)
@@ -847,6 +854,13 @@ class Training:
         Returns:
             Probability predictions from the model.
         """
+        # Ensure x is a DataFrame with proper column names for ColumnTransformer
+        if isinstance(x, np.ndarray):
+            x = pd.DataFrame(x, columns=self.feature_columns)
+        elif isinstance(x, pd.DataFrame):
+            # Reset index to avoid sklearn ColumnTransformer issues
+            x = x.reset_index(drop=True)
+
         # Apply the same preprocessing pipeline used during training
         x_processed = self.preprocessing_pipeline.transform(x)
         return self.model.predict_proba(x_processed)

@@ -1,4 +1,3 @@
-# type: ignore
 """Octopus prediction."""
 
 # import itertools
@@ -15,8 +14,9 @@ from attrs import Factory, define, field, validators
 from joblib import Parallel, delayed
 from matplotlib.backends.backend_pdf import PdfPages
 
-from octopus import OctoData
+from octopus.config.core import OctoConfig
 from octopus.experiment import OctoExperiment
+from octopus.models.config import BaseModel
 from octopus.modules.utils import (
     ExperimentInfo,
     get_fi_group_permutation,
@@ -42,7 +42,7 @@ warnings.filterwarnings(
 
 
 @define
-class OctoPredict:
+class OctoPredict(BaseModel):
     """OctoPredict."""
 
     study_path: Path = field(validator=[validators.instance_of(Path)])
@@ -61,9 +61,9 @@ class OctoPredict:
     """Results."""
 
     @property
-    def config(self) -> OctoData:
+    def config(self) -> OctoConfig:
         """Study configuration."""
-        return OctoData.from_pickle(self.study_path.joinpath("config", "config.pkl"))
+        return OctoConfig.from_pickle(self.study_path.joinpath("config", "config.pkl"))
 
     @property
     def n_experiments(self) -> int:
@@ -73,11 +73,11 @@ class OctoPredict:
     def __attrs_post_init__(self):
         # set last workflow task as default
         if self.task_id < 0:
-            self.task_id = len(self.config.cfg_workflow) - 1
+            self.task_id = len(self.config.workflow.tasks) - 1
         # get models
         self.experiments = self._get_models()
 
-    def _get_models(self):
+    def _get_models(self) -> dict[int, ExperimentInfo]:
         """Get all models and test data from study path."""
         print("\nLoading available experiments ......")
         experiments = {}
@@ -99,22 +99,23 @@ class OctoPredict:
                         f"Specified results key not found: {self.results_key}. Available results keys: {list(experiment.results.keys())}"
                     )
 
-                experiments[experiment_id] = {
-                    "id": experiment_id,
-                    "model": experiment.results[self.results_key].model,
-                    "data_traindev": experiment.data_traindev,
-                    "data_test": experiment.data_test,
-                    "feature_columns": experiment.feature_columns,
-                    "row_column": experiment.row_column,
-                    "target_assignments": experiment.target_assignments,
-                    "target_metric": experiment.configs.study.target_metric,
-                    "ml_type": experiment.configs.study.ml_type,
-                    "feature_group_dict": experiment.feature_groups,
-                }
+                experiments[experiment_id] = ExperimentInfo(
+                    id=experiment_id,
+                    model=experiment.results[self.results_key].model,
+                    data_traindev=experiment.data_traindev,
+                    data_test=experiment.data_test,
+                    feature_columns=experiment.feature_columns,
+                    row_column=experiment.row_column,
+                    target_assignments=experiment.target_assignments,
+                    target_metric=experiment.configs.study.target_metric,
+                    ml_type=experiment.configs.study.ml_type,
+                    feature_group_dict=experiment.feature_groups,
+                    positive_class=experiment.configs.study.positive_class,
+                )
         print(f"{len(experiments)} experiment(s) out of {self.n_experiments} found.")
         return experiments
 
-    @overload
+    @overload  # type: ignore[override]
     def predict(self, data: pd.DataFrame, return_df: Literal[True]) -> np.ndarray: ...
 
     @overload
@@ -141,7 +142,7 @@ class OctoPredict:
         else:
             return grouped_df.to_numpy()
 
-    @overload
+    @overload  # type: ignore[override]
     def predict_proba(self, data: pd.DataFrame, return_df: Literal[True]) -> np.ndarray: ...
 
     @overload
@@ -169,7 +170,7 @@ class OctoPredict:
         if return_df is True:
             return grouped_df
         else:
-            return grouped_df.loc[:, (slice(None), "mean")].to_numpy()
+            return grouped_df.loc[:, (slice(None), "mean")].to_numpy()  # type: ignore[index]
 
     def predict_test(self) -> pd.DataFrame:
         """Predict on available test data."""
@@ -310,6 +311,7 @@ class OctoPredict:
         # Define a helper function for processing an experiment
         def _process_experiment(exp):
             exp_id = exp.id
+            # Convert dict to ExperimentInfo object
             if fi_type == "permutation":
                 results_df = get_fi_permutation(exp, n_repeat, data=None)
                 key = f"fi_table_permutation_exp{exp_id}"

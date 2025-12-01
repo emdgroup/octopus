@@ -3,6 +3,8 @@
 import pandas as pd
 from attrs import Factory, define, field, validators
 
+from octopus.models.config import BaseModel
+
 
 @define
 class ModuleResults:
@@ -31,7 +33,7 @@ class ModuleResults:
     )
     """Sequence id."""
 
-    model = field(default="")
+    model: BaseModel = field()
     """Saved Model."""
 
     scores: dict = field(default=Factory(dict), validator=[validators.instance_of(dict)])

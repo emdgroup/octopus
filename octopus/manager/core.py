@@ -172,7 +172,7 @@ class OctoManager:
         experiment.task_id = element.task_id
         experiment.depends_on_task = element.depends_on_task
         # Note: attrs strips underscore from init param, so we assign directly to the private field
-        experiment._task_path = Path(f"outerdatasplit{experiment.experiment_id}", f"workflowtask{element.task_id}")
+        experiment._task_path = Path(f"outersplit{experiment.experiment_id}", f"workflowtask{element.task_id}")
         experiment.num_assigned_cpus = self._calculate_assigned_cpus()
         return experiment
 
@@ -247,7 +247,7 @@ class OctoManager:
 
     def _load_existing_experiment(self, base_experiment, element):
         path_study_workflow = base_experiment.path_study.joinpath(
-            f"outerdatasplit{base_experiment.experiment_id}",
+            f"outersplit{base_experiment.experiment_id}",
             f"workflowtask{element.task_id}",
         )
         path_load = path_study_workflow.joinpath(f"exp{base_experiment.experiment_id}_{element.task_id}.pkl")

@@ -60,7 +60,7 @@ class GPClassifierWrapper(ClassifierMixin, BaseEstimator):
         self.model_.fit(X, y)
         return self
 
-    def predict(self, X: Any) -> Any:
+    def predict(self, X: Any) -> np.ndarray:
         """Predict using the Gaussian Process model."""
         check_is_fitted(self, "model_")
         X = check_array(X)

@@ -44,19 +44,19 @@ type PredType = Literal["predict", "predict_proba"]
 class BaseModel(BaseEstimator):
     """Base model class."""
 
-    def fit(self, X: OctoMatrixLike | OctoArrayLike, y: OctoArrayLike, *args, **kwarfs):
+    def fit(self, X: OctoMatrixLike | OctoArrayLike, y: OctoArrayLike, *args, **kwargs):
         """Fit model."""
         ...
 
-    def predict(self, X: OctoMatrixLike | OctoArrayLike, **kwargs) -> pd.DataFrame:
+    def predict(self, X: OctoMatrixLike | OctoArrayLike, **kwargs) -> np.ndarray:
         """Predict."""
         raise NotImplementedError("predict not implemented for this model.")
 
-    def predict_proba(self, X: OctoMatrixLike | OctoArrayLike, **kwargs) -> pd.DataFrame:
+    def predict_proba(self, X: OctoMatrixLike | OctoArrayLike, **kwargs) -> np.ndarray:
         """Predict probabilities."""
         raise NotImplementedError("predict_proba not implemented for this model.")
 
-    def predict_log_proba(self, X: OctoMatrixLike | OctoArrayLike) -> pd.DataFrame:
+    def predict_log_proba(self, X: OctoMatrixLike | OctoArrayLike) -> np.ndarray:
         """Predict log probabilities."""
         raise NotImplementedError("predict_log_proba not implemented for this model.")
 

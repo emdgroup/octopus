@@ -2,3 +2,5 @@
 strat = "strat"
 TPE = "TPE"
 TPESampler = "TPESampler"
+fpr = "fpr"
+tpr = "tpr"

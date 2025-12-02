@@ -16,7 +16,6 @@ from matplotlib.backends.backend_pdf import PdfPages
 
 from octopus.config.core import OctoConfig
 from octopus.experiment import OctoExperiment
-from octopus.models.config import BaseModel
 from octopus.modules.utils import (
     ExperimentInfo,
     get_fi_group_permutation,
@@ -42,7 +41,7 @@ warnings.filterwarnings(
 
 
 @define
-class OctoPredict(BaseModel):
+class OctoPredict:
     """OctoPredict."""
 
     study_path: Path = field(validator=[validators.instance_of(Path)])
@@ -70,6 +69,19 @@ class OctoPredict(BaseModel):
         """Number of experiments."""
         return self.config.study.n_folds_outer
 
+    @property
+    def classes_(self):
+        """Get classes from the first available experiment's model.
+
+        This is needed for sklearn compatibility when OctoPredict is used as a model.
+        All experiments should have the same classes, so returning from the first is sufficient.
+        """
+        if self.experiments:
+            first_experiment = next(iter(self.experiments.values()))
+            if hasattr(first_experiment.model, "classes_"):
+                return first_experiment.model.classes_
+        return None
+
     def __attrs_post_init__(self):
         # set last workflow task as default
         if self.task_id < 0:
@@ -84,7 +96,7 @@ class OctoPredict(BaseModel):
 
         for experiment_id in range(self.n_experiments):
             path_exp = self.study_path.joinpath(
-                f"experiment{experiment_id}",
+                f"outersplit{experiment_id}",
                 f"workflowtask{self.task_id}",
                 f"exp{experiment_id}_{self.task_id}.pkl",
             )
@@ -115,11 +127,11 @@ class OctoPredict(BaseModel):
         print(f"{len(experiments)} experiment(s) out of {self.n_experiments} found.")
         return experiments
 
-    @overload  # type: ignore[override]
-    def predict(self, data: pd.DataFrame, return_df: Literal[True]) -> np.ndarray: ...
+    @overload
+    def predict(self, data: pd.DataFrame, return_df: Literal[True]) -> pd.DataFrame: ...
 
     @overload
-    def predict(self, data: pd.DataFrame, return_df: Literal[False]) -> pd.DataFrame: ...
+    def predict(self, data: pd.DataFrame, return_df: Literal[False]) -> np.ndarray: ...
 
     def predict(self, data: pd.DataFrame, return_df=False):
         """Predict on new data."""
@@ -142,11 +154,11 @@ class OctoPredict(BaseModel):
         else:
             return grouped_df.to_numpy()
 
-    @overload  # type: ignore[override]
-    def predict_proba(self, data: pd.DataFrame, return_df: Literal[True]) -> np.ndarray: ...
+    @overload
+    def predict_proba(self, data: pd.DataFrame, return_df: Literal[True]) -> pd.DataFrame: ...
 
     @overload
-    def predict_proba(self, data: pd.DataFrame, return_df: Literal[False]) -> pd.DataFrame: ...
+    def predict_proba(self, data: pd.DataFrame, return_df: Literal[False]) -> np.ndarray: ...
 
     def predict_proba(self, data: pd.DataFrame, return_df=False):
         """Predict_proba on new data."""
@@ -170,7 +182,9 @@ class OctoPredict(BaseModel):
         if return_df is True:
             return grouped_df
         else:
-            return grouped_df.loc[:, (slice(None), "mean")].to_numpy()  # type: ignore[index]
+            # Extract mean values for all probability columns
+            mean_cols = [col for col in grouped_df.columns if col[1] == "mean"]
+            return grouped_df[mean_cols].to_numpy()
 
     def predict_test(self) -> pd.DataFrame:
         """Predict on available test data."""
@@ -265,7 +279,7 @@ class OctoPredict(BaseModel):
         # use last experiment in for loop
         exp_combined = ExperimentInfo(
             id="_all",
-            model=self,
+            model=self,  # type: ignore[arg-type]
             data_traindev=pd.concat([experiment.data_traindev, experiment.data_test], axis=0),
             # same for all experiments
             data_test=experiment.data_test,  # not used
@@ -275,6 +289,7 @@ class OctoPredict(BaseModel):
             target_metric=experiment.target_metric,
             ml_type=experiment.ml_type,
             feature_group_dict=experiment.feature_group_dict,
+            positive_class=experiment.positive_class,
         )
 
         if fi_type == "permutation":
@@ -311,7 +326,6 @@ class OctoPredict(BaseModel):
         # Define a helper function for processing an experiment
         def _process_experiment(exp):
             exp_id = exp.id
-            # Convert dict to ExperimentInfo object
             if fi_type == "permutation":
                 results_df = get_fi_permutation(exp, n_repeat, data=None)
                 key = f"fi_table_permutation_exp{exp_id}"
@@ -341,7 +355,7 @@ class OctoPredict(BaseModel):
     def _plot_shap_fi(self, experiment_id, shapfi_df, shap_values, data):
         """Create plot for shape fi and save to file."""
         results_path = self.study_path.joinpath(
-            f"experiment{experiment_id}",
+            f"outersplit{experiment_id}",
             f"workflowtask{self.task_id}",
             "results",
         )
@@ -381,7 +395,7 @@ class OctoPredict(BaseModel):
         error = [lower_error.values, upper_error.values]
 
         save_path = self.study_path.joinpath(
-            f"experiment{experiment_id}",
+            f"outersplit{experiment_id}",
             f"workflowtask{self.task_id}",
             "results",
             f"model_permutation_fi_exp{experiment_id}_{self.task_id}.pdf",

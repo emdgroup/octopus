@@ -15,6 +15,10 @@ from scipy.stats import rankdata
 from octopus.metrics.utils import get_score_from_model
 from octopus.models.config import BaseModel
 
+# Minimum threshold for meaningful feature importance values
+# Below this threshold, importances are considered numerical noise
+MIN_MEANINGFUL_IMPORTANCE = 1e-10
+
 
 @define
 class ExperimentInfo:
@@ -223,15 +227,16 @@ def get_fi_permutation(experiment: ExperimentInfo, n_repeat, data: pd.DataFrame 
             ci_low = pfi_mean - t_val * stddev / math.sqrt(n)
 
         # save results
-        results_df.loc[len(results_df)] = [
-            feature,
-            pfi_mean,
-            stddev,
-            p_value,
-            n,
-            ci_low,
-            ci_high,
-        ]
+        results_df = pd.concat(
+            [
+                results_df,
+                pd.DataFrame(
+                    [[feature, pfi_mean, stddev, p_value, n, ci_low, ci_high]],
+                    columns=results_df.columns,
+                ),
+            ],
+            ignore_index=True,
+        )
 
     return results_df.sort_values(by="importance", ascending=False)
 
@@ -324,15 +329,16 @@ def get_fi_group_permutation(experiment: ExperimentInfo, n_repeat, data: pd.Data
             ci_low = pfi_mean - t_val * stddev / math.sqrt(n)
 
         # save results
-        results_df.loc[len(results_df)] = [
-            name,
-            pfi_mean,
-            stddev,
-            p_value,
-            n,
-            ci_low,
-            ci_high,
-        ]
+        results_df = pd.concat(
+            [
+                results_df,
+                pd.DataFrame(
+                    [[name, pfi_mean, stddev, p_value, n, ci_low, ci_high]],
+                    columns=results_df.columns,
+                ),
+            ],
+            ignore_index=True,
+        )
 
     return results_df.sort_values(by="importance", ascending=False)
 
@@ -419,8 +425,11 @@ def get_fi_shap(
     shap_fi_df = shap_fi_df.sort_values(by="importance", ascending=False).reset_index(drop=True)
     # remove features with extremely small fi
     # shap feature importances are always non-zero due to round-off errors
-    threshold = shap_fi_df["importance"].max() / 1000
-    shap_fi_df = shap_fi_df[shap_fi_df["importance"] > threshold]
+    # Only apply threshold if max importance is meaningful
+    max_importance = shap_fi_df["importance"].max()
+    if max_importance > MIN_MEANINGFUL_IMPORTANCE:
+        threshold = max_importance / 1000
+        shap_fi_df = shap_fi_df[shap_fi_df["importance"] > threshold]
 
     return shap_fi_df, shap_values, data
 

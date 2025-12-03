@@ -1,13 +1,18 @@
 """Test hyperparameter."""
 
+from unittest.mock import MagicMock
+
+import optuna
 import pytest
 
+from octopus.models.config import ModelConfig
 from octopus.models.hyperparameter import (
     CategoricalHyperparameter,
     FixedHyperparameter,
     FloatHyperparameter,
     IntHyperparameter,
 )
+from octopus.models.inventory import ModelInventory
 
 
 @pytest.mark.parametrize(
@@ -59,3 +64,96 @@ def test_validate_hyperparameters(hyperparameter_type, name, kwargs, expected_ex
             hyperparameter_type(name=name, **kwargs)
     else:
         hyperparameter_type(name=name, **kwargs)
+
+
+def create_mock_trial():
+    """Create a mock optuna trial."""
+    mock = MagicMock(spec=optuna.trial.Trial)
+    mock.suggest_int.return_value = 5
+    mock.suggest_float.return_value = 0.5
+    mock.suggest_categorical.return_value = "a"
+    return mock
+
+
+def test_int_hyperparameter_suggest():
+    """Test IntHyperparameter suggest method."""
+    mock_trial = create_mock_trial()
+    hp = IntHyperparameter(name="test", low=1, high=10, log=True)
+
+    result = hp.suggest(mock_trial, "unique_name")
+
+    mock_trial.suggest_int.assert_called_once_with(name="unique_name", low=1, high=10, log=True)
+    assert result == 5
+
+
+def test_float_hyperparameter_suggest():
+    """Test FloatHyperparameter suggest method."""
+    mock_trial = create_mock_trial()
+    hp = FloatHyperparameter(name="test", low=0.1, high=1.0, log=True)
+
+    result = hp.suggest(mock_trial, "unique_name")
+
+    mock_trial.suggest_float.assert_called_once_with(name="unique_name", low=0.1, high=1.0, log=True)
+    assert result == 0.5
+
+
+def test_categorical_hyperparameter_suggest():
+    """Test CategoricalHyperparameter suggest method."""
+    mock_trial = create_mock_trial()
+    hp = CategoricalHyperparameter(name="test", choices=["a", "b", "c"])
+
+    result = hp.suggest(mock_trial, "unique_name")
+
+    mock_trial.suggest_categorical.assert_called_once_with(name="unique_name", choices=["a", "b", "c"])
+    assert result == "a"
+
+
+def test_fixed_hyperparameter_suggest():
+    """Test FixedHyperparameter suggest method."""
+    mock_trial = create_mock_trial()
+    hp = FixedHyperparameter(name="test", value=42)
+
+    result = hp.suggest(mock_trial, "unique_name")
+
+    assert result == 42
+    mock_trial.suggest_int.assert_not_called()
+
+
+def test_step_takes_priority_over_log():
+    """Test step parameter takes priority over log."""
+    mock_trial = create_mock_trial()
+    hp = IntHyperparameter(name="test", low=1, high=10, step=2, log=False)
+
+    hp.suggest(mock_trial, "unique_name")
+
+    mock_trial.suggest_int.assert_called_once_with(name="unique_name", low=1, high=10, step=2)
+
+
+def test_create_trial_parameters():
+    """Test create_trial_parameters uses suggest methods."""
+    mock_trial = create_mock_trial()
+    inventory = ModelInventory()
+
+    hyperparameters = [
+        IntHyperparameter(name="int_param", low=1, high=10),
+        FixedHyperparameter(name="fixed_param", value=42),
+    ]
+
+    model_config = ModelConfig(
+        name="TestModel",
+        model_class=object,
+        feature_method="test",
+        ml_type="classification",
+        hyperparameters=hyperparameters,
+        n_jobs="n_jobs",
+        model_seed="random_state",
+    )
+
+    result = inventory.create_trial_parameters(
+        trial=mock_trial, model_item=model_config, hyperparameters=hyperparameters, n_jobs=2, model_seed=123
+    )
+
+    mock_trial.suggest_int.assert_called_once_with(name="int_param_TestModel", low=1, high=10, log=False)
+
+    expected = {"int_param": 5, "fixed_param": 42, "n_jobs": 2, "random_state": 123}
+    assert result == expected

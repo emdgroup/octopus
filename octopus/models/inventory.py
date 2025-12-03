@@ -8,13 +8,7 @@ from attrs import define, field
 from octopus.exceptions import UnknownModelError
 
 from .config import BaseModel, ModelConfig
-from .hyperparameter import (
-    CategoricalHyperparameter,
-    FixedHyperparameter,
-    FloatHyperparameter,
-    Hyperparameter,
-    IntHyperparameter,
-)
+from .hyperparameter import Hyperparameter
 from .registry import ModelRegistry
 
 
@@ -105,35 +99,10 @@ class ModelInventory:
     ) -> dict[str, Any]:
         """Create optuna parameters."""
         params: dict[str, Any] = {}
+
         for hp in hyperparameters:
-            parameter_name = hp.name
             unique_name = f"{hp.name}_{model_item.name}"
-
-            if isinstance(hp, IntHyperparameter):
-                if hp.step is not None:
-                    params[parameter_name] = trial.suggest_int(name=unique_name, low=hp.low, high=hp.high, step=hp.step)
-                elif hp.log is not None:
-                    params[parameter_name] = trial.suggest_int(name=unique_name, low=hp.low, high=hp.high, log=hp.log)
-                else:
-                    params[parameter_name] = trial.suggest_int(name=unique_name, low=hp.low, high=hp.high)
-
-            elif isinstance(hp, FloatHyperparameter):
-                if hp.step is not None:
-                    params[parameter_name] = trial.suggest_float(
-                        name=unique_name, low=hp.low, high=hp.high, step=hp.step
-                    )
-                elif hp.log is not None:
-                    params[parameter_name] = trial.suggest_float(name=unique_name, low=hp.low, high=hp.high, log=hp.log)
-                else:
-                    params[parameter_name] = trial.suggest_float(name=unique_name, low=hp.low, high=hp.high)
-
-            elif isinstance(hp, CategoricalHyperparameter):
-                params[parameter_name] = trial.suggest_categorical(name=unique_name, choices=hp.choices)
-
-            elif isinstance(hp, FixedHyperparameter):
-                params[parameter_name] = hp.value
-            else:
-                raise ValueError(f"HP type '{type(hp)}' not supported")
+            params[hp.name] = hp.suggest(trial, unique_name)
 
         if model_item.n_jobs is not None:
             params[model_item.n_jobs] = n_jobs

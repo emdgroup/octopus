@@ -2,6 +2,7 @@
 
 from typing import Any
 
+import optuna
 from attrs import define, field, validators
 
 
@@ -10,6 +11,10 @@ class Hyperparameter:
     """Class to create hyperparameter space."""
 
     name: str
+
+    def suggest(self, trial: optuna.trial.Trial, unique_name: str) -> Any:
+        """Suggest a value for this hyperparameter using Optuna trial."""
+        raise NotImplementedError("Subclasses must implement suggest()")
 
 
 @define
@@ -35,6 +40,13 @@ class FloatHyperparameter(Hyperparameter):
         if self.value is not None and not (self.low <= self.value <= self.high):
             raise ValueError(f"value must be between low ({self.low}) and high ({self.high}), got {self.value}.")
 
+    def suggest(self, trial: optuna.trial.Trial, unique_name: str) -> float:
+        """Suggest a float value using Optuna trial."""
+        if self.step is not None:
+            return trial.suggest_float(name=unique_name, low=self.low, high=self.high, step=self.step)
+        else:
+            return trial.suggest_float(name=unique_name, low=self.low, high=self.high, log=self.log)
+
 
 @define
 class IntHyperparameter(Hyperparameter):
@@ -59,6 +71,13 @@ class IntHyperparameter(Hyperparameter):
         if self.value is not None and not (self.low <= self.value <= self.high):
             raise ValueError(f"value must be between low ({self.low}) and high ({self.high}), got {self.value}.")
 
+    def suggest(self, trial: optuna.trial.Trial, unique_name: str) -> int:
+        """Suggest an int value using Optuna trial."""
+        if self.step is not None:
+            return trial.suggest_int(name=unique_name, low=self.low, high=self.high, step=self.step)
+        else:
+            return trial.suggest_int(name=unique_name, low=self.low, high=self.high, log=self.log)
+
 
 @define
 class CategoricalHyperparameter(Hyperparameter):
@@ -74,6 +93,10 @@ class CategoricalHyperparameter(Hyperparameter):
         if self.value is not None and self.value not in self.choices:
             raise ValueError(f"value must be one of {self.choices}, got {self.value}.")
 
+    def suggest(self, trial: optuna.trial.Trial, unique_name: str) -> Any:
+        """Suggest a categorical value using Optuna trial."""
+        return trial.suggest_categorical(name=unique_name, choices=self.choices)
+
 
 @define
 class FixedHyperparameter(Hyperparameter):
@@ -84,3 +107,7 @@ class FixedHyperparameter(Hyperparameter):
     def __attrs_post_init__(self):
         if self.value is None:
             raise ValueError("value must be provided for FixedHyperparameter.")
+
+    def suggest(self, trial: optuna.trial.Trial, unique_name: str) -> Any:
+        """Return the fixed value (no trial suggestion needed)."""
+        return self.value

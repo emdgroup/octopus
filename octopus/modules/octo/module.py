@@ -6,7 +6,7 @@ from attrs import Factory, define, field, validators
 
 from octopus.logger import get_logger
 from octopus.models.inventory import ModelInventory
-from octopus.task import BaseWorkflowTask
+from octopus.task import Task
 
 logger = get_logger()
 
@@ -17,7 +17,7 @@ def _unique_unordered(seq):
 
 
 @define
-class Octo(BaseWorkflowTask):
+class Octo(Task):
     """Octofull workflow task config."""
 
     models: list[str] = field(

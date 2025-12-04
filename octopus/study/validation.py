@@ -50,7 +50,7 @@ def validate_tasks(_instance: "OctoStudy", attribute: Attribute, value: list[Tas
     """Validate the `tasks` attribute.
 
     Ensures that the value is a non-empty list where each item is an
-    instance of `BaseWorkflowTask`, and that the workflow meets specified
+    instance of `Task`, and that the workflow meets specified
     conditions.
 
     Conditions:
@@ -70,7 +70,7 @@ def validate_tasks(_instance: "OctoStudy", attribute: Attribute, value: list[Tas
 
     Raises:
         TypeError: If any item in the list is not an instance of
-            `BaseWorkflowTask`.
+            `Task`.
         ValueError: If the list is empty or does not meet the specified
             conditions.
     """
@@ -78,7 +78,7 @@ def validate_tasks(_instance: "OctoStudy", attribute: Attribute, value: list[Tas
     if not value:
         raise ValueError(f"'{attribute.name}' must contain at least one Task.")
 
-    # Condition 2: All Items are Instances of BaseWorkflowTask
+    # Condition 2: All Items are Instances of Task
     for item in value:
         if not isinstance(item, Task):
             raise TypeError(

@@ -12,14 +12,14 @@ import pandas as pd
 import scipy.stats
 from attrs import Factory, define, field, validators
 
-from octopus.task import BaseWorkflowTask
+from octopus.task import Task
 
 if TYPE_CHECKING:
     from octopus.results import ModuleResults
 
 
 @define
-class OctoExperiment[ConfigType: BaseWorkflowTask]:
+class OctoExperiment[ConfigType: Task]:
     """Represents an Octopus experiment for ML pipeline execution.
 
     An OctoExperiment exists in two distinct states representing different stages of the

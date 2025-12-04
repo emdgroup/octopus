@@ -4,11 +4,11 @@ from typing import ClassVar, Literal
 
 from attrs import define, field, validators
 
-from octopus.task import BaseWorkflowTask
+from octopus.task import Task
 
 
 @define
-class AutoGluon(BaseWorkflowTask):
+class AutoGluon(Task):
     """AG Config."""
 
     module: ClassVar[str] = "autogluon"

@@ -4,11 +4,11 @@ from typing import ClassVar, Literal
 
 from attrs import Factory, define, field, validators
 
-from octopus.task import BaseWorkflowTask
+from octopus.task import Task
 
 
 @define
-class Mrmr(BaseWorkflowTask):
+class Mrmr(Task):
     """MRMR Config."""
 
     module: ClassVar[str] = "mrmr"

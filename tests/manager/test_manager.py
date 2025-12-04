@@ -48,7 +48,6 @@ def octo_manager(mock_tasks, mock_experiment):
     return OctoManager(
         base_experiments=[mock_experiment],
         tasks=mock_tasks,
-        n_folds_outer=3,
         outer_parallelization=False,
         run_single_experiment_num=-1,
     )
@@ -91,7 +90,7 @@ def test_run_outer_experiments_parallel_B(octo_manager):
         _, kwargs = mock_run.call_args
         assert kwargs["base_experiments"] is octo_manager.base_experiments
         assert callable(kwargs["create_execute_mlmodules"])
-        assert kwargs["num_workers"] == min(octo_manager.n_folds_outer, os.cpu_count() or 1)
+        assert kwargs["num_workers"] == min(len(octo_manager.base_experiments), os.cpu_count() or 1)
 
 
 def test_run_single_experiment(octo_manager):

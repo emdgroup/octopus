@@ -27,9 +27,6 @@ class OctoManager:
     tasks: list[Task] = field(
         validator=[validators.instance_of(list)],
     )
-    n_folds_outer: int = field(
-        validator=[validators.instance_of(int)],
-    )
     outer_parallelization: bool = field(
         default=True,
         validator=[validators.instance_of(bool)],
@@ -52,7 +49,7 @@ class OctoManager:
         """Calculate number of parallel outer workers."""
         if self.run_single_experiment_num != -1:
             return 1
-        return min(self.n_folds_outer, self.num_available_cpus)
+        return min(len(self.base_experiments), self.num_available_cpus)
 
     def run_outer_experiments(self):
         """Run outer experiments."""
@@ -92,7 +89,7 @@ class OctoManager:
             f"Preparing execution of experiments | "
             f"Outer parallelization: {self.outer_parallelization} | "
             f"Run single experiment: {self.run_single_experiment_num} | "
-            f"Number of outer folds: {self.n_folds_outer} | "
+            f"Number of outer folds: {len(self.base_experiments)} | "
             f"Available CPUs: {self.num_available_cpus} | "
             f"Outer workers: {self.num_outer_workers} | "
             f"CPUs per experiment: {self._calculate_assigned_cpus()}"

@@ -1,5 +1,5 @@
 """Task module."""
 
-from .core import BaseWorkflowTask, Task
+from .core import Task
 
-__all__ = ["BaseWorkflowTask", "Task"]
+__all__ = ["Task"]

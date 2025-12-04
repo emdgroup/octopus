@@ -24,11 +24,3 @@ class Task:
 
     categorical_encoding: bool = field(default=False, validator=[validators.instance_of(bool)])
     """Enforce categorical encoding on module level (and not model) to stay compatible with feature importance"""
-
-
-@define
-class BaseWorkflowTask(Task):
-    """Base class for all workflow tasks.
-
-    Inherits from Task and can be extended with additional fields.
-    """

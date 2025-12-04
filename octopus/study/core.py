@@ -313,7 +313,6 @@ class OctoStudy:
         manager = OctoManager(
             base_experiments=experiments,
             tasks=self.tasks,
-            n_folds_outer=self.n_folds_outer,
             outer_parallelization=self.outer_parallelization,
             run_single_experiment_num=self.run_single_experiment_num,
         )

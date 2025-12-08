@@ -31,7 +31,7 @@ study = OctoStudy(
     stratification_column="target",
     outer_parallelization=True,
     run_single_experiment_num=0,
-    tasks=[
+    workflow=[
         Octo(
             task_id=0,
             description="step_1_octo",

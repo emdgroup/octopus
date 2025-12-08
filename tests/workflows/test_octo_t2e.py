@@ -192,7 +192,7 @@ class TestOctoTimeToEvent:
                 ignore_data_health_warning=True,
                 outer_parallelization=False,
                 run_single_experiment_num=0,
-                tasks=[
+                workflow=[
                     Octo(
                         task_id=0,
                         depends_on_task=-1,

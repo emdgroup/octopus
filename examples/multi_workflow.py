@@ -1,6 +1,6 @@
 """Example for using a multi workflow."""
 
-# This example demonstrates how to chain multiple workflow tasks together
+# This example demonstrates how to create a workflow
 # using Octopus with the diabetes dataset.
 
 ### Necessary imports for this example
@@ -23,7 +23,7 @@ study = OctoStudy(
     ignore_data_health_warning=True,
     outer_parallelization=False,
     run_single_experiment_num=1,
-    tasks=[
+    workflow=[
         Octo(
             description="step1_octofull",
             task_id=0,

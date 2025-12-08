@@ -11,8 +11,8 @@ from octopus.manager import OctoManager
 
 
 @pytest.fixture
-def mock_tasks():
-    """Create mock tasks."""
+def mock_workflow():
+    """Create mock workflow."""
     return [
         Mock(
             task_id=1,
@@ -43,11 +43,11 @@ def mock_experiment():
 
 
 @pytest.fixture
-def octo_manager(mock_tasks, mock_experiment):
+def octo_manager(mock_workflow, mock_experiment):
     """Create octo manager."""
     return OctoManager(
         base_experiments=[mock_experiment],
-        tasks=mock_tasks,
+        workflow=mock_workflow,
         outer_parallelization=False,
         run_single_experiment_num=-1,
     )
@@ -103,7 +103,7 @@ def test_run_single_experiment(octo_manager):
 
 def test_create_new_experiment(octo_manager, mock_experiment):
     """Test create new experiment."""
-    element = octo_manager.tasks[0]
+    element = octo_manager.workflow[0]
     new_experiment = octo_manager._create_new_experiment(mock_experiment, element)
     assert new_experiment.ml_module == element.module
     assert new_experiment.task_id == element.task_id

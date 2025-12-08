@@ -40,7 +40,7 @@ study = OctoStudy(
     ignore_data_health_warning=True,
     outer_parallelization=True,
     run_single_experiment_num=0,  # Process only first outer loop experiment for quick testing
-    tasks=[
+    workflow=[
         # Step 0: ROC - Remove highly correlated features and apply statistical filtering
         Roc(
             description="step_0_roc",

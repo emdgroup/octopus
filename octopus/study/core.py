@@ -1,6 +1,8 @@
 """Octo Study."""
 
 import json
+import shutil
+import sys
 from pathlib import Path
 
 import pandas as pd
@@ -113,6 +115,9 @@ class OctoStudy:
     )
     """If True, starts the study with an empty output directory. Defaults to True."""
 
+    silently_overwrite_study: bool = field(default=Factory(lambda: False), validator=[validators.instance_of(bool)])
+    """If False, prompts user for confirmation when overwriting existing study. Defaults to False."""
+
     path: str = field(default="./studies/")
     """The path where study outputs are saved. Defaults to "./studies/"."""
 
@@ -157,6 +162,20 @@ class OctoStudy:
 
     def _initialize_study_outputs(self) -> None:
         """Initialize study by setting up directory and saving config and data."""
+        if self.output_path.exists():
+            if not self.silently_overwrite_study:
+                confirmation = input("Study exists, do you want to continue? (yes/no): ")
+                if confirmation.strip().lower() != "yes":
+                    print("Exiting...")
+                    sys.exit()
+                print("Continuing...")
+
+            if self.start_with_empty_study:
+                print("Overwriting existing study....")
+                shutil.rmtree(self.output_path)
+            else:
+                print("Resume existing study....")
+
         self.output_path.mkdir(parents=True, exist_ok=True)
 
         def serialize_value(value):

@@ -16,6 +16,7 @@ from octopus.utils import DataSplit
 from .data_preparator import OctoDataPreparator
 from .data_validator import OctoDataValidator
 from .healthChecker import HealthCheckConfig, OctoDataHealthChecker
+from .prepared_data import PreparedData
 from .types import DatasplitType, ImputationMethod, MLType
 from .validation import validate_metric, validate_metrics_list, validate_tasks
 
@@ -110,13 +111,29 @@ class OctoStudy:
     path: str = field(default="./studies/")
     """The path where study outputs are saved. Defaults to "./studies/"."""
 
-    relevant_columns: list[str] = field(init=False)
-    """Relevant columns for the dataset. Set during fit()."""
+    prepared: PreparedData = field(init=False)
+    """Container for prepared study data and metadata after data preparation."""
 
     @property
     def output_path(self) -> Path:
         """Full output path for this study (path/name)."""
         return Path(self.path) / self.name
+
+    @property
+    def relevant_columns(self) -> list[str]:
+        """Relevant columns for the dataset (computed from prepared data)."""
+        relevant_columns = list(set(self.prepared.feature_columns + self.target_columns))
+        if self.sample_id:
+            relevant_columns.append(self.sample_id)
+        if self.prepared.row_id:
+            relevant_columns.append(self.prepared.row_id)
+        if self.stratification_column:
+            relevant_columns.append(self.stratification_column)
+        if "group_features" in self.prepared.data.columns:
+            relevant_columns.append("group_features")
+        if "group_sample_and_features" in self.prepared.data.columns:
+            relevant_columns.append("group_sample_and_features")
+        return list(set(relevant_columns))
 
     def _validate_data(self, data: pd.DataFrame) -> None:
         """Validate the input data."""
@@ -133,12 +150,10 @@ class OctoStudy:
         )
         validator.validate()
 
-    def _initialize_study_outputs(self, data: pd.DataFrame) -> None:
+    def _initialize_study_outputs(self) -> None:
         """Initialize study by setting up directory and saving config and data."""
-        # Create output directory
         self.output_path.mkdir(parents=True, exist_ok=True)
 
-        # Save configuration to JSON
         def serialize_value(value):
             """Convert a value to JSON-serializable format."""
             if hasattr(value, "value"):
@@ -155,16 +170,22 @@ class OctoStudy:
 
         config = {}
         for attr in fields(OctoStudy):
-            if attr.name == "relevant_columns":
+            if attr.name == "prepared":
                 continue
             value = getattr(self, attr.name)
             config[attr.name] = serialize_value(value)
+
+        config["prepared"] = {
+            "feature_columns": self.prepared.feature_columns,
+            "row_id": self.prepared.row_id,
+            "target_assignments": self.prepared.target_assignments,
+        }
 
         config_path = self.output_path / "config.json"
         with open(config_path, "w") as f:
             json.dump(config, f, indent=2)
 
-        data.to_parquet(self.output_path / "data.parquet", index=False)
+        self.prepared.data.to_parquet(self.output_path / "data.parquet", index=False)
 
     def _prepare_data(self, data: pd.DataFrame) -> pd.DataFrame:
         """Prepare the data for training."""
@@ -176,28 +197,10 @@ class OctoStudy:
             row_id=self.row_id,
             target_assignments=self.target_assignments,
         )
-        prepared_data, feature_columns, row_id, target_assignments = preparator.prepare()
+        prepared = preparator.prepare()
+        object.__setattr__(self, "prepared", prepared)
 
-        object.__setattr__(self, "feature_columns", feature_columns)
-        object.__setattr__(self, "row_id", row_id)
-        object.__setattr__(self, "target_assignments", target_assignments)
-
-        return prepared_data
-
-    def _compute_relevant_columns(self, data: pd.DataFrame) -> None:
-        """Compute and store relevant columns for the dataset."""
-        relevant_columns = list(set(self.feature_columns + self.target_columns))
-        if self.sample_id:
-            relevant_columns.append(self.sample_id)
-        if self.row_id:
-            relevant_columns.append(self.row_id)
-        if self.stratification_column:
-            relevant_columns.append(self.stratification_column)
-        if "group_features" in data.columns:
-            relevant_columns.append("group_features")
-        if "group_sample_and_features" in data.columns:
-            relevant_columns.append("group_sample_and_features")
-        object.__setattr__(self, "relevant_columns", list(set(relevant_columns)))
+        return prepared.data
 
     def _create_datasplits(self, data: pd.DataFrame) -> dict:
         """Create datasplits for outer cross-validation."""
@@ -246,9 +249,9 @@ class OctoStudy:
                 metrics=self.metrics,
                 imputation_method=self.imputation_method.value,
                 datasplit_column=datasplit_col,
-                row_column=self.row_id,  # type: ignore[arg-type]  # row_id is always set after _prepare_data
-                feature_columns=self.feature_columns,
-                target_assignments=self.target_assignments,
+                row_column=self.prepared.row_id,
+                feature_columns=self.prepared.feature_columns,
+                target_assignments=self.prepared.target_assignments,
                 data_traindev=value["train"],
                 data_test=value["test"],
             )
@@ -260,9 +263,9 @@ class OctoStudy:
         """Run data health check, save results, and check for issues."""
         checker = OctoDataHealthChecker(
             data=data,
-            feature_columns=self.feature_columns,
+            feature_columns=self.prepared.feature_columns,
             target_columns=self.target_columns,
-            row_id=self.row_id,
+            row_id=self.prepared.row_id,
             sample_id=self.sample_id,
             stratification_column=self.stratification_column,
             config=config or HealthCheckConfig(),
@@ -304,8 +307,7 @@ class OctoStudy:
         # TODO: relevant columns can be updated during preparation, check if it makes sense to validate after preparation
         self._validate_data(data)
         prepared_data = self._prepare_data(data)
-        self._compute_relevant_columns(prepared_data)
-        self._initialize_study_outputs(prepared_data)
+        self._initialize_study_outputs()
         self._run_health_check(prepared_data, health_check_config)
 
         datasplits = self._create_datasplits(prepared_data)

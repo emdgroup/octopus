@@ -5,6 +5,7 @@ import pandas as pd
 from attrs import define
 
 from ..logger import get_logger
+from .prepared_data import PreparedData
 
 logger = get_logger()
 
@@ -36,8 +37,12 @@ class OctoDataPreparator:
     target_assignments: dict[str, str]
     """Mapping of target assignments."""
 
-    def prepare(self) -> tuple[pd.DataFrame, list[str], str | None, dict[str, str]]:
-        """Run all data preparation steps."""
+    def prepare(self) -> PreparedData:
+        """Run all data preparation steps and return PreparedData instance.
+
+        Returns:
+            PreparedData: The transformed data with effective feature columns, row_id, etc.
+        """
         self._sort_features()
         self._standardize_null_values()
         self._standardize_inf_values()
@@ -46,7 +51,13 @@ class OctoDataPreparator:
         self._transform_bool_to_int()
         self._create_row_id()
         self._add_group_features()  # needs to be done at the end
-        return self.data, self.feature_columns, self.row_id, self.target_assignments
+
+        return PreparedData(
+            data=self.data,
+            feature_columns=self.feature_columns,
+            row_id=self.row_id,  # type: ignore[arg-type]  # row_id is always set after _create_row_id
+            target_assignments=self.target_assignments,
+        )
 
     def _sort_features(self):
         """Sort feature columns deterministically by length and lexicographically."""

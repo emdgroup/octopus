@@ -24,7 +24,7 @@ class OctoManager:
     base_experiments: list[OctoExperiment] = field(
         validator=[validators.instance_of(list)],
     )
-    tasks: list[Task] = field(
+    workflow: list[Task] = field(
         validator=[validators.instance_of(list)],
     )
     outer_parallelization: bool = field(
@@ -147,7 +147,7 @@ class OctoManager:
 
         exp_path_dict: dict[int, Path] = {}
 
-        for element in self.tasks:
+        for element in self.workflow:
             self._log_workflow_task_info(element)
 
             # load from workflow task

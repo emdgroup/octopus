@@ -42,7 +42,7 @@ study = OctoStudy(
     ignore_data_health_warning=True,
     outer_parallelization=True,
     run_single_experiment_num=0,  # only process first outer loop experiment, for quick testing
-    tasks=[
+    workflow=[
         Octo(
             task_id=0,
             depends_on_task=-1,

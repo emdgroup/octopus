@@ -18,7 +18,7 @@ from .data_validator import OctoDataValidator
 from .healthChecker import HealthCheckConfig, OctoDataHealthChecker
 from .prepared_data import PreparedData
 from .types import DatasplitType, ImputationMethod, MLType
-from .validation import validate_metric, validate_metrics_list, validate_tasks
+from .validation import validate_metric, validate_metrics_list, validate_workflow
 
 logger = get_logger()
 
@@ -102,11 +102,11 @@ class OctoStudy:
     run_single_experiment_num: int = field(default=Factory(lambda: -1), validator=[validators.instance_of(int)])
     """Select a single experiment to execute. Defaults to -1 to run all experiments"""
 
-    tasks: list[Task] = field(
+    workflow: list[Task] = field(
         default=Factory(lambda: [Octo(task_id=0)]),
-        validator=[validators.instance_of(list), validate_tasks],
+        validator=[validators.instance_of(list), validate_workflow],
     )
-    """A list of workflow tasks that defines the processing workflow. Each item in the list is an instance of `Task`."""
+    """A list of tasks that defines the processing workflow. Each item in the list is an instance of `Task`."""
 
     path: str = field(default="./studies/")
     """The path where study outputs are saved. Defaults to "./studies/"."""
@@ -314,7 +314,7 @@ class OctoStudy:
         experiments = self._create_experiments(datasplits)
         manager = OctoManager(
             base_experiments=experiments,
-            tasks=self.tasks,
+            workflow=self.workflow,
             outer_parallelization=self.outer_parallelization,
             run_single_experiment_num=self.run_single_experiment_num,
         )

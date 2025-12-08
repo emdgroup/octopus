@@ -53,7 +53,7 @@ class TestRocOctoRocWorkflow:
 
     def test_roc_octo_roc_sequence_configuration(self):
         """Test that ROC-OCTO-ROC sequence can be properly configured."""
-        tasks = [
+        workflow = [
             Roc(
                 description="step_0_roc_initial",
                 task_id=0,
@@ -88,10 +88,10 @@ class TestRocOctoRocWorkflow:
         ]
 
         # Verify sequence configuration
-        assert len(tasks) == 3
+        assert len(workflow) == 3
 
         # Verify first ROC step
-        first_roc = tasks[0]
+        first_roc = workflow[0]
         assert isinstance(first_roc, Roc)
         assert first_roc.task_id == 0
         assert first_roc.depends_on_task == -1
@@ -99,14 +99,14 @@ class TestRocOctoRocWorkflow:
         assert first_roc.description == "step_0_roc_initial"
 
         # Verify OCTO step
-        octo_step = tasks[1]
+        octo_step = workflow[1]
         assert isinstance(octo_step, Octo)
         assert octo_step.task_id == 1
         assert octo_step.depends_on_task == 0
         assert octo_step.description == "step_1_octo"
 
         # Verify second ROC step
-        second_roc = tasks[2]
+        second_roc = workflow[2]
         assert isinstance(second_roc, Roc)
         assert second_roc.task_id == 2
         assert second_roc.depends_on_task == 1
@@ -128,7 +128,7 @@ class TestRocOctoRocWorkflow:
                 stratification_column="target",
                 path=temp_dir,
                 ignore_data_health_warning=True,
-                tasks=[
+                workflow=[
                     Roc(
                         description="step_0_roc_initial",
                         task_id=0,
@@ -158,39 +158,39 @@ class TestRocOctoRocWorkflow:
                 ],
             )
 
-            assert len(study.tasks) == 3
+            assert len(study.workflow) == 3
 
     def test_sequence_dependency_chain(self):
         """Test that the sequence dependency chain is correctly configured."""
-        tasks = [
+        workflow = [
             Roc(task_id=0, depends_on_task=-1, threshold=0.85),
             Octo(task_id=1, depends_on_task=0, models=["ExtraTreesClassifier"], n_trials=6),
             Roc(task_id=2, depends_on_task=1, threshold=0.5),
         ]
 
         # First step has no dependencies
-        assert tasks[0].depends_on_task == -1
+        assert workflow[0].depends_on_task == -1
 
         # Second step depends on first
-        assert tasks[1].depends_on_task == tasks[0].task_id
+        assert workflow[1].depends_on_task == workflow[0].task_id
 
         # Third step depends on second
-        assert tasks[2].depends_on_task == tasks[1].task_id
+        assert workflow[2].depends_on_task == workflow[1].task_id
 
         # Verify sequence IDs are sequential
-        for i, step in enumerate(tasks):
+        for i, step in enumerate(workflow):
             assert step.task_id == i
 
     def test_roc_threshold_configuration(self):
         """Test that ROC thresholds are configured correctly in the sequence."""
-        tasks = [
+        workflow = [
             Roc(task_id=0, depends_on_task=-1, threshold=0.85),
             Octo(task_id=1, depends_on_task=0, models=["ExtraTreesClassifier"], n_trials=6),
             Roc(task_id=2, depends_on_task=1, threshold=0.5),
         ]
 
-        first_roc = tasks[0]
-        second_roc = tasks[2]
+        first_roc = workflow[0]
+        second_roc = workflow[2]
 
         assert first_roc.threshold == 0.85
         assert second_roc.threshold == 0.5
@@ -202,7 +202,7 @@ class TestRocOctoRocWorkflow:
     @pytest.mark.parametrize("filter_type", ["f_statistics", "mutual_info"])
     def test_roc_configuration_variations(self, correlation_type, filter_type):
         """Test ROC configuration with different correlation and filter types."""
-        tasks = [
+        workflow = [
             Roc(
                 task_id=0,
                 depends_on_task=-1,
@@ -220,8 +220,8 @@ class TestRocOctoRocWorkflow:
             ),
         ]
 
-        first_roc = tasks[0]
-        second_roc = tasks[2]
+        first_roc = workflow[0]
+        second_roc = workflow[2]
 
         assert first_roc.correlation_type == correlation_type
         assert first_roc.filter_type == filter_type
@@ -230,7 +230,7 @@ class TestRocOctoRocWorkflow:
 
     def test_octo_configuration_in_sequence(self):
         """Test OCTO module configuration within the ROC-OCTO-ROC sequence."""
-        tasks = [
+        workflow = [
             Roc(task_id=0, depends_on_task=-1, threshold=0.85),
             Octo(
                 task_id=1,
@@ -244,7 +244,7 @@ class TestRocOctoRocWorkflow:
             Roc(task_id=2, depends_on_task=1, threshold=0.5),
         ]
 
-        octo_step = tasks[1]
+        octo_step = workflow[1]
 
         assert isinstance(octo_step, Octo)
         assert set(octo_step.models) == {"ExtraTreesClassifier", "RandomForestClassifier"}
@@ -255,16 +255,16 @@ class TestRocOctoRocWorkflow:
 
     def test_workflow_sequence_validation(self):
         """Test that the workflow sequence is properly validated."""
-        tasks = [
+        workflow = [
             Roc(task_id=0, depends_on_task=-1, threshold=0.85),
             Octo(task_id=1, depends_on_task=0, models=["ExtraTreesClassifier"], n_trials=6),
             Roc(task_id=2, depends_on_task=1, threshold=0.5),
         ]
 
-        assert len(tasks) == 3
+        assert len(workflow) == 3
 
         # Verify all steps are properly configured
-        for i, step in enumerate(tasks):
+        for i, step in enumerate(workflow):
             assert step.task_id == i
             if i == 0:
                 assert step.depends_on_task == -1
@@ -292,7 +292,7 @@ class TestRocOctoRocWorkflow:
                 ignore_data_health_warning=True,
                 outer_parallelization=False,
                 run_single_experiment_num=0,
-                tasks=[
+                workflow=[
                     Roc(
                         description="step_0_roc_initial",
                         task_id=0,

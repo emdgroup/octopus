@@ -116,8 +116,8 @@ def test_output_path_property():
         assert study.output_path == Path(temp_dir) / "my_study"
 
 
-def test_default_tasks():
-    """Test that default tasks is a single Octo task."""
+def test_default_workflow():
+    """Test that default workflow is a single Octo task."""
     with tempfile.TemporaryDirectory() as temp_dir:
         study = OctoStudy(
             name="test",
@@ -128,9 +128,9 @@ def test_default_tasks():
             sample_id="id",
             path=temp_dir,
         )
-        assert len(study.tasks) == 1
-        assert isinstance(study.tasks[0], Octo)
-        assert study.tasks[0].task_id == 0
+        assert len(study.workflow) == 1
+        assert isinstance(study.workflow[0], Octo)
+        assert study.workflow[0].task_id == 0
 
 
 def test_default_metrics():

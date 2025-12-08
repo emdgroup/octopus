@@ -46,8 +46,8 @@ def validate_metrics_list(instance: "OctoStudy", attribute: Attribute, value: li
             raise ValueError(f"Invalid metric '{metric}' for ml_type '{instance.ml_type}'.")
 
 
-def validate_tasks(_instance: "OctoStudy", attribute: Attribute, value: list[Task]) -> None:
-    """Validate the `tasks` attribute.
+def validate_workflow(_instance: "OctoStudy", attribute: Attribute, value: list[Task]) -> None:
+    """Validate the `workflow` attribute.
 
     Ensures that the value is a non-empty list where each item is an
     instance of `Task`, and that the workflow meets specified

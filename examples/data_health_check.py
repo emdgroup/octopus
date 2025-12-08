@@ -212,7 +212,7 @@ study = OctoStudy(
     stratification_column="target",
     ignore_data_health_warning=False,  # Will stop if health check finds issues
     outer_parallelization=True,
-    tasks=[
+    workflow=[
         Octo(
             task_id=0,
             depends_on_task=-1,

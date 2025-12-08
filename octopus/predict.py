@@ -87,7 +87,7 @@ class OctoPredict:
     def __attrs_post_init__(self):
         # set last workflow task as default
         if self.task_id < 0:
-            self.task_id = len(self.config["tasks"]) - 1
+            self.task_id = len(self.config["workflow"]) - 1
         # get models
         self.experiments = self._get_models()
 

@@ -81,7 +81,7 @@ study = OctoStudy(
     target_assignments={"duration": "duration", "event": "event"},
     outer_parallelization=True,
     run_single_experiment_num=0,  # 0: only first experiment, -1 runs all experiments
-    tasks=[
+    workflow=[
         Octo(
             task_id=0,
             depends_on_task=-1,

@@ -221,7 +221,7 @@ class TestOctoMulticlass:
                 ignore_data_health_warning=True,
                 outer_parallelization=False,
                 run_single_experiment_num=0,
-                tasks=[
+                workflow=[
                     Octo(
                         description="step_1_octo_multiclass",
                         task_id=0,

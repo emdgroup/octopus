@@ -64,7 +64,7 @@ class TestAutogluonWorkflows:
             ignore_data_health_warning=True,
             outer_parallelization=True,
             run_single_experiment_num=0,
-            tasks=[
+            workflow=[
                 AutoGluon(
                     description="ag_test",
                     task_id=0,
@@ -119,7 +119,7 @@ class TestAutogluonWorkflows:
             ignore_data_health_warning=True,
             outer_parallelization=False,
             run_single_experiment_num=0,
-            tasks=[
+            workflow=[
                 AutoGluon(
                     description="ag_regression_test",
                     task_id=0,

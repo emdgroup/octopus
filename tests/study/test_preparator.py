@@ -38,12 +38,12 @@ def octo_preparator(sample_data):
 
 def test_prepare(octo_preparator):
     """Test prepare function."""
-    data, feature_columns, row_id, target_assignments = octo_preparator.prepare()
+    prepared = octo_preparator.prepare()
 
-    assert isinstance(data, pd.DataFrame)
-    assert isinstance(feature_columns, list)
-    assert isinstance(row_id, str)
-    assert isinstance(target_assignments, dict)
+    assert isinstance(prepared.data, pd.DataFrame)
+    assert isinstance(prepared.feature_columns, list)
+    assert isinstance(prepared.row_id, str)
+    assert isinstance(prepared.target_assignments, dict)
 
 
 def test_sort_features(octo_preparator):
@@ -159,16 +159,16 @@ def test_standardize_inf_values(octo_preparator):
 
 def test_prepare_full_process(octo_preparator):
     """Test preparation function."""
-    data, feature_columns, _, target_assignments = octo_preparator.prepare()
+    prepared = octo_preparator.prepare()
 
-    assert "row_id" in data.columns
-    assert "group_features" in data.columns
-    assert "group_sample_and_features" in data.columns
-    assert data["bool_col"].dtype == int
-    assert data["null_col"].isna().all()
-    assert np.isinf(data["inf_col"].iloc[0])
-    assert "single_value" not in feature_columns
-    assert target_assignments == {"default": "target"}
+    assert "row_id" in prepared.data.columns
+    assert "group_features" in prepared.data.columns
+    assert "group_sample_and_features" in prepared.data.columns
+    assert prepared.data["bool_col"].dtype == int
+    assert prepared.data["null_col"].isna().all()
+    assert np.isinf(prepared.data["inf_col"].iloc[0])
+    assert "single_value" not in prepared.feature_columns
+    assert prepared.target_assignments == {"default": "target"}
 
 
 def test_add_group_features_with_categorical_and_nan():

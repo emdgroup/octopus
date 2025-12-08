@@ -18,7 +18,7 @@ from .data_validator import OctoDataValidator
 from .healthChecker import HealthCheckConfig, OctoDataHealthChecker
 from .prepared_data import PreparedData
 from .types import DatasplitType, ImputationMethod, MLType
-from .validation import validate_metric, validate_metrics_list, validate_workflow
+from .validation import validate_metric, validate_metrics_list, validate_start_with_empty_study, validate_workflow
 
 logger = get_logger()
 
@@ -107,6 +107,11 @@ class OctoStudy:
         validator=[validators.instance_of(list), validate_workflow],
     )
     """A list of tasks that defines the processing workflow. Each item in the list is an instance of `Task`."""
+
+    start_with_empty_study: bool = field(
+        default=True, validator=[validators.instance_of(bool), validate_start_with_empty_study]
+    )
+    """If True, starts the study with an empty output directory. Defaults to True."""
 
     path: str = field(default="./studies/")
     """The path where study outputs are saved. Defaults to "./studies/"."""

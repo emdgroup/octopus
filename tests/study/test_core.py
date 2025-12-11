@@ -10,6 +10,7 @@ import pytest
 from octopus import OctoStudy
 from octopus.modules import Octo
 from octopus.study.types import DatasplitType, ImputationMethod, MLType
+from octopus.task import Task
 
 
 @pytest.fixture
@@ -222,3 +223,58 @@ def test_invalid_ml_type():
             sample_id="id",
             path=temp_dir,
         )
+
+
+def test_start_with_empty_study_valid():
+    """Test that start_with_empty_study=True works with tasks that don't have load_task=True."""
+    with tempfile.TemporaryDirectory() as temp_dir:
+        study = OctoStudy(
+            name="test",
+            ml_type="classification",
+            target_metric="AUCROC",
+            feature_columns=["f1"],
+            target_columns=["target"],
+            sample_id="id",
+            path=temp_dir,
+            start_with_empty_study=True,
+            workflow=[Octo(task_id=0), Task(task_id=1, depends_on_task=0, load_task=False)],
+        )
+        assert study.start_with_empty_study is True
+
+
+def test_start_with_empty_study_invalid():
+    """Test that start_with_empty_study=True raises error when workflow has tasks with load_task=True."""
+    with (
+        tempfile.TemporaryDirectory() as temp_dir,
+        pytest.raises(
+            ValueError, match="Cannot set start_with_empty_study=True when workflow contains tasks with load_task=True"
+        ),
+    ):
+        OctoStudy(
+            name="test",
+            ml_type="classification",
+            target_metric="AUCROC",
+            feature_columns=["f1"],
+            target_columns=["target"],
+            sample_id="id",
+            path=temp_dir,
+            start_with_empty_study=True,
+            workflow=[Octo(task_id=0), Task(task_id=1, depends_on_task=0, load_task=True)],
+        )
+
+
+def test_start_with_empty_study_false_with_load_task():
+    """Test that start_with_empty_study=False allows tasks with load_task=True."""
+    with tempfile.TemporaryDirectory() as temp_dir:
+        study = OctoStudy(
+            name="test",
+            ml_type="classification",
+            target_metric="AUCROC",
+            feature_columns=["f1"],
+            target_columns=["target"],
+            sample_id="id",
+            path=temp_dir,
+            start_with_empty_study=False,
+            workflow=[Octo(task_id=0), Task(task_id=1, depends_on_task=0, load_task=True)],
+        )
+        assert study.start_with_empty_study is False

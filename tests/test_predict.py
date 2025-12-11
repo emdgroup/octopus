@@ -1,5 +1,6 @@
 """Tests for octopus/predict.py."""
 
+import json
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import Mock, patch
@@ -8,9 +9,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from octopus.config.core import ConfigManager, ConfigStudy, ConfigWorkflow, OctoConfig
 from octopus.experiment import OctoExperiment
-from octopus.modules import Octo
 from octopus.predict import OctoPredict
 from octopus.results import ModuleResults
 
@@ -54,43 +53,21 @@ def mock_model():
 
 
 @pytest.fixture
-def mock_config():
-    """Fixture to create a mock OctoConfig."""
-    config_study = ConfigStudy(
-        name="test_study",
-        ml_type="classification",
-        target_metric="AUCROC",
-        n_folds_outer=3,
-        path="test_path",
-    )
-    config_workflow = ConfigWorkflow(
-        tasks=[
-            Octo(
-                task_id=0,
-                depends_on_task=-1,
-                description="step_1_octo",
-                models=["RandomForestClassifier"],
-                n_trials=1,
-            )
-        ]
-    )
-    return OctoConfig(study=config_study, manager=ConfigManager(), workflow=config_workflow)
-
-
-@pytest.fixture
-def mock_experiment(sample_data, mock_model, mock_config):
+def mock_experiment(sample_data, mock_model):
     """Fixture to create a mock OctoExperiment."""
     experiment = Mock(spec=OctoExperiment)
     experiment.id = "experiment_0"
     experiment.experiment_id = 0
     experiment.task_id = 0
     experiment.depends_on_task = -1
-    experiment._task_path = Path("experiment0/workflowtask0")
-    experiment.configs = mock_config
+    experiment._task_path = Path("outersplit0/workflowtask0")
     experiment.datasplit_column = "target"
     experiment.row_column = "row_id"
     experiment.feature_columns = ["feature1", "feature2", "feature3"]
     experiment.target_assignments = {"target": [0, 1]}
+    experiment.target_metric = "AUCROC"
+    experiment.ml_type = "classification"
+    experiment.positive_class = 1
     experiment.data_traindev = sample_data.iloc[:80]
     experiment.data_test = sample_data.iloc[80:]
     experiment.feature_groups = {"group0": ["feature1", "feature2"]}
@@ -109,13 +86,34 @@ def mock_study_path(tmp_path):
     study_path = tmp_path / "test_study"
     study_path.mkdir()
 
-    # Create config directory
-    config_dir = study_path / "config"
-    config_dir.mkdir()
+    # Create config.json file (new architecture)
+    config_data = {
+        "name": "test_study",
+        "ml_type": "classification",
+        "feature_columns": ["feature1", "feature2", "feature3"],
+        "row_id": "row_id",
+        "sample_id": "row_id",
+        "target_columns": ["target"],
+        "target_metric": "AUCROC",
+        "n_folds_outer": 3,
+        "path": str(study_path),
+        "workflow": [
+            {
+                "task_id": 0,
+                "depends_on_task": -1,
+                "description": "step_1_octo",
+                "models": ["RandomForestClassifier"],
+                "n_trials": 1,
+            }
+        ],
+    }
+    config_path = study_path / "config.json"
+    with open(config_path, "w") as f:
+        json.dump(config_data, f)
 
-    # Create experiment directories with pickle files
+    # Create experiment directories with pickle files (using outersplit naming)
     for exp_id in range(3):
-        exp_dir = study_path / f"experiment{exp_id}" / "workflowtask0"
+        exp_dir = study_path / f"outersplit{exp_id}" / "workflowtask0"
         exp_dir.mkdir(parents=True)
 
         # Create a dummy pickle file
@@ -130,19 +128,9 @@ def mock_study_path(tmp_path):
 
 
 @pytest.fixture
-def mock_octo_data(mock_config):
-    """Fixture to create a mock OctoData."""
-    # Return the actual config instead of a mock
-    return mock_config
-
-
-@pytest.fixture
-def predictor_with_experiments(mock_study_path, mock_experiment, mock_octo_data, sample_data, mock_model):
+def predictor_with_experiments(mock_study_path, mock_experiment, sample_data, mock_model):
     """Fixture to create an OctoPredict instance with loaded experiments."""
-    with (
-        patch("octopus.config.core.OctoConfig.from_pickle", return_value=mock_octo_data),
-        patch("octopus.predict.OctoExperiment.from_pickle", return_value=mock_experiment),
-    ):
+    with patch("octopus.predict.OctoExperiment.from_pickle", return_value=mock_experiment):
         predictor = OctoPredict(study_path=mock_study_path)
 
         # Manually populate experiments since mocking file system is complex
@@ -168,12 +156,9 @@ def predictor_with_experiments(mock_study_path, mock_experiment, mock_octo_data,
 class TestOctoPredictInitialization:
     """Tests for OctoPredict initialization."""
 
-    def test_initialization_with_default_task_id(self, mock_study_path, mock_experiment, mock_octo_data):
+    def test_initialization_with_default_task_id(self, mock_study_path, mock_experiment):
         """Test initialization with default task_id."""
-        with (
-            patch("octopus.config.core.OctoConfig.from_pickle", return_value=mock_octo_data),
-            patch("octopus.predict.OctoExperiment.from_pickle", return_value=mock_experiment),
-        ):
+        with patch("octopus.predict.OctoExperiment.from_pickle", return_value=mock_experiment):
             predictor = OctoPredict(study_path=mock_study_path)
 
             assert predictor.study_path == mock_study_path
@@ -181,32 +166,25 @@ class TestOctoPredictInitialization:
             assert predictor.results_key == "best"
             assert isinstance(predictor.experiments, dict)
 
-    def test_initialization_with_custom_task_id(self, mock_study_path, mock_experiment, mock_octo_data):
+    def test_initialization_with_custom_task_id(self, mock_study_path, mock_experiment):
         """Test initialization with custom task_id."""
-        with (
-            patch("octopus.config.core.OctoConfig.from_pickle", return_value=mock_octo_data),
-            patch("octopus.predict.OctoExperiment.from_pickle", return_value=mock_experiment),
-        ):
+        with patch("octopus.predict.OctoExperiment.from_pickle", return_value=mock_experiment):
             predictor = OctoPredict(study_path=mock_study_path, task_id=0)
 
             assert predictor.task_id == 0
 
-    def test_config_property(self, mock_study_path, mock_experiment, mock_octo_data):
-        """Test config property."""
-        with (
-            patch("octopus.config.core.OctoConfig.from_pickle", return_value=mock_octo_data),
-            patch("octopus.predict.OctoExperiment.from_pickle", return_value=mock_experiment),
-        ):
+    def test_config_property(self, mock_study_path, mock_experiment):
+        """Test config property returns dict from config.json."""
+        with patch("octopus.predict.OctoExperiment.from_pickle", return_value=mock_experiment):
             predictor = OctoPredict(study_path=mock_study_path)
 
-            assert predictor.config == mock_octo_data
+            assert isinstance(predictor.config, dict)
+            assert predictor.config["name"] == "test_study"
+            assert predictor.config["ml_type"] == "classification"
 
-    def test_n_experiments_property(self, mock_study_path, mock_experiment, mock_octo_data):
+    def test_n_experiments_property(self, mock_study_path, mock_experiment):
         """Test n_experiments property."""
-        with (
-            patch("octopus.config.core.OctoConfig.from_pickle", return_value=mock_octo_data),
-            patch("octopus.predict.OctoExperiment.from_pickle", return_value=mock_experiment),
-        ):
+        with patch("octopus.predict.OctoExperiment.from_pickle", return_value=mock_experiment):
             predictor = OctoPredict(study_path=mock_study_path)
 
             assert predictor.n_experiments == 3
@@ -330,7 +308,7 @@ class TestOctoPredictPlotting:
             predictor_with_experiments._plot_permutation_fi(0, df)
 
             # Check that the results directory would be created
-            expected_path = mock_study_path / "experiment0" / "workflowtask0" / "results"
+            expected_path = mock_study_path / "outersplit0" / "workflowtask0" / "results"
             assert expected_path.exists()
 
     def test_plot_shap_fi(self, predictor_with_experiments, mock_study_path):
@@ -352,5 +330,5 @@ class TestOctoPredictPlotting:
             predictor_with_experiments._plot_shap_fi(0, df, shap_values, data)
 
             # Check that the results directory would be created
-            expected_path = mock_study_path / "experiment0" / "workflowtask0" / "results"
+            expected_path = mock_study_path / "outersplit0" / "workflowtask0" / "results"
             assert expected_path.exists()

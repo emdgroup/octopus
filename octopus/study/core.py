@@ -160,7 +160,7 @@ class OctoStudy:
         )
         validator.validate()
 
-    def _initialize_study_outputs(self) -> None:
+    def _initialize_study_outputs(self, data: pd.DataFrame) -> None:
         """Initialize study by setting up directory and saving config and data."""
         if self.output_path.exists():
             if not self.silently_overwrite_study:
@@ -209,7 +209,17 @@ class OctoStudy:
         with open(config_path, "w") as f:
             json.dump(config, f, indent=2)
 
-        self.prepared.data.to_parquet(self.output_path / "data.parquet", index=False)
+        data.to_parquet(
+            self.output_path / "data.parquet",
+            index=False,
+            engine="fastparquet",
+        )
+
+        self.prepared.data.to_parquet(
+            self.output_path / "data_prepared.parquet",
+            index=False,
+            engine="fastparquet",
+        )
 
     def _prepare_data(self, data: pd.DataFrame) -> pd.DataFrame:
         """Prepare the data for training."""
@@ -328,10 +338,9 @@ class OctoStudy:
             data: DataFrame containing the dataset.
             health_check_config: Optional configuration for health check thresholds.
         """
-        # TODO: relevant columns can be updated during preparation, check if it makes sense to validate after preparation
         self._validate_data(data)
         prepared_data = self._prepare_data(data)
-        self._initialize_study_outputs()
+        self._initialize_study_outputs(data)
         self._run_health_check(prepared_data, health_check_config)
 
         datasplits = self._create_datasplits(prepared_data)

@@ -246,9 +246,10 @@ class TestOctoMulticlass:
             study_path = Path(temp_dir) / "test_multiclass_execution"
             assert study_path.exists(), "Study directory should be created"
 
-            # Check for expected subdirectories
-            assert (study_path / "data").exists(), "Data directory should exist"
-            assert (study_path / "config").exists(), "Config directory should exist"
+            # Check for expected files (new architecture uses files, not directories)
+            assert (study_path / "data.parquet").exists(), "Data parquet file should exist"
+            assert (study_path / "data_prepared.parquet").exists(), "Prepared data parquet file should exist"
+            assert (study_path / "config.json").exists(), "Config JSON file should exist"
             assert (study_path / "outersplit0").exists(), "Experiment directory should exist"
 
             # Verify that the Octo step was executed by checking for workflow directories

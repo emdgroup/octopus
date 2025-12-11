@@ -8,8 +8,7 @@ import pytest
 from sklearn.datasets import make_classification
 from sklearn.metrics import auc, roc_curve
 
-from octopus import OctoData, OctoML
-from octopus.config import ConfigManager, ConfigStudy, ConfigWorkflow
+from octopus import OctoStudy
 from octopus.metrics.utils import get_performance_from_model
 from octopus.modules import Octo
 from octopus.predict import OctoPredict
@@ -49,39 +48,27 @@ def trained_study(classification_dataset, tmp_path_factory):
 
     temp_dir = tmp_path_factory.mktemp("test_data")
 
-    # Create OctoData
-    octo_data = OctoData(
-        data=df,
-        target_columns=["target"],
-        feature_columns=features,
-        sample_id="index",
-        datasplit_type="sample",
-        stratification_column="target",
-    )
-
-    # Create minimal study configuration
-    config_study = ConfigStudy(
+    # Create OctoStudy with new unified API
+    study = OctoStudy(
         name="test_analysis_pipeline",
         ml_type="classification",
         target_metric="ACCBAL",
         metrics=["AUCROC", "ACCBAL", "ACC", "F1", "AUCPR"],
+        feature_columns=features,
+        target_columns=["target"],
+        sample_id="index",
+        datasplit_type="sample",
+        stratification_column="target",
         datasplit_seed_outer=1234,
         n_folds_outer=5,
         start_with_empty_study=True,
-        path=temp_dir,
+        path=str(temp_dir),
         silently_overwrite_study=True,
         ignore_data_health_warning=True,
         positive_class=1,
-    )
-
-    config_manager = ConfigManager(
         outer_parallelization=False,
         run_single_experiment_num=0,  # Run only experiment 0
-    )
-
-    # Create minimal workflow
-    config_workflow = ConfigWorkflow(
-        [
+        workflow=[
             Octo(
                 description="step_1_octo",
                 task_id=0,
@@ -94,17 +81,11 @@ def trained_study(classification_dataset, tmp_path_factory):
                 fi_methods_bestbag=["permutation"],
                 max_features=4,
             )
-        ]
+        ],
     )
 
     # Run the study
-    octo_ml = OctoML(
-        octo_data,
-        config_study=config_study,
-        config_manager=config_manager,
-        config_workflow=config_workflow,
-    )
-    octo_ml.run_study()
+    study.fit(df)
 
     study_path = Path(temp_dir) / "test_analysis_pipeline"
     yield study_path
@@ -348,11 +329,12 @@ class TestAnalysisPipeline:
 
         config = task_item.config
 
-        # Verify config structure
-        assert hasattr(config, "study")
-        assert hasattr(config, "workflow")
-        assert config.study.ml_type == "classification"
-        assert config.study.target_metric == "ACCBAL"
+        # Verify config structure (now a dict from config.json)
+        assert isinstance(config, dict)
+        assert "ml_type" in config
+        assert "workflow" in config
+        assert config["ml_type"] == "classification"
+        assert config["target_metric"] == "ACCBAL"
 
     @pytest.mark.slow
     def test_n_experiments_property(self, trained_study):

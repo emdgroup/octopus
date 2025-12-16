@@ -54,52 +54,36 @@ def test_initialization(basic_study):
     assert basic_study.sample_id == "sample_id"
 
 
-def test_ml_type_string_conversion():
-    """Test that ml_type accepts strings and converts to MLType enum."""
+@pytest.mark.parametrize(
+    "param_name,param_value,expected_enum,kwargs",
+    [
+        ("ml_type", "regression", MLType.REGRESSION, {"ml_type": "regression", "target_metric": "R2"}),
+        (
+            "datasplit_type",
+            "group_features",
+            DatasplitType.GROUP_FEATURES,
+            {"ml_type": "classification", "target_metric": "AUCROC", "datasplit_type": "group_features"},
+        ),
+        (
+            "imputation_method",
+            "halfmin",
+            ImputationMethod.HALFMIN,
+            {"ml_type": "classification", "target_metric": "AUCROC", "imputation_method": "halfmin"},
+        ),
+    ],
+)
+def test_string_to_enum_conversion(param_name, param_value, expected_enum, kwargs):
+    """Test that parameters accept strings and convert to enum types."""
     with tempfile.TemporaryDirectory() as temp_dir:
         study = OctoStudy(
             name="test",
-            ml_type="regression",
-            target_metric="R2",
             feature_columns=["f1"],
             target_columns=["target"],
             sample_id="id",
             path=temp_dir,
+            **kwargs,
         )
-        assert study.ml_type == MLType.REGRESSION
-        assert study.ml_type.value == "regression"
-
-
-def test_datasplit_type_string_conversion():
-    """Test that datasplit_type accepts strings and converts to DatasplitType enum."""
-    with tempfile.TemporaryDirectory() as temp_dir:
-        study = OctoStudy(
-            name="test",
-            ml_type="classification",
-            target_metric="AUCROC",
-            feature_columns=["f1"],
-            target_columns=["target"],
-            sample_id="id",
-            datasplit_type="group_features",
-            path=temp_dir,
-        )
-        assert study.datasplit_type == DatasplitType.GROUP_FEATURES
-
-
-def test_imputation_method_string_conversion():
-    """Test that imputation_method accepts strings and converts to ImputationMethod enum."""
-    with tempfile.TemporaryDirectory() as temp_dir:
-        study = OctoStudy(
-            name="test",
-            ml_type="classification",
-            target_metric="AUCROC",
-            feature_columns=["f1"],
-            target_columns=["target"],
-            sample_id="id",
-            imputation_method="halfmin",
-            path=temp_dir,
-        )
-        assert study.imputation_method == ImputationMethod.HALFMIN
+        assert getattr(study, param_name) == expected_enum
 
 
 def test_output_path_property():
@@ -134,35 +118,30 @@ def test_default_workflow():
         assert study.workflow[0].task_id == 0
 
 
-def test_default_metrics():
-    """Test that default metrics list contains target_metric."""
+@pytest.mark.parametrize(
+    "metrics_input,expected_metrics",
+    [
+        (None, ["AUCROC"]),  # default metrics
+        (["AUCROC", "ACCBAL", "F1"], ["AUCROC", "ACCBAL", "F1"]),  # custom metrics
+    ],
+)
+def test_metrics(metrics_input, expected_metrics):
+    """Test metrics list with default and custom values."""
     with tempfile.TemporaryDirectory() as temp_dir:
-        study = OctoStudy(
-            name="test",
-            ml_type="classification",
-            target_metric="AUCROC",
-            feature_columns=["f1"],
-            target_columns=["target"],
-            sample_id="id",
-            path=temp_dir,
-        )
-        assert study.metrics == ["AUCROC"]
+        kwargs = {
+            "name": "test",
+            "ml_type": "classification",
+            "target_metric": "AUCROC",
+            "feature_columns": ["f1"],
+            "target_columns": ["target"],
+            "sample_id": "id",
+            "path": temp_dir,
+        }
+        if metrics_input is not None:
+            kwargs["metrics"] = metrics_input
 
-
-def test_custom_metrics():
-    """Test custom metrics list."""
-    with tempfile.TemporaryDirectory() as temp_dir:
-        study = OctoStudy(
-            name="test",
-            ml_type="classification",
-            target_metric="AUCROC",
-            feature_columns=["f1"],
-            target_columns=["target"],
-            sample_id="id",
-            metrics=["AUCROC", "ACCBAL", "F1"],
-            path=temp_dir,
-        )
-        assert study.metrics == ["AUCROC", "ACCBAL", "F1"]
+        study = OctoStudy(**kwargs)
+        assert study.metrics == expected_metrics
 
 
 def test_default_values():

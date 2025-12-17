@@ -19,7 +19,7 @@
 import numpy as np
 import pandas as pd
 
-from octopus import OctoStudy
+from octopus import OctoTimeToEvent
 from octopus.modules import Octo
 
 ### Generate synthetic time-to-event dataset
@@ -62,23 +62,21 @@ print(f"Events observed: {event.sum()} ({100 * event.mean():.1f}%)")
 print(f"Censored observations: {(1 - event).sum()} ({100 * (1 - event.mean()):.1f}%)")
 print(f"Mean survival time: {observed_time.mean():.2f}")
 
-### Create and run OctoStudy
+### Create and run OctoTimeToEvent
 
 # For time-to-event analysis, we need to specify:
-# - target_columns: Both 'duration' and 'event' columns
-# - target_assignments: Mapping to identify which column is which
-#   {"duration": "duration", "event": "event"}
+# - duration_column: Column containing time until event or censoring
+# - event_column: Column containing event indicator (1=event, 0=censored)
 
 print("\nStarting Octopus time-to-event workflow...")
 
-study = OctoStudy(
+study = OctoTimeToEvent(
     name="basic_timetoevent_example",
-    ml_type="timetoevent",  # Specify time-to-event analysis
-    target_metric="CI",  # Concordance Index (C-index)
+    target_metric="CI",  # Concordance Index (C-index), default for time-to-event
     feature_columns=features,
-    target_columns=["duration", "event"],
+    duration_column="duration",  # Time until event or censoring
+    event_column="event",  # Event indicator (1=event, 0=censored)
     sample_id="index",
-    target_assignments={"duration": "duration", "event": "event"},
     outer_parallelization=True,
     run_single_experiment_num=0,  # 0: only first experiment, -1 runs all experiments
     workflow=[

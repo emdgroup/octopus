@@ -65,3 +65,19 @@ class MetricsInventory:
             return "maximize"
         else:
             return "minimize"
+
+    def get_metrics_by_type(self, *ml_types: str) -> list[str]:
+        """Get all metric names for given ml_type(s).
+
+        Args:
+            *ml_types: One or more ml_type strings (e.g., "classification", "multiclass")
+
+        Returns:
+            List of metric names that match any of the provided ml_types
+        """
+        matching_metrics = []
+        for metric_name in self.metrics:
+            config = self.get_metric_config(metric_name)
+            if config.ml_type in ml_types:
+                matching_metrics.append(metric_name)
+        return sorted(matching_metrics)

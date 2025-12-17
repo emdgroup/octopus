@@ -8,20 +8,19 @@
 ### Necessary imports for this example
 from sklearn.datasets import load_diabetes
 
-from octopus import OctoStudy
+from octopus import OctoRegression
 from octopus.models.hyperparameter import IntHyperparameter
 from octopus.modules import Octo
 
 ### Load the diabetes dataset
 diabetes = load_diabetes(as_frame=True)
 
-### Create and run OctoStudy with custom hyperparameters
-study = OctoStudy(
+### Create and run OctoRegression with custom hyperparameters
+study = OctoRegression(
     name="use_own_hyperparameters_example",
-    ml_type="regression",
     target_metric="MAE",
     feature_columns=diabetes["feature_names"],
-    target_columns=["target"],
+    target="target",
     sample_id="index",
     ignore_data_health_warning=True,
     outer_parallelization=False,

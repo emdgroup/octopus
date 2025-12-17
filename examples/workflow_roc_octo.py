@@ -8,7 +8,7 @@
 
 from sklearn.datasets import load_breast_cancer
 
-from octopus import OctoStudy
+from octopus import OctoClassification
 from octopus.modules import Octo, Roc
 
 ### Load and Preprocess Data
@@ -24,14 +24,13 @@ df.columns = df.columns.str.replace(" ", "_")
 features = list(breast_cancer["feature_names"])
 features = [feature.replace(" ", "_") for feature in features]
 
-### Create and run OctoStudy with ROC + Octo workflow
+### Create and run OctoClassification with ROC + Octo workflow
 
-study = OctoStudy(
+study = OctoClassification(
     name="example_roc_octo",
-    ml_type="classification",
     target_metric="ACCBAL",  # Balanced accuracy for binary classification
     feature_columns=features,
-    target_columns=["target"],
+    target="target",
     sample_id="index",
     stratification_column="target",
     metrics=["AUCROC", "ACCBAL", "ACC", "LOGLOSS"],

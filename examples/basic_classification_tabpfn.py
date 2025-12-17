@@ -9,7 +9,7 @@
 ### Necessary imports for this example
 from sklearn.datasets import load_breast_cancer
 
-from octopus import OctoStudy
+from octopus import OctoClassification
 from octopus.modules import Octo
 
 ### Load and Preprocess Data
@@ -20,13 +20,12 @@ df.columns = df.columns.str.replace(" ", "_")
 features = list(breast_cancer["feature_names"])
 features = [feature.replace(" ", "_") for feature in features]
 
-### Create and run OctoStudy with TabPFN
-study = OctoStudy(
+### Create and run OctoClassification with TabPFN
+study = OctoClassification(
     name="basic_classification_tabpfn",
-    ml_type="classification",
     target_metric="AUCROC",
     feature_columns=features,
-    target_columns=["target"],
+    target="target",
     sample_id="index",
     stratification_column="target",
     outer_parallelization=True,

@@ -8,18 +8,17 @@
 ### Necessary imports for this example
 from sklearn.datasets import load_diabetes
 
-from octopus import OctoStudy
+from octopus import OctoRegression
 
 ### Load the diabetes dataset
 diabetes = load_diabetes(as_frame=True)
 
-### Create and run OctoStudy
-study = OctoStudy(
+### Create and run OctoRegression
+study = OctoRegression(
     name="basic_regression_example",
-    ml_type="regression",
     target_metric="MAE",
     feature_columns=diabetes["feature_names"],
-    target_columns=["target"],
+    target="target",
     sample_id="index",
 )
 

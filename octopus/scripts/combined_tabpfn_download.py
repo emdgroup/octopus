@@ -8,7 +8,14 @@ import subprocess
 import sys
 from pathlib import Path
 
-from tabpfn.model_loading import _user_cache_dir
+try:
+    from tabpfn.model_loading import get_cache_dir
+except ImportError:
+    from tabpfn.model_loading import _user_cache_dir
+
+    def get_cache_dir():
+        """Compatibility wrapper for older TabPFN versions."""
+        return _user_cache_dir(platform=sys.platform, appname="tabpfn")
 
 
 def download_with_curl(base_url: str, model_files: list[str], download_dir: Path) -> tuple[int, int]:
@@ -149,19 +156,24 @@ def main() -> None:
     )
     args = parser.parse_args()
 
+    download_tabpfn(method=args.method, cache_dir=args.cache_dir)
+
+
+def download_tabpfn(method: str = "auto", cache_dir: Path | None = None) -> None:
+    """Combine TabPFN model downloader with fallback options."""
     # Configure logging
     logging.basicConfig(level=logging.INFO, format="%(message)s")
     logger = logging.getLogger(__name__)
 
     # Determine cache directory
-    cache_dir = args.cache_dir or _user_cache_dir(platform=sys.platform, appname="tabpfn")
+    cache_dir = cache_dir or get_cache_dir()
     cache_dir.mkdir(parents=True, exist_ok=True)
 
     logger.info("=" * 60)
     logger.info("Combined TabPFN Model Downloader")
     logger.info("=" * 60)
     logger.info(f"Cache directory: {cache_dir}")
-    logger.info(f"Download method: {args.method}")
+    logger.info(f"Download method: {method}")
     logger.info("=" * 60)
 
     # Configuration for Google Storage download (Script 2)
@@ -185,16 +197,16 @@ def main() -> None:
 
     success = False
 
-    if args.method == "curl":
+    if method == "curl":
         # Use only curl method
         _success_count, fail_count = download_with_curl(base_url, model_files, cache_dir)
         success = fail_count == 0
 
-    elif args.method == "builtin":
+    elif method == "builtin":
         # Use only TabPFN built-in method
         success = download_with_tabpfn_builtin(cache_dir)
 
-    else:  # args.method == "auto"
+    else:  # method == "auto"
         # Try TabPFN built-in first (Method 1), then fallback to Google Storage curl (Method 2)
         logger.info("Using auto mode: trying TabPFN built-in first, then Google Storage as fallback")
 

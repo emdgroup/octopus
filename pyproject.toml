@@ -51,6 +51,7 @@ Documentation = "TBD"
 Changelog = "TBD"
 GitHub = "https://github.com/emdgroup/octopus/"
 Issues = "https://github.com/emdgroup/octopus/issues/"
+
 # DEV TOOLS NOTE: The versions of all dev tools should be consistent everywhere
 # (pre-commit, environment.yml, requirements.txt, pyproject.toml, ...)
 # AUDIT NOTE: The marked packages are secondary dependencies but their versions are
@@ -81,6 +82,8 @@ dev = [
 docs = [
 ]
 examples = [
+    "marimo>=0.18.4",
+    "sqlglot>=28.5.0",
 ]
 lint = [
     "flake8==7.3.0", # see DEV TOOLS NOTE
@@ -110,6 +113,9 @@ test = [
     "octopus[lint]",
 ]
 
+[project.scripts]
+octopus = "octopus.examples.main:run_marimo"
+
 [build-system]
 requires = [
     "setuptools>=80.9",
@@ -119,8 +125,10 @@ build-backend = "setuptools.build_meta"
 [tool.setuptools_scm]
 version_scheme = 'post-release'
 local_scheme = "dirty-tag"
-[tool.setuptools]
-packages = ["octopus"]
+
+[tool.setuptools.package-dir]
+"octopus" = "octopus"
+"octopus.examples" = "examples"
 
 [tool.mypy]
 python_version = "3.12"

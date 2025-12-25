@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.18.1"
+__generated_with = "0.18.4"
 app = marimo.App(width="medium")
 
 
@@ -12,7 +12,7 @@ def _():
     return (mo,)
 
 
-@app.cell
+@app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
     # 📊 Study Analysis for Classification Tasks
@@ -52,46 +52,26 @@ def _(mo):
 @app.cell
 def _():
     # Setup - Import required libraries
-    import os
+    import json
     import re
-    import socket
     from pathlib import Path
 
     import pandas as pd
 
-    from octopus.config.core import OctoConfig
     from octopus.experiment import OctoExperiment
 
     # Configure pandas display options
     pd.set_option("display.max_rows", None)
     pd.set_option("display.max_columns", None)
-    return OctoConfig, OctoExperiment, Path, os, pd, re, socket
-
-
-@app.cell
-def _(os, socket):
-    # System info
-    print("Notebook kernel is running on server:", socket.gethostname())
-    print("Conda environment on server:", os.environ.get("CONDA_DEFAULT_ENV", "Not set"))
-    print("Working directory: ", os.getcwd())
-    return
+    return OctoExperiment, Path, json, pd, re
 
 
 @app.cell
 def _(Path):
     # INPUT: Select study
-    # Handle both running from main directory and from examples directory
-    current_dir = Path.cwd()
-    if current_dir.name == "examples":
-        # Running from examples directory, go up one level
-        base_dir = current_dir.parent
-    else:
-        # Running from main directory
-        base_dir = current_dir
+    studies_dir = Path() / "studies"
 
-    path_study = base_dir / "studies" / "20250826A_octo_intro"
-    print("Current directory:", current_dir)
-    print("Base directory:", base_dir)
+    path_study = studies_dir / "basic_classification"
     print("Selected study path:", path_study)
 
     if not path_study.exists():
@@ -100,25 +80,18 @@ def _(Path):
 
 
 @app.cell
-def _(OctoConfig, path_study):
+def _(json, path_study):
     # Study information and available sequence items
-    path_config = path_study / "config"
-    config = OctoConfig.from_pickle(path_config / "config.pkl")
+    with open(path_study / "config.json") as f:
+        config = json.load(f)
 
-    ml_type = config.study.ml_type
-    workflow_tasks = config.workflow.tasks
+    print(config)
+
+    ml_type = config["ml_type"]
+    workflow_tasks = config["workflow"]
 
     print("Information on workflow tasks in this study")
     print("Number of workflow tasks:", len(workflow_tasks))
-
-    # get octo workflows
-    octo_workflow_lst = []
-    for _cnt, _item in enumerate(workflow_tasks):
-        print(f"Task {_item.task_id}:  {_item.module}")
-        if _item.module == "octo":
-            octo_workflow_lst.append(_item.task_id)
-    print("Octo workflow tasks:", octo_workflow_lst)
-    print()
     return ml_type, workflow_tasks
 
 
@@ -128,47 +101,42 @@ def _(ml_type, path_study):
 
     # Check 1: Verify ml_type is classification
     if ml_type != "classification":
-        error_msg = f"❌ ERROR: This notebook is for classification tasks only.\nFound ml_type: '{ml_type}'\nExpected: 'classification'"
-        print(error_msg)
-        raise ValueError(error_msg)
+        raise ValueError(
+            f"❌ ERROR: This notebook is for classification tasks only.\nFound ml_type: '{ml_type}'\nExpected: 'classification'"
+        )
     else:
         print(f"✓ ML Type: {ml_type}")
 
-    # Check 2: Verify study has been run (check for experiment directories)
-    experiment_dirs = list(path_study.glob("experiment*"))
-    experiment_dirs = [d for d in experiment_dirs if d.is_dir()]
+    # Check 2: Verify study has been run (check for outersplit directories)
+    outersplit = [d for d in path_study.glob("outersplit*") if d.is_dir()]
 
-    if not experiment_dirs:
-        error_msg = f"❌ ERROR: No experiment directories found in study path.\nStudy path: {path_study}\nThe study may not have been run yet."
-        print(error_msg)
-        raise ValueError(error_msg)
+    if not outersplit:
+        raise ValueError(
+            f"❌ ERROR: No experiment directories found in study path.\nStudy path: {path_study}\nThe study may not have been run yet."
+        )
     else:
-        print(f"✓ Found {len(experiment_dirs)} experiment(s)")
+        print(f"✓ Found {len(outersplit)} experiment(s)")
 
     # Check 3: Verify experiments contain results
     has_results = False
-    for exp_dir in experiment_dirs:
-        workflow_dirs = list(exp_dir.glob("workflowtask*"))
+    for split_dir in outersplit:
+        workflow_dirs = list(split_dir.glob("workflowtask*"))
         if workflow_dirs:
             has_results = True
             break
 
     if not has_results:
-        error_msg = (
+        raise ValueError(
             "❌ ERROR: No workflow results found in experiments.\nThe study may not have completed successfully."
         )
-        print(error_msg)
-        raise ValueError(error_msg)
     else:
         print("✓ Study has completed workflow tasks")
-    return
+    return (outersplit,)
 
 
 @app.cell
-def _(OctoExperiment, path_study, pd, re):
+def _(OctoExperiment, outersplit, pd, re):
     # Model performance overview and selected features
-    # get all experiments
-    path_experiments = [f for f in path_study.glob("experiment*") if f.is_dir()]
 
     # results df
     df = pd.DataFrame(
@@ -183,18 +151,19 @@ def _(OctoExperiment, path_study, pd, re):
         ]
     )
 
-    print("Listing of experiments available in this study")
-    # iterate through experiments
-    for path_exp in path_experiments:
-        # name of experiment
-        exp_name = str(path_exp.name)
-        # number of experiment
-        match = re.search(r"\d+", exp_name)
-        exp_num = int(match.group()) if match else None
+    print("Listing of outer splits available in this study")
+    # iterate through outer splits
+    for path_split in outersplit:
+        # name of outer split
+        split_name = path_split.name
+        # number of outer split
+        match = re.search(r"\d+$", split_name)
+        split_num = int(match.group()) if match else None
+
+        print(f"Processing split {split_num} at {path_split} ...")
 
         # workflows
-        path_workflows = [f for f in path_exp.glob("workflowtask*") if f.is_dir()]
-        print("Processing....:", path_exp)
+        path_workflows = [f for f in path_split.glob("workflowtask*") if f.is_dir()]
 
         # iterate through workflows
         for path_workflow in path_workflows:
@@ -203,25 +172,26 @@ def _(OctoExperiment, path_study, pd, re):
             # number of workflow task
             match = re.search(r"\d+", workflow_name)
             workflow_num = int(match.group()) if match else None
+            path_exp_pkl = path_workflow.joinpath(f"exp{split_num}_{workflow_num}.pkl")
 
-            path_exp_pkl = path_workflow.joinpath(f"exp{exp_num}_{workflow_num}.pkl")
+            print(f"\tWorkflow Task {workflow_num} at {path_exp_pkl}")
 
             if path_exp_pkl.exists():
                 # load experiment
                 exp = OctoExperiment.from_pickle(path_exp_pkl)
                 # iterate through keys
-                for key in exp.results:
-                    sel_features = exp.results[key].selected_features
+                for key, result in exp.results.items():
+                    print(f"\t\t{key}: {'\n\t\t\t'.join(f'{m}: {s}' for m, s in result.scores.items())}")
+
                     df.loc[len(df)] = [
-                        exp_num,
+                        split_num,
                         workflow_num,
                         workflow_name,
                         str(key),
-                        exp.results[key].scores,
-                        len(sel_features),
-                        sel_features,
+                        result.scores,
+                        len(result.selected_features),
+                        result.selected_features,
                     ]
-
     return (df,)
 
 
@@ -229,9 +199,9 @@ def _(OctoExperiment, path_study, pd, re):
 def _(df, pd, workflow_tasks):
     # Performance overview
     for _num_task, _item2 in enumerate(workflow_tasks):
-        print(f"\033[1mWorkflow task: {_item2.task_id}({_item2.module})\033[0m")
+        print(f"\033[1mWorkflow task: {_item2['task_id']}\033[0m")
 
-        df_workflow = df[df["Workflow"] == _item2.task_id]
+        df_workflow = df[df["Workflow"] == _item2["task_id"]]
 
         # available results keys
         res_keys = sorted(set(df_workflow["Results_key"].tolist()))
@@ -257,6 +227,11 @@ def _(df, pd, workflow_tasks):
             # Append the mean values as a new row
             result_df.loc["Mean"] = mean_values
             print(result_df)
+    return
+
+
+@app.cell
+def _():
     return
 
 

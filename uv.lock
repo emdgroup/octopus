@@ -931,14 +931,14 @@ wheels = [
 
 [[package]]
 name = "fastcore"
-version = "1.12.1"
+version = "1.12.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "packaging" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/5d/08/944410106c4c01a04d0fd464cc68780f5a2b520ddb9a94838ea6bca63ab5/fastcore-1.12.1.tar.gz", hash = "sha256:8daba9501bc46725af2f6ef31095b486e4ada308ccc0ad5820305e7ec3366c57", size = 91515, upload-time = "2026-01-16T06:28:07.829Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/8d/9f/10ba070937da0ddab01b23dc01f64f521e3632d5ff1897bc3d73a02ba29f/fastcore-1.12.2.tar.gz", hash = "sha256:01c0c9e19cd0c3cb7a208311d2826da3f0269babc32bd9aa21c7b7976ad5626e", size = 91650, upload-time = "2026-01-18T00:52:35.387Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/32/1b/a4441ae2aeee581cae7f79ccde6307768fd3b5252c84afa6cc44088a7d33/fastcore-1.12.1-py3-none-any.whl", hash = "sha256:2c05433802953805a873d589fdabf86e918072bff5c41152e2c34282bd97eadb", size = 94206, upload-time = "2026-01-16T06:28:06.365Z" },
+    { url = "https://files.pythonhosted.org/packages/12/97/b0f340e715629fdab003fa5af9b32264ae0aaa04c8521694cb60a3007f2c/fastcore-1.12.2-py3-none-any.whl", hash = "sha256:11fccdc9dc0a13a0d15f6b63bed3f45e6bc8ab73458f8795300d2bd8e35d8ba6", size = 94347, upload-time = "2026-01-18T00:52:33.555Z" },
 ]
 
 [[package]]
@@ -1507,14 +1507,14 @@ wheels = [
 
 [[package]]
 name = "joblib-stubs"
-version = "1.5.3.0.20251223"
+version = "1.5.3.1.20260117"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/e0/d2/3e47200b15da93d8a098fbbcc2871401b83bc52b3fb990a5a5ed6341904a/joblib_stubs-1.5.3.0.20251223.tar.gz", hash = "sha256:ec99bfc8c98842a79beb258e6208cc59b5985c95b33d6cb56aefc0da44a00ec8", size = 19872, upload-time = "2025-12-23T04:53:36.656Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/5e/4e/a4801406630955fe935d9d99efef72fd7398543f51fe5a787be80c235b4f/joblib_stubs-1.5.3.1.20260117.tar.gz", hash = "sha256:d420f9e26636df01e1bda851bf5bce9a8dbd6db84f08afe1dfdb963e6651e724", size = 14147, upload-time = "2026-01-17T11:16:43.666Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/a1/37/8560423c8aa0102d6910fb05ef7480f76f5a628b7a500ad45911db1694b6/joblib_stubs-1.5.3.0.20251223-py3-none-any.whl", hash = "sha256:12a2c92586188c364fd6cba5bdc2fdc6b2037db8b38c29e7078b20388a072bed", size = 35696, upload-time = "2025-12-23T04:53:35.598Z" },
+    { url = "https://files.pythonhosted.org/packages/37/7c/67ada9621b3c93caa75aba1a0b651dae988b22cdea93b33e7e49261364f5/joblib_stubs-1.5.3.1.20260117-py3-none-any.whl", hash = "sha256:ef9f570617b232263c8166f5b4351a5dcc90669d8b07e7e2cd7b25c3b0f26d5f", size = 21358, upload-time = "2026-01-17T11:16:44.327Z" },
 ]
 
 [[package]]
@@ -1995,7 +1995,7 @@ wheels = [
 
 [[package]]
 name = "mkdocstrings"
-version = "1.0.0"
+version = "1.0.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "jinja2" },
@@ -2005,9 +2005,9 @@ dependencies = [
     { name = "mkdocs-autorefs" },
     { name = "pymdown-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/e5/13/10bbf9d56565fd91b91e6f5a8cd9b9d8a2b101c4e8ad6eeafa35a706301d/mkdocstrings-1.0.0.tar.gz", hash = "sha256:351a006dbb27aefce241ade110d3cd040c1145b7a3eb5fd5ac23f03ed67f401a", size = 101086, upload-time = "2025-11-27T15:39:40.534Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/bd/ec/680e3bc7c88704d3fb9c658a517ec10f2f2aed3b9340136978675e581688/mkdocstrings-1.0.1.tar.gz", hash = "sha256:caa7d311c85ac0a0674831725ecfdeee4348e3b8a2c91ab193ee319a41dbeb3d", size = 100794, upload-time = "2026-01-19T11:36:24.429Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/ec/fc/80aa31b79133634721cf7855d37b76ea49773599214896f2ff10be03de2a/mkdocstrings-1.0.0-py3-none-any.whl", hash = "sha256:4c50eb960bff6e05dfc631f6bc00dfabffbcb29c5ff25f676d64daae05ed82fa", size = 35135, upload-time = "2025-11-27T15:39:39.301Z" },
+    { url = "https://files.pythonhosted.org/packages/d0/f9/ecd3e5cf258d63eddc13e354bd090df3aa458b64be50d737d52a8ad9df22/mkdocstrings-1.0.1-py3-none-any.whl", hash = "sha256:10deb908e310e6d427a5b8f69026361dac06b77de860f46043043e26f121db02", size = 35245, upload-time = "2026-01-19T11:36:23.067Z" },
 ]
 
 [[package]]
@@ -2025,25 +2025,8 @@ wheels = [
 ]
 
 [[package]]
-name = "mlxtend"
-version = "0.23.4"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "joblib" },
-    { name = "matplotlib" },
-    { name = "numpy" },
-    { name = "pandas" },
-    { name = "scikit-learn" },
-    { name = "scipy" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/ae/10/6caee09c2375bd5bebb1eec23a6ac3e8e3e3adab4014b8c3033047665583/mlxtend-0.23.4.tar.gz", hash = "sha256:ba8c8427cbe65d462c8487511331cae0cdcf9252d92f8687f0a53d311128770f", size = 1283996, upload-time = "2025-01-26T16:02:45.69Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/4c/43/2fc7f76c8891aef148901f1ba3dee65c1cbac00a85ae5ee0dabc2b861256/mlxtend-0.23.4-py3-none-any.whl", hash = "sha256:8675456e2b71841116e5317f6d7aa568848ea2546865eb5eca7192e9b7f395f4", size = 1352350, upload-time = "2025-01-26T16:02:43.208Z" },
-]
-
-[[package]]
 name = "moto"
-version = "5.1.19"
+version = "5.1.20"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "boto3" },
@@ -2056,9 +2039,9 @@ dependencies = [
     { name = "werkzeug" },
     { name = "xmltodict" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/45/eb/100a04d1b49859d05a9c701815117cd31bc436c3d9e959d399d9d2ff7e9c/moto-5.1.19.tar.gz", hash = "sha256:a13423e402366b6affab07ed28e1df5f3fcc54ef68fc8d83dc9f824da7a4024e", size = 8361592, upload-time = "2025-12-28T20:14:57.211Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/b4/93/6b696aab5174721696a17716a488086e21f7b2547b4c9517f799a9b25e9e/moto-5.1.20.tar.gz", hash = "sha256:6d12d781e26a550d80e4b7e01d5538178e3adec6efbdec870e06e84750f13ec0", size = 8318716, upload-time = "2026-01-17T21:49:00.101Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/89/07/5ca7ba79615b88ee2325224894667f263b992d266a52b83d215c4b3caa39/moto-5.1.19-py3-none-any.whl", hash = "sha256:7adb0caacf0e2d0dbb09550bcb49a7f158ee7c460a09cb54d4599a9a94cfef70", size = 6451569, upload-time = "2025-12-28T20:14:54.701Z" },
+    { url = "https://files.pythonhosted.org/packages/7f/2f/f50892fdb28097917b87d358a5fcefd30976289884ff142893edcb0243ba/moto-5.1.20-py3-none-any.whl", hash = "sha256:58c82c8e6b2ef659ef3a562fa415dce14da84bc7a797943245d9a338496ea0ea", size = 6392751, upload-time = "2026-01-17T21:48:57.099Z" },
 ]
 
 [package.optional-dependencies]
@@ -2436,13 +2419,11 @@ wheels = [
 name = "octopus"
 source = { editable = "." }
 dependencies = [
-    { name = "altair" },
     { name = "attrs" },
     { name = "catboost" },
     { name = "duckdb" },
     { name = "fsspec" },
     { name = "lz4" },
-    { name = "marimo" },
     { name = "networkx" },
     { name = "numpy" },
     { name = "optuna" },
@@ -2466,6 +2447,7 @@ boruta = [
     { name = "boruta" },
 ]
 dev = [
+    { name = "altair" },
     { name = "autogluon-tabular", extra = ["all"] },
     { name = "bokeh" },
     { name = "boruta" },
@@ -2473,12 +2455,12 @@ dev = [
     { name = "flake8" },
     { name = "ipywidgets" },
     { name = "joblib-stubs" },
+    { name = "marimo" },
     { name = "mkdocs" },
     { name = "mkdocs-gen-files" },
     { name = "mkdocs-include-dir-to-nav" },
     { name = "mkdocs-material" },
     { name = "mkdocstrings-python" },
-    { name = "mlxtend" },
     { name = "moto", extra = ["s3", "server"] },
     { name = "mypy" },
     { name = "nbformat" },
@@ -2494,23 +2476,25 @@ dev = [
     { name = "scikit-learn-stubs" },
     { name = "scipy-stubs" },
     { name = "seaborn" },
+    { name = "sqlglot" },
     { name = "tokenizers" },
     { name = "types-jmespath" },
     { name = "types-networkx" },
     { name = "types-pytz" },
 ]
 docs = [
+    { name = "altair" },
     { name = "autogluon-tabular", extra = ["all"] },
     { name = "bokeh" },
     { name = "boruta" },
     { name = "fastparquet" },
     { name = "flake8" },
+    { name = "marimo" },
     { name = "mkdocs" },
     { name = "mkdocs-gen-files" },
     { name = "mkdocs-include-dir-to-nav" },
     { name = "mkdocs-material" },
     { name = "mkdocstrings-python" },
-    { name = "mlxtend" },
     { name = "moto", extra = ["s3", "server"] },
     { name = "pre-commit" },
     { name = "pydoclint" },
@@ -2519,7 +2503,13 @@ docs = [
     { name = "pyupgrade" },
     { name = "ruff" },
     { name = "s3fs" },
+    { name = "sqlglot" },
     { name = "tokenizers" },
+]
+examples = [
+    { name = "altair" },
+    { name = "marimo" },
+    { name = "sqlglot" },
 ]
 lint = [
     { name = "flake8" },
@@ -2539,16 +2529,14 @@ mypy = [
     { name = "types-networkx" },
     { name = "types-pytz" },
 ]
-sfs = [
-    { name = "mlxtend" },
-]
 test = [
+    { name = "altair" },
     { name = "autogluon-tabular", extra = ["all"] },
     { name = "bokeh" },
     { name = "boruta" },
     { name = "fastparquet" },
     { name = "flake8" },
-    { name = "mlxtend" },
+    { name = "marimo" },
     { name = "moto", extra = ["s3", "server"] },
     { name = "pre-commit" },
     { name = "pydoclint" },
@@ -2557,12 +2545,13 @@ test = [
     { name = "pyupgrade" },
     { name = "ruff" },
     { name = "s3fs" },
+    { name = "sqlglot" },
     { name = "tokenizers" },
 ]
 
 [package.metadata]
 requires-dist = [
-    { name = "altair", specifier = ">=5.5.0" },
+    { name = "altair", marker = "extra == 'examples'", specifier = ">=5.5.0" },
     { name = "attrs", specifier = ">=25.3.0" },
     { name = "autogluon-tabular", extras = ["all"], marker = "extra == 'autogluon'", specifier = ">=1.4" },
     { name = "bokeh", marker = "extra == 'autogluon'", specifier = ">=3.8" },
@@ -2575,13 +2564,12 @@ requires-dist = [
     { name = "ipywidgets", marker = "extra == 'dev'", specifier = ">=8" },
     { name = "joblib-stubs", marker = "extra == 'mypy'", specifier = ">=1.5.2.0.20250831" },
     { name = "lz4", specifier = ">=4.4" },
-    { name = "marimo", specifier = ">=0.15" },
+    { name = "marimo", marker = "extra == 'examples'", specifier = ">=0.18.4" },
     { name = "mkdocs", marker = "extra == 'docs'", specifier = ">=1.6.1" },
     { name = "mkdocs-gen-files", marker = "extra == 'docs'", specifier = ">=0.6.0" },
     { name = "mkdocs-include-dir-to-nav", marker = "extra == 'docs'", specifier = ">=1.2.0" },
     { name = "mkdocs-material", marker = "extra == 'docs'", specifier = ">=9.7.1" },
     { name = "mkdocstrings-python", marker = "extra == 'docs'", specifier = ">=2.0.1" },
-    { name = "mlxtend", marker = "extra == 'sfs'", specifier = ">=0.22.0" },
     { name = "moto", extras = ["s3", "server"], marker = "extra == 'test'", specifier = ">=5.1.17" },
     { name = "mypy", marker = "extra == 'mypy'", specifier = "==1.18.2" },
     { name = "nbformat", marker = "extra == 'dev'", specifier = ">=5.10" },
@@ -2591,9 +2579,9 @@ requires-dist = [
     { name = "octopus", extras = ["boruta"], marker = "extra == 'test'" },
     { name = "octopus", extras = ["docs"], marker = "extra == 'dev'" },
     { name = "octopus", extras = ["examples"], marker = "extra == 'docs'" },
+    { name = "octopus", extras = ["examples"], marker = "extra == 'test'" },
     { name = "octopus", extras = ["lint"], marker = "extra == 'test'" },
     { name = "octopus", extras = ["mypy"], marker = "extra == 'dev'" },
-    { name = "octopus", extras = ["sfs"], marker = "extra == 'test'" },
     { name = "octopus", extras = ["survival"], marker = "extra == 'test'" },
     { name = "octopus", extras = ["test"], marker = "extra == 'dev'" },
     { name = "octopus", extras = ["test"], marker = "extra == 'docs'" },
@@ -2616,6 +2604,7 @@ requires-dist = [
     { name = "scipy-stubs", marker = "extra == 'mypy'", specifier = ">=1.16.3.0" },
     { name = "seaborn", marker = "extra == 'dev'", specifier = ">=0.13" },
     { name = "shap", specifier = ">=0.48" },
+    { name = "sqlglot", marker = "extra == 'examples'", specifier = ">=28.5.0" },
     { name = "tokenizers", marker = "extra == 'autogluon'", specifier = ">=0.13.0" },
     { name = "types-jmespath", marker = "extra == 'mypy'", specifier = ">=1.0.2" },
     { name = "types-networkx", marker = "extra == 'mypy'", specifier = ">=3.5" },
@@ -2623,7 +2612,7 @@ requires-dist = [
     { name = "universal-pathlib", specifier = ">=0.3.6" },
     { name = "xgboost", specifier = ">=3.0" },
 ]
-provides-extras = ["boruta", "autogluon", "survival", "sfs", "dev", "docs", "examples", "lint", "mypy", "test"]
+provides-extras = ["boruta", "autogluon", "survival", "dev", "docs", "examples", "lint", "mypy", "test"]
 
 [[package]]
 name = "omegaconf"
@@ -2692,7 +2681,7 @@ wheels = [
 
 [[package]]
 name = "optuna"
-version = "4.6.0"
+version = "4.7.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "alembic" },
@@ -2703,9 +2692,9 @@ dependencies = [
     { name = "sqlalchemy" },
     { name = "tqdm" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/6b/81/08f90f194eed78178064a9383432eca95611e2c5331e7b01e2418ce4b15a/optuna-4.6.0.tar.gz", hash = "sha256:89e38c2447c7f793a726617b8043f01e31f0bad54855040db17eb3b49404a369", size = 477444, upload-time = "2025-11-10T05:14:30.151Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/58/b2/b5e12de7b4486556fe2257611b55dbabf30d0300bdb031831aa943ad20e4/optuna-4.7.0.tar.gz", hash = "sha256:d91817e2079825557bd2e97de2e8c9ae260bfc99b32712502aef8a5095b2d2c0", size = 479740, upload-time = "2026-01-19T05:45:52.604Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/58/de/3d8455b08cb6312f8cc46aacdf16c71d4d881a1db4a4140fc5ef31108422/optuna-4.6.0-py3-none-any.whl", hash = "sha256:4c3a9facdef2b2dd7e3e2a8ae3697effa70fae4056fcf3425cfc6f5a40feb069", size = 404708, upload-time = "2025-11-10T05:14:28.6Z" },
+    { url = "https://files.pythonhosted.org/packages/75/d1/6c8a4fbb38a9e3565f5c36b871262a85ecab3da48120af036b1e4937a15c/optuna-4.7.0-py3-none-any.whl", hash = "sha256:e41ec84018cecc10eabf28143573b1f0bde0ba56dba8151631a590ecbebc1186", size = 413894, upload-time = "2026-01-19T05:45:50.815Z" },
 ]
 
 [[package]]
@@ -3840,11 +3829,11 @@ wheels = [
 
 [[package]]
 name = "soupsieve"
-version = "2.8.1"
+version = "2.8.2"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/89/23/adf3796d740536d63a6fbda113d07e60c734b6ed5d3058d1e47fc0495e47/soupsieve-2.8.1.tar.gz", hash = "sha256:4cf733bc50fa805f5df4b8ef4740fc0e0fa6218cf3006269afd3f9d6d80fd350", size = 117856, upload-time = "2025-12-18T13:50:34.655Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/93/f2/21d6ca70c3cf35d01ae9e01be534bf6b6b103c157a728082a5028350c310/soupsieve-2.8.2.tar.gz", hash = "sha256:78a66b0fdee2ab40b7199dc3e747ee6c6e231899feeaae0b9b98a353afd48fd8", size = 118601, upload-time = "2026-01-18T16:21:31.09Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/48/f3/b67d6ea49ca9154453b6d70b34ea22f3996b9fa55da105a79d8732227adc/soupsieve-2.8.1-py3-none-any.whl", hash = "sha256:a11fe2a6f3d76ab3cf2de04eb339c1be5b506a8a47f2ceb6d139803177f85434", size = 36710, upload-time = "2025-12-18T13:50:33.267Z" },
+    { url = "https://files.pythonhosted.org/packages/a6/9a/b4450ccce353e2430621b3bb571899ffe1033d5cd72c9e065110f95b1a63/soupsieve-2.8.2-py3-none-any.whl", hash = "sha256:0f4c2f6b5a5fb97a641cf69c0bd163670a0e45e6d6c01a2107f93a6a6f93c51a", size = 37016, upload-time = "2026-01-18T16:21:29.7Z" },
 ]
 
 [[package]]
@@ -3921,6 +3910,15 @@ wheels = [
 ]
 
 [[package]]
+name = "sqlglot"
+version = "28.6.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/46/b6/f188b9616bef49943353f3622d726af30fdb08acbd081deef28ba43ceb48/sqlglot-28.6.0.tar.gz", hash = "sha256:8c0a432a6745c6c7965bbe99a17667c5a3ca1d524a54b31997cf5422b1727f6a", size = 5676522, upload-time = "2026-01-13T17:39:24.389Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/8f/a6/21b1e19994296ba4a34bc7abaf4fcb40d7e7787477bdfde58cd843594459/sqlglot-28.6.0-py3-none-any.whl", hash = "sha256:8af76e825dc8456a49f8ce049d69bbfcd116655dda3e53051754789e2edf8eba", size = 575186, upload-time = "2026-01-13T17:39:22.327Z" },
+]
+
+[[package]]
 name = "srsly"
 version = "2.5.2"
 source = { registry = "https://pypi.org/simple" }
@@ -3954,15 +3952,15 @@ wheels = [
 
 [[package]]
 name = "starlette"
-version = "0.51.0"
+version = "0.52.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "anyio" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/e7/65/5a1fadcc40c5fdc7df421a7506b79633af8f5d5e3a95c3e72acacec644b9/starlette-0.51.0.tar.gz", hash = "sha256:4c4fda9b1bc67f84037d3d14a5112e523509c369d9d47b111b2f984b0cc5ba6c", size = 2647658, upload-time = "2026-01-10T20:23:15.043Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/c4/68/79977123bb7be889ad680d79a40f339082c1978b5cfcf62c2d8d196873ac/starlette-0.52.1.tar.gz", hash = "sha256:834edd1b0a23167694292e94f597773bc3f89f362be6effee198165a35d62933", size = 2653702, upload-time = "2026-01-18T13:34:11.062Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/18/c4/09985a03dba389d4fe16a9014147a7b02fa76ef3519bf5846462a485876d/starlette-0.51.0-py3-none-any.whl", hash = "sha256:fb460a3d6fd3c958d729fdd96aee297f89a51b0181f16401fe8fd4cb6129165d", size = 74133, upload-time = "2026-01-10T20:23:13.445Z" },
+    { url = "https://files.pythonhosted.org/packages/81/0d/13d1d239a25cbfb19e740db83143e95c772a1fe10202dda4b76792b114dd/starlette-0.52.1-py3-none-any.whl", hash = "sha256:0029d43eb3d273bc4f83a08720b4912ea4b071087a3b48db01b7c839f7954d74", size = 74272, upload-time = "2026-01-18T13:34:09.188Z" },
 ]
 
 [[package]]

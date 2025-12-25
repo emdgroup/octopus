@@ -63,19 +63,11 @@ class ModuleResults:
         # ["autogluon"]["test"] - autogluon
 
         for key, value in self.predictions.items():
-            if "_" in key:  # octo specific
-                _, _, split_id = key.split("_")
-                for split, df in value.items():
-                    temp_df = df.copy()
-                    temp_df["split_id"] = split_id
-                    temp_df["split"] = split
-                    df_prediction = pd.concat([df_prediction, temp_df], ignore_index=True)
-            else:  # octo ensemble and other modules
-                for skey, svalue in value.items():
-                    temp_df = svalue.copy()
-                    temp_df["split_id"] = key
-                    temp_df["split"] = skey
-                    df_prediction = pd.concat([df_prediction, temp_df], ignore_index=True)
+            for split, df in value.items():
+                temp_df = df.copy()
+                temp_df["training_id"] = key
+                temp_df["split"] = split
+                df_prediction = pd.concat([df_prediction, temp_df], ignore_index=True)
 
         df_prediction["experiment_id"] = self.experiment_id
         df_prediction["task_id"] = self.task_id

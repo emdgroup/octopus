@@ -183,7 +183,7 @@ generator_errors.add_inf_columns()
 df_error = generator_errors.get_dataframe()
 
 # warning example
-generator_warnings = DataFrameGenerator(random_state=42)
+generator_warnings = DataFrameGenerator(random_state=42, n_classes=2)
 generator_warnings.add_fixed_unique_values_column()
 generator_warnings.add_id_column(unique=True, include_nans=False)
 generator_warnings.add_id_column(column_name="sample_id", prefix="Sample", unique=True, include_nans=False)

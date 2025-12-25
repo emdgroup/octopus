@@ -1,103 +1,122 @@
 import marimo
 
-__generated_with = "0.11.17"
+__generated_with = "0.18.4"
 app = marimo.App(width="medium")
-
-
-@app.cell
-def _():
-    from pathlib import Path
-
-    import altair as alt
-    import duckdb
-    import marimo as mo
-    import plotly.graph_objects as go
-    import polars as pl
-
-    return Path, alt, duckdb, go, mo, pl
 
 
 @app.cell(hide_code=True)
 def _(mo):
+    mo.md(r"""
+    # Basic example for evaluating results of an Octopus regression study.
+
+    This notebook requires an existing study that can be created by running the example script `examples/basic_regression.py`.
+    """)
+    return
+
+
+@app.cell
+def _():
+    import json
+    from pathlib import Path
+
+    import altair as alt
+    import marimo as mo
+    import polars as pl
+
+    return Path, alt, json, mo, pl
+
+
+@app.cell(hide_code=True)
+def _(Path, mo):
+    studies_dir = Path() / "studies"
     file_browser = mo.ui.file_browser(
-        initial_path="studies",
+        initial_path=studies_dir,
         multiple=False,
         selection_mode="directory",
         label="Select your study by clicking on the folder icon.",
     )
     file_browser
-    return (file_browser,)
+    return file_browser, studies_dir
+
+
+@app.cell
+def _(file_browser, studies_dir):
+    study_dir = file_browser.path() or studies_dir / "basic_regression"
+
+    print(f"Selected study at {study_dir}")
+    return (study_dir,)
 
 
 @app.cell(hide_code=True)
-def _(file_browser, mo):
+def _(mo, study_dir):
     df_optuna = mo.sql(
         f"""
-        SELECT * FROM read_parquet('{file_browser.path()}/*/*/optuna*.parquet', hive_partitioning=true)
+        SELECT * FROM read_parquet('{study_dir}/*/*/optuna*.parquet', hive_partitioning=true)
         """,
         output=False,
     )
+
+    print(f"df_optuna:\n{df_optuna}")
     return (df_optuna,)
 
 
 @app.cell(hide_code=True)
-def _(file_browser, mo):
+def _(mo, study_dir):
     df_predictions = mo.sql(
         f"""
-        SELECT * FROM read_parquet('{file_browser.path()}/*/*/predictions*.parquet', hive_partitioning=true)
+        SELECT * FROM read_parquet('{study_dir}/*/*/predictions*.parquet', hive_partitioning=true)
         """,
         output=False,
     )
+
+    print(f"df_predictions:\n{df_predictions}")
 
     df_predictions_pandas = mo.sql(
         f"""
-        SELECT * FROM read_parquet('{file_browser.path()}/*/*/predictions*.parquet', hive_partitioning=true)
+        SELECT * FROM read_parquet('{study_dir}/*/*/predictions*.parquet', hive_partitioning=true)
         """,
         output=False,
     ).to_pandas()
-    return df_predictions, df_predictions_pandas
+
+    print(f"df_predictions_pandas:\n{df_predictions_pandas}")
+    return (df_predictions,)
 
 
 @app.cell(hide_code=True)
-def _(file_browser, mo):
-    df_configs = mo.sql(
-        f"""
-        SELECT * FROM read_parquet('{file_browser.path()}/config/config_study.parquet', hive_partitioning=true)
-        """,
-        output=False,
-    )
-    return (df_configs,)
+def _(json, study_dir):
+    with open(study_dir / "config.json") as f:
+        config = json.load(f)
+
+    print(f"config:\n{json.dumps(config, indent=2)}")
+    return (config,)
+
+
+@app.cell
+def _(config):
+    target = config["target_columns"][0]
+    print(f"Target column: {target}")
+    return (target,)
 
 
 @app.cell(hide_code=True)
-def _(file_browser, mo, pl):
-    df_data_attrs = mo.sql(
-        f"""
-        SELECT * FROM read_parquet('{file_browser.path()}/*/data*.parquet', hive_partitioning=true)
-        """,
-        output=False,
-    )
-    target = df_data_attrs.filter(pl.col("Parameter") == "target_columns")["Value"][0]
-    return df_data_attrs, target
-
-
-@app.cell(hide_code=True)
-def _(file_browser, mo, pl):
+def _(mo, pl, study_dir):
     df_feature_importances = (
         mo.sql(
             f"""
-        SELECT * FROM read_parquet('{file_browser.path()}/*/*/feature-importance*.parquet', hive_partitioning=true)
+        SELECT * FROM read_parquet('{study_dir}/*/*/feature-importance*.parquet', hive_partitioning=true)
         """,
             output=False,
         )
         .with_columns(pl.col("experiment_id").cast(pl.Int64))
         .with_columns(pl.col("task_id").cast(pl.Int64))
     )
+
+    print(f"df_feature_importances:\n{df_feature_importances}")
     return (df_feature_importances,)
 
 
 @app.cell(hide_code=True)
-def _(df_predictions, mo, pl):
+def _(df_feature_importances, df_optuna, df_predictions, mo, pl):
     unique_id_values = {
         k: sorted(v)
         for k, v in df_predictions.select(pl.all().cast(pl.Utf8))
@@ -124,35 +143,7 @@ def _(df_predictions, mo, pl):
         value=unique_id_values["split_id"][0],
         label="Split ID ",
     )
-    return (
-        dropdown_exp_id,
-        dropdown_seq_id,
-        dropdown_split_id,
-        unique_id_values,
-    )
 
-
-@app.cell(hide_code=True)
-def _(df_optuna, mo, pl):
-    unique_id_values_optuna = {
-        k: sorted(v)
-        for k, v in df_optuna.select(pl.all().cast(pl.Utf8))
-        .select(["experiment_id", "task_id", "model_type"])
-        .unique()
-        .to_dict(as_series=False)
-        .items()
-    }
-
-    dropdown_model = mo.ui.dropdown(
-        options=unique_id_values_optuna["model_type"],
-        value=unique_id_values_optuna["model_type"][0],
-        label="Model",
-    )
-    return dropdown_model, unique_id_values_optuna
-
-
-@app.cell(hide_code=True)
-def _(df_feature_importances, mo, pl):
     unique_id_values_feature_importance = {
         k: sorted(v)
         for k, v in df_feature_importances.select(pl.all().cast(pl.Utf8))
@@ -167,12 +158,35 @@ def _(df_feature_importances, mo, pl):
         value=unique_id_values_feature_importance["fi_type"][0],
         label="Feature importance type",
     )
-    return dropdown_fi_types, unique_id_values_feature_importance
+
+    unique_id_values_optuna = {
+        k: sorted(v)
+        for k, v in df_optuna.select(pl.all().cast(pl.Utf8))
+        .select(["experiment_id", "task_id", "model_type"])
+        .unique()
+        .to_dict(as_series=False)
+        .items()
+    }
+
+    dropdown_model = mo.ui.dropdown(
+        options=unique_id_values_optuna["model_type"],
+        value=unique_id_values_optuna["model_type"][0],
+        label="Model",
+    )
+    return (
+        dropdown_exp_id,
+        dropdown_fi_types,
+        dropdown_model,
+        dropdown_seq_id,
+        dropdown_split_id,
+    )
 
 
 @app.cell(hide_code=True)
 def _(mo):
-    mo.md(r"""# Prediction vs Ground Truth""")
+    mo.md(r"""
+    # Prediction vs Ground Truth
+    """)
     return
 
 
@@ -234,12 +248,14 @@ def _(
         [mo.hstack([dropdown_exp_id, dropdown_seq_id, dropdown_split_id]), chart],
         align="center",
     )
-    return chart, filtered_df, final_chart, line_data, line_layer, main_chart
+    return
 
 
 @app.cell(hide_code=True)
 def _(mo):
-    mo.md(r"""# Feature Importance""")
+    mo.md(r"""
+    # Feature Importance
+    """)
     return
 
 
@@ -283,18 +299,22 @@ def _(
         ],
         align="center",
     )
-    return chart_fi, df_fi_plot
-
-
-@app.cell(hide_code=True)
-def _(mo):
-    mo.md(r"""# Optuna Insights""")
     return
 
 
 @app.cell(hide_code=True)
 def _(mo):
-    mo.md(r"""### Number of unique Trials by model type""")
+    mo.md(r"""
+    # Optuna Insights
+    """)
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ### Number of unique Trials by model type
+    """)
     return
 
 
@@ -352,12 +372,14 @@ def _(alt, df_optuna, pl):
     # Adjust the spacing of the facets
     chart_optuna_count = chart_optuna_count.configure_facet(spacing=10)
     chart_optuna_count
-    return bars, base, chart_optuna_count, df_chart_optuna_count, text
+    return
 
 
 @app.cell(hide_code=True)
 def _(mo):
-    mo.md(r"""### Optuna trails: Object value and best value""")
+    mo.md(r"""
+    ### Optuna trails: Object value and best value
+    """)
     return
 
 
@@ -412,19 +434,14 @@ def _(alt, df_optuna, dropdown_exp_id, dropdown_seq_id, mo, pl):
         [mo.hstack([dropdown_exp_id, dropdown_seq_id]), chart_optuna_best_value],
         align="center",
     )
-    return (
-        chart_optuna_best_value,
-        df_best_optuna_trails,
-        df_optuna_filtered,
-        get_best_optuna_trials,
-        line,
-        scatter,
-    )
+    return
 
 
 @app.cell(hide_code=True)
 def _(mo):
-    mo.md(r"""### Optuna hyperparameters""")
+    mo.md(r"""
+    ### Optuna hyperparameters
+    """)
     return
 
 
@@ -487,22 +504,7 @@ def _(
         ],
         align="center",
     )
-    return (
-        base_optuna_hp,
-        chart_optuna_hp,
-        charts_optuna_hp,
-        col,
-        df_optuna_hp,
-        final_chart_optuna_hp,
-        idx,
-        num_groups,
-        num_rows,
-        param,
-        param_list,
-        plots_per_row,
-        row,
-        row_charts,
-    )
+    return
 
 
 if __name__ == "__main__":

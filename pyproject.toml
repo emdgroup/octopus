@@ -164,3 +164,9 @@ ignore_missing_imports = true
 [[tool.mypy.overrides]]
 module = "catboost.*"
 ignore_missing_imports = true
+
+[tool.pytest]
+testpaths = ["tests"]
+markers = ["slow: mark test as slow."]
+addopts = "--cov=octopus --durations=15"
+tmp_path_retention_policy = "none"

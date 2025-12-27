@@ -14,9 +14,6 @@ jobs:
       matrix:
         python-version: ["3.12"]
 
-    env:
-      SMOKE_TEST: "true"
-
     steps:
       - uses: actions/checkout@v3
 
@@ -36,4 +33,4 @@ jobs:
 
       - name: Test with pytest
         run: |
-          uv run pytest --cov=octopus
+          uv run pytest

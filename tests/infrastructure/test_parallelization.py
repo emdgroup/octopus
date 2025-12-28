@@ -1,6 +1,7 @@
 import os
 import subprocess
 import sys
+from pathlib import Path
 
 import threadpoolctl
 
@@ -39,7 +40,7 @@ def test_ray_workers_detect_active_parallelization():
             sys.executable,
             "-m",
             "pytest",
-            "tests/workflows/test_ag_workflows.py",
+            Path(__file__).parent / "workflows/test_ag_workflows.py",
             "-k",
             "full_regression_workflow",
         ],

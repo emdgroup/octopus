@@ -71,6 +71,9 @@ survival = [
 tabpfn = [
     "tabpfn>=2.1"
 ]
+sfs = [
+    "mlxtend>=0.22.0",
+]
 dev = [
     "octopus[test]",
     "octopus[mypy]",
@@ -107,6 +110,7 @@ test = [
     "octopus[tabpfn]",
     "octopus[boruta]",
     "octopus[survival]",
+    "octopus[sfs]",
     "octopus[lint]",
 ]
 

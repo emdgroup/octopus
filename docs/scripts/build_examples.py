@@ -1,17 +1,18 @@
 """Utility for creating the examples."""
 
 import os
+import re
 import shutil
+import subprocess
 import textwrap
 from pathlib import Path
-from subprocess import DEVNULL, STDOUT, check_call
 
 from tqdm import tqdm
 
 # TODO full rebuild option
 
 
-def build_examples(destination_directory: Path, dummy: bool, remove_dir: bool):
+def build_examples(destination_directory: Path, dummy: bool, remove_dir: bool, force: bool):
     """Create the documentation version of the examples files.
 
     Note that this deletes the destination directory if it already exists.
@@ -20,9 +21,11 @@ def build_examples(destination_directory: Path, dummy: bool, remove_dir: bool):
         destination_directory: The destination directory.
         dummy: Only build a dummy version of the files.
         remove_dir: Remove the examples directory if it already exists.
+        force: Force-build the steps, do not abort on errors.
 
     Raises:
         OSError: If the directory already exists but should not be removed.
+        subprocess.CalledProcessError: If a subprocess call fails and force is not set.
     """
     # if the destination directory already exists it is deleted
     if destination_directory.is_dir():
@@ -37,65 +40,25 @@ def build_examples(destination_directory: Path, dummy: bool, remove_dir: bool):
     # For the toctree of the top level example folder, we need to keep track of all
     # folders. We thus write the header here and populate it during the execution of the
     # examples
-    ex_file = """# Examples\n\n```{toctree}\n:maxdepth: 2\n\n"""
+    ex_file = """# Examples
+This page contains all examples provided with Octopus.
+```{toctree}
+"""
 
-    # List all directories in the examples folder
-    ex_directories = [d for d in destination_directory.iterdir() if d.is_dir()]
-
-    # This list contains the order of the examples as we want to have them in the end.
-    # The examples that should be the first ones are already included here and skipped
-    # later on. ALl other are just included.
-    ex_order = [
-        "Basics<Basics/Basics>\n",
-        "Searchspaces<Searchspaces/Searchspaces>\n",
-        "Constraints Discrete<Constraints_Discrete/Constraints_Discrete>\n",
-        "Constraints Continuous<Constraints_Continuous/Constraints_Continuous>\n",
-        "Multi Target<Multi_Target/Multi_Target>\n",
-        "Serialization<Serialization/Serialization>\n",
-        "Custom Surrogates<Custom_Surrogates/Custom_Surrogates>\n",
-    ]
-
-    # Iterate over the directories.
-    for sub_directory in (pbar := tqdm(ex_directories)):
-        # Get the name of the current folder
-        # Format it by replacing underscores and capitalizing the words
-        folder_name = sub_directory.stem
-        formatted = " ".join(word.capitalize() for word in folder_name.split("_"))
-
-        # Create the link to the folder to the top level toctree.
-        ex_file_entry = formatted + f"<{folder_name}/{folder_name}>\n"
-        # Add it to the list of examples if it is not already contained
-        if ex_file_entry not in ex_order:
-            ex_order.append(ex_file_entry)
-
-        # We need to create a file for the inclusion of the folder.
-        # We thus get the content of the corresponding header file.
-        header_folder_name = sub_directory / f"{folder_name}_Header.md"
-        header = header_folder_name.read_text()
-
-        subdir_toctree = header + "\n```{toctree}\n:maxdepth: 1\n\n"
-
-        # Set description of progressbar
-        pbar.set_description("Overall progress")
-
-        # list all .py files in the subdirectory that need to be converted
-        py_files = list(sub_directory.glob("**/*.py"))
+    try:
+        # list all .py files in the directory that need to be converted
+        excluded_files = {"__init__.py"}
+        py_files = [f for f in destination_directory.glob("**/*.py") if f.name not in excluded_files]
 
         # Iterate through the individual example files
-        for file in (inner_pbar := tqdm(py_files, leave=False)):
+        for file in (pbar := tqdm(py_files, leave=False)):
             # Include the name of the file to the toctree
             # Format it by replacing underscores and capitalizing the words
             file_name = file.stem
 
             formatted = " ".join(word.capitalize() for word in file_name.split("_"))
-            # Remove duplicate "constraints" for the files in the constraints folder.
-            if "Constraints" in folder_name and "Constraints" in formatted:
-                formatted = formatted.replace("Constraints", "")
 
-            # Also format the Prodsum name to Product/Sum
-            if "Prodsum" in formatted:
-                formatted = formatted.replace("Prodsum", "Product/Sum")
-            subdir_toctree += formatted + f"<{file_name}>\n"
+            ex_file += formatted + f"<{file_name}>\n"
 
             # If we ignore the examples, we do not want to actually execute or convert
             # anything. Still, due to existing links, it is necessary to construct a
@@ -108,35 +71,43 @@ def build_examples(destination_directory: Path, dummy: bool, remove_dir: bool):
                 continue
 
             # Set description for progress bar
-            inner_pbar.set_description(f"Progressing {folder_name}")
+            pbar.set_description(f"Progressing {file}")
 
             # Create the Markdown file:
+            markdown_path = file.with_suffix(".md")
 
-            # 1. Convert the file to jupyter notebook
-            check_call(["jupytext", "--to", "notebook", file], stdout=DEVNULL, stderr=STDOUT)
-
-            notebook_path = file.with_suffix(".ipynb")
-
-            # 2. Execute the notebook and convert to markdown.
             # This is only done if we decide not to ignore the examples.
             # The creation of the files themselves and converting them to markdown still
             # happens since we need the files to check for link integrity.
-            convert_execute = [
-                "jupyter",
-                "nbconvert",
-                "--to",
-                "notebook",
-                "--inplace",
-                notebook_path,
-            ]
-            convert_execute.append("--execute")
-            to_markdown = ["jupyter", "nbconvert", "--to", "markdown", notebook_path]
-            env = os.environ | {"PYTHONPATH": os.getcwd()}
-            check_call(convert_execute, stdout=DEVNULL, stderr=STDOUT, env=env)
-            check_call(to_markdown, stdout=DEVNULL, stderr=STDOUT, env=env)
+            env = os.environ | {"PYTHONPATH": os.getcwd(), "ALWAYS_OVERWRITE_STUDY": "yes"}
+
+            # convert file to marimo notebook (inplace - is a no-op if the file already is a marimo notebook)
+            proc = subprocess.run(
+                ["marimo", "convert", file, "-o", file],
+                env=env,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            if proc.returncode != 0:
+                print(f"✗ Failed to convert {file} to marimo notebook format.")
+                print(f"  stderr: {proc.stderr}")
+                proc.check_returncode()
+
+            # execute marimo notebook and export to markdown
+            proc = subprocess.run(  # TODO: markdwon conversion does not seem to run/store results
+                ["marimo", "export", "md", file, "-o", markdown_path],
+                env=env,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            if proc.returncode != 0:
+                print(f"✗ Failed to export {file} to markdown format.")
+                print(f"  stderr: {proc.stderr}")
+                proc.check_returncode()
 
             # CLEANUP
-            markdown_path = file.with_suffix(".md")
             # We wrap lines which are too long as long as they do not contain a link.
             # To discover whether a line contains a link, we check if the string "]("
             # is contained.
@@ -144,18 +115,28 @@ def build_examples(destination_directory: Path, dummy: bool, remove_dir: bool):
                 content = markdown_file.read()
                 wrapped_lines = []
                 ignored_substrings = (
-                    "![svg]",
-                    "![png]",
-                    "<Figure size",
-                    "it/s",
-                    "s/it",
+                    r"!\[svg\]",
+                    r"!\[png\]",
+                    r"<Figure size",
+                    r"it/s",
+                    r"s/it",
+                    r"^---$",
+                    r"^marimo-version:",
                 )
+
+                # Make a regex that matches if any of our regexes match.
+                ignored_patterns = "(" + ")|(".join(ignored_substrings) + ")"
+
                 for line in content.splitlines():
                     # Skip formatter control lines so they don't appear in docs
                     if "fmt: off" in line or "fmt: on" in line:
                         continue
-                    if any(substring in line for substring in ignored_substrings):
+
+                    if re.search(ignored_patterns, line):
                         continue
+
+                    line = line.replace("title: ", "# ")  # noqa: PLW2901
+
                     if len(line) > 88 and "](" not in line:
                         wrapped = textwrap.wrap(line, width=88)
                         wrapped_lines.extend(wrapped)
@@ -170,9 +151,9 @@ def build_examples(destination_directory: Path, dummy: bool, remove_dir: bool):
             # corresponding lines to our markdown file for including them.
             # If not, we check if a single plot version exists and append it
             # regardless of light/dark mode.
-            light_figure = Path(sub_directory / (file_name + "_light.svg"))
-            dark_figure = Path(sub_directory / (file_name + "_dark.svg"))
-            figure = Path(sub_directory / (file_name + ".svg"))
+            light_figure = Path(file_name + "_light.svg")
+            dark_figure = Path(file_name + "_dark.svg")
+            figure = Path(file_name + ".svg")
             if light_figure.is_file() and dark_figure.is_file():
                 lines.append(f"```{{image}} {file_name}_light.svg\n")
                 lines.append(":align: center\n")
@@ -191,30 +172,19 @@ def build_examples(destination_directory: Path, dummy: bool, remove_dir: bool):
             with open(markdown_path, "w", encoding="UTF-8") as markdown_file:
                 markdown_file.writelines(lines)
 
-        # Write last line of toctree file for this directory and write the file
-        subdir_toctree += "```"
-        with open(sub_directory / f"{sub_directory.name}.md", "w", encoding="UTF-8") as f:
-            f.write(subdir_toctree)
+    except subprocess.CalledProcessError as e:
+        print(f"An error occurred while building the examples: {e}")
+        if not force:
+            raise e
 
-    # Append the ordered list of examples to the file for the top level folder
-    ex_file += "".join(ex_order)
-    # Write last line of top level toctree file and write the file
-    ex_file += "```"
-    with open(
-        destination_directory / f"{destination_directory.name}.md",
-        "w",
-        encoding="UTF-8",
-    ) as f:
-        f.write(ex_file)
+    finally:
+        # Write last line of top level toctree file and write the file
+        ex_file += "```"
+        with open(destination_directory / f"{destination_directory.name}.md", "w", encoding="UTF-8") as f:
+            f.write(ex_file)
 
-    # Remove remaining files and subdirectories from the destination directory
-    # Remove any not markdown files
-    for file in destination_directory.glob("**/*"):
-        if file.is_file():
-            if file.suffix not in (".md", ".svg") or "Header" in file.name:
-                file.unlink(file)
-
-    # Remove any remaining empty subdirectories
-    for subdirectory in destination_directory.glob("*/*"):
-        if subdirectory.is_dir() and not any(subdirectory.iterdir()):
-            subdirectory.rmdir()
+        # Remove remaining files and subdirectories from the destination directory
+        # Remove any not markdown files
+        for file in destination_directory.glob("**/*"):
+            if file.is_file() and file.suffix not in (".md", ".svg"):
+                file.unlink(missing_ok=True)

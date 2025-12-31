@@ -88,6 +88,7 @@ def build_documentation(
             destination_directory=examples_directory,
             dummy=False,
             remove_dir=examples_exist,
+            force=force,
         )
     elif not examples_exist:
         # Perform dummy-build of examples in the case that they should not be
@@ -96,6 +97,7 @@ def build_documentation(
             destination_directory=examples_directory,
             dummy=True,
             remove_dir=examples_exist,
+            force=force,
         )
 
     if perform_linkcheck:
@@ -119,7 +121,7 @@ def build_documentation(
         print("Force-building the documentation, ignoring errors and warnings.")
         # In force mode, we do not want to fail, even if an error code is returned.
         # Hence, we use run instead of check_call
-        run(building_call + ["--keep-going"], check=False)
+        run([*building_call, "--keep-going"], check=False)
     else:
         check_call(building_call)
 

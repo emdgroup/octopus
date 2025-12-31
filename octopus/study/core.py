@@ -1,6 +1,7 @@
 """Octo Study."""
 
 import json
+import os
 import shutil
 import sys
 from pathlib import Path
@@ -163,7 +164,11 @@ class OctoStudy:
     def _initialize_study_outputs(self, data: pd.DataFrame) -> None:
         """Initialize study by setting up directory and saving config and data."""
         if self.output_path.exists():
-            if not self.silently_overwrite_study:
+            if not self.silently_overwrite_study and os.getenv("ALWAYS_OVERWRITE_STUDY", "No")[0].lower() not in (
+                "1",
+                "t",
+                "y",
+            ):
                 confirmation = input("Study exists, do you want to continue? (yes/no): ")
                 if confirmation.strip().lower() != "yes":
                     print("Exiting...")

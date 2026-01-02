@@ -112,7 +112,7 @@ def build_documentation(
         "-b",
         "html",
         "docs",
-        build_dir,
+        str(build_dir),
         "-n",  # Being nitpicky
         "-W",  # Fail when encountering an error or a warning
     ]

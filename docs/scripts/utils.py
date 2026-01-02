@@ -73,11 +73,10 @@ def add_version_to_selector_page(version: str) -> None:
                 last_version_index = -1
 
             # Search for the version number in the current line
-            if version_number := re.search(pattern, line):
+            if (version_number := re.search(pattern, line)) and Version(version_number.group()) > Version(version):
                 # Memorize whether we saw a larger version number, implying that this is
                 # a hotfix
-                if Version(version_number.group()) > Version(version):
-                    last_version_index = ind
+                last_version_index = ind
 
             # Add the already existing line
             modified_lines.append(line)
@@ -122,15 +121,14 @@ def adjust_version_to_html(version: str) -> None:
     if path.exists():
         # Recursively check all HTML files
         for file in path.rglob("*.html"):
-            modified_lines = []
+            modified_lines: list[str] = []
             with file.open(mode="r") as f:
                 lines = f.readlines()
                 for line in lines:
                     # Check if we need to add the announcement
-                    if add_announcement:
+                    if add_announcement and line.strip() == '<div class="page">':
                         # Add announcement at correct position
-                        if line.strip() == '<div class="page">':
-                            modified_lines.insert(-2, announcement_html)
+                        modified_lines.insert(-2, announcement_html)
                     if "Versions</a></li>" in line:
                         modified_lines.append(new_line)
                     else:
@@ -139,7 +137,7 @@ def adjust_version_to_html(version: str) -> None:
                 f.writelines(modified_lines)
 
 
-def check_for_hotfix(tags: list[str], version: str):
+def check_for_hotfix(tags: str, version: str):
     """Check whether the current build corresponds to a hotfix."""
     split_tags = tags.split("\n")
     split_tags.sort(key=Version)

@@ -9,13 +9,8 @@ generally be removed. Both the moment of deprecation and full removal (deprecati
 expiration) will be noted in the [changelog](/misc/changelog_link).
 ```
 
-The most commonly used interface BayBE provides is the central
-[`Campaign`](baybe.campaign.Campaign) object,
-which suggests new measurements and administers the current state of
-your experimental operation. The diagram below explains how the
-[`Campaign`](baybe.campaign.Campaign) can be used to perform
-the bayesian optimization loop, how it can be configured and
-how the results can be post-analysed.
+The most commonly used interface Octopus provides is the central
+[`OctoStudy`](octopus.study.core.OctoStudy) object.
 
 ```{image} ../_static/api_overview_dark.svg
 :align: center

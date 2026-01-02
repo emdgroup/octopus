@@ -1,3 +1,5 @@
+"""General configuration file for the Sphinx documentation builder."""
+
 from __future__ import annotations
 
 import shutil
@@ -94,7 +96,7 @@ myst_heading_anchors = 4
 templates_path = ["templates"]
 # Tell sphinx which files should be excluded
 exclude_patterns = ["sdk"]
-autodoc_exclude_modules = []
+autodoc_exclude_modules: list[str] = []
 
 # Enable markdown
 # Note that we do not need additional configuration here.
@@ -256,7 +258,7 @@ html_theme_options = {
     "dark_logo": "logo1.svg",  # Logo for dark mode
 }
 
-autodoc_type_aliases = {}
+autodoc_type_aliases: dict[str, str] = {}
 
 # Everything in the module has the prefix octopus
 modindex_common_prefix = ["octopus."]

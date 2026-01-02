@@ -44,6 +44,6 @@ Github <https://github.com/emdgroup/octopus/>
 License <misc/license_link>
 ```
 
-# Indices and Tables
+# Package Modules / API Documentation
 
 - {ref}`modindex`

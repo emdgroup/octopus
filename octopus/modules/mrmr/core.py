@@ -15,6 +15,7 @@ import numpy as np
 import pandas as pd
 from attrs import define, field, validators
 from sklearn.feature_selection import f_classif, f_regression
+from upath import UPath
 
 from octopus.experiment import OctoExperiment
 from octopus.logger import LogGroup, get_logger
@@ -29,6 +30,7 @@ class MrmrCore:
     """MRMR module."""
 
     experiment: OctoExperiment[Mrmr] = field(validator=[validators.instance_of(OctoExperiment)])
+    log_dir: UPath = field(validator=[validators.instance_of(UPath)])
 
     @property
     def data_traindev(self) -> pd.DataFrame:
@@ -104,9 +106,7 @@ class MrmrCore:
                 raise ValueError("MRMR module should not be the first workflow task.")
             if self.results_key not in self.experiment.prior_results:
                 raise ValueError(
-                    f"Specified results key not found: {self.results_key}. "
-                    "Available results keys: "
-                    f"{list(self.experiment.prior_feature_importances.keys())}"
+                    f"Specified results key not found: {self.results_key}. Available results keys: {list(self.experiment.prior_feature_importances.keys())}"
                 )
             if self.feature_importance_key not in self.feature_importances:
                 raise ValueError(

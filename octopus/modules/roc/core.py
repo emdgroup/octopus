@@ -18,8 +18,11 @@ from sklearn.feature_selection import (
 from upath import UPath
 
 from octopus.experiment import OctoExperiment
+from octopus.logger import get_logger
 from octopus.modules.roc.module import Roc
 from octopus.modules.utils import rdc_correlation_matrix
+
+logger = get_logger()
 
 # TOBEDONE
 # - add hierarchical clustering
@@ -51,7 +54,7 @@ class RocCore:
     """Roc Module."""
 
     experiment: OctoExperiment[Roc] = field(validator=[validators.instance_of(OctoExperiment)])
-
+    log_dir: UPath = field(validator=[validators.instance_of(UPath)])
     feature_groups: list = field(init=False, validator=[validators.instance_of(list)])
 
     @property
@@ -115,14 +118,14 @@ class RocCore:
         correlation_type = self.config.correlation_type
         threshold = self.config.threshold
 
-        print("Correlation type:", correlation_type)
-        print("Threshold:", threshold)
-        print("Filter type:", self.filter_type)
+        logger.info(f"Correlation type: {correlation_type}")
+        logger.info(f"Threshold: {threshold}")
+        logger.info(f"Filter type: {self.filter_type}")
 
-        print("Calculating dependency to target")
+        logger.info("Calculating dependency to target")
         # Note, timetoevent is treated differently
         if self.ml_type == "timetoevent":
-            print("Time2Event: Note, that the first group element is selected.")
+            logger.info("Time2Event: Note, that the first group element is selected.")
         elif self.filter_type == "mutual_info":
             # set random state
             values = filter_inventory[self.filter_type][self.ml_type](
@@ -136,7 +139,7 @@ class RocCore:
             )
             dependency = pd.Series(values, index=self.feature_columns)
 
-        print("Calculating feature groups.")
+        logger.info("Calculating feature groups.")
         # correlation matrix
         if correlation_type == "spearmanr":
             # (A) spearmamr correlation matrix
@@ -206,14 +209,14 @@ class RocCore:
         # remaining_features = sorted(set(self.feature_columns) - set(remove_list))
         remaining_features = sorted(set(self.feature_columns) - set(remove_list))
 
-        print("remaining features:", remaining_features)
+        logger.info(f"Remaining features: {remaining_features}")
 
-        print("Number of features before correlation removal:", len(self.feature_columns))
-        print("Number of features after correlation removal:", len(remaining_features))
+        logger.info(f"Number of features before correlation removal: {len(self.feature_columns)}")
+        logger.info(f"Number of features after correlation removal: {len(remaining_features)}")
 
         # save features selected by ROC
         self.experiment.selected_features = sorted(remaining_features, key=lambda x: (len(x), sorted(x)))
 
-        print("ROC completed")
+        logger.info("ROC completed")
 
         return self.experiment

@@ -2,6 +2,8 @@
 
 import heapq
 
+from upath import UPath
+
 from octopus.experiment import OctoExperiment
 from octopus.logger import LogGroup, get_logger
 from octopus.metrics import metrics_inventory
@@ -25,6 +27,7 @@ class ObjectiveOptuna:
         study_name,
         top_trials,
         mrmr_features,
+        log_dir: UPath,
     ):
         self.experiment = experiment
         self.data_splits = data_splits
@@ -46,6 +49,7 @@ class ObjectiveOptuna:
         # training parameters
         self.parallel_execution = self.experiment.ml_config.inner_parallelization
         self.num_workers = self.experiment.ml_config.n_workers
+        self.log_dir = log_dir
 
     def __call__(self, trial):
         """Call.
@@ -131,6 +135,7 @@ class ObjectiveOptuna:
             target_metric=self.experiment.target_metric,
             row_column=self.experiment.row_column,
             ml_type=self.experiment.ml_type,
+            log_dir=self.log_dir,
             # path?
         )
 

@@ -121,6 +121,7 @@ class BagBase(BaseEstimator):
     target_assignments: dict = field(validator=[validators.instance_of(dict)])
     row_column: str = field(validator=[validators.instance_of(str)])
     ml_type: str = field(validator=[validators.instance_of(str)])
+    log_dir: UPath = field(validator=[validators.instance_of(UPath)])
     train_status: bool = field(default=False)
 
     # bag training outputs, initialized in post_init
@@ -265,7 +266,7 @@ class BagBase(BaseEstimator):
             TrainingWithLogging(t, idx, logger, LogGroup, log_prefix="EXP") for idx, t in enumerate(self.trainings)
         ]
         # Orchestrate with Ray; exceptions propagate only if your wrapper re-raises.
-        results = run_parallel_inner(wrapped)
+        results = run_parallel_inner(wrapped, log_dir=self.log_dir)
         self.trainings = results
 
     def _train_sequential(self):
@@ -426,7 +427,7 @@ class BagBase(BaseEstimator):
 
         # Execute feature importance calculations in parallel
         # Use the same pattern as training execution
-        results = run_parallel_inner(wrapped, num_cpus=1)
+        results = run_parallel_inner(wrapped, log_dir=self.log_dir, num_cpus=1)
 
         # Update trainings with results (should be the same objects with FI calculated)
         self.trainings = results

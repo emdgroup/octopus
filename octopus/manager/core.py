@@ -27,6 +27,9 @@ class OctoManager:
     workflow: list[Task] = field(
         validator=[validators.instance_of(list)],
     )
+    log_dir: UPath = field(
+        validator=[validators.instance_of(UPath)],
+    )
     outer_parallelization: bool = field(
         default=True,
         validator=[validators.instance_of(bool)],
@@ -133,6 +136,7 @@ class OctoManager:
             base_experiments=self.base_experiments,
             create_execute_mlmodules=create_execute_mlmodules_fn,
             num_workers=self.num_outer_workers,
+            log_dir=self.log_dir,
         )
         return results
 
@@ -256,7 +260,7 @@ class OctoManager:
 
     def _get_ml_module(self, experiment):
         if experiment.ml_module in modules_inventory:
-            return modules_inventory[experiment.ml_module](experiment)
+            return modules_inventory[experiment.ml_module](experiment, log_dir=self.log_dir)
         else:
             raise ValueError(f"ml_module {experiment.ml_module} not supported")
 

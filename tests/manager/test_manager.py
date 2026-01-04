@@ -51,6 +51,7 @@ def octo_manager(mock_workflow, mock_experiment):
         workflow=mock_workflow,
         outer_parallelization=False,
         run_single_experiment_num=-1,
+        log_dir=mock_experiment.path_study,
     )
 
 

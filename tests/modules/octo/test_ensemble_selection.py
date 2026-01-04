@@ -6,6 +6,7 @@ from sklearn.ensemble import GradientBoostingRegressor, RandomForestRegressor
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_absolute_error
 from sklearn.model_selection import KFold
+from upath import UPath
 
 from octopus.modules.octo.bag import Bag
 from octopus.modules.octo.enssel import EnSel
@@ -153,7 +154,7 @@ def create_fake_training(trained_model, model_name, feature_indices, fold_data, 
     return training
 
 
-def create_fake_bag(trained_model, model_name, feature_indices, cv_folds, splits, bag_id):
+def create_fake_bag(log_dir, trained_model, model_name, feature_indices, cv_folds, splits, bag_id):
     """Create complete fake Bag for one trial."""
     trainings = []
 
@@ -171,6 +172,7 @@ def create_fake_bag(trained_model, model_name, feature_indices, cv_folds, splits
         ml_type="regression",
         parallel_execution=False,
         num_workers=1,
+        log_dir=log_dir,
     )
 
     # Set train_status to indicate models are already trained
@@ -198,16 +200,16 @@ def test_ensemble_selection_ensembled_data(tmp_path):
     # Create fake bags for each model
     feature_subsets = {"linear": list(range(0, 4)), "rf": list(range(4, 8)), "gb": list(range(8, 12))}
 
+    # Save fake trial bags to temporary directory
+    trials_path = UPath(tmp_path / "experiment0" / "sequence0" / "trials")
+    trials_path.mkdir(parents=True)
+
     bags = {}
     for model_name, model in models.items():
         bag = create_fake_bag(
-            model, model_name, feature_subsets[model_name], cv_folds, splits, bag_id=f"trial_{model_name}"
+            trials_path, model, model_name, feature_subsets[model_name], cv_folds, splits, bag_id=f"trial_{model_name}"
         )
         bags[model_name] = bag
-
-    # Save fake trial bags to temporary directory
-    trials_path = tmp_path / "experiment0" / "sequence0" / "trials"
-    trials_path.mkdir(parents=True)
 
     for trial_idx, (_model_name, bag) in enumerate(bags.items()):
         filename = f"trial{trial_idx}_bag.pkl"

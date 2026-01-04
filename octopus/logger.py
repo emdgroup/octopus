@@ -1,8 +1,11 @@
 """Logger."""
 
+import io
 import logging
 import sys
 from enum import Enum, auto
+
+from upath import UPath
 
 
 class LogGroup(Enum):
@@ -72,7 +75,47 @@ class CustomFormatter(logging.Formatter):
         return super().format(record)
 
 
-def setup_logger(name="OctoManager", log_file="octo_manager.log", level=logging.INFO):
+class FSSpecFileHandler(logging.StreamHandler):
+    """A handler class which writes formatted logging records to disk files.
+
+    The handler just opens the specified file and uses it as the stream for logging.
+    """
+
+    def __init__(self, filename: UPath, mode=None, encoding=None, errors=None):
+        self.filename = filename.resolve()
+        self.mode = mode or ("a" if self.filename.exists() else "w")
+        self.encoding = encoding
+        if "b" not in self.mode:
+            self.encoding = io.text_encoding(encoding)
+        self.errors = errors
+
+        logfile = self.filename.open(self.mode, encoding=encoding, errors=errors)
+        logging.StreamHandler.__init__(self, logfile)
+
+    def close(self):
+        """Closes the stream."""
+        self.acquire()
+        try:
+            try:
+                if self.stream:
+                    try:
+                        self.flush()
+                    finally:
+                        stream = self.stream
+                        self.stream = None
+                        if hasattr(stream, "close"):
+                            stream.close()
+            finally:
+                logging.StreamHandler.close(self)
+        finally:
+            self.release()
+
+    def __repr__(self):
+        level = logging.getLevelName(self.level)
+        return f"<{self.__class__.__name__} {self.filename} ({level})>"
+
+
+def setup_logger(name="OctoManager", log_file: UPath | None = None, level=logging.INFO):
     """Set up a logger with a file handler and a console handler."""
     # Clear existing loggers
     for handler in logging.root.handlers[:]:
@@ -91,20 +134,11 @@ def setup_logger(name="OctoManager", log_file="octo_manager.log", level=logging.
     contextual_filter = ContextualFilter()
     logger.addFilter(contextual_filter)
 
-    # Create custom formatters
-    file_formatter = CustomFormatter(
-        "%(asctime)s | %(levelname)s | %(group)s | %(message)s",
-        datefmt="%Y-%m-%d %H:%M:%S",
-    )
-
     # Create a separate formatter for console without datetime
     console_formatter = logging.Formatter("%(levelname)s | %(group)s | %(message)s")
 
     # Create file handler
-    file_handler = logging.FileHandler(log_file)
-    file_handler.setLevel(level)
-    file_handler.setFormatter(file_formatter)
-    logger.addHandler(file_handler)
+    set_logger_filename(logger, log_file)
 
     # Create console handler with the new formatter
     console_handler = logging.StreamHandler(sys.stdout)
@@ -150,6 +184,30 @@ def setup_logger(name="OctoManager", log_file="octo_manager.log", level=logging.
     logger.set_log_group = set_log_group  # type: ignore[attr-defined]
 
     return logger
+
+
+def set_logger_filename(logger: logging.Logger | None = None, log_file: UPath | None = None, level: int | None = None):
+    """Set logger filename or disable file logging."""
+    if logger is None:
+        logger = get_logger()
+
+    file_handlers = [h for h in logger.handlers if isinstance(h, FSSpecFileHandler)]
+    for handler in file_handlers:
+        handler.close()
+        logger.removeHandler(handler)
+
+    # Create new file handler
+    if log_file is not None:
+        # Create custom formatters
+        file_formatter = CustomFormatter(
+            "%(asctime)s | %(levelname)s | %(group)s | %(message)s",
+            datefmt="%Y-%m-%d %H:%M:%S",
+        )
+
+        file_handler = FSSpecFileHandler(log_file)
+        file_handler.setLevel(level if level is not None else logger.level)
+        file_handler.setFormatter(file_formatter)
+        logger.addHandler(file_handler)
 
 
 def set_optuna_log_group(logger):

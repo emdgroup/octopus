@@ -330,6 +330,8 @@ class TestRocOctoRocWorkflow:
             study_path = Path(temp_dir) / "test_roc_octo_roc_execution"
             assert study_path.exists(), "Study directory should be created"
 
+            assert (study_path / "octo_manager.log").exists(), "Octo Manager log file should exist"
+
             # Check for expected files (new architecture uses files, not directories)
             assert (study_path / "data.parquet").exists(), "Data parquet file should exist"
             assert (study_path / "data_prepared.parquet").exists(), "Prepared data parquet file should exist"

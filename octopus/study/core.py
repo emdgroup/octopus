@@ -8,7 +8,7 @@ from attrs import Factory, asdict, define, field, fields, has, validators
 from upath import UPath
 
 from octopus.experiment import OctoExperiment
-from octopus.logger import get_logger
+from octopus.logger import get_logger, set_logger_filename
 from octopus.manager.core import OctoManager
 from octopus.modules import Octo
 from octopus.task import Task
@@ -129,6 +129,11 @@ class OctoStudy:
         return self.path / self.name
 
     @property
+    def log_dir(self) -> UPath:
+        """Directory where logs are stored."""
+        return self.output_path
+
+    @property
     def relevant_columns(self) -> list[str]:
         """Relevant columns for the dataset (computed from prepared data)."""
         relevant_columns = list(set(self.prepared.feature_columns + self.target_columns))
@@ -159,8 +164,8 @@ class OctoStudy:
         )
         validator.validate()
 
-    def _initialize_study_outputs(self, data: pd.DataFrame) -> None:
-        """Initialize study by setting up directory and saving config and data."""
+    def _initialize_study_directory(self) -> None:
+        """Initialize study directory."""
         if self.output_path.exists():
             if not self.silently_overwrite_study:
                 confirmation = input("Study exists, do you want to continue? (yes/no): ")
@@ -176,6 +181,12 @@ class OctoStudy:
                 print("Resume existing study....")
 
         self.output_path.mkdir(parents=True, exist_ok=True)
+
+        self.log_dir.mkdir(parents=True, exist_ok=True)
+        set_logger_filename(log_file=self.log_dir / "octo_manager.log")
+
+    def _initialize_study_outputs(self, data: pd.DataFrame) -> None:
+        """Initialize study saving config and data into study directory."""
 
         def serialize_value(value):
             """Convert a value to JSON-serializable format."""
@@ -333,6 +344,14 @@ class OctoStudy:
                 f"To proceed despite warnings, set `ignore_data_health_warning=True`."
             )
 
+    def _flush_logger(self):
+        """Flush and close all handlers of the logger."""
+        for handler in logger.handlers:
+            handler.flush()
+            handler.close()
+
+        set_logger_filename(log_file=None)
+
     def fit(
         self,
         data: pd.DataFrame,
@@ -344,6 +363,7 @@ class OctoStudy:
             data: DataFrame containing the dataset.
             health_check_config: Optional configuration for health check thresholds.
         """
+        self._initialize_study_directory()
         self._validate_data(data)
         prepared_data = self._prepare_data(data)
         self._initialize_study_outputs(data)
@@ -356,5 +376,8 @@ class OctoStudy:
             workflow=self.workflow,
             outer_parallelization=self.outer_parallelization,
             run_single_experiment_num=self.run_single_experiment_num,
+            log_dir=self.log_dir,
         )
         manager.run_outer_experiments()
+
+        self._flush_logger()

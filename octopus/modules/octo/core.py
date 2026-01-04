@@ -43,6 +43,7 @@ class OctoCoreGeneric[TaskConfigType: Octo]:
     Attributes:
         experiment (OctoExperiment): Configuration and data container
             for the experiment.
+        log_dir (UPath): Directory for individual worker logs
         data_splits (dict): Stores training and validation data splits.
         paths_optuna_db (dict): Stores file paths to Optuna databases
             for each experiment.
@@ -62,6 +63,8 @@ class OctoCoreGeneric[TaskConfigType: Octo]:
     """
 
     experiment: OctoExperiment[TaskConfigType] = field(validator=[validators.instance_of(OctoExperiment)])
+
+    log_dir: UPath = field(validator=[validators.instance_of(UPath)])
     # model = field(default=None)
     data_splits: dict = field(default=Factory(dict), validator=[validators.instance_of(dict)])
 
@@ -221,6 +224,7 @@ class OctoCoreGeneric[TaskConfigType: Octo]:
             target_metric=self.experiment.target_metric,
             row_column=self.experiment.row_column,
             ml_type=self.experiment.ml_type,
+            log_dir=self.log_dir,
         )
         # save ensel bag
         ensel_bag.to_pickle(self.path_results / "ensel_bag.pkl")
@@ -277,6 +281,7 @@ class OctoCoreGeneric[TaskConfigType: Octo]:
             study_name=study_name,
             top_trials=self.top_trials,
             mrmr_features=self.mrmr_features,
+            log_dir=self.log_dir,
         )
 
         # multivariate sampler with group option
@@ -392,6 +397,7 @@ class OctoCoreGeneric[TaskConfigType: Octo]:
             target_metric=self.experiment.target_metric,
             row_column=self.experiment.row_column,
             ml_type=self.experiment.ml_type,
+            log_dir=self.log_dir,
             # path?
         )
 

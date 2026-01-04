@@ -210,7 +210,7 @@ class TestRocCore:
         )
 
         with patch("shutil.rmtree"), patch("pathlib.Path.mkdir"):
-            roc_core = RocCore(experiment=mock_experiment)
+            roc_core = RocCore(experiment=mock_experiment, log_dir=mock_experiment.path_study)
             result_experiment = roc_core.run_experiment()
 
             # Verify that features were selected
@@ -233,7 +233,7 @@ class TestRocCore:
         )
 
         with patch("shutil.rmtree"), patch("pathlib.Path.mkdir"):
-            roc_core = RocCore(experiment=mock_experiment)
+            roc_core = RocCore(experiment=mock_experiment, log_dir=mock_experiment.path_study)
             result_experiment = roc_core.run_experiment()
 
             # Verify that features were selected
@@ -253,7 +253,7 @@ class TestRocCore:
         )
 
         with patch("shutil.rmtree"), patch("pathlib.Path.mkdir"):
-            roc_core = RocCore(experiment=mock_experiment)
+            roc_core = RocCore(experiment=mock_experiment, log_dir=mock_experiment.path_study)
             result_experiment = roc_core.run_experiment()
 
             # Verify that features were selected
@@ -273,7 +273,7 @@ class TestRocCore:
         )
 
         with patch("shutil.rmtree"), patch("pathlib.Path.mkdir"):
-            roc_core = RocCore(experiment=mock_experiment)
+            roc_core = RocCore(experiment=mock_experiment, log_dir=mock_experiment.path_study)
             result_experiment = roc_core.run_experiment()
 
             # Verify that features were selected
@@ -297,7 +297,7 @@ class TestRocCore:
         )
 
         with patch("shutil.rmtree"), patch("pathlib.Path.mkdir"):
-            roc_core = RocCore(experiment=mock_experiment)
+            roc_core = RocCore(experiment=mock_experiment, log_dir=mock_experiment.path_study)
             result_experiment = roc_core.run_experiment()
 
             # Verify that features were selected
@@ -318,7 +318,7 @@ class TestRocCore:
         )
 
         with patch("shutil.rmtree"), patch("pathlib.Path.mkdir"):
-            roc_core = RocCore(experiment=mock_experiment)
+            roc_core = RocCore(experiment=mock_experiment, log_dir=mock_experiment.path_study)
             result_experiment = roc_core.run_experiment()
 
             # Verify that features were selected
@@ -353,7 +353,7 @@ class TestRocCore:
         )
 
         with patch("shutil.rmtree"), patch("pathlib.Path.mkdir"):
-            roc_core = RocCore(experiment=mock_experiment)
+            roc_core = RocCore(experiment=mock_experiment, log_dir=mock_experiment.path_study)
             result_experiment = roc_core.run_experiment()
 
             # All features should be kept since there are no high correlations
@@ -389,7 +389,7 @@ class TestRocCore:
         )
 
         with patch("shutil.rmtree"), patch("pathlib.Path.mkdir"):
-            roc_core = RocCore(experiment=mock_experiment)
+            roc_core = RocCore(experiment=mock_experiment, log_dir=mock_experiment.path_study)
             result_experiment = roc_core.run_experiment()
 
             # Only one feature should be kept from the highly correlated group
@@ -406,7 +406,7 @@ class TestRocCore:
         )
 
         with patch("shutil.rmtree"), patch("pathlib.Path.mkdir"):
-            roc_core = RocCore(experiment=mock_experiment)
+            roc_core = RocCore(experiment=mock_experiment, log_dir=mock_experiment.path_study)
 
             # Test properties
             assert roc_core.feature_columns == feature_columns
@@ -432,7 +432,7 @@ class TestRocCore:
         )
 
         with patch("shutil.rmtree"), patch("pathlib.Path.mkdir"):
-            roc_core = RocCore(experiment=mock_experiment)
+            roc_core = RocCore(experiment=mock_experiment, log_dir=mock_experiment.path_study)
 
             with pytest.raises(ValueError, match="Correlation type invalid_correlation not supported"):
                 roc_core.run_experiment()
@@ -464,7 +464,7 @@ class TestRocCore:
         )
 
         with patch("shutil.rmtree"), patch("pathlib.Path.mkdir"):
-            roc_core = RocCore(experiment=mock_experiment)
+            roc_core = RocCore(experiment=mock_experiment, log_dir=mock_experiment.path_study)
 
             # f_statistics filter doesn't handle NaN values, so expect ValueError
             with pytest.raises(ValueError, match="Input X contains NaN"):
@@ -543,7 +543,7 @@ class TestRocIntegration:
             mock_experiment.selected_features = []
 
             with patch("shutil.rmtree"), patch("pathlib.Path.mkdir"):
-                roc_core = RocCore(experiment=mock_experiment)
+                roc_core = RocCore(experiment=mock_experiment, log_dir=mock_experiment.path_study)
                 result_experiment = roc_core.run_experiment()
 
                 # Verify that the experiment completed successfully

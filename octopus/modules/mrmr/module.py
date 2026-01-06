@@ -17,8 +17,8 @@ class Mrmr(Task):
     n_features: int = field(validator=[validators.instance_of(int)], default=Factory(lambda: 30))
     """Number of features selected by MRMR."""
 
-    correlation_type: Literal["pearson", "spearman", "rdc"] = field(
-        validator=validators.in_(["pearson", "rdc", "spearmanr"]), default="spearmanr"
+    correlation_type: Literal["pearson", "rdc", "spearman"] = field(
+        validator=validators.in_(["pearson", "rdc", "spearman"]), default="spearman"
     )
     """Selection of correlation type."""
 

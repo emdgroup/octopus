@@ -31,20 +31,24 @@ dependencies = [
     "catboost>=1.2.8",
     "duckdb>=1.3",
     "lz4>=4.4",
-    "marimo>=0.15",
+    "marimo>=0.18",
     "networkx>=3.5",
     "numpy>=2.2",
-    "optuna>=4.5",
+    "optuna>=4.6",
     "pandas>=2.3,<3",
     "polars>=1.33",
-    "ray>=2.44",
+    "ray>=2.52",
     "rapidfuzz>=3.14",
     "scikit-learn>=1.6.0",
-    "shap>=0.48",
-    "xgboost>=3.0",
+    "shap>=0.50",
+    "torch>=2.0",
+    "xgboost>=3.1",
     "fastparquet>=2024.11.0",
     "fsspec>=2025.10.0",
     "universal_pathlib>=0.3.6",
+    "pyzmq>=27.1.0",
+    "jupytext>=1.18.1",
+    "ipykernel>=7.1.0",
 ]
 
 [project.urls]
@@ -66,6 +70,9 @@ autogluon = [
     "autogluon.tabular[all]>=1.4",
     "bokeh>=3.8", # missed and required by ag=1.4
     "tokenizers>=0.13.0", # Override old tokenizers, use version with Python 3.12 wheels
+]
+sfs = [
+    "mlxtend>=0.23.0",
 ]
 survival = [
     "scikit-survival>=0.25"
@@ -108,6 +115,7 @@ test = [
     "octopus[autogluon]",
     "octopus[tabpfn]",
     "octopus[boruta]",
+    "octopus[sfs]",
     "octopus[survival]",
     "octopus[lint]",
     "moto[server,s3]>=5.1.17",

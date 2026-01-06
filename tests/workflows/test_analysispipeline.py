@@ -80,6 +80,7 @@ def trained_study(classification_dataset, tmp_path_factory):
                 n_trials=20,
                 fi_methods_bestbag=["permutation"],
                 max_features=4,
+                inner_parallelization=False,  # slower but less resources
             )
         ],
     )

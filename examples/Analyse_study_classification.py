@@ -7,7 +7,6 @@ app = marimo.App(width="medium")
 @app.cell
 def _():
     import marimo as mo
-
     return (mo,)
 
 
@@ -45,6 +44,7 @@ def _(mo):
 
     ---
     """)
+    return
 
 
 @app.cell
@@ -56,37 +56,30 @@ def _():
     # (1) study overview: which workflow tasks, number of splits
     # (2) performance overview for certain given metric
     # (3) provide feature lists for each task
-
     return
 
 
 @app.cell
 def _():
     # Setup - Import required libraries
-    import json
-    import re
-    from pathlib import Path
+    from octopus.predict.notebook_utils import setup_notebook
 
-    import pandas as pd
-
-    from octopus.experiment import OctoExperiment
-
-    # Configure pandas display options
-    pd.set_option("display.max_rows", None)
-    pd.set_option("display.max_columns", None)
+    OctoExperiment, Path, json, pd, re = setup_notebook()
     return OctoExperiment, Path, json, pd, re
 
 
 @app.cell
 def _(Path):
     # INPUT: Select study
-    studies_dir = Path() / "studies"
+    study_directory = "../studies/workflow_sequential_tasks/"
 
-    path_study = studies_dir / "workflow_sequential_tasks"
-    print("Selected study path:", path_study)
+    path_study = Path(study_directory)
 
-    if not path_study.exists():
-        print(f"WARNING: Study path does not exist: {path_study}")
+    # Display path status
+    if path_study.exists():
+        print(f"✓ Selected study path: {path_study}")
+    else:
+        print(f"⚠️ WARNING: Study path does not exist: {path_study}")
     return (path_study,)
 
 
@@ -279,6 +272,7 @@ def _(df, pd, workflow_tasks):
             # Append the mean values as a new row
             result_df.loc["Mean"] = mean_values
             print(result_df)
+    return
 
 
 @app.cell

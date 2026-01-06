@@ -184,7 +184,14 @@ class OctoStudy:
             elif isinstance(value, UPath):
                 return str(value)
             elif has(type(value)):
-                return asdict(value, value_serializer=lambda _, __, v: serialize_value(v))
+                # Convert to dict using asdict
+                result = asdict(value, value_serializer=lambda _, __, v: serialize_value(v))
+
+                # Add ClassVar 'module' field if it exists (for workflow tasks)
+                if hasattr(value, "module"):
+                    result["module"] = value.module
+
+                return result
             elif isinstance(value, list):
                 return [serialize_value(item) for item in value]
             elif isinstance(value, dict):

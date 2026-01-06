@@ -201,7 +201,7 @@ def maxrminr(
     features: pd.DataFrame,
     relevance: pd.DataFrame,
     requested_feature_counts: list[int],
-    correlation_type: Literal["pearson", "spearman", "rdc"] = "pearson",
+    correlation_type: Literal["pearson", "rdc", "spearman"] = "pearson",
     method: Literal["ratio", "difference"] = "ratio",
 ) -> dict[int, list[str]]:
     """Perform mRMR feature selection.

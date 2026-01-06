@@ -130,7 +130,7 @@ def mock_study_path(tmp_path):
 @pytest.fixture
 def predictor_with_experiments(mock_study_path, mock_experiment, sample_data, mock_model):
     """Fixture to create an OctoPredict instance with loaded experiments."""
-    with patch("octopus.predict.OctoExperiment.from_pickle", return_value=mock_experiment):
+    with patch("octopus.predict.core.OctoExperiment.from_pickle", return_value=mock_experiment):
         predictor = OctoPredict(study_path=mock_study_path)
 
         # Manually populate experiments since mocking file system is complex
@@ -158,7 +158,7 @@ class TestOctoPredictInitialization:
 
     def test_initialization_with_default_task_id(self, mock_study_path, mock_experiment):
         """Test initialization with default task_id."""
-        with patch("octopus.predict.OctoExperiment.from_pickle", return_value=mock_experiment):
+        with patch("octopus.predict.core.OctoExperiment.from_pickle", return_value=mock_experiment):
             predictor = OctoPredict(study_path=mock_study_path)
 
             assert predictor.study_path == mock_study_path
@@ -168,14 +168,14 @@ class TestOctoPredictInitialization:
 
     def test_initialization_with_custom_task_id(self, mock_study_path, mock_experiment):
         """Test initialization with custom task_id."""
-        with patch("octopus.predict.OctoExperiment.from_pickle", return_value=mock_experiment):
+        with patch("octopus.predict.core.OctoExperiment.from_pickle", return_value=mock_experiment):
             predictor = OctoPredict(study_path=mock_study_path, task_id=0)
 
             assert predictor.task_id == 0
 
     def test_config_property(self, mock_study_path, mock_experiment):
         """Test config property returns dict from config.json."""
-        with patch("octopus.predict.OctoExperiment.from_pickle", return_value=mock_experiment):
+        with patch("octopus.predict.core.OctoExperiment.from_pickle", return_value=mock_experiment):
             predictor = OctoPredict(study_path=mock_study_path)
 
             assert isinstance(predictor.config, dict)
@@ -184,7 +184,7 @@ class TestOctoPredictInitialization:
 
     def test_n_experiments_property(self, mock_study_path, mock_experiment):
         """Test n_experiments property."""
-        with patch("octopus.predict.OctoExperiment.from_pickle", return_value=mock_experiment):
+        with patch("octopus.predict.core.OctoExperiment.from_pickle", return_value=mock_experiment):
             predictor = OctoPredict(study_path=mock_study_path)
 
             assert predictor.n_experiments == 3
@@ -271,8 +271,8 @@ class TestOctoPredictFeatureImportance:
     def test_calculate_fi_permutation(self, predictor_with_experiments, sample_data, mock_fi_results):
         """Test calculate_fi with permutation method."""
         with (
-            patch("octopus.predict.get_fi_permutation", return_value=mock_fi_results),
-            patch("octopus.predict.OctoPredict._plot_permutation_fi"),
+            patch("octopus.predict.core.get_fi_permutation", return_value=mock_fi_results),
+            patch("octopus.predict.core.OctoPredict._plot_permutation_fi"),
         ):
             predictor_with_experiments.calculate_fi(sample_data, n_repeat=10, fi_type="permutation")
 
@@ -304,7 +304,7 @@ class TestOctoPredictPlotting:
             }
         )
 
-        with patch("octopus.predict.PdfPages"), patch("octopus.predict.plt"):
+        with patch("octopus.predict.core.PdfPages"), patch("octopus.predict.core.plt"):
             predictor_with_experiments._plot_permutation_fi(0, df)
 
             # Check that the results directory would be created
@@ -323,9 +323,9 @@ class TestOctoPredictPlotting:
         data = pd.DataFrame(np.random.randn(100, 3), columns=["feature1", "feature2", "feature3"])
 
         with (
-            patch("octopus.predict.PdfPages"),
-            patch("octopus.predict.shap.summary_plot"),
-            patch("octopus.predict.plt"),
+            patch("octopus.predict.core.PdfPages"),
+            patch("octopus.predict.core.shap.summary_plot"),
+            patch("octopus.predict.core.plt"),
         ):
             predictor_with_experiments._plot_shap_fi(0, df, shap_values, data)
 

@@ -185,7 +185,14 @@ class OctoStudy:
             elif isinstance(value, Path):
                 return str(value)
             elif has(type(value)):
-                return asdict(value, value_serializer=lambda _, __, v: serialize_value(v))
+                # Convert to dict using asdict
+                result = asdict(value, value_serializer=lambda _, __, v: serialize_value(v))
+
+                # Add ClassVar 'module' field if it exists (for workflow tasks)
+                if hasattr(value, "module"):
+                    result["module"] = value.module
+
+                return result
             elif isinstance(value, list):
                 return [serialize_value(item) for item in value]
             elif isinstance(value, dict):
@@ -266,9 +273,6 @@ class OctoStudy:
             datasplit_col = self.datasplit_type.value
 
         for key, value in datasplits.items():
-            experiment_path = self.output_path / f"experiment{key}"
-            experiment_path.mkdir(parents=True, exist_ok=True)
-
             experiment: OctoExperiment = OctoExperiment(
                 id=str(key),
                 experiment_id=int(key),

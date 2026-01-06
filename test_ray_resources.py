@@ -107,11 +107,11 @@ print("""
 1. Ray WILL queue tasks when CPUs are insufficient
    - Only 2 tasks run concurrently with 2 CPUs available
    - Remaining tasks wait in queue
-   
+
 2. If tasks crash/die:
    - Ray propagates the error as ray.exceptions.RayTaskError
    - Or ray.exceptions.WorkerCrashedError if worker dies unexpectedly
-   
+
 3. In CI with limited resources:
    - Workers may crash due to:
      * Memory pressure (OOM)

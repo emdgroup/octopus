@@ -5,7 +5,14 @@ import platform
 
 import threadpoolctl
 
-from .autogluon import AGCore, AutoGluon
+# Import autogluon conditionally since it's an optional dependency
+# This prevents Ray worker deserialization failures when autogluon is not available
+try:
+    from .autogluon import AGCore, AutoGluon
+except ImportError:
+    AGCore = None  # type: ignore
+    AutoGluon = None  # type: ignore
+
 from .boruta import Boruta, BorutaCore
 from .efs import Efs, EfsCore
 from .mrmr import Mrmr, MrmrCore
@@ -23,7 +30,6 @@ ModulesInventoryType = dict[str, type]
 
 # Inventory for all available modules
 modules_inventory: ModulesInventoryType = {
-    "autogluon": AGCore,
     "octo": OctoCore,
     "mrmr": MrmrCore,
     "rfe": RfeCore,
@@ -33,6 +39,10 @@ modules_inventory: ModulesInventoryType = {
     "efs": EfsCore,
     "boruta": BorutaCore,
 }
+
+# Add autogluon to inventory only if it's available
+if AGCore is not None:
+    modules_inventory["autogluon"] = AGCore
 
 _PARALLELIZATION_ENV_VARS = (
     "OMP_NUM_THREADS",

@@ -41,6 +41,7 @@ dependencies = [
     "rapidfuzz>=3.14",
     "scikit-learn>=1.6.0",
     "shap>=0.50",
+    "torch>=2.0",
     "xgboost>=3.1",
     "fastparquet>=2024.11.0",
     "pyzmq>=27.1.0",
@@ -65,6 +66,9 @@ autogluon = [
     "autogluon.tabular[all]>=1.4",
     "bokeh>=3.8", # missed and required by ag=1.4
     "tokenizers>=0.13.0", # Override old tokenizers, use version with Python 3.12 wheels
+]
+sfs = [
+    "mlxtend>=0.23.0",
 ]
 survival = [
     "scikit-survival>=0.25"
@@ -108,6 +112,7 @@ test = [
     "octopus[autogluon]",
     "octopus[tabpfn]",
     "octopus[boruta]",
+    "octopus[sfs]",
     "octopus[survival]",
     "octopus[lint]",
 ]

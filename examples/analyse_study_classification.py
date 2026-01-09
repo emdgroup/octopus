@@ -7,6 +7,8 @@ app = marimo.App(width="medium")
 @app.cell
 def _():
     import marimo as mo
+    mo.redirect_stdout()
+
 
     return (mo,)
 
@@ -78,14 +80,15 @@ def _(Path):
 
     # Display path status
     if path_study.exists():
-        print(f"✓ Selected study path: {path_study}")
+        _message = f"Selected study path: {path_study}"
     else:
-        print(f"⚠️ WARNING: Study path does not exist: {path_study}")
+        _message = f"⚠️ WARNING: Study path does not exist: {path_study}"
+    _message
     return (path_study,)
 
 
 @app.cell
-def _(json, path_study):
+def _(json, mo, path_study):
     # Study information and available sequence items
     with open(path_study / "config.json") as f:
         config = json.load(f)
@@ -94,18 +97,23 @@ def _(json, path_study):
     n_folds_outer = config["n_folds_outer"]
     workflow_tasks = config["workflow"]
 
-    print("Information on workflow tasks in this study")
-    print("Number of workflow tasks:", len(workflow_tasks))
-    print("Number of outer folds:", n_folds_outer)
+    # Collect all print outputs in a list
+    output_lines = []
+    output_lines.append("Information on workflow tasks in this study")
+    output_lines.append(f"Number of workflow tasks: {len(workflow_tasks)}")
+    output_lines.append(f"Number of outer folds: {n_folds_outer}")
 
     # get octo workflows
     octo_workflow_lst = []
     for _cnt, _item in enumerate(workflow_tasks):
-        print(f"Task {_item['task_id']}: {_item['module']} ")
+        output_lines.append(f"Task {_item['task_id']}: {_item['module']}")
         if _item["module"] == "octo":
             octo_workflow_lst.append(_item["task_id"])
-    print("Octo workflow tasks:", octo_workflow_lst)
-    print()
+    output_lines.append(f"Octo workflow tasks: {octo_workflow_lst}")
+
+    # Display as formatted markdown with smaller font size and compact line spacing
+    text = "\n".join(output_lines)
+    mo.md(f"```text\n{text}\n```")
     return ml_type, n_folds_outer, workflow_tasks
 
 
@@ -187,7 +195,7 @@ def _(OctoExperiment, outersplit, pd, re):
     # results df
     df = pd.DataFrame(
         columns=[
-            "Experiment",
+            "OuterSplit",
             "Workflow",
             "Workflow_name",
             "Results_key",
@@ -260,7 +268,7 @@ def _(df, pd, workflow_tasks):
             # Expand the Scores_dict column into separate columns
             scores_df = df_workflow_selected["Scores_dict"].apply(pd.Series)
             # Combine with the original DataFrame, setting 'Experiment' as the index
-            result_df = df_workflow_selected[["Experiment"]].join(scores_df).set_index("Experiment")
+            result_df = df_workflow_selected[["OuterSplit"]].join(scores_df).set_index("OuterSplit")
             # Remove columns that do not contain numeric values
             result_df = result_df.select_dtypes(include="number")
             mean_values = {}

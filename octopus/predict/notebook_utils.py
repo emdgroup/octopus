@@ -467,5 +467,5 @@ def testset_performance_overview(predictor: "OctoPredict", metrics: list[str]) -
     mean_row = df.mean(axis=0)
     df.loc["Mean"] = mean_row
 
-    display(df)
+    print(df)
     return df

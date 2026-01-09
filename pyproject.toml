@@ -46,6 +46,8 @@ dependencies = [
     "fsspec>=2025.10.0",
     "universal_pathlib>=0.3.6",
     "pyzmq>=27.1.0",
+    "jupytext>=1.18.1",
+    "ipykernel>=7.1.0",
 ]
 
 [project.urls]

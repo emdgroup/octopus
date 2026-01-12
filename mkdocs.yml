@@ -1,0 +1,99 @@
+site_name: Octopus Documentation
+site_url: https://emdgroup.github.io/octopus/
+repo_url: https://github.com/emdgroup/octopus
+
+edit_uri: edit/main/docs/
+
+extra:
+  version:
+    provider: mike
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/emdgroup/octopus
+      name: Octopus on GitHub
+
+copyright: Copyright &copy; 2024 - 2026 Merck KGaA, Darmstadt, Germany and contributors.
+
+theme:
+  name: "material"
+  icon:
+    repo: fontawesome/brands/github
+    edit: material/pencil
+    view: material/eye
+  features:
+    - navigation.indexes
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - search.suggest
+    - search.highlight
+    #- content.action.edit
+    - content.code.copy
+  logo: assets/logo.png
+  favicon: assets/favicon.png
+  palette:
+    # Palette toggle for automatic mode
+    - media: "(prefers-color-scheme)"
+      toggle:
+        icon: material/brightness-auto
+        name: Switch to light mode
+    # Palette toggle for light mode
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    # Palette toggle for dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      toggle:
+        icon: material/brightness-4
+        name: Switch to system preference
+
+
+markdown_extensions:
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - attr_list
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+
+plugins:
+  - search
+  - mkdocstrings
+  - include_dir_to_nav
+  - gen-files:
+      scripts:
+        - docs/scripts/generate_examples.py
+
+nav:
+  - Octopus Documentation: index.md
+  - User Guide:
+      - 'userguide/userguide.md'
+      - Classification: 'userguide/classification.md'
+      - Regression: 'userguide/regression.md'
+      - Time to Event: 'userguide/time_to_event.md'
+  - Examples: examples
+  - FAQ: faq.md
+  - Changelog: changelog.md
+  - Github: 'https://github.com/emdgroup/octopus/'
+  - Known Issues: 'https://github.com/emdgroup/octopus/issues/'
+  - API Reference:
+      - 'reference/reference.md'
+      - octopus.manager: 'reference/manager.md'
+      - octopus.metrics: 'reference/metrics.md'
+      - octopus.models: 'reference/models.md'
+      - octopus.modules: 'reference/modules.md'
+      - octopus.scripts: 'reference/scripts.md'
+      - octopus.study: 'reference/study.md'
+      - octopus.task: 'reference/task.md'
+  - Contribute: contributing.md
+  - Contributors: contributors.md
+  - License: license.md

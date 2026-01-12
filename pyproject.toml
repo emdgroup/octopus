@@ -79,11 +79,17 @@ sfs = [
 dev = [
     "octopus[test]",
     "octopus[mypy]",
+    "octopus[docs]",
     "nbformat>=5.10", # analysis notebook
     "seaborn>=0.13", # analysis notebook
     "ipywidgets>=8", # analysis notebook
 ]
 docs = [
+    "octopus[examples]", # docs cannot be built without running examples
+    "octopus[test]", # creating docs requires importing the package and all (even optional) dependencies
+    "mkdocs>=1.6.1",
+    "mkdocs-material>=9.7.1",
+    "mkdocstrings-python>=2.0.1",
 ]
 examples = [
 ]

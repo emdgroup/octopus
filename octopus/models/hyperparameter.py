@@ -36,9 +36,6 @@ class FloatHyperparameter(Hyperparameter):
             if self.log:
                 raise ValueError("Both step and log cannot be selected at the same time.")
 
-        if self.value is not None and not (self.low <= self.value <= self.high):
-            raise ValueError(f"value must be between low ({self.low}) and high ({self.high}), got {self.value}.")
-
     def suggest(self, trial: optuna.trial.Trial, unique_name: str) -> float:
         """Suggest a float value using Optuna trial."""
         if self.step is not None:
@@ -66,9 +63,6 @@ class IntHyperparameter(Hyperparameter):
             if self.log:
                 raise ValueError("Both step and log cannot be selected at the same time.")
 
-        if self.value is not None and not (self.low <= self.value <= self.high):
-            raise ValueError(f"value must be between low ({self.low}) and high ({self.high}), got {self.value}.")
-
     def suggest(self, trial: optuna.trial.Trial, unique_name: str) -> int:
         """Suggest an int value using Optuna trial."""
         if self.step is not None:
@@ -86,9 +80,6 @@ class CategoricalHyperparameter(Hyperparameter):
     def __attrs_post_init__(self):
         if len(self.choices) == 0:
             raise ValueError("choices must be a non-empty list.")
-
-        if self.value is not None and self.value not in self.choices:
-            raise ValueError(f"value must be one of {self.choices}, got {self.value}.")
 
     def suggest(self, trial: optuna.trial.Trial, unique_name: str) -> Any:
         """Suggest a categorical value using Optuna trial."""

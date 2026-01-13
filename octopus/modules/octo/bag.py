@@ -617,11 +617,7 @@ class BagBase(BaseEstimator):
                 by="importance", ascending=False
             ).reset_index(drop=True)
 
-        # Return only training-level feature importances (keys like "0_0_0")
-        training_fi = {}
-        for training in self.trainings:
-            training_fi[training.training_id] = training.feature_importances
-        return training_fi
+        return self.feature_importances
 
     def predict(self, x):
         """Predict with sklearn compatibility."""

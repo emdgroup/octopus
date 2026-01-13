@@ -25,7 +25,6 @@ class FloatHyperparameter(Hyperparameter):
     high: float = field(validator=validators.instance_of((float, int)))
     step: float | None = field(default=None, validator=validators.optional(validators.instance_of((float, int))))
     log: bool = False
-    value: float | None = field(default=None, validator=validators.optional(validators.instance_of((float, int))))
 
     def __attrs_post_init__(self):
         if self.low > self.high:
@@ -56,7 +55,6 @@ class IntHyperparameter(Hyperparameter):
     high: int = field(validator=validators.instance_of(int))
     step: int | None = field(default=None, validator=validators.optional(validators.instance_of(int)))
     log: bool = False
-    value: int | None = field(default=None, validator=validators.optional(validators.instance_of(int)))
 
     def __attrs_post_init__(self):
         if self.low > self.high:
@@ -84,8 +82,7 @@ class CategoricalHyperparameter(Hyperparameter):
     """Categorical Hyperparameter class."""
 
     choices: list[Any] = field(factory=list)
-    value: Any | None = field(default=None)
-
+    
     def __attrs_post_init__(self):
         if len(self.choices) == 0:
             raise ValueError("choices must be a non-empty list.")

@@ -2,6 +2,7 @@ import os
 import subprocess
 import sys
 import tempfile
+from pathlib import Path
 
 import pandas as pd
 import threadpoolctl
@@ -95,12 +96,13 @@ def test_ray_workers_detect_active_parallelization():
     """
     env = os.environ.copy()
     env["OMP_NUM_THREADS"] = "42"  # Activate thread-level parallelization
+    env["PYTHONPATH"] = f"{Path(__file__).parent}{os.pathsep}{env.get('PYTHONPATH', '')}"
 
     res = subprocess.run(
         [
             sys.executable,
             "-c",
-            "from tests.test_infrastructure import _run_octo_with_ray_parallelization; "
+            f"from {Path(__file__).stem} import _run_octo_with_ray_parallelization; "
             "_run_octo_with_ray_parallelization()",
         ],
         check=False,

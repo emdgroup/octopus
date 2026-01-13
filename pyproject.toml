@@ -90,6 +90,8 @@ docs = [
     "mkdocs>=1.6.1",
     "mkdocs-material>=9.7.1",
     "mkdocstrings-python>=2.0.1",
+    "mkdocs-gen-files>=0.6.0",
+    "mkdocs-include-dir-to-nav>=1.2.0",
 ]
 examples = [
 ]

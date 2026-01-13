@@ -17,7 +17,8 @@ theme:
     - navigation.tabs.sticky
     - search.suggest
     - search.highlight
-    - content.action.edit
+    #- content.action.edit
+    - content.code.copy
   logo: assets/logo.png
   favicon: assets/favicon.png
   palette:
@@ -42,9 +43,22 @@ theme:
 
 markdown_extensions:
   - pymdownx.snippets
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
+
 
 plugins:
+  - search
   - mkdocstrings
+  - include_dir_to_nav
+  - gen-files:
+      scripts:
+        - docs/scripts/generate_examples.py
 
 nav:
   - Octopus Documentation: index.md
@@ -53,7 +67,7 @@ nav:
       - Classification: 'userguide/classification.md'
       - Regression: 'userguide/regression.md'
       - Time to Event: 'userguide/time_to_event.md'
-  - Examples: examples/examples.md
+  - Examples: examples
   - FAQ: faq.md
   - Changelog: changelog.md
   - Github: 'https://github.com/emdgroup/octopus/'

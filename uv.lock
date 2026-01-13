@@ -1975,6 +1975,18 @@ wheels = [
 ]
 
 [[package]]
+name = "mkdocs-gen-files"
+version = "0.6.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "mkdocs" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/61/35/f26349f7fa18414eb2e25d75a6fa9c7e3186c36e1d227c0b2d785a7bd5c4/mkdocs_gen_files-0.6.0.tar.gz", hash = "sha256:52022dc14dcc0451e05e54a8f5d5e7760351b6701eff816d1e9739577ec5635e", size = 8642, upload-time = "2025-11-23T12:13:22.124Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/8d/ec/72417415563c60ae01b36f0d497f1f4c803972f447ef4fb7f7746d6e07db/mkdocs_gen_files-0.6.0-py3-none-any.whl", hash = "sha256:815af15f3e2dbfda379629c1b95c02c8e6f232edf2a901186ea3b204ab1135b2", size = 8182, upload-time = "2025-11-23T12:13:20.756Z" },
+]
+
+[[package]]
 name = "mkdocs-get-deps"
 version = "0.2.0"
 source = { registry = "https://pypi.org/simple" }
@@ -1986,6 +1998,18 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/98/f5/ed29cd50067784976f25ed0ed6fcd3c2ce9eb90650aa3b2796ddf7b6870b/mkdocs_get_deps-0.2.0.tar.gz", hash = "sha256:162b3d129c7fad9b19abfdcb9c1458a651628e4b1dea628ac68790fb3061c60c", size = 10239, upload-time = "2023-11-20T17:51:09.981Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/9f/d4/029f984e8d3f3b6b726bd33cafc473b75e9e44c0f7e80a5b29abc466bdea/mkdocs_get_deps-0.2.0-py3-none-any.whl", hash = "sha256:2bf11d0b133e77a0dd036abeeb06dec8775e46efa526dc70667d8863eefc6134", size = 9521, upload-time = "2023-11-20T17:51:08.587Z" },
+]
+
+[[package]]
+name = "mkdocs-include-dir-to-nav"
+version = "1.2.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "mkdocs" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/f9/d9/899622cb7cd99d0d53e696b63294c2a8e73196d17c7941fd9cfefbe575f2/mkdocs_include_dir_to_nav-1.2.0.tar.gz", hash = "sha256:2d7b0bb581471fce6f215b6381f1f4d90a3a069829281b7f5d01a5b7abee15d0", size = 5279, upload-time = "2022-03-01T08:50:48.713Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/78/4f/4e48a2757eb3d271084823cbafc2993ce0dede4f4b05f03fe8f77f14c763/mkdocs_include_dir_to_nav-1.2.0-py3-none-any.whl", hash = "sha256:b09de17ad754aa93aec7ba64acf8fdd53f7a2ceb92e8cffe21646b0e97f4ddf0", size = 5993, upload-time = "2022-03-01T08:50:46.155Z" },
 ]
 
 [[package]]
@@ -2520,6 +2544,8 @@ dev = [
     { name = "ipywidgets" },
     { name = "joblib-stubs" },
     { name = "mkdocs" },
+    { name = "mkdocs-gen-files" },
+    { name = "mkdocs-include-dir-to-nav" },
     { name = "mkdocs-material" },
     { name = "mkdocstrings-python" },
     { name = "mlxtend" },
@@ -2552,6 +2578,8 @@ docs = [
     { name = "fastparquet" },
     { name = "flake8" },
     { name = "mkdocs" },
+    { name = "mkdocs-gen-files" },
+    { name = "mkdocs-include-dir-to-nav" },
     { name = "mkdocs-material" },
     { name = "mkdocstrings-python" },
     { name = "mlxtend" },
@@ -2632,6 +2660,8 @@ requires-dist = [
     { name = "lz4", specifier = ">=4.4" },
     { name = "marimo", specifier = ">=0.15" },
     { name = "mkdocs", marker = "extra == 'docs'", specifier = ">=1.6.1" },
+    { name = "mkdocs-gen-files", marker = "extra == 'docs'", specifier = ">=0.6.0" },
+    { name = "mkdocs-include-dir-to-nav", marker = "extra == 'docs'", specifier = ">=1.2.0" },
     { name = "mkdocs-material", marker = "extra == 'docs'", specifier = ">=9.7.1" },
     { name = "mkdocstrings-python", marker = "extra == 'docs'", specifier = ">=2.0.1" },
     { name = "mlxtend", marker = "extra == 'sfs'", specifier = ">=0.22.0" },

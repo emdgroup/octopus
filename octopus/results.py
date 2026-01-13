@@ -86,14 +86,13 @@ class ModuleResults:
         df_feature_importance = pd.DataFrame()
 
         for key, value in self.feature_importances.items():
-            _, _, split_id = key.split("_")
             for fi_type, df in value.items():
                 if fi_type in ["internal", "permutation_dev"]:
                     temp_df = df.copy()
                     temp_df["fi_type"] = fi_type
                     temp_df["experiment_id"] = self.experiment_id
                     temp_df["task_id"] = self.task_id
-                    temp_df["split_id"] = split_id
+                    temp_df["training_id"] = key
 
                     df_feature_importance = pd.concat([df_feature_importance, temp_df], ignore_index=True)
         return df_feature_importance

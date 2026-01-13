@@ -1,4 +1,5 @@
 #!/bin/bash
+
 # Script to replicate GitHub Actions CI environment locally
 # This helps test if changes will pass in CI before pushing
 
@@ -9,14 +10,16 @@ echo "Replicating GitHub Actions CI Environment"
 echo "=========================================="
 echo ""
 
-# Store original directory
-ORIGINAL_DIR=$(pwd)
-PROJECT_ROOT="/home/ec2-user/octopus"
+# get the directory where this script resides (i.e. the repository root)
+PROJECT_ROOT=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 
-cd "$PROJECT_ROOT"
+pushd "$PROJECT_ROOT"
 
 # Create a temporary test environment
-TEST_ENV_DIR="/tmp/octopus_ci_test_$$"
+TEST_ENV_DIR="/tmp/octopus_ci_test_$RANDOM"
+export UV_PROJECT_ENVIRONMENT="${TEST_ENV_DIR}/.venv"
+export SETUPTOOLS_SCM_PRETEND_VERSION_FOR_OCTOPUS="0.1.dev+`git describe --tags --always`"
+
 echo "Creating fresh test environment at: $TEST_ENV_DIR"
 mkdir -p "$TEST_ENV_DIR"
 
@@ -24,24 +27,16 @@ mkdir -p "$TEST_ENV_DIR"
 # Note: We keep .git because setuptools-scm needs it for version detection
 echo "Copying project files..."
 rsync -av \
-  --exclude='.venv' \
-  --exclude='__pycache__' \
-  --exclude='*.pyc' \
-  --exclude='.pytest_cache' \
-  --exclude='.mypy_cache' \
-  --exclude='*.egg-info' \
-  --exclude='dist' \
-  --exclude='build' \
-  --exclude='studies' \
-  --exclude='datasets_local' \
-  --exclude='AutogluonModels' \
+  --filter=':- .gitignore' \
+  --exclude='.git' \
   "$PROJECT_ROOT/" "$TEST_ENV_DIR/"
 
-cd "$TEST_ENV_DIR"
+
+pushd "$TEST_ENV_DIR"
 
 echo ""
 echo "Installing dependencies with 'uv sync --extra test' (like GitHub Actions)..."
-export SMOKE_TEST="true"  # Set the same env var as GitHub Actions
+# Set the same env var as GitHub Actions
 uv sync --extra test
 
 echo ""
@@ -60,10 +55,12 @@ else
 fi
 echo "=========================================="
 
+popd
+
 # Cleanup
 echo ""
 echo "Cleaning up test environment..."
-cd "$ORIGINAL_DIR"
 rm -rf "$TEST_ENV_DIR"
 
+popd
 exit $TEST_RESULT

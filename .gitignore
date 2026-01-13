@@ -62,3 +62,4 @@ htmlcov
 env*
 *.code-workspace
 docs/examples
+site

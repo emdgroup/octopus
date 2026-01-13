@@ -25,7 +25,6 @@ class FloatHyperparameter(Hyperparameter):
     high: float = field(validator=validators.instance_of((float, int)))
     step: float | None = field(default=None, validator=validators.optional(validators.instance_of((float, int))))
     log: bool = False
-    value: float | None = field(default=None, validator=validators.optional(validators.instance_of((float, int))))
 
     def __attrs_post_init__(self):
         if self.low > self.high:
@@ -36,9 +35,6 @@ class FloatHyperparameter(Hyperparameter):
                 raise ValueError("step must be greater than 0.")
             if self.log:
                 raise ValueError("Both step and log cannot be selected at the same time.")
-
-        if self.value is not None and not (self.low <= self.value <= self.high):
-            raise ValueError(f"value must be between low ({self.low}) and high ({self.high}), got {self.value}.")
 
     def suggest(self, trial: optuna.trial.Trial, unique_name: str) -> float:
         """Suggest a float value using Optuna trial."""
@@ -56,7 +52,6 @@ class IntHyperparameter(Hyperparameter):
     high: int = field(validator=validators.instance_of(int))
     step: int | None = field(default=None, validator=validators.optional(validators.instance_of(int)))
     log: bool = False
-    value: int | None = field(default=None, validator=validators.optional(validators.instance_of(int)))
 
     def __attrs_post_init__(self):
         if self.low > self.high:
@@ -67,9 +62,6 @@ class IntHyperparameter(Hyperparameter):
                 raise ValueError("step must be greater than 0.")
             if self.log:
                 raise ValueError("Both step and log cannot be selected at the same time.")
-
-        if self.value is not None and not (self.low <= self.value <= self.high):
-            raise ValueError(f"value must be between low ({self.low}) and high ({self.high}), got {self.value}.")
 
     def suggest(self, trial: optuna.trial.Trial, unique_name: str) -> int:
         """Suggest an int value using Optuna trial."""
@@ -84,14 +76,10 @@ class CategoricalHyperparameter(Hyperparameter):
     """Categorical Hyperparameter class."""
 
     choices: list[Any] = field(factory=list)
-    value: Any | None = field(default=None)
 
     def __attrs_post_init__(self):
         if len(self.choices) == 0:
             raise ValueError("choices must be a non-empty list.")
-
-        if self.value is not None and self.value not in self.choices:
-            raise ValueError(f"value must be one of {self.choices}, got {self.value}.")
 
     def suggest(self, trial: optuna.trial.Trial, unique_name: str) -> Any:
         """Suggest a categorical value using Optuna trial."""

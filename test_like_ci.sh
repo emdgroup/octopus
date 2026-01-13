@@ -35,8 +35,7 @@ rsync -av \
 pushd "$TEST_ENV_DIR"
 
 echo ""
-echo "Installing dependencies with 'uv sync --extra test' (like GitHub Actions)..."
-# Set the same env var as GitHub Actions
+echo "Installing dependencies with 'uv sync --extra test' (like GitHub Actions)..." Set the same env var as GitHub Actions
 uv sync --extra test
 
 echo ""

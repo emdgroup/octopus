@@ -19,38 +19,31 @@ from octopus.models.inventory import ModelInventory
     "hyperparameter_type, name, kwargs, expected_exception",
     [
         # Valid int hyperparameter
-        (IntHyperparameter, "para1", {"low": 1, "high": 10, "step": None, "log": False, "value": None}, None),
+        (IntHyperparameter, "para1", {"low": 1, "high": 10, "step": None, "log": False}, None),
         # Invalid int hyperparameter: low > high
-        (IntHyperparameter, "para1", {"low": 10, "high": 1, "step": None, "log": False, "value": None}, ValueError),
+        (IntHyperparameter, "para1", {"low": 10, "high": 1, "step": None, "log": False}, ValueError),
         # Invalid int hyperparameter with step
-        (IntHyperparameter, "para1", {"low": 1, "high": 10, "step": -1, "log": False, "value": None}, ValueError),
+        (IntHyperparameter, "para1", {"low": 1, "high": 10, "step": -1, "log": False}, ValueError),
         # Valid int hyperparameter step
-        (IntHyperparameter, "para1", {"low": 1, "high": 10, "step": 1, "log": False, "value": None}, None),
+        (IntHyperparameter, "para1", {"low": 1, "high": 10, "step": 1, "log": False}, None),
         # Valid int hyperparameter log
-        (IntHyperparameter, "para1", {"low": 1, "high": 10, "step": None, "log": True, "value": None}, None),
+        (IntHyperparameter, "para1", {"low": 1, "high": 10, "step": None, "log": True}, None),
         # Invalid int hyperparameter step and log selected
-        (IntHyperparameter, "para1", {"low": 1, "high": 10, "step": 1, "log": True, "value": None}, ValueError),
+        (IntHyperparameter, "para1", {"low": 1, "high": 10, "step": 1, "log": True}, ValueError),
         # Valid float hyperparameter
-        (FloatHyperparameter, "para1", {"low": 0.1, "high": 1.0, "step": None, "log": False, "value": None}, None),
+        (FloatHyperparameter, "para1", {"low": 0.1, "high": 1.0, "step": None, "log": False}, None),
         # Invalid float hyperparameter with high less than low
-        (
-            FloatHyperparameter,
-            "param1",
-            {"low": 1.0, "high": 0.1, "step": None, "log": False, "value": None},
-            ValueError,
-        ),
+        (FloatHyperparameter, "param1", {"low": 1.0, "high": 0.1, "step": None, "log": False}, ValueError),
         # Valid float hyperparameter step
-        (FloatHyperparameter, "para1", {"low": 1, "high": 10, "step": 1, "log": False, "value": None}, None),
+        (FloatHyperparameter, "para1", {"low": 1, "high": 10, "step": 1, "log": False}, None),
         # Valid float hyperparameter log
-        (FloatHyperparameter, "para1", {"low": 1, "high": 10, "step": None, "log": True, "value": None}, None),
+        (FloatHyperparameter, "para1", {"low": 1, "high": 10, "step": None, "log": True}, None),
         # Invalid float hyperparameter step and log selected
-        (FloatHyperparameter, "para1", {"low": 1, "high": 10, "step": 1, "log": True, "value": None}, ValueError),
+        (FloatHyperparameter, "para1", {"low": 1, "high": 10, "step": 1, "log": True}, ValueError),
         # Valid categorical hyperparameter
-        (CategoricalHyperparameter, "para1", {"choices": ["a", "b"], "value": None}, None),
+        (CategoricalHyperparameter, "para1", {"choices": ["a", "b"]}, None),
         # Invalid categorical hyperparameter without choices
-        (CategoricalHyperparameter, "para1", {"choices": [], "value": None}, ValueError),
-        # Invalid categorical hyperparameter with value not in choices
-        (CategoricalHyperparameter, "para1", {"choices": ["a", "b"], "value": "c"}, ValueError),
+        (CategoricalHyperparameter, "para1", {"choices": []}, ValueError),
         # Valid fixed hyperparameter
         (FixedHyperparameter, "para1", {"value": 5}, None),
         # Invalid fixed hyperparameter without value

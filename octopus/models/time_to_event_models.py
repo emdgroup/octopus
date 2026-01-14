@@ -2,19 +2,15 @@
 
 from .config import ModelConfig
 from .hyperparameter import FloatHyperparameter, IntHyperparameter
-from .registry import ModelRegistry
+from .core import Models
 
 
-@ModelRegistry.register("ExtraTreesSurv")
-class ExtraTreesSurvModel:
+@Models.register("ExtraTreesSurv")
+def extra_trees() -> ModelConfig:
     """Extra Tree Survival Model."""
+    from octopus._optional.survival import ExtraSurvivalTrees  # noqa: PLC0415
 
-    @staticmethod
-    def get_model_config():
-        """Get model config."""
-        from octopus._optional.survival import ExtraSurvivalTrees  # noqa: PLC0415
-
-        return ModelConfig(
+    return ModelConfig(
             model_class=ExtraSurvivalTrees,
             ml_type="timetoevent",
             feature_method="permutation",
@@ -35,4 +31,3 @@ class ExtraTreesSurvModel:
         )
 
 
-__all__ = ["ExtraTreesSurvModel"]

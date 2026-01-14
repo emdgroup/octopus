@@ -15,18 +15,14 @@ from xgboost import XGBRegressor
 
 from .config import ModelConfig
 from .hyperparameter import CategoricalHyperparameter, FixedHyperparameter, FloatHyperparameter, IntHyperparameter
-from .registry import ModelRegistry
+from .core import Models
 from .wrapper_models.GaussianProcessRegressor import GPRegressorWrapper
 
 
-@ModelRegistry.register("ARDRegressor")
-class ARDRegressorModel:
+@Models.register("ARDRegressor")
+def ard() -> ModelConfig:
     """ARD regression model class."""
-
-    @staticmethod
-    def get_model_config():
-        """Get model config."""
-        return ModelConfig(
+    return ModelConfig(
             model_class=ARDRegression,
             ml_type="regression",
             feature_method="permutation",
@@ -49,14 +45,10 @@ class ARDRegressorModel:
         )
 
 
-@ModelRegistry.register("CatBoostRegressor")
-class CatBoostRegressorModel:
+@Models.register("CatBoostRegressor")
+def cat_boost() -> ModelConfig:
     """Cat boost regression model class."""
-
-    @staticmethod
-    def get_model_config():
-        """Get model config."""
-        return ModelConfig(
+    return ModelConfig(
             model_class=CatBoostRegressor,
             ml_type="regression",
             feature_method="internal",
@@ -81,14 +73,10 @@ class CatBoostRegressorModel:
         )
 
 
-@ModelRegistry.register("ElasticNetRegressor")
-class ElasticNetRegressorModel:
+@Models.register("ElasticNetRegressor")
+def elastic_net() -> ModelConfig:
     """ElasticNet regression model class."""
-
-    @staticmethod
-    def get_model_config():
-        """Get model config."""
-        return ModelConfig(
+    return ModelConfig(
             model_class=ElasticNet,
             ml_type="regression",
             feature_method="shap",
@@ -109,14 +97,10 @@ class ElasticNetRegressorModel:
         )
 
 
-@ModelRegistry.register("ExtraTreesRegressor")
-class ExtraTreesRegressorModel:
+@Models.register("ExtraTreesRegressor")
+def extra_trees() -> ModelConfig:
     """ExtraTrees regression model class."""
-
-    @staticmethod
-    def get_model_config():
-        """Get model config."""
-        return ModelConfig(
+    return ModelConfig(
             model_class=ExtraTreesRegressor,
             ml_type="regression",
             feature_method="internal",
@@ -136,14 +120,10 @@ class ExtraTreesRegressorModel:
         )
 
 
-@ModelRegistry.register("GaussianProcessRegressor")
-class GaussianProcessRegressorModel:
+@Models.register("GaussianProcessRegressor")
+def gaussian_process() -> ModelConfig:
     """Gaussian process regression model class."""
-
-    @staticmethod
-    def get_model_config():
-        """Get model config."""
-        return ModelConfig(
+    return ModelConfig(
             model_class=GPRegressorWrapper,
             ml_type="regression",
             feature_method="permutation",
@@ -165,14 +145,10 @@ class GaussianProcessRegressorModel:
         )
 
 
-@ModelRegistry.register("GradientBoostingRegressor")
-class GradientBoostingRegressorModel:
+@Models.register("GradientBoostingRegressor")
+def gradient_boosting() -> ModelConfig:
     """Gradient boost regression model class."""
-
-    @staticmethod
-    def get_model_config():
-        """Get model config."""
-        return ModelConfig(
+    return ModelConfig(
             model_class=GradientBoostingRegressor,
             ml_type="regression",
             feature_method="internal",
@@ -194,14 +170,10 @@ class GradientBoostingRegressorModel:
         )
 
 
-@ModelRegistry.register("RandomForestRegressor")
-class RandomForestRegressorModel:
+@Models.register("RandomForestRegressor")
+def random_forest() -> ModelConfig:
     """Random forrest regression model class."""
-
-    @staticmethod
-    def get_model_config():
-        """Get model config."""
-        return ModelConfig(
+    return ModelConfig(
             model_class=RandomForestRegressor,
             ml_type="regression",
             feature_method="internal",
@@ -221,14 +193,10 @@ class RandomForestRegressorModel:
         )
 
 
-@ModelRegistry.register("RidgeRegressor")
-class RidgeRegressorModel:
+@Models.register("RidgeRegressor")
+def ridge() -> ModelConfig:
     """Ridge regression model class."""
-
-    @staticmethod
-    def get_model_config():
-        """Get model config."""
-        return ModelConfig(
+    return ModelConfig(
             model_class=Ridge,
             ml_type="regression",
             feature_method="shap",
@@ -246,14 +214,10 @@ class RidgeRegressorModel:
         )
 
 
-@ModelRegistry.register("SvrRegressor")
-class SvrRegressorModel:
+@Models.register("SvrRegressor")
+def svr() -> ModelConfig:
     """Svr regression model class."""
-
-    @staticmethod
-    def get_model_config():
-        """Get model config."""
-        return ModelConfig(
+    return ModelConfig(
             model_class=SVR,
             ml_type="regression",
             feature_method="permutation",
@@ -272,17 +236,13 @@ class SvrRegressorModel:
         )
 
 
-@ModelRegistry.register("TabPFNRegressor")
-class TabPFNRegressorModel:
+@Models.register("TabPFNRegressor")
+def tab_pfn() -> ModelConfig:
     """TabPFN regression model class."""
+    from octopus._optional.tabpfn import TabPFNRegressor  # noqa: PLC0415
+    from octopus._optional.tabpfn_utils import get_tabpfn_model_path  # noqa: PLC0415
 
-    @staticmethod
-    def get_model_config():
-        """Get model config."""
-        from octopus._optional.tabpfn import TabPFNRegressor  # noqa: PLC0415
-        from octopus._optional.tabpfn_utils import get_tabpfn_model_path  # noqa: PLC0415
-
-        return ModelConfig(
+    return ModelConfig(
             model_class=TabPFNRegressor,
             ml_type="regression",
             feature_method="constant",  # constant FI, disable constraint HPO
@@ -307,14 +267,10 @@ class TabPFNRegressorModel:
         )
 
 
-@ModelRegistry.register("XGBRegressor")
-class XGBRegressorModel:
+@Models.register("XGBRegressor")
+def xgb() -> ModelConfig:
     """XGBoost regression model class."""
-
-    @staticmethod
-    def get_model_config():
-        """Get model config."""
-        return ModelConfig(
+    return ModelConfig(
             model_class=XGBRegressor,
             ml_type="regression",
             feature_method="internal",
@@ -336,14 +292,10 @@ class XGBRegressorModel:
         )
 
 
-@ModelRegistry.register("HistGradientBoostingRegressor")
-class HistGradientBoostingRegressorModel:
+@Models.register("HistGradientBoostingRegressor")
+def hist_gradient_boosting() -> ModelConfig:
     """Histogram-based gradient boosting regression model class (scikit-learn 1.6.1)."""
-
-    @staticmethod
-    def get_model_config():
-        """Get model config."""
-        return ModelConfig(
+    return ModelConfig(
             model_class=HistGradientBoostingRegressor,
             ml_type="regression",
             feature_method="internal",
@@ -365,16 +317,12 @@ class HistGradientBoostingRegressorModel:
         )
 
 
-@ModelRegistry.register("TabularNNRegressor")
-class TabularNNRegressorModel:
+@Models.register("TabularNNRegressor")
+def tabular_nn() -> ModelConfig:
     """Tabular Neural Network regression model class with categorical embeddings."""
+    from .wrapper_models.TabularNNRegressor import TabularNNRegressor  # noqa: PLC0415
 
-    @staticmethod
-    def get_model_config():
-        """Get model config."""
-        from .wrapper_models.TabularNNRegressor import TabularNNRegressor  # noqa: PLC0415
-
-        return ModelConfig(
+    return ModelConfig(
             model_class=TabularNNRegressor,
             ml_type="regression",
             feature_method="permutation",
@@ -412,18 +360,3 @@ class TabularNNRegressorModel:
         )
 
 
-__all__ = [
-    "ARDRegressorModel",
-    "CatBoostRegressorModel",
-    "ElasticNetRegressorModel",
-    "ExtraTreesRegressorModel",
-    "GaussianProcessRegressorModel",
-    "GradientBoostingRegressorModel",
-    "HistGradientBoostingRegressorModel",
-    "RandomForestRegressorModel",
-    "RidgeRegressorModel",
-    "SvrRegressorModel",
-    "TabPFNRegressorModel",
-    "TabularNNRegressorModel",
-    "XGBRegressorModel",
-]

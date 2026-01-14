@@ -5,6 +5,7 @@ from collections.abc import Callable, Iterable
 from typing import TYPE_CHECKING, Any, cast
 
 import ray
+import threadpoolctl
 from ray import ObjectRef
 
 if TYPE_CHECKING:
@@ -16,22 +17,24 @@ def _get_env_address() -> str | None:
     return os.environ.get("RAY_ADDRESS") or os.environ.get("RAY_HEAD_ADDRESS")
 
 
-def _verify_parallelization_disabled() -> None:
-    """Verify that parallelization environment variables are properly configured.
+def _check_parallelization_disabled() -> None:
+    """Raise an error any kind of active parallelization (OMP, MKL, threadpools, ...) can be detected.
 
-    Only checks environment variables, not actual threadpool state, because:
-    - Ray workers are separate processes that inherit env vars, not driver threadpool state
-    - Environment variables persist across test boundaries
-    - Checking driver threadpool state can give false positives in test environments
-    - Tests confirm Ray workers correctly use single-threaded libraries when env vars are set
-
-    Used in the driver process before starting Ray to verify configuration.
+    This is required to prevent accidental OMP paralleliztion inside ray processes that can lead to oversubscription.
     """
     from octopus.modules import _PARALLELIZATION_ENV_VARS  # noqa: PLC0415
 
+    for lib in threadpoolctl.threadpool_info():
+        if lib["num_threads"] > 1:
+            raise RuntimeError(
+                f"Active thread-level parallelization detected in {lib}."
+                "This may lead to resource oversubscription in Ray workers. "
+                "Please disable thread-level parallelization by setting respective "
+                "environment variables."
+            )
+
     for env_var in _PARALLELIZATION_ENV_VARS:
-        val = os.environ.get(env_var)
-        if val != "1":
+        if (val := os.environ.get(env_var, "1")) != "1":
             raise RuntimeError(
                 f"Environment variable {env_var} is set to {val}. "
                 "This may lead to resource oversubscription in Ray workers. "
@@ -50,16 +53,12 @@ def init_ray(
     Connects to an existing cluster if an address is provided or set via
     environment variables; otherwise, optionally starts a local Ray instance.
 
-    For local Ray instances, parallelization settings are verified in the driver
-    process before starting Ray, and workers inherit the driver's environment.
-    This avoids the overhead of runtime_env package reinstallation.
-
     Args:
         address: Ray head address (e.g., "auto", "127.0.0.1:6379"). If None, uses
             env vars RAY_ADDRESS or RAY_HEAD_ADDRESS if set.
         num_cpus: CPU limit when starting a local Ray instance (only used if starting locally).
         start_local_if_missing: If True and no address is available, start a local Ray instance.
-        **kwargs: Extra args forwarded to ray.init (e.g., log_to_driver, namespace).
+        **kwargs: Extra args forwarded to ray.init (e.g., runtime_env, log_to_driver, namespace).
 
     Raises:
         RuntimeError: If no address is available and start_local_if_missing is False.
@@ -68,18 +67,21 @@ def init_ray(
         return
 
     addr = address or _get_env_address()
-
+    runtime_env = kwargs.pop("runtime_env", {})
     if addr:
-        # Connecting to existing Ray instance (local or remote)
-        # Workers connecting to the local instance will inherit the driver's environment
-        ray.init(address=addr, **kwargs)
+        ray.init(
+            address=addr,
+            runtime_env=runtime_env | {"worker_process_setup_hook": _check_parallelization_disabled},
+            **kwargs,
+        )
         return
 
     if start_local_if_missing:
-        # Starting new local Ray instance - verify settings in driver
-        # Workers will inherit driver environment, avoiding package reinstallation
-        _verify_parallelization_disabled()
-        ray.init(num_cpus=num_cpus, **kwargs)
+        ray.init(
+            num_cpus=num_cpus,
+            runtime_env=runtime_env | {"worker_process_setup_hook": _check_parallelization_disabled},
+            **kwargs,
+        )
         return
 
     raise RuntimeError(

@@ -36,17 +36,6 @@ class ModelInventory:
                 )
         return self._model_configs[name]
 
-    def get_model_by_name(self, name: str) -> ModelConfig:
-        """Get model configuration by name.
-
-        Args:
-            name: The name of the model to retrieve.
-
-        Returns:
-            The ModelConfig instance with the specified name, or None if not found.
-        """
-        return self.get_model_config(name)
-
     def get_model_instance(self, name: str, params: dict) -> BaseModel:
         """Get model class by name and initializes it with the provided parameters.
 

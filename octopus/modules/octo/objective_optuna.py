@@ -85,7 +85,7 @@ class ObjectiveOptuna:
 
         # get hyper parameter space for selected model
         # get hyperparameters for selected model
-        model_item = ModelInventory().get_model_by_name(ml_model_type)
+        model_item = ModelInventory().get_model_config(ml_model_type)
 
         hyperparameters = self.hyper_parameters.get(ml_model_type, model_item.hyperparameters)
 

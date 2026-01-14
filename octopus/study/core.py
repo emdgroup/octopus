@@ -268,9 +268,6 @@ class OctoStudy:
             datasplit_col = self.datasplit_type.value
 
         for key, value in datasplits.items():
-            experiment_path = self.output_path / f"experiment{key}"
-            experiment_path.mkdir(parents=True, exist_ok=True)
-
             experiment: OctoExperiment = OctoExperiment(
                 id=str(key),
                 experiment_id=int(key),

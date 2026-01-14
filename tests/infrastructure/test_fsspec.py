@@ -181,12 +181,11 @@ class TestFSSpecIntegration:
         assert (study_path / "data_prepared.parquet").exists(), "Prepared data parquet file should exist"
 
         assert (study_path / "config.json").exists(), "Config JSON file should exist"
-        assert (study_path / "outersplit0").exists(), "Experiment directory should exist"
+        assert (study_path / "outersplit0").exists(), "Outersplit directory should exist"
 
         # Verify that the Octo step was executed by checking for workflow directories
-        experiment_path = study_path / "outersplit0"
-        workflow_dirs = [d for d in experiment_path.iterdir() if d.is_dir() and d.name.startswith("workflowtask")]
-
+        outersplit_path = study_path / "outersplit0"
+        workflow_dirs = [d for d in outersplit_path.iterdir() if d.is_dir() and d.name.startswith("workflowtask")]
         assert len(workflow_dirs) >= 1, (
             f"Should have at least 1 workflow directory, found: {[d.name for d in workflow_dirs]}"
         )

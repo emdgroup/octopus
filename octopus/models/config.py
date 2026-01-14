@@ -56,10 +56,6 @@ class BaseModel(BaseEstimator):
         """Predict probabilities."""
         raise NotImplementedError("predict_proba not implemented for this model.")
 
-    def predict_log_proba(self, X: OctoMatrixLike | OctoArrayLike) -> np.ndarray:
-        """Predict log probabilities."""
-        raise NotImplementedError("predict_log_proba not implemented for this model.")
-
     def set_params(self, **kwargs) -> "BaseModel":
         """Set parameters."""
         return self

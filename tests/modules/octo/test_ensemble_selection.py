@@ -206,7 +206,7 @@ def test_ensemble_selection_ensembled_data(tmp_path):
         bags[model_name] = bag
 
     # Save fake trial bags to temporary directory
-    trials_path = tmp_path / "experiment0" / "sequence0" / "trials"
+    trials_path = tmp_path / "outersplit0" / "sequence0" / "trials"
     trials_path.mkdir(parents=True)
 
     for trial_idx, (_model_name, bag) in enumerate(bags.items()):

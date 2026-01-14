@@ -12,7 +12,7 @@ from octopus.models.hyperparameter import (
     FloatHyperparameter,
     IntHyperparameter,
 )
-from octopus.models.inventory import ModelInventory
+from octopus.models import Models
 
 
 @pytest.mark.parametrize(
@@ -125,7 +125,7 @@ def test_step_takes_priority_over_log():
 def test_create_trial_parameters():
     """Test create_trial_parameters uses suggest methods."""
     mock_trial = create_mock_trial()
-    inventory = ModelInventory()
+    # Models uses classmethods, no instantiation needed
 
     hyperparameters = [
         IntHyperparameter(name="int_param", low=1, high=10),
@@ -142,7 +142,7 @@ def test_create_trial_parameters():
         model_seed="random_state",
     )
 
-    result = inventory.create_trial_parameters(
+    result = Models.create_trial_parameters(
         trial=mock_trial, model_item=model_config, hyperparameters=hyperparameters, n_jobs=2, model_seed=123
     )
 

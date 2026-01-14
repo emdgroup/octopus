@@ -27,7 +27,6 @@ class ARDRegressorModel:
     def get_model_config():
         """Get model config."""
         return ModelConfig(
-            name="ARDRegressor",
             model_class=ARDRegression,
             ml_type="regression",
             feature_method="permutation",
@@ -58,7 +57,6 @@ class CatBoostRegressorModel:
     def get_model_config():
         """Get model config."""
         return ModelConfig(
-            name="CatBoostRegressor",
             model_class=CatBoostRegressor,
             ml_type="regression",
             feature_method="internal",
@@ -91,7 +89,6 @@ class ElasticNetRegressorModel:
     def get_model_config():
         """Get model config."""
         return ModelConfig(
-            name="ElasticNetRegressor",
             model_class=ElasticNet,
             ml_type="regression",
             feature_method="shap",
@@ -120,7 +117,6 @@ class ExtraTreesRegressorModel:
     def get_model_config():
         """Get model config."""
         return ModelConfig(
-            name="ExtraTreesRegressor",
             model_class=ExtraTreesRegressor,
             ml_type="regression",
             feature_method="internal",
@@ -148,7 +144,6 @@ class GaussianProcessRegressorModel:
     def get_model_config():
         """Get model config."""
         return ModelConfig(
-            name="GaussianProcessRegressor",
             model_class=GPRegressorWrapper,
             ml_type="regression",
             feature_method="permutation",
@@ -178,7 +173,6 @@ class GradientBoostingRegressorModel:
     def get_model_config():
         """Get model config."""
         return ModelConfig(
-            name="GradientBoostingRegressor",
             model_class=GradientBoostingRegressor,
             ml_type="regression",
             feature_method="internal",
@@ -208,7 +202,6 @@ class RandomForestRegressorModel:
     def get_model_config():
         """Get model config."""
         return ModelConfig(
-            name="RandomForestRegressor",
             model_class=RandomForestRegressor,
             ml_type="regression",
             feature_method="internal",
@@ -236,7 +229,6 @@ class RidgeRegressorModel:
     def get_model_config():
         """Get model config."""
         return ModelConfig(
-            name="RidgeRegressor",
             model_class=Ridge,
             ml_type="regression",
             feature_method="shap",
@@ -262,7 +254,6 @@ class SvrRegressorModel:
     def get_model_config():
         """Get model config."""
         return ModelConfig(
-            name="SvrRegressor",
             model_class=SVR,
             ml_type="regression",
             feature_method="permutation",
@@ -292,7 +283,6 @@ class TabPFNRegressorModel:
         from octopus._optional.tabpfn_utils import get_tabpfn_model_path  # noqa: PLC0415
 
         return ModelConfig(
-            name="TabPFNRegressor",
             model_class=TabPFNRegressor,
             ml_type="regression",
             feature_method="constant",  # constant FI, disable constraint HPO
@@ -325,7 +315,6 @@ class XGBRegressorModel:
     def get_model_config():
         """Get model config."""
         return ModelConfig(
-            name="XGBRegressor",
             model_class=XGBRegressor,
             ml_type="regression",
             feature_method="internal",
@@ -355,7 +344,6 @@ class HistGradientBoostingRegressorModel:
     def get_model_config():
         """Get model config."""
         return ModelConfig(
-            name="HistGradientBoostingRegressor",
             model_class=HistGradientBoostingRegressor,
             ml_type="regression",
             feature_method="internal",
@@ -387,7 +375,6 @@ class TabularNNRegressorModel:
         from .wrapper_models.TabularNNRegressor import TabularNNRegressor  # noqa: PLC0415
 
         return ModelConfig(
-            name="TabularNNRegressor",
             model_class=TabularNNRegressor,
             ml_type="regression",
             feature_method="permutation",

@@ -15,7 +15,6 @@ class ExtraTreesSurvModel:
         from octopus._optional.survival import ExtraSurvivalTrees  # noqa: PLC0415
 
         return ModelConfig(
-            name="ExtraTreesSurv",
             model_class=ExtraSurvivalTrees,
             ml_type="timetoevent",
             feature_method="permutation",

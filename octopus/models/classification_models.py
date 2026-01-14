@@ -27,7 +27,6 @@ class ExtraTreesClassifierModel:
     def get_model_config():
         """Get model config."""
         return ModelConfig(
-            name="ExtraTreesClassifier",
             model_class=ExtraTreesClassifier,
             ml_type="classification",
             feature_method="internal",
@@ -58,7 +57,6 @@ class HistGradientBoostingClassifierModel:
     def get_model_config():
         """Get model config."""
         return ModelConfig(
-            name="HistGradientBoostingClassifier",
             model_class=HistGradientBoostingClassifier,
             ml_type="classification",
             feature_method="internal",
@@ -89,7 +87,6 @@ class GradientBoostingClassifierModel:
     def get_model_config():
         """Get model config."""
         return ModelConfig(
-            name="GradientBoostingClassifier",
             model_class=GradientBoostingClassifier,
             ml_type="classification",
             feature_method="internal",
@@ -119,7 +116,6 @@ class RandomForestClassifierModel:
     def get_model_config():
         """Get model config."""
         return ModelConfig(
-            name="RandomForestClassifier",
             model_class=RandomForestClassifier,
             ml_type="classification",
             feature_method="internal",
@@ -148,7 +144,6 @@ class XGBClassifierModel:
     def get_model_config():
         """Get model config."""
         return ModelConfig(
-            name="XGBClassifier",
             model_class=XGBClassifier,
             ml_type="classification",
             feature_method="internal",
@@ -177,7 +172,6 @@ class CatBoostClassifierModel:
     def get_model_config():
         """Get model config."""
         return ModelConfig(
-            name="CatBoostClassifier",
             model_class=CatBoostClassifier,
             ml_type="classification",
             feature_method="internal",
@@ -211,7 +205,6 @@ class LogisticRegressionClassifierModel:
     def get_model_config():
         """Get model config."""
         return ModelConfig(
-            name="LogisticRegressionClassifier",
             model_class=LogisticRegression,
             ml_type="classification",
             feature_method="permutation",
@@ -245,7 +238,6 @@ class TabPFNClassifierModel:
         from octopus._optional.tabpfn_utils import get_tabpfn_model_path  # noqa: PLC0415
 
         return ModelConfig(
-            name="TabPFNClassifier",
             model_class=TabPFNClassifier,
             ml_type="classification",
             feature_method="constant",  # constant FI, disable constraint HPO
@@ -278,7 +270,6 @@ class GaussianProcessClassifierModel:
     def get_model_config():
         """Get model config."""
         return ModelConfig(
-            name="GaussianProcessClassifier",
             model_class=GPClassifierWrapper,
             ml_type="classification",
             feature_method="permutation",
@@ -306,7 +297,6 @@ class TabularNNClassifierModel:
     def get_model_config():
         """Get model config."""
         return ModelConfig(
-            name="TabularNNClassifier",
             model_class=TabularNNClassifier,
             ml_type="classification",
             feature_method="permutation",

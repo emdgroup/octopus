@@ -13,19 +13,20 @@ from octopus.models.hyperparameter import (
     FloatHyperparameter,
     IntHyperparameter,
 )
-from octopus.models.inventory import ModelInventory
+from octopus.models import Models
 
 
 def get_all_models():
-    """Get all available models from inventory."""
-    inventory = ModelInventory()
-    return [name for name in inventory.models if "TabPFN" not in name]
+    """Get all available models from registry."""
+    # Get all registered model names from Models class
+    all_models = sorted(Models._config_factories.keys())
+    return [name for name in all_models if "TabPFN" not in name]
 
 
 def generate_param_combinations(model_name: str, max_combos: int = 20) -> list[dict[str, Any]]:
     """Generate parameter combinations from model config."""
-    inventory = ModelInventory()
-    config = inventory.get_model_config(model_name)
+    # Models uses classmethods, no instantiation needed
+    config = Models.get_model_config(model_name)
 
     params = {}
     categorical_choices = {}
@@ -70,7 +71,7 @@ def generate_param_combinations(model_name: str, max_combos: int = 20) -> list[d
 @pytest.mark.parametrize("model_name", get_all_models())
 def test_model_parameter_compatibility(model_name):
     """Test that all parameter combinations from config are compatible."""
-    inventory = ModelInventory()
+    # Models uses classmethods, no instantiation needed
     param_combinations = generate_param_combinations(model_name)
 
     compatibility_errors = []
@@ -79,7 +80,7 @@ def test_model_parameter_compatibility(model_name):
         try:
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore")
-                inventory.get_model_instance(model_name, params)
+                Models.get_model_instance(model_name, params)
         except ValueError as e:
             # Check for parameter compatibility issues
             error_msg = str(e).lower()
@@ -99,12 +100,12 @@ def test_model_parameter_compatibility(model_name):
 
 def test_all_models_have_valid_configs():
     """Test that all models have valid configurations."""
-    inventory = ModelInventory()
+    # Models uses classmethods, no instantiation needed
     config_errors = []
 
     for model_name in get_all_models():
         try:
-            config = inventory.get_model_config(model_name)
+            config = Models.get_model_config(model_name)
             assert config.name == model_name
             assert config.model_class is not None
             assert config.ml_type in ML_TYPES
@@ -116,12 +117,12 @@ def test_all_models_have_valid_configs():
 
 def test_model_instantiation_with_default_params():
     """Test model instantiation with first choice of each categorical parameter."""
-    inventory = ModelInventory()
+    # Models uses classmethods, no instantiation needed
     instantiation_errors = []
 
     for model_name in get_all_models():
         try:
-            config = inventory.get_model_config(model_name)
+            config = Models.get_model_config(model_name)
             params = {}
 
             # Use first choice for categorical, fixed values for fixed params
@@ -143,7 +144,7 @@ def test_model_instantiation_with_default_params():
 
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore")
-                inventory.get_model_instance(model_name, params)
+                Models.get_model_instance(model_name, params)
 
         except ValueError as e:
             # Parameter compatibility issues are what we want to catch

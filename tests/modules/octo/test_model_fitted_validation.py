@@ -26,7 +26,7 @@ from octopus.models.hyperparameter import (
     FloatHyperparameter,
     IntHyperparameter,
 )
-from octopus.models.inventory import ModelInventory
+from octopus.models import Models
 from octopus.modules.octo.training import Training
 
 # ============================================================================
@@ -50,15 +50,15 @@ class ModelCache:
         self._tabpfn_skip_logged = False
 
     def get_available_models_by_type(self):
-        """Get all available models dynamically from ModelInventory, grouped by ML type.
+        """Get all available models dynamically from Models registry, grouped by ML type.
 
         Excludes TabPFN models as they may have dependency issues.
         """
         if self._cached_models_by_type is not None:
             return self._cached_models_by_type
 
-        inventory = ModelInventory()
-        all_models = inventory.models
+        # Get all models from the registry
+        all_models = Models._config_factories.keys()
 
         models_by_type = {"classification": [], "regression": [], "timetoevent": []}
         skipped_tabpfn_models = []
@@ -70,7 +70,7 @@ class ModelCache:
                 continue
 
             try:
-                model_config = inventory.get_model_config(model_name)
+                model_config = Models.get_model_config(model_name)
                 ml_type = model_config.ml_type
                 if ml_type in models_by_type:
                     models_by_type[ml_type].append(model_name)
@@ -125,8 +125,8 @@ def get_default_model_params(model_name: str) -> dict:
     This function should replicate the exact same parameter handling as the real octopus framework
     to ensure test results match real-world behavior.
     """
-    inventory = ModelInventory()
-    model_config = inventory.get_model_config(model_name)
+    # Models uses classmethods, no instantiation needed
+    model_config = Models.get_model_config(model_name)
 
     params = {}
 
@@ -295,8 +295,8 @@ def _test_model_fitted_validation(training: Training, model_name: str) -> dict:
     # Test 1: Try to validate an unfitted model (should fail)
     try:
         # Get the model instance but don't fit it
-        inventory = ModelInventory()
-        training.model = inventory.get_model_instance(training.ml_model_type, training.ml_model_params)
+        # Models uses classmethods, no instantiation needed
+        training.model = Models.get_model_instance(training.ml_model_type, training.ml_model_params)
 
         # This should raise RuntimeError
         training._validate_model_trained()
@@ -350,8 +350,8 @@ def _display_model_info(model_name: str, model_params: dict, verbose: bool = Fal
         return
 
     try:
-        inventory = ModelInventory()
-        model_config = inventory.get_model_config(model_name)
+        # Models uses classmethods, no instantiation needed
+        model_config = Models.get_model_config(model_name)
 
         print(f"\n  📊 {model_name}")
         print(f"     Model Class: {model_config.model_class.__name__}")

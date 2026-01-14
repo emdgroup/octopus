@@ -33,7 +33,7 @@ from octopus.models.hyperparameter import (
     FloatHyperparameter,
     IntHyperparameter,
 )
-from octopus.models.inventory import ModelInventory
+from octopus.models import Models
 from octopus.modules.octo.training import Training
 
 # ============================================================================
@@ -67,15 +67,15 @@ class ModelCache:
         self._tabpfn_skip_logged = False
 
     def get_available_models_by_type(self):
-        """Get all available models dynamically from ModelInventory, grouped by ML type.
+        """Get all available models dynamically from Models registry, grouped by ML type.
 
         Excludes TabPFN models as they may have dependency issues.
         """
         if self._cached_models_by_type is not None:
             return self._cached_models_by_type
 
-        inventory = ModelInventory()
-        all_models = inventory.models
+        # Get all models from the registry
+        all_models = Models._config_factories.keys()
 
         models_by_type = {"classification": [], "regression": [], "timetoevent": [], "multiclass": []}
         skipped_tabpfn_models = []
@@ -87,7 +87,7 @@ class ModelCache:
                 continue
 
             try:
-                model_config = inventory.get_model_config(model_name)
+                model_config = Models.get_model_config(model_name)
                 ml_type = model_config.ml_type
                 if ml_type in models_by_type:
                     models_by_type[ml_type].append(model_name)
@@ -143,8 +143,8 @@ def get_model_configs():
 
 def get_default_model_params(model_name: str) -> dict:
     """Get default parameters for a model from its hyperparameter configuration."""
-    inventory = ModelInventory()
-    model_config = inventory.get_model_config(model_name)
+    # Models uses classmethods, no instantiation needed
+    model_config = Models.get_model_config(model_name)
 
     params = {}
 

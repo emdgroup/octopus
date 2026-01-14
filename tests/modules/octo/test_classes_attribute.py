@@ -10,22 +10,21 @@ from octopus.models.hyperparameter import (
     FloatHyperparameter,
     IntHyperparameter,
 )
-from octopus.models.inventory import ModelInventory
+from octopus.models import Models
 from octopus.modules.octo.training import Training
 
 
 def get_classification_models():
-    """Get all classification models dynamically from ModelInventory."""
-    inventory = ModelInventory()
+    """Get all classification models dynamically from Models registry."""
     models = []
 
     # Models to exclude (TabPFN models require downloading which can fail in CI)
     excluded_models = {"TabPFNClassifier"}
 
-    # Get all models from the inventory
-    for model_name in inventory.models:
+    # Get all models from the registry
+    for model_name in Models._config_factories.keys():
         try:
-            config = inventory.get_model_config(model_name)
+            config = Models.get_model_config(model_name)
             if config.ml_type == "classification" and model_name not in excluded_models:
                 models.append(model_name)
         except Exception:
@@ -37,8 +36,8 @@ def get_classification_models():
 
 def get_default_params(model_name):
     """Get default parameters for a model."""
-    inventory = ModelInventory()
-    config = inventory.get_model_config(model_name)
+    # Models uses classmethods, no instantiation needed
+    config = Models.get_model_config(model_name)
     params = {}
 
     for hp in config.hyperparameters:

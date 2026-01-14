@@ -14,7 +14,7 @@ from upath import UPath
 from octopus.experiment import OctoExperiment
 from octopus.metrics.inventory import MetricsInventory
 from octopus.metrics.utils import get_score_from_model
-from octopus.models.inventory import ModelInventory
+from octopus.models import Models
 from octopus.modules.rfe.module import Rfe
 from octopus.results import ModuleResults
 
@@ -200,7 +200,7 @@ class RfeCore:
         print("Model used:", model_type)
 
         # set up model and scoring type
-        model = ModelInventory().get_model_instance(model_type, {"random_state": 42})
+        model = Models.get_model_instance(model_type, {"random_state": 42})
         # Get scorer string from metrics inventory
         metrics_inventory = MetricsInventory()
         metric_config = metrics_inventory.get_metric_config(self.target_metric)

@@ -12,7 +12,7 @@ from sklearn.model_selection import BaseCrossValidator, GridSearchCV, Stratified
 
 from octopus.metrics.inventory import MetricsInventory
 from octopus.metrics.utils import get_score_from_model
-from octopus.models.inventory import ModelInventory
+from octopus.models import Models
 from octopus.modules.base import ModuleBaseCore
 from octopus.modules.sfs.module import Sfs
 from octopus.results import ModuleResults
@@ -99,7 +99,7 @@ class SfsCore(ModuleBaseCore[Sfs]):
         print("Model used:", model_type)
 
         # set up model and scoring type
-        model = ModelInventory().get_model_instance(model_type, {"random_state": 42})
+        model = Models.get_model_instance(model_type, {"random_state": 42})
 
         # Get scorer string from metrics inventory
         metrics_inventory = MetricsInventory()

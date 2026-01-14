@@ -7,7 +7,7 @@ from upath import UPath
 from octopus.experiment import OctoExperiment
 from octopus.logger import LogGroup, get_logger
 from octopus.metrics import metrics_inventory
-from octopus.models.inventory import ModelInventory
+from octopus.models import Models
 from octopus.modules.octo.bag import Bag, BagClassifier, BagRegressor  # type: ignore
 from octopus.modules.octo.training import Training  # type: ignore
 
@@ -85,11 +85,11 @@ class ObjectiveOptuna:
 
         # get hyper parameter space for selected model
         # get hyperparameters for selected model
-        model_item = ModelInventory().get_model_config(ml_model_type)
+        model_item = Models.get_model_config(ml_model_type)
 
         hyperparameters = self.hyper_parameters.get(ml_model_type, model_item.hyperparameters)
 
-        model_params = ModelInventory().create_trial_parameters(
+        model_params = Models.create_trial_parameters(
             trial,
             model_item,
             hyperparameters,

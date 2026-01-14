@@ -33,7 +33,7 @@ from octopus.models.hyperparameter import (
     FloatHyperparameter,
     IntHyperparameter,
 )
-from octopus.models.inventory import ModelInventory
+from octopus.models import Models
 from octopus.modules.octo.training import Training
 
 # ============================================================================
@@ -70,14 +70,14 @@ class ModelCache:
         if self._cached_models_by_type is not None:
             return self._cached_models_by_type
 
-        inventory = ModelInventory()
-        all_models = inventory.models
+        # Get all models from the registry
+        all_models = Models._config_factories.keys()
 
         models_by_type = {"classification": [], "regression": [], "timetoevent": [], "multiclass": []}
 
         for model_name in all_models:
             try:
-                model_config = inventory.get_model_config(model_name)
+                model_config = Models.get_model_config(model_name)
                 ml_type = model_config.ml_type
                 if ml_type in models_by_type:
                     models_by_type[ml_type].append(model_name)
@@ -128,8 +128,8 @@ def get_model_configs():
 
 def get_default_model_params(model_name: str) -> dict:
     """Get default parameters for a model from its hyperparameter configuration."""
-    inventory = ModelInventory()
-    model_config = inventory.get_model_config(model_name)
+    # Models uses classmethods, no instantiation needed
+    model_config = Models.get_model_config(model_name)
 
     params = {}
 
@@ -193,9 +193,7 @@ def test_data():
     data["target_class"] = np.random.choice([0, 1], n_samples)
     data["target_multiclass"] = np.random.choice([0, 1, 2], n_samples)
     data["target_reg"] = (
-        0.5 * data["num_col1"].fillna(data["num_col1"].mean())
-        + 0.3 * data["num_col2"].fillna(data["num_col2"].mean())
-        + np.random.normal(0, 1, n_samples)
+        0.5 * data["num_col1"].fillna(data["num_col1"].mean()) + 0.3 * data["num_col2"].fillna(data["num_col2"].mean()) + np.random.normal(0, 1, n_samples)
     )
     data["duration"] = np.random.exponential(10, n_samples)
     data["event"] = np.random.choice([True, False], n_samples, p=[0.7, 0.3])
@@ -374,9 +372,7 @@ def run_comprehensive_feature_importance_tests():
     data["target_class"] = np.random.choice([0, 1], n_samples)
     data["target_multiclass"] = np.random.choice([0, 1, 2], n_samples)
     data["target_reg"] = (
-        0.5 * data["num_col1"].fillna(data["num_col1"].mean())
-        + 0.3 * data["num_col2"].fillna(data["num_col2"].mean())
-        + np.random.normal(0, 1, n_samples)
+        0.5 * data["num_col1"].fillna(data["num_col1"].mean()) + 0.3 * data["num_col2"].fillna(data["num_col2"].mean()) + np.random.normal(0, 1, n_samples)
     )
     data["duration"] = np.random.exponential(10, n_samples)
     data["event"] = np.random.choice([True, False], n_samples, p=[0.7, 0.3])
@@ -423,9 +419,7 @@ def run_comprehensive_feature_importance_tests():
 
             try:
                 # Create and fit training instance
-                training = create_training_instance(
-                    data_train, data_dev, data_test, ml_type, model_name, feature_columns, feature_groups
-                )
+                training = create_training_instance(data_train, data_dev, data_test, ml_type, model_name, feature_columns, feature_groups)
 
                 # Fit the model
                 fit_start = time.time()
@@ -478,8 +472,7 @@ def run_comprehensive_feature_importance_tests():
     print("-" * 40)
     for method_name in FI_METHODS:
         method_success = sum(
-            sum(1 for model_results in ml_results.values() if model_results.get(method_name, {}).get("success", False))
-            for ml_results in results.values()
+            sum(1 for model_results in ml_results.values() if model_results.get(method_name, {}).get("success", False)) for ml_results in results.values()
         )
         method_total = sum(len(ml_results) for ml_results in results.values())
         success_rate = method_success / method_total * 100 if method_total > 0 else 0
@@ -492,8 +485,7 @@ def run_comprehensive_feature_importance_tests():
     print("-" * 40)
     for ml_type in results:
         ml_success = sum(
-            sum(1 for method_result in model_results.values() if method_result.get("success", False))
-            for model_results in results[ml_type].values()
+            sum(1 for method_result in model_results.values() if method_result.get("success", False)) for model_results in results[ml_type].values()
         )
         ml_total = sum(len(model_results) for model_results in results[ml_type].values())
         success_rate = ml_success / ml_total * 100 if ml_total > 0 else 0
@@ -601,9 +593,7 @@ class TestFeatureImportanceComprehensive:
             for model_name in config["models"]:
                 try:
                     # Create and fit training instance
-                    training = create_training_instance(
-                        data_train, data_dev, data_test, ml_type, model_name, feature_columns, feature_groups
-                    )
+                    training = create_training_instance(data_train, data_dev, data_test, ml_type, model_name, feature_columns, feature_groups)
                     training.fit()
 
                     # Test each feature importance method
@@ -635,9 +625,7 @@ if __name__ == "__main__":
         # Run with pytest
         import subprocess
 
-        result = subprocess.run(
-            [sys.executable, "-m", "pytest", __file__, "-v"], check=False, capture_output=False, text=True
-        )
+        result = subprocess.run([sys.executable, "-m", "pytest", __file__, "-v"], check=False, capture_output=False, text=True)
         sys.exit(result.returncode)
     else:
         # Run standalone

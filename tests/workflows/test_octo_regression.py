@@ -245,7 +245,7 @@ class TestOctoRegression:
             assert (study_path / "data.parquet").exists(), "Data parquet file should exist"
             assert (study_path / "data_prepared.parquet").exists(), "Prepared data parquet file should exist"
             assert (study_path / "config.json").exists(), "Config JSON file should exist"
-            assert (study_path / "outersplit0").exists(), "Experiment directory should exist"
+            assert (study_path / "outersplit0").exists(), "Outersplit directory should exist"
 
             # Verify that the Octo step was executed by checking for workflow directories
             experiment_path = study_path / "outersplit0"

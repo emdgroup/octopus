@@ -19,11 +19,6 @@ class ModelRegistry:
         return decorator
 
     @classmethod
-    def get_model(cls, name):
-        """Get model."""
-        return cls._models.get(name)
-
-    @classmethod
     def get_all_models(cls):
         """Get all models."""
         return cls._models

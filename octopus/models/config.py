@@ -65,11 +65,11 @@ class BaseModel(BaseEstimator):
 class ModelConfig:
     """Create model config."""
 
-    name: str
     model_class: type[BaseModel]
     feature_method: str
     ml_type: MLType = field(validator=validators.in_(ML_TYPES))
     hyperparameters: list[Hyperparameter] = field(validator=validate_hyperparameters)
+    name: str = field(default="")
     n_repeats: None | int = field(factory=lambda: None)
     n_jobs: None | str = field(factory=lambda: "n_jobs")
     model_seed: None | str = field(factory=lambda: "model_seed")

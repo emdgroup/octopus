@@ -20,7 +20,7 @@ from sklearn.model_selection import (
 
 from octopus.metrics import metrics_inventory
 from octopus.metrics.inventory import MetricsInventory
-from octopus.models.inventory import ModelInventory
+from octopus.models import Models
 from octopus.modules.base import ModuleBaseCore
 from octopus.modules.efs.module import Efs
 from octopus.results import ModuleResults
@@ -189,7 +189,7 @@ class EfsCore(ModuleBaseCore[Efs]):
         print("Model used:", model_type)
 
         # set up model and scoring type
-        model = ModelInventory().get_model_instance(model_type, {"random_state": 42})
+        model = Models.get_model_instance(model_type, {"random_state": 42})
         # Get scorer string from metrics inventory
         metrics_inventory = MetricsInventory()
         metric_config = metrics_inventory.get_metric_config(self.target_metric)

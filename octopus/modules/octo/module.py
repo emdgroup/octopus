@@ -6,7 +6,7 @@ from typing import ClassVar
 from attrs import Factory, define, field, validators
 
 from octopus.logger import get_logger
-from octopus.models.inventory import ModelInventory
+from octopus.models import Models
 from octopus.task import Task
 
 logger = get_logger()
@@ -118,14 +118,13 @@ class Octo(Task):
             )
         # (2) Only enforce constrained-HPO compatibility when max_features > 0
         if self.max_features > 0:
-            inventory = ModelInventory()
             incompatible_models: list[str] = []
 
             for m in self.models:
                 try:
                     # Resolve model_config either by name (str) or by using get_model_config() on a class/object
                     if isinstance(m, str):
-                        config = inventory.get_model_config(m)
+                        config = Models.get_model_config(m)
                     else:
                         get_cfg = getattr(m, "get_model_config", None)
                         if callable(get_cfg):

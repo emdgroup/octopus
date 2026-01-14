@@ -1,8 +1,10 @@
 """Init."""
 
-from .classification_models import *  # noqa F403
-from .inventory import ModelInventory
-from .regression_models import *  # noqa F403
-from .time_to_event_models import *  # noqa F403
+# Import model definitions so that @Models.register decorators run on import
+from .classification_models import *  # noqa: F403
+from .regression_models import *  # noqa: F403
+from .time_to_event_models import *  # noqa: F403
 
-model_inventory = ModelInventory()
+from .core import Models
+
+__all__ = ["Models"]

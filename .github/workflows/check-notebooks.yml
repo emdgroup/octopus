@@ -1,0 +1,36 @@
+name: Check notebooks are clean
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - master
+
+jobs:
+  check-notebooks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install nbstripout
+        run: pip install nbstripout
+      - name: Check notebooks have no outputs
+        run: |
+          # Get list of all .ipynb files tracked by git
+          NOTEBOOKS=$(git ls-files '*.ipynb')
+          if [ -z "$NOTEBOOKS" ]; then
+            echo "No notebooks found in repository"
+            exit 0
+          fi
+          echo "Checking notebooks for outputs..."
+          echo "$NOTEBOOKS"
+          # Run nbstripout in dry-run mode - fails if any notebooks would be modified
+          nbstripout --dry-run $NOTEBOOKS || {
+            echo "❌ ERROR: Some notebooks contain outputs!"
+            echo "Please run 'nbstripout' on your notebooks before committing."
+            exit 1
+          }
+          echo "✅ All notebooks are clean (no outputs stored)"

@@ -42,7 +42,6 @@ dependencies = [
     "scikit-learn>=1.6.0",
     "shap>=0.48",
     "xgboost>=3.0",
-    "fastparquet>=2024.11.0",
     "fsspec>=2025.10.0",
     "universal_pathlib>=0.3.6",
 ]

@@ -39,6 +39,7 @@ dependencies = [
     "rapidfuzz>=3.14",
     "scikit-learn>=1.6.0",
     "shap>=0.48",
+    "llvmlite<0.46",        # license change with 0.46
     "xgboost>=3.0",
     "fsspec>=2025.10.0",
     "universal_pathlib>=0.3.6",
@@ -98,6 +99,7 @@ lint = [
     "pydoclint==0.7.3", # see DEV TOOLS NOTE
     "pyupgrade==3.21.0", # see DEV TOOLS NOTE
     "ruff==0.14.1", # see DEV TOOLS NOTE
+    "licensecheck>=2025.1.0",
 ]
 mypy = [
     "mypy==1.18.2", # see DEV TOOLS NOTE
@@ -135,6 +137,10 @@ version_scheme = 'post-release'
 local_scheme = "dirty-tag"
 [tool.setuptools]
 packages = ["octopus"]
+
+[tool.uv]
+# licensecheck depends indirectly on attrs<24 but we need attrs>=25.3.0
+override-dependencies = ["attrs>=25.3.0"]
 
 [tool.mypy]
 python_version = "3.12"

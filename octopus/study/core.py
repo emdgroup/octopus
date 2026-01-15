@@ -212,15 +212,15 @@ class OctoStudy:
         data.to_parquet(
             str(data_path),
             index=False,
-            engine="fastparquet",
             storage_options=data_path.storage_options,
+            engine="pyarrow",
         )
         prepared_data_path = self.output_path / "data_prepared.parquet"
         self.prepared.data.to_parquet(
             str(prepared_data_path),
             index=False,
-            engine="fastparquet",
             storage_options=prepared_data_path.storage_options,
+            engine="pyarrow",
         )
 
     def _prepare_data(self, data: pd.DataFrame) -> pd.DataFrame:

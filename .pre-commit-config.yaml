@@ -73,3 +73,12 @@ repos:
         #- scikit-survival
         #- tabpfn
         #- boruta
+  - repo: local
+    hooks:
+    - id: license-checker
+      name: License Checker
+      description: This Hook checks for compatible licenses in all dependencies
+      # the --requirements-paths must be the last flag because pre-commit appends the pyproject.toml path at the end
+      entry: licensecheck --extras dev --show-only-failing -0 --ignore-package apsw matplotlib-inline mypy-extensions --requirements-paths
+      language: python
+      files: pyproject.toml

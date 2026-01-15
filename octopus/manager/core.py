@@ -238,6 +238,7 @@ class OctoManager:
                 experiment.results[key].create_prediction_df().to_parquet(
                     str(predictions_path),
                     storage_options=predictions_path.storage_options,
+                    engine="pyarrow",
                 )
 
                 # save feature importance
@@ -248,6 +249,7 @@ class OctoManager:
                 experiment.results[key].create_feature_importance_df().to_parquet(
                     str(feature_importance_path),
                     storage_options=feature_importance_path.storage_options,
+                    engine="pyarrow",
                 )
 
         experiment.to_pickle(path_save)

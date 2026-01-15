@@ -343,6 +343,7 @@ class OctoCoreGeneric[TaskConfigType: Octo]:
         pd.DataFrame(dict_optuna).to_parquet(
             str(dict_optuna_path),
             storage_options=dict_optuna_path.storage_options,
+            engine="pyarrow",
         )
 
         # display results

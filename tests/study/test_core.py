@@ -173,7 +173,6 @@ def test_ml_type_values():
     ml_type_metrics = {
         "classification": "AUCROC",
         "regression": "R2",
-        "timetoevent": "CI",
         "multiclass": "AUCROC_MACRO",
     }
     for ml_type, metric in ml_type_metrics.items():

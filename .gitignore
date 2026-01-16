@@ -43,8 +43,11 @@ build
 htmlcov
 
 # Other
-*.png
+# Ignore all .ipynb files
 *.ipynb
+# But allow .ipynb files in examples/ directory and subdirectories
+!examples/**/*.ipynb
+*.png
 *.pdf
 *.log
 *.parquet

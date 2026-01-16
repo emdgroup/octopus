@@ -5,6 +5,7 @@ from unittest.mock import MagicMock
 import optuna
 import pytest
 
+from octopus.models import Models
 from octopus.models.config import ModelConfig
 from octopus.models.hyperparameter import (
     CategoricalHyperparameter,
@@ -12,7 +13,6 @@ from octopus.models.hyperparameter import (
     FloatHyperparameter,
     IntHyperparameter,
 )
-from octopus.models import Models
 
 
 @pytest.mark.parametrize(

@@ -2,14 +2,17 @@
 
 from __future__ import annotations
 
-from typing import Any, Callable, ClassVar
-
-import optuna
+from typing import TYPE_CHECKING, Any, ClassVar
 
 from octopus.exceptions import UnknownModelError
 
-from .config import ModelConfig
-from .hyperparameter import Hyperparameter
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    import optuna
+
+    from .config import ModelConfig
+    from .hyperparameter import Hyperparameter
 
 
 class Models:
@@ -55,9 +58,6 @@ class Models:
 
         Returns:
             Decorator function.
-
-        Raises:
-            ValueError: If a model with this name is already registered.
         """
 
         def decorator(factory: Callable[[], ModelConfig]) -> Callable[[], ModelConfig]:
@@ -92,8 +92,7 @@ class Models:
         if factory is None:
             available = ", ".join(sorted(cls._config_factories.keys()))
             raise UnknownModelError(
-                f"Unknown model '{name}'. Available models are: {available}. "
-                "Please check the model name and try again."
+                f"Unknown model '{name}'. Available models are: {available}. Please check the model name and try again."
             )
 
         # Build config via factory and enforce name consistency
@@ -114,9 +113,6 @@ class Models:
 
         Returns:
             The initialized model instance.
-
-        Raises:
-            UnknownModelError: If no model with the specified name is found.
         """
         model_config = cls.get_model_config(name)
         return model_config.model_class(**params)
@@ -132,9 +128,6 @@ class Models:
 
         Returns:
             The feature method of the model.
-
-        Raises:
-            UnknownModelError: If no model with the specified name is found.
         """
         model_config = cls.get_model_config(name)
         return model_config.feature_method

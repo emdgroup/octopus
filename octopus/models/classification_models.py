@@ -16,7 +16,6 @@ from .config import ModelConfig
 from .core import Models
 from .hyperparameter import CategoricalHyperparameter, FixedHyperparameter, FloatHyperparameter, IntHyperparameter
 from .wrapper_models.GaussianProcessClassifier import GPClassifierWrapper
-from .wrapper_models.TabularNNClassifier import TabularNNClassifier
 
 
 @Models.register("ExtraTreesClassifier")

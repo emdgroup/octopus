@@ -4,13 +4,13 @@ import numpy as np
 import pandas as pd
 import pytest
 
+from octopus.models import Models
 from octopus.models.hyperparameter import (
     CategoricalHyperparameter,
     FixedHyperparameter,
     FloatHyperparameter,
     IntHyperparameter,
 )
-from octopus.models import Models
 from octopus.modules.octo.training import Training
 
 
@@ -22,7 +22,7 @@ def get_classification_models():
     excluded_models = {}
 
     # Get all models from the registry
-    for model_name in Models._config_factories.keys():
+    for model_name in Models._config_factories:
         try:
             config = Models.get_model_config(model_name)
             if config.ml_type == "classification" and model_name not in excluded_models:

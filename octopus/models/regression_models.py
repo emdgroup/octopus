@@ -14,8 +14,8 @@ from sklearn.svm import SVR
 from xgboost import XGBRegressor
 
 from .config import ModelConfig
-from .hyperparameter import CategoricalHyperparameter, FixedHyperparameter, FloatHyperparameter, IntHyperparameter
 from .core import Models
+from .hyperparameter import CategoricalHyperparameter, FixedHyperparameter, FloatHyperparameter, IntHyperparameter
 from .wrapper_models.GaussianProcessRegressor import GPRegressorWrapper
 
 

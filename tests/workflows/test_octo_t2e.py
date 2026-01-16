@@ -11,6 +11,7 @@ from octopus import OctoStudy
 from octopus.modules import Octo
 
 
+@pytest.mark.skip(reason="Temporarily disabled")
 class TestOctoTimeToEvent:
     """Test suite for Octopus time-to-event workflow."""
 

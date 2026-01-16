@@ -2311,7 +2311,7 @@ requires-dist = [
     { name = "pytest-cov", marker = "extra == 'test'", specifier = ">=6.2.1" },
     { name = "pyupgrade", marker = "extra == 'lint'", specifier = "==3.21.0" },
     { name = "rapidfuzz", specifier = ">=3.14" },
-    { name = "ray", specifier = ">=2.44" },
+    { name = "ray", specifier = ">=2.44,<2.47" },
     { name = "ruff", marker = "extra == 'lint'", specifier = "==0.14.1" },
     { name = "s3fs", marker = "extra == 'test'", specifier = ">=2025.10.0" },
     { name = "scikit-learn", specifier = ">=1.6.0" },

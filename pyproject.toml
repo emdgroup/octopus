@@ -37,7 +37,7 @@ dependencies = [
     "optuna>=4.5",
     "pandas>=2.3,<3",
     "polars>=1.33",
-    "ray>=2.44",
+    "ray>=2.44,<2.47",
     "rapidfuzz>=3.14",
     "scikit-learn>=1.6.0",
     "shap>=0.48",
@@ -67,19 +67,29 @@ autogluon = [
     "tokenizers>=0.13.0", # Override old tokenizers, use version with Python 3.12 wheels
 ]
 survival = [
-]
 # NOTE: The 'survival' extra is intentionally kept as an empty placeholder.
 # It is referenced elsewhere (e.g. in test dependencies as `octopus[survival]`)
 # and reserved for future survival-analysis backends without breaking that extra name.
-
+]
+sfs = [
+    "mlxtend>=0.22.0",
+]
 dev = [
     "octopus[test]",
     "octopus[mypy]",
+    "octopus[docs]",
     "nbformat>=5.10", # analysis notebook
     "seaborn>=0.13", # analysis notebook
     "ipywidgets>=8", # analysis notebook
 ]
 docs = [
+    "octopus[examples]", # docs cannot be built without running examples
+    "octopus[test]", # creating docs requires importing the package and all (even optional) dependencies
+    "mkdocs>=1.6.1",
+    "mkdocs-material>=9.7.1",
+    "mkdocstrings-python>=2.0.1",
+    "mkdocs-gen-files>=0.6.0",
+    "mkdocs-include-dir-to-nav>=1.2.0",
 ]
 examples = [
 ]
@@ -107,6 +117,7 @@ test = [
     "octopus[autogluon]",
     "octopus[boruta]",
     "octopus[survival]",
+    "octopus[sfs]",
     "octopus[lint]",
     "moto[server,s3]>=5.1.17",
     "s3fs>=2025.10.0",

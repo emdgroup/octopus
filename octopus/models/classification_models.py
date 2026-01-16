@@ -234,42 +234,6 @@ class LogisticRegressionClassifierModel:
         )
 
 
-@ModelRegistry.register("TabPFNClassifier")
-class TabPFNClassifierModel:
-    """TabPFN classification model class."""
-
-    @staticmethod
-    def get_model_config():
-        """Get model config."""
-        from octopus._optional.tabpfn import TabPFNClassifier  # noqa: PLC0415
-        from octopus._optional.tabpfn_utils import get_tabpfn_model_path  # noqa: PLC0415
-
-        return ModelConfig(
-            name="TabPFNClassifier",
-            model_class=TabPFNClassifier,
-            ml_type="classification",
-            feature_method="constant",  # constant FI, disable constraint HPO
-            n_repeats=2,
-            chpo_compatible=True,
-            scaler="StandardScaler",
-            imputation_required=False,
-            categorical_enabled=True,
-            hyperparameters=[
-                FixedHyperparameter(name="n_estimators", value=4),
-                FixedHyperparameter(name="softmax_temperature", value=0.9),
-                FixedHyperparameter(name="balance_probabilities", value=True),
-                FixedHyperparameter(name="average_before_softmax", value=False),
-                FixedHyperparameter(name="device", value="cpu"),
-                FixedHyperparameter(name="ignore_pretraining_limits", value=False),
-                FixedHyperparameter(name="fit_mode", value="fit_preprocessors"),
-                FixedHyperparameter(name="memory_saving_mode", value="auto"),
-                FixedHyperparameter(name="model_path", value=str(get_tabpfn_model_path("classifier"))),
-            ],
-            n_jobs="n_jobs",
-            model_seed="random_state",
-        )
-
-
 @ModelRegistry.register("GaussianProcessClassifier")
 class GaussianProcessClassifierModel:
     """Gaussian process classification model class."""
@@ -352,7 +316,6 @@ __all__ = [
     "HistGradientBoostingClassifierModel",
     "LogisticRegressionClassifierModel",
     "RandomForestClassifierModel",
-    "TabPFNClassifierModel",
     "TabularNNClassifierModel",
     "XGBClassifierModel",
 ]

@@ -23,6 +23,5 @@ Activate the virtual environment:
 Install with extras:
 
     uv sync --extra autogluon     # AutoGluon reference
-    uv sync --extra tabpfn        # TabPFN model
     uv sync --extra boruta        # Boruta feature selection
     uv sync --all-extras          # All extras

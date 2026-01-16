@@ -72,9 +72,7 @@ survival = [
 # NOTE: The 'survival' extra is intentionally kept as an empty placeholder.
 # It is referenced elsewhere (e.g. in test dependencies as `octopus[survival]`)
 # and reserved for future survival-analysis backends without breaking that extra name.
-tabpfn = [
-    "tabpfn>=2.1"
-]
+
 dev = [
     "octopus[test]",
     "octopus[mypy]",
@@ -108,7 +106,6 @@ test = [
     "pytest>=8.4.2",
     "pytest-cov>=6.2.1",
     "octopus[autogluon]",
-    "octopus[tabpfn]",
     "octopus[boruta]",
     "octopus[survival]",
     "octopus[lint]",
@@ -149,10 +146,6 @@ ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
 module = "autogluon.*"
-ignore_missing_imports = true
-
-[[tool.mypy.overrides]]
-module = "tabpfn.*"
 ignore_missing_imports = true
 
 [[tool.mypy.overrides]]

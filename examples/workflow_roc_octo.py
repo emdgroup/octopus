@@ -62,7 +62,6 @@ study = OctoStudy(
             # Model selection
             models=[
                 "ExtraTreesClassifier",
-                # "TabPFNClassifier",
                 # "RandomForestClassifier",
             ],
             model_seed=0,

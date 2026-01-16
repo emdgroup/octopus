@@ -110,7 +110,7 @@ class OctoPredict:
 
             # extract best model. test dataset, feature columns
             if path_exp.exists():
-                print(f"Experiment{experiment_id}, task{self.task_id} found.")
+                print(f"Outersplit{experiment_id}, task{self.task_id} found.")
                 # load experiment
                 experiment = OctoExperiment.from_pickle(path_exp)
                 # check if results_key exists

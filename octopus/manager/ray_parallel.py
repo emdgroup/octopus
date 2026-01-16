@@ -28,17 +28,17 @@ def _check_parallelization_disabled() -> None:
         if lib["num_threads"] > 1:
             raise RuntimeError(
                 f"Active thread-level parallelization detected in {lib}."
-                "This may lead to resource oversubscription and slow execution. "
+                "This may lead to resource oversubscription in Ray workers. "
                 "Please disable thread-level parallelization by setting respective "
                 "environment variables."
             )
 
     for env_var in _PARALLELIZATION_ENV_VARS:
-        if os.environ.get(env_var, None) != "1":
+        if (val := os.environ.get(env_var, "1")) != "1":
             raise RuntimeError(
-                f"Environment variable {env_var} is set to {os.environ.get(env_var)}. "
-                "This may lead to resource oversubscription and slow execution. "
-                "Please set it to 1 to disable thread-level parallelization."
+                f"Environment variable {env_var} is set to {val}. "
+                "This may lead to resource oversubscription in Ray workers. "
+                f"Please set {env_var}=1 to ensure single-threaded execution."
             )
 
 
@@ -67,10 +67,11 @@ def init_ray(
         return
 
     addr = address or _get_env_address()
+    runtime_env = kwargs.pop("runtime_env", {})
     if addr:
         ray.init(
             address=addr,
-            runtime_env={"worker_process_setup_hook": _check_parallelization_disabled},
+            runtime_env=runtime_env | {"worker_process_setup_hook": _check_parallelization_disabled},
             **kwargs,
         )
         return
@@ -78,7 +79,7 @@ def init_ray(
     if start_local_if_missing:
         ray.init(
             num_cpus=num_cpus,
-            runtime_env={"worker_process_setup_hook": _check_parallelization_disabled},
+            runtime_env=runtime_env | {"worker_process_setup_hook": _check_parallelization_disabled},
             **kwargs,
         )
         return

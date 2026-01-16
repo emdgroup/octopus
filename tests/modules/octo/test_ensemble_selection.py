@@ -107,8 +107,12 @@ def create_fake_training(trained_model, model_name, feature_indices, fold_data, 
 
     # Create prediction dataframes in octopus format
     predictions = {
-        "train": pd.DataFrame({"row_id": fold_data["fold_train_row_ids"], "prediction": pred_train, "target": fold_data["y_fold_train"]}),
-        "dev": pd.DataFrame({"row_id": fold_data["fold_val_row_ids"], "prediction": pred_val, "target": fold_data["y_fold_val"]}),
+        "train": pd.DataFrame(
+            {"row_id": fold_data["fold_train_row_ids"], "prediction": pred_train, "target": fold_data["y_fold_train"]}
+        ),
+        "dev": pd.DataFrame(
+            {"row_id": fold_data["fold_val_row_ids"], "prediction": pred_val, "target": fold_data["y_fold_val"]}
+        ),
         "test": pd.DataFrame({"row_id": splits["test_row_ids"], "prediction": pred_test, "target": splits["y_test"]}),
     }
 
@@ -202,7 +206,9 @@ def test_ensemble_selection_ensembled_data(tmp_path):
 
     bags = {}
     for model_name, model in models.items():
-        bag = create_fake_bag(trials_path, model, model_name, feature_subsets[model_name], cv_folds, splits, bag_id=f"trial_{model_name}")
+        bag = create_fake_bag(
+            trials_path, model, model_name, feature_subsets[model_name], cv_folds, splits, bag_id=f"trial_{model_name}"
+        )
         bags[model_name] = bag
 
     for trial_idx, (_model_name, bag) in enumerate(bags.items()):
@@ -255,13 +261,17 @@ def test_ensemble_selection_ensembled_data(tmp_path):
 
     # Average predictions from all three bags (same as ensemble selection does)
     true_ensemble_preds = (
-        bag_dev_predictions[0]["prediction"].values + bag_dev_predictions[1]["prediction"].values + bag_dev_predictions[2]["prediction"].values
+        bag_dev_predictions[0]["prediction"].values
+        + bag_dev_predictions[1]["prediction"].values
+        + bag_dev_predictions[2]["prediction"].values
     ) / 3
 
     true_ensemble_mae = mean_absolute_error(dev_targets, true_ensemble_preds)
 
     # Test that ensemble outperforms best individual model
-    assert ensemble_mae < best_individual_mae, f"Ensemble MAE ({ensemble_mae:.4f}) should be better than best individual MAE ({best_individual_mae:.4f})"
+    assert ensemble_mae < best_individual_mae, (
+        f"Ensemble MAE ({ensemble_mae:.4f}) should be better than best individual MAE ({best_individual_mae:.4f})"
+    )
 
     # Test that found ensemble achieves near-optimal performance
     print(f"Ensemble MAE: {ensemble_mae:.4f}, True optimal MAE: {true_ensemble_mae:.4f}")

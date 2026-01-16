@@ -20,13 +20,13 @@ import numpy as np
 import pandas as pd
 import pytest
 
+from octopus.models import Models
 from octopus.models.hyperparameter import (
     CategoricalHyperparameter,
     FixedHyperparameter,
     FloatHyperparameter,
     IntHyperparameter,
 )
-from octopus.models import Models
 from octopus.modules.octo.training import Training
 
 # ============================================================================
@@ -182,7 +182,9 @@ def test_data():
     # Generate targets
     data["target_class"] = np.random.choice([0, 1], n_samples)
     data["target_reg"] = (
-        0.5 * data["num_col1"].fillna(data["num_col1"].mean()) + 0.3 * data["num_col2"].fillna(data["num_col2"].mean()) + np.random.normal(0, 1, n_samples)
+        0.5 * data["num_col1"].fillna(data["num_col1"].mean())
+        + 0.3 * data["num_col2"].fillna(data["num_col2"].mean())
+        + np.random.normal(0, 1, n_samples)
     )
 
     # Generate survival data
@@ -424,18 +426,24 @@ class TestModelFittedValidation:
 
         for model_name in classification_models:
             try:
-                training = create_training_instance(data_train, data_dev, data_test, "classification", model_name, feature_columns, feature_groups)
+                training = create_training_instance(
+                    data_train, data_dev, data_test, "classification", model_name, feature_columns, feature_groups
+                )
 
                 result = _test_model_fitted_validation(training, model_name)
 
                 # Check if both unfitted detection and fitted validation work
                 if not result["unfitted_detection_success"]:
-                    failed_tests.append(f"Classification/{model_name}/unfitted_detection: {result['unfitted_detection_error']}")
+                    failed_tests.append(
+                        f"Classification/{model_name}/unfitted_detection: {result['unfitted_detection_error']}"
+                    )
                 else:
                     successful_tests.append(f"Classification/{model_name}/unfitted_detection")
 
                 if not result["validation_success"]:
-                    failed_tests.append(f"Classification/{model_name}/fitted_validation: {result['validation_error'] or result['fit_error']}")
+                    failed_tests.append(
+                        f"Classification/{model_name}/fitted_validation: {result['validation_error'] or result['fit_error']}"
+                    )
                 else:
                     successful_tests.append(f"Classification/{model_name}/fitted_validation")
 
@@ -478,18 +486,24 @@ class TestModelFittedValidation:
 
         for model_name in regression_models:
             try:
-                training = create_training_instance(data_train, data_dev, data_test, "regression", model_name, feature_columns, feature_groups)
+                training = create_training_instance(
+                    data_train, data_dev, data_test, "regression", model_name, feature_columns, feature_groups
+                )
 
                 result = _test_model_fitted_validation(training, model_name)
 
                 # Check if both unfitted detection and fitted validation work
                 if not result["unfitted_detection_success"]:
-                    failed_tests.append(f"Regression/{model_name}/unfitted_detection: {result['unfitted_detection_error']}")
+                    failed_tests.append(
+                        f"Regression/{model_name}/unfitted_detection: {result['unfitted_detection_error']}"
+                    )
                 else:
                     successful_tests.append(f"Regression/{model_name}/unfitted_detection")
 
                 if not result["validation_success"]:
-                    failed_tests.append(f"Regression/{model_name}/fitted_validation: {result['validation_error'] or result['fit_error']}")
+                    failed_tests.append(
+                        f"Regression/{model_name}/fitted_validation: {result['validation_error'] or result['fit_error']}"
+                    )
                 else:
                     successful_tests.append(f"Regression/{model_name}/fitted_validation")
 
@@ -535,18 +549,24 @@ class TestModelFittedValidation:
 
         for model_name in timetoevent_models:
             try:
-                training = create_training_instance(data_train, data_dev, data_test, "timetoevent", model_name, feature_columns, feature_groups)
+                training = create_training_instance(
+                    data_train, data_dev, data_test, "timetoevent", model_name, feature_columns, feature_groups
+                )
 
                 result = _test_model_fitted_validation(training, model_name)
 
                 # Check if both unfitted detection and fitted validation work
                 if not result["unfitted_detection_success"]:
-                    failed_tests.append(f"TimeToEvent/{model_name}/unfitted_detection: {result['unfitted_detection_error']}")
+                    failed_tests.append(
+                        f"TimeToEvent/{model_name}/unfitted_detection: {result['unfitted_detection_error']}"
+                    )
                 else:
                     successful_tests.append(f"TimeToEvent/{model_name}/unfitted_detection")
 
                 if not result["validation_success"]:
-                    failed_tests.append(f"TimeToEvent/{model_name}/fitted_validation: {result['validation_error'] or result['fit_error']}")
+                    failed_tests.append(
+                        f"TimeToEvent/{model_name}/fitted_validation: {result['validation_error'] or result['fit_error']}"
+                    )
                 else:
                     successful_tests.append(f"TimeToEvent/{model_name}/fitted_validation")
 
@@ -589,7 +609,9 @@ class TestModelFittedValidation:
         for ml_type, config in model_configs.items():
             for model_name in config["models"]:
                 try:
-                    training = create_training_instance(data_train, data_dev, data_test, ml_type, model_name, feature_columns, feature_groups)
+                    training = create_training_instance(
+                        data_train, data_dev, data_test, ml_type, model_name, feature_columns, feature_groups
+                    )
 
                     result = _test_model_fitted_validation(training, model_name)
 
@@ -599,12 +621,16 @@ class TestModelFittedValidation:
                     if result["unfitted_detection_success"]:
                         successful_tests += 1
                     else:
-                        failed_tests.append(f"{ml_type}/{model_name}/unfitted_detection: {result['unfitted_detection_error']}")
+                        failed_tests.append(
+                            f"{ml_type}/{model_name}/unfitted_detection: {result['unfitted_detection_error']}"
+                        )
 
                     if result["validation_success"]:
                         successful_tests += 1
                     else:
-                        failed_tests.append(f"{ml_type}/{model_name}/fitted_validation: {result['validation_error'] or result['fit_error']}")
+                        failed_tests.append(
+                            f"{ml_type}/{model_name}/fitted_validation: {result['validation_error'] or result['fit_error']}"
+                        )
 
                 except ImportError as e:
                     # Skip models with missing dependencies
@@ -622,7 +648,9 @@ class TestModelFittedValidation:
         print(f"  Success rate: {successful_tests / total_tests * 100:.1f}%")
 
         # Assert that ALL models should work - configuration issues should cause test failure
-        assert len(failed_tests) == 0, "Model configuration/validation failures detected:\n" + "\n".join(f"  - {failure}" for failure in failed_tests)
+        assert len(failed_tests) == 0, "Model configuration/validation failures detected:\n" + "\n".join(
+            f"  - {failure}" for failure in failed_tests
+        )
 
 
 # ============================================================================
@@ -664,7 +692,9 @@ if __name__ == "__main__":
     data["row_id"] = range(n_samples)
     data["target_class"] = np.random.choice([0, 1], n_samples)
     data["target_reg"] = (
-        0.5 * data["num_col1"].fillna(data["num_col1"].mean()) + 0.3 * data["num_col2"].fillna(data["num_col2"].mean()) + np.random.normal(0, 1, n_samples)
+        0.5 * data["num_col1"].fillna(data["num_col1"].mean())
+        + 0.3 * data["num_col2"].fillna(data["num_col2"].mean())
+        + np.random.normal(0, 1, n_samples)
     )
     data["duration"] = np.random.exponential(10, n_samples)
     data["event"] = np.random.choice([True, False], n_samples, p=[0.7, 0.3])

@@ -27,13 +27,13 @@ try:
 except ImportError:
     pytest = None
 
+from octopus.models import Models
 from octopus.models.hyperparameter import (
     CategoricalHyperparameter,
     FixedHyperparameter,
     FloatHyperparameter,
     IntHyperparameter,
 )
-from octopus.models import Models
 from octopus.modules.octo.training import Training
 
 # ============================================================================
@@ -193,7 +193,9 @@ def test_data():
     data["target_class"] = np.random.choice([0, 1], n_samples)
     data["target_multiclass"] = np.random.choice([0, 1, 2], n_samples)
     data["target_reg"] = (
-        0.5 * data["num_col1"].fillna(data["num_col1"].mean()) + 0.3 * data["num_col2"].fillna(data["num_col2"].mean()) + np.random.normal(0, 1, n_samples)
+        0.5 * data["num_col1"].fillna(data["num_col1"].mean())
+        + 0.3 * data["num_col2"].fillna(data["num_col2"].mean())
+        + np.random.normal(0, 1, n_samples)
     )
     data["duration"] = np.random.exponential(10, n_samples)
     data["event"] = np.random.choice([True, False], n_samples, p=[0.7, 0.3])
@@ -372,7 +374,9 @@ def run_comprehensive_feature_importance_tests():
     data["target_class"] = np.random.choice([0, 1], n_samples)
     data["target_multiclass"] = np.random.choice([0, 1, 2], n_samples)
     data["target_reg"] = (
-        0.5 * data["num_col1"].fillna(data["num_col1"].mean()) + 0.3 * data["num_col2"].fillna(data["num_col2"].mean()) + np.random.normal(0, 1, n_samples)
+        0.5 * data["num_col1"].fillna(data["num_col1"].mean())
+        + 0.3 * data["num_col2"].fillna(data["num_col2"].mean())
+        + np.random.normal(0, 1, n_samples)
     )
     data["duration"] = np.random.exponential(10, n_samples)
     data["event"] = np.random.choice([True, False], n_samples, p=[0.7, 0.3])
@@ -419,7 +423,9 @@ def run_comprehensive_feature_importance_tests():
 
             try:
                 # Create and fit training instance
-                training = create_training_instance(data_train, data_dev, data_test, ml_type, model_name, feature_columns, feature_groups)
+                training = create_training_instance(
+                    data_train, data_dev, data_test, ml_type, model_name, feature_columns, feature_groups
+                )
 
                 # Fit the model
                 fit_start = time.time()
@@ -472,7 +478,8 @@ def run_comprehensive_feature_importance_tests():
     print("-" * 40)
     for method_name in FI_METHODS:
         method_success = sum(
-            sum(1 for model_results in ml_results.values() if model_results.get(method_name, {}).get("success", False)) for ml_results in results.values()
+            sum(1 for model_results in ml_results.values() if model_results.get(method_name, {}).get("success", False))
+            for ml_results in results.values()
         )
         method_total = sum(len(ml_results) for ml_results in results.values())
         success_rate = method_success / method_total * 100 if method_total > 0 else 0
@@ -485,7 +492,8 @@ def run_comprehensive_feature_importance_tests():
     print("-" * 40)
     for ml_type in results:
         ml_success = sum(
-            sum(1 for method_result in model_results.values() if method_result.get("success", False)) for model_results in results[ml_type].values()
+            sum(1 for method_result in model_results.values() if method_result.get("success", False))
+            for model_results in results[ml_type].values()
         )
         ml_total = sum(len(model_results) for model_results in results[ml_type].values())
         success_rate = ml_success / ml_total * 100 if ml_total > 0 else 0
@@ -593,7 +601,9 @@ class TestFeatureImportanceComprehensive:
             for model_name in config["models"]:
                 try:
                     # Create and fit training instance
-                    training = create_training_instance(data_train, data_dev, data_test, ml_type, model_name, feature_columns, feature_groups)
+                    training = create_training_instance(
+                        data_train, data_dev, data_test, ml_type, model_name, feature_columns, feature_groups
+                    )
                     training.fit()
 
                     # Test each feature importance method
@@ -625,7 +635,9 @@ if __name__ == "__main__":
         # Run with pytest
         import subprocess
 
-        result = subprocess.run([sys.executable, "-m", "pytest", __file__, "-v"], check=False, capture_output=False, text=True)
+        result = subprocess.run(
+            [sys.executable, "-m", "pytest", __file__, "-v"], check=False, capture_output=False, text=True
+        )
         sys.exit(result.returncode)
     else:
         # Run standalone

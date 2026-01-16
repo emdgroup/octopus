@@ -6,6 +6,7 @@ from typing import Any
 
 import pytest
 
+from octopus.models import Models
 from octopus.models.config import ML_TYPES
 from octopus.models.hyperparameter import (
     CategoricalHyperparameter,
@@ -13,7 +14,6 @@ from octopus.models.hyperparameter import (
     FloatHyperparameter,
     IntHyperparameter,
 )
-from octopus.models import Models
 
 
 def get_all_models():
@@ -84,13 +84,18 @@ def test_model_parameter_compatibility(model_name):
         except ValueError as e:
             # Check for parameter compatibility issues
             error_msg = str(e).lower()
-            if any(keyword in error_msg for keyword in ["supports only", "not supported", "incompatible", "invalid combination"]):
+            if any(
+                keyword in error_msg
+                for keyword in ["supports only", "not supported", "incompatible", "invalid combination"]
+            ):
                 compatibility_errors.append(f"Params {params}: {e!s}")
         except Exception:
             # Ignore other errors (missing dependencies, etc.)
             pass
 
-    assert not compatibility_errors, f"Parameter compatibility issues in {model_name}:\n" + "\n".join(compatibility_errors)
+    assert not compatibility_errors, f"Parameter compatibility issues in {model_name}:\n" + "\n".join(
+        compatibility_errors
+    )
 
 
 def test_all_models_have_valid_configs():
@@ -150,4 +155,6 @@ def test_model_instantiation_with_default_params():
             # Ignore other errors (dependencies, etc.)
             pass
 
-    assert not instantiation_errors, "Model instantiation errors with default parameters:\n" + "\n".join(instantiation_errors)
+    assert not instantiation_errors, "Model instantiation errors with default parameters:\n" + "\n".join(
+        instantiation_errors
+    )

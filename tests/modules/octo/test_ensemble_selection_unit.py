@@ -1,5 +1,7 @@
 """Unit tests for EnSel (Ensemble Selection) individual methods."""
 
+from pathlib import Path
+
 import numpy as np
 import pandas as pd
 from sklearn.linear_model import LinearRegression
@@ -76,7 +78,7 @@ def create_mock_training(training_id, performance_dev, performance_test, n_sampl
     return training
 
 
-def create_mock_bag(bag_id, target_dev_mae, target_test_mae, n_trainings=3, exact_performance=False):
+def create_mock_bag(log_dir, bag_id, target_dev_mae, target_test_mae, n_trainings=3, exact_performance=False):
     """Create a mock Bag with controlled performance."""
     trainings = []
     for i in range(n_trainings):
@@ -101,6 +103,7 @@ def create_mock_bag(bag_id, target_dev_mae, target_test_mae, n_trainings=3, exac
         ml_type="regression",
         parallel_execution=False,
         num_workers=1,
+        log_dir=log_dir,
     )
 
     bag.train_status = True
@@ -108,7 +111,7 @@ def create_mock_bag(bag_id, target_dev_mae, target_test_mae, n_trainings=3, exac
 
 
 def create_mock_trial_directory(
-    tmp_path: UPath, bag_performances: list[tuple[str, float, float]], exact_performance: bool = False
+    tmp_path: Path, bag_performances: list[tuple[str, float, float]], exact_performance: bool = False
 ) -> UPath:
     """Create directory with mock trial bags.
 
@@ -120,11 +123,11 @@ def create_mock_trial_directory(
     Returns:
         Path to trials directory
     """
-    trials_path = tmp_path / "trials"
+    trials_path = UPath(tmp_path / "trials")
     trials_path.mkdir()
 
     for i, (bag_id, dev_mae, test_mae) in enumerate(bag_performances):
-        bag = create_mock_bag(bag_id, dev_mae, test_mae, exact_performance=exact_performance)
+        bag = create_mock_bag(trials_path, bag_id, dev_mae, test_mae, exact_performance=exact_performance)
         bag_file = trials_path / f"trial{i}_bag.pkl"
         bag.to_pickle(bag_file)
 

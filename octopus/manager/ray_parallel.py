@@ -7,6 +7,9 @@ from typing import TYPE_CHECKING, Any, cast
 import ray
 import threadpoolctl
 from ray import ObjectRef
+from upath import UPath
+
+from octopus.logger import set_logger_filename
 
 if TYPE_CHECKING:
     from octopus.experiment import OctoExperiment
@@ -116,9 +119,21 @@ def setup_ray_for_external_library() -> None:
         os.environ.pop("RAY_ADDRESS", None)
 
 
+def _setup_worker_logging(log_dir: UPath):
+    """Setup logging for Ray worker processes."""
+    # We could log to individual files, e.g. per task:
+    # task_id = ray.get_runtime_context().get_task_id()
+    # worker_log_file = log_dir / f"octo_worker.{task_id}.log"
+
+    # but for now every worker just logs into the same file
+    worker_log_file = log_dir / "octo_manager.log"
+    set_logger_filename(log_file=worker_log_file)
+
+
 def run_parallel_outer_ray[T](
     base_experiments: Iterable["OctoExperiment"],
     create_execute_mlmodules: Callable[["OctoExperiment", int], T],
+    log_dir: UPath,
     num_workers: int,
 ) -> list[T]:
     """Execute create_execute_mlmodules(base_experiment, index) in parallel using Ray.
@@ -130,6 +145,7 @@ def run_parallel_outer_ray[T](
         base_experiments: Items to process.
         create_execute_mlmodules: Function called as create_execute_mlmodules(base_experiment, index).
             If your function only accepts (base_experiment), wrap it (e.g., lambda be, i: f(be)).
+        log_dir: Directory to store individual Ray worker logs.
         num_workers: Maximum number of concurrent outer tasks.
 
     Returns:
@@ -141,7 +157,8 @@ def run_parallel_outer_ray[T](
     # ff outerjobs do non-trivial CPU tasks - use a small fractional CPU for outers,
     # e.g., num_cpus=0.1. This limits oversubscription.
     @ray.remote(num_cpus=0)
-    def _outer_task(idx: int, base_exp: "OctoExperiment"):
+    def _outer_task(idx: int, base_exp: "OctoExperiment", log_dir: UPath):
+        _setup_worker_logging(log_dir)
         # Do not re-initialize Ray here; workers already have a Ray context.
         return idx, create_execute_mlmodules(base_exp, idx)
 
@@ -157,7 +174,7 @@ def run_parallel_outer_ray[T](
 
     # Prime up to max_concurrent tasks
     while next_i < n and len(inflight) < max_concurrent:
-        inflight.append(_outer_task.remote(next_i, items[next_i]))
+        inflight.append(_outer_task.remote(next_i, items[next_i], log_dir))
         next_i += 1
 
     # Drain with backpressure; fill results by original index to preserve order
@@ -166,22 +183,24 @@ def run_parallel_outer_ray[T](
         idx, res = ray.get(done[0])
         results[idx] = res
         if next_i < n:
-            inflight.append(_outer_task.remote(next_i, items[next_i]))
+            inflight.append(_outer_task.remote(next_i, items[next_i], log_dir))
             next_i += 1
 
     return cast("list[T]", results)
 
 
-def _execute_training(training: Any, idx: int) -> Any:
+def _execute_training(training: Any, idx: int, log_dir: UPath) -> Any:
     """Call training.fit() and return the result."""
+    _setup_worker_logging(log_dir)
     return training.fit()
 
 
-def run_parallel_inner(trainings: Iterable[Any], num_cpus: int = 1) -> list[Any]:
+def run_parallel_inner(trainings: Iterable[Any], log_dir: UPath, num_cpus: int = 1) -> list[Any]:
     """Run training.fit() for each item in parallel using Ray and preserve input order.
 
     Args:
         trainings: Iterable of training-like objects. Each object must implement a fit() method.
+        log_dir: Directory to store individual Ray worker logs.
         num_cpus: Number of CPUs to allocate per training task (default: 1).
 
     Returns:
@@ -205,5 +224,5 @@ def run_parallel_inner(trainings: Iterable[Any], num_cpus: int = 1) -> list[Any]
     # Create the remote function with configurable num_cpus
     execute_training_ray = ray.remote(num_cpus=num_cpus)(_execute_training)
 
-    futures = [execute_training_ray.remote(training, idx) for idx, training in enumerate(trainings)]
+    futures = [execute_training_ray.remote(training, idx, log_dir) for idx, training in enumerate(trainings)]
     return ray.get(futures)

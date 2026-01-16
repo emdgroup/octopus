@@ -1,4 +1,6 @@
 import os
+import stat
+import tempfile
 
 import pandas as pd
 import pytest
@@ -128,64 +130,81 @@ class TestFSSpecIntegration:
         """
         df, features = breast_cancer_dataset
 
-        study = OctoStudy(
-            name="test_octo_intro_execution",
-            ml_type="classification",
-            target_metric="ACCBAL",
-            feature_columns=features,
-            target_columns=["target"],
-            sample_id="index",
-            stratification_column="target",
-            metrics=["AUCROC", "ACCBAL", "ACC", "LOGLOSS"],
-            datasplit_seed_outer=1234,
-            n_folds_outer=2,
-            path=root_dir,
-            ignore_data_health_warning=True,
-            outer_parallelization=False,
-            run_single_experiment_num=0,
-            workflow=[
-                Octo(
-                    description="step_1_octo",
-                    task_id=0,
-                    depends_on_task=-1,
-                    load_task=False,
-                    n_folds_inner=3,
-                    models=["ExtraTreesClassifier"],
-                    model_seed=0,
-                    n_jobs=1,
-                    max_outl=0,
-                    fi_methods_bestbag=["permutation"],
-                    inner_parallelization=True,
-                    n_workers=2,
-                    optuna_seed=0,
-                    n_optuna_startup_trials=3,
-                    resume_optimization=False,
-                    n_trials=5,
-                    max_features=5,
-                    penalty_factor=1.0,
-                    ensemble_selection=True,
-                    ensel_n_save_trials=5,
+        with tempfile.TemporaryDirectory(delete=True) as tmpdir:
+            old_dir = os.getcwd()
+            os.chdir(tmpdir)
+            # Disable all read/write access to the temp dir to ensure that
+            # all file IO goes through fsspec and the specified root_dir.
+            # Execute permission is needed to enter the dir.
+            os.chmod(tmpdir, mode=stat.S_IXUSR | stat.S_IRUSR)
+
+            try:
+                study = OctoStudy(
+                    name="test_octo_intro_execution",
+                    ml_type="classification",
+                    target_metric="ACCBAL",
+                    feature_columns=features,
+                    target_columns=["target"],
+                    sample_id="index",
+                    stratification_column="target",
+                    metrics=["AUCROC", "ACCBAL", "ACC", "LOGLOSS"],
+                    datasplit_seed_outer=1234,
+                    n_folds_outer=2,
+                    path=root_dir,
+                    ignore_data_health_warning=True,
+                    outer_parallelization=False,
+                    run_single_experiment_num=0,
+                    workflow=[
+                        Octo(
+                            description="step_1_octo",
+                            task_id=0,
+                            depends_on_task=-1,
+                            load_task=False,
+                            n_folds_inner=3,
+                            models=["ExtraTreesClassifier"],
+                            model_seed=0,
+                            n_jobs=1,
+                            max_outl=0,
+                            fi_methods_bestbag=["permutation"],
+                            inner_parallelization=True,
+                            n_workers=2,
+                            optuna_seed=0,
+                            n_optuna_startup_trials=3,
+                            resume_optimization=False,
+                            n_trials=5,
+                            max_features=5,
+                            penalty_factor=1.0,
+                            ensemble_selection=True,
+                            ensel_n_save_trials=5,
+                        )
+                    ],
                 )
-            ],
-        )
 
-        study.fit(data=df)
+                study.fit(data=df)
 
-        study_path = root_dir / study.name
+                study_path = root_dir / study.name
 
-        # Verify that the study was created and files exist
-        assert study_path.exists(), "Study directory should be created"
+                # Verify that the study was created and files exist
+                assert study_path.exists(), "Study directory should be created"
 
-        # Check for expected files (new architecture uses files, not directories)
-        assert (study_path / "data.parquet").exists(), "Data parquet file should exist"
-        assert (study_path / "data_prepared.parquet").exists(), "Prepared data parquet file should exist"
+                assert (study_path / "octo_manager.log").exists(), "Octo Manager log file should exist"
 
-        assert (study_path / "config.json").exists(), "Config JSON file should exist"
-        assert (study_path / "outersplit0").exists(), "Outersplit directory should exist"
+                # Check for expected files (new architecture uses files, not directories)
+                assert (study_path / "data.parquet").exists(), "Data parquet file should exist"
+                assert (study_path / "data_prepared.parquet").exists(), "Prepared data parquet file should exist"
 
-        # Verify that the Octo step was executed by checking for workflow directories
-        outersplit_path = study_path / "outersplit0"
-        workflow_dirs = [d for d in outersplit_path.iterdir() if d.is_dir() and d.name.startswith("workflowtask")]
-        assert len(workflow_dirs) >= 1, (
-            f"Should have at least 1 workflow directory, found: {[d.name for d in workflow_dirs]}"
-        )
+                assert (study_path / "config.json").exists(), "Config JSON file should exist"
+                assert (study_path / "outersplit0").exists(), "Experiment directory should exist"
+
+                # Verify that the Octo step was executed by checking for workflow directories
+                experiment_path = study_path / "outersplit0"
+                workflow_dirs = [
+                    d for d in experiment_path.iterdir() if d.is_dir() and d.name.startswith("workflowtask")
+                ]
+
+                assert len(workflow_dirs) >= 1, (
+                    f"Should have at least 1 workflow directory, found: {[d.name for d in workflow_dirs]}"
+                )
+
+            finally:
+                os.chdir(old_dir)

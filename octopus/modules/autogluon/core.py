@@ -109,6 +109,7 @@ class AGCore:
     """Autogluon."""
 
     experiment: "OctoExperiment[AutoGluon]" = field(validator=[validators.instance_of(OctoExperiment)])
+    log_dir: UPath = field(validator=[validators.instance_of(UPath)])
     model = field(init=False)
     num_cpus = field(init=False)  # TODO: this is also in the AutoGluon class
 

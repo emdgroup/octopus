@@ -51,7 +51,7 @@ class RocCore:
     """Roc Module."""
 
     experiment: OctoExperiment[Roc] = field(validator=[validators.instance_of(OctoExperiment)])
-
+    log_dir: UPath = field(validator=[validators.instance_of(UPath)])
     feature_groups: list = field(init=False, validator=[validators.instance_of(list)])
 
     @property

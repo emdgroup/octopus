@@ -119,7 +119,11 @@ def _(mo, pl, study_dir):
 def _(df_feature_importances, df_optuna, df_predictions, mo, pl):
     unique_id_values = {
         k: sorted(v)
-        for k, v in df_predictions.select(pl.all().cast(pl.Utf8)).select(["experiment_id", "task_id", "split_id"]).unique().to_dict(as_series=False).items()
+        for k, v in df_predictions.select(pl.all().cast(pl.Utf8))
+        .select(["experiment_id", "task_id", "split_id"])
+        .unique()
+        .to_dict(as_series=False)
+        .items()
     }
 
     dropdown_exp_id = mo.ui.dropdown(
@@ -141,7 +145,12 @@ def _(df_feature_importances, df_optuna, df_predictions, mo, pl):
     )
 
     unique_id_values_feature_importance = {
-        k: sorted(v) for k, v in df_feature_importances.select(pl.all().cast(pl.Utf8)).select(["fi_type"]).unique().to_dict(as_series=False).items()
+        k: sorted(v)
+        for k, v in df_feature_importances.select(pl.all().cast(pl.Utf8))
+        .select(["fi_type"])
+        .unique()
+        .to_dict(as_series=False)
+        .items()
     }
 
     dropdown_fi_types = mo.ui.dropdown(
@@ -152,7 +161,11 @@ def _(df_feature_importances, df_optuna, df_predictions, mo, pl):
 
     unique_id_values_optuna = {
         k: sorted(v)
-        for k, v in df_optuna.select(pl.all().cast(pl.Utf8)).select(["experiment_id", "task_id", "model_type"]).unique().to_dict(as_series=False).items()
+        for k, v in df_optuna.select(pl.all().cast(pl.Utf8))
+        .select(["experiment_id", "task_id", "model_type"])
+        .unique()
+        .to_dict(as_series=False)
+        .items()
     }
 
     dropdown_model = mo.ui.dropdown(
@@ -309,7 +322,9 @@ def _(mo):
 def _(alt, df_optuna, pl):
     # Group by experiment_id, task_id, and model_type
     df_chart_optuna_count = (
-        df_optuna.group_by(["experiment_id", "task_id", "model_type"]).agg(pl.col("trial").n_unique().alias("trial_count")).sort(["task_id", "experiment_id"])
+        df_optuna.group_by(["experiment_id", "task_id", "model_type"])
+        .agg(pl.col("trial").n_unique().alias("trial_count"))
+        .sort(["task_id", "experiment_id"])
     )
 
     # Create the base chart
@@ -372,13 +387,23 @@ def _(mo):
 def _(alt, df_optuna, dropdown_exp_id, dropdown_seq_id, mo, pl):
     def get_best_optuna_trials(df, direction="maximize"):
         if direction == "maximize":
-            df_optuna_trials_best = df.with_columns(pl.col("value").cum_max().alias("cummax")).filter(pl.col("value") == pl.col("cummax")).drop("cummax")
+            df_optuna_trials_best = (
+                df.with_columns(pl.col("value").cum_max().alias("cummax"))
+                .filter(pl.col("value") == pl.col("cummax"))
+                .drop("cummax")
+            )
         else:
-            df_optuna_trials_best = df.with_columns(pl.col("value").cum_min().alias("cummin")).filter(pl.col("value") == pl.col("cummin")).drop("cummin")
+            df_optuna_trials_best = (
+                df.with_columns(pl.col("value").cum_min().alias("cummin"))
+                .filter(pl.col("value") == pl.col("cummin"))
+                .drop("cummin")
+            )
 
         return df_optuna_trials_best
 
-    df_optuna_filtered = df_optuna.filter((pl.col("experiment_id") == int(dropdown_exp_id.value)) & (pl.col("task_id") == int(dropdown_seq_id.value)))
+    df_optuna_filtered = df_optuna.filter(
+        (pl.col("experiment_id") == int(dropdown_exp_id.value)) & (pl.col("task_id") == int(dropdown_seq_id.value))
+    )
 
     df_best_optuna_trails = get_best_optuna_trials(df_optuna_filtered, "minimize")
 
@@ -396,7 +421,11 @@ def _(alt, df_optuna, dropdown_exp_id, dropdown_seq_id, mo, pl):
     )
 
     # Create the line plot for best values
-    line = alt.Chart(df_best_optuna_trails).mark_line(color="green").encode(x="trial:Q", y=alt.Y("value:Q", scale=alt.Scale(type="log")))
+    line = (
+        alt.Chart(df_best_optuna_trails)
+        .mark_line(color="green")
+        .encode(x="trial:Q", y=alt.Y("value:Q", scale=alt.Scale(type="log")))
+    )
 
     # Combine the scatter and line plots
     chart_optuna_best_value = (scatter + line).properties(title="Optuna Trials: Object Value and Best Value")
@@ -460,7 +489,9 @@ def _(
             idx = row * plots_per_row + col
             if idx < num_groups:
                 param = param_list[idx]
-                chart_optuna_hp = base_optuna_hp.transform_filter(alt.datum.hyper_param == param).properties(title=param, width=300, height=200)
+                chart_optuna_hp = base_optuna_hp.transform_filter(alt.datum.hyper_param == param).properties(
+                    title=param, width=300, height=200
+                )
                 row_charts |= chart_optuna_hp
         charts_optuna_hp &= row_charts
 

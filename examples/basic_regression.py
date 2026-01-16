@@ -15,7 +15,7 @@ diabetes = load_diabetes(as_frame=True)
 
 ### Create and run OctoStudy
 study = OctoStudy(
-    name="basic_regression_example",
+    name="basic_regression",
     ml_type="regression",
     target_metric="MAE",
     feature_columns=diabetes["feature_names"],

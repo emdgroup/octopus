@@ -70,6 +70,4 @@ repos:
           - altair
           - marimo
           - rapidfuzz
-        #- scikit-survival
-        #- tabpfn
         #- boruta

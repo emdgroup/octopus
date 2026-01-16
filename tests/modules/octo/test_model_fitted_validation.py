@@ -47,13 +47,9 @@ class ModelCache:
 
     def __init__(self):
         self._cached_models_by_type = None
-        self._tabpfn_skip_logged = False
 
     def get_available_models_by_type(self):
-        """Get all available models dynamically from ModelInventory, grouped by ML type.
-
-        Excludes TabPFN models as they may have dependency issues.
-        """
+        """Get all available models dynamically from ModelInventory, grouped by ML type."""
         if self._cached_models_by_type is not None:
             return self._cached_models_by_type
 
@@ -61,14 +57,8 @@ class ModelCache:
         all_models = inventory.models
 
         models_by_type = {"classification": [], "regression": [], "timetoevent": []}
-        skipped_tabpfn_models = []
 
         for model_name in all_models:
-            # Skip TabPFN models due to potential dependency issues
-            if "TabPFN" in model_name:
-                skipped_tabpfn_models.append(model_name)
-                continue
-
             try:
                 model_config = inventory.get_model_config(model_name)
                 ml_type = model_config.ml_type
@@ -77,11 +67,6 @@ class ModelCache:
             except Exception as e:
                 print(f"Warning: Could not get config for model {model_name}: {e}")
                 continue
-
-        # Log skipped TabPFN models only once
-        if skipped_tabpfn_models and not self._tabpfn_skip_logged:
-            print(f"Skipping TabPFN models: {', '.join(skipped_tabpfn_models)}")
-            self._tabpfn_skip_logged = True
 
         self._cached_models_by_type = models_by_type
         return models_by_type

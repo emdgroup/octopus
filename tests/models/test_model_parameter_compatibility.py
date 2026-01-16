@@ -18,8 +18,7 @@ from octopus.models.inventory import ModelInventory
 
 def get_all_models():
     """Get all available models from inventory."""
-    inventory = ModelInventory()
-    return [name for name in inventory.models if "TabPFN" not in name]
+    return ModelInventory().models
 
 
 def generate_param_combinations(model_name: str, max_combos: int = 20) -> list[dict[str, Any]]:

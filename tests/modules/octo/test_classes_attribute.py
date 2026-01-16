@@ -19,8 +19,8 @@ def get_classification_models():
     inventory = ModelInventory()
     models = []
 
-    # Models to exclude (TabPFN models require downloading which can fail in CI)
-    excluded_models = {"TabPFNClassifier"}
+    # Models to exclude
+    excluded_models = {}
 
     # Get all models from the inventory
     for model_name in inventory.models:

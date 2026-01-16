@@ -27,13 +27,13 @@ try:
 except ImportError:
     pytest = None
 
+from octopus.models import Models
 from octopus.models.hyperparameter import (
     CategoricalHyperparameter,
     FixedHyperparameter,
     FloatHyperparameter,
     IntHyperparameter,
 )
-from octopus.models.inventory import ModelInventory
 from octopus.modules.octo.training import Training
 
 # ============================================================================
@@ -70,14 +70,14 @@ class ModelCache:
         if self._cached_models_by_type is not None:
             return self._cached_models_by_type
 
-        inventory = ModelInventory()
-        all_models = inventory.models
+        # Get all models from the registry
+        all_models = Models._config_factories.keys()
 
         models_by_type = {"classification": [], "regression": [], "timetoevent": [], "multiclass": []}
 
         for model_name in all_models:
             try:
-                model_config = inventory.get_model_config(model_name)
+                model_config = Models.get_model_config(model_name)
                 ml_type = model_config.ml_type
                 if ml_type in models_by_type:
                     models_by_type[ml_type].append(model_name)
@@ -128,8 +128,8 @@ def get_model_configs():
 
 def get_default_model_params(model_name: str) -> dict:
     """Get default parameters for a model from its hyperparameter configuration."""
-    inventory = ModelInventory()
-    model_config = inventory.get_model_config(model_name)
+    # Models uses classmethods, no instantiation needed
+    model_config = Models.get_model_config(model_name)
 
     params = {}
 

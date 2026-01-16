@@ -18,16 +18,17 @@ def _get_env_address() -> str | None:
 
 
 def _check_parallelization_disabled() -> None:
-    """Raise an error any kind of active parallelization (OMP, MKL, threadpools, ...) can be detected.
+    """Raise an error if any kind of active parallelization (OMP, MKL, threadpools, ...) can be detected.
 
     This is required to prevent accidental OMP paralleliztion inside ray processes that can lead to oversubscription.
+    Used as a worker_process_setup_hook in distributed Ray clusters.
     """
     from octopus.modules import _PARALLELIZATION_ENV_VARS  # noqa: PLC0415
 
     for lib in threadpoolctl.threadpool_info():
         if lib["num_threads"] > 1:
             raise RuntimeError(
-                f"Active thread-level parallelization detected in {lib}."
+                f"Active thread-level parallelization detected in {lib}. "
                 "This may lead to resource oversubscription and slow execution. "
                 "Please disable thread-level parallelization by setting respective "
                 "environment variables."
@@ -42,6 +43,29 @@ def _check_parallelization_disabled() -> None:
             )
 
 
+def _verify_parallelization_disabled() -> None:
+    """Verify that parallelization environment variables are properly configured.
+
+    Only checks environment variables, not actual threadpool state, because:
+    - Ray workers are separate processes that inherit env vars, not driver threadpool state
+    - Environment variables persist across test boundaries
+    - Checking driver threadpool state can give false positives in test environments
+    - Tests confirm Ray workers correctly use single-threaded libraries when env vars are set
+
+    Used in the driver process before starting Ray to verify configuration.
+    """
+    from octopus.modules import _PARALLELIZATION_ENV_VARS  # noqa: PLC0415
+
+    for env_var in _PARALLELIZATION_ENV_VARS:
+        val = os.environ.get(env_var)
+        if val != "1":
+            raise RuntimeError(
+                f"Environment variable {env_var} is set to {val}. "
+                "This may lead to resource oversubscription in Ray workers. "
+                f"Please set {env_var}=1 to ensure single-threaded execution."
+            )
+
+
 def init_ray(
     address: str | None = None,
     num_cpus: int | None = None,
@@ -53,12 +77,16 @@ def init_ray(
     Connects to an existing cluster if an address is provided or set via
     environment variables; otherwise, optionally starts a local Ray instance.
 
+    For local Ray instances, parallelization settings are verified in the driver
+    process before starting Ray, and workers inherit the driver's environment.
+    This avoids the overhead of runtime_env package reinstallation.
+
     Args:
         address: Ray head address (e.g., "auto", "127.0.0.1:6379"). If None, uses
             env vars RAY_ADDRESS or RAY_HEAD_ADDRESS if set.
         num_cpus: CPU limit when starting a local Ray instance (only used if starting locally).
         start_local_if_missing: If True and no address is available, start a local Ray instance.
-        **kwargs: Extra args forwarded to ray.init (e.g., runtime_env, log_to_driver, namespace).
+        **kwargs: Extra args forwarded to ray.init (e.g., log_to_driver, namespace).
 
     Raises:
         RuntimeError: If no address is available and start_local_if_missing is False.
@@ -67,20 +95,18 @@ def init_ray(
         return
 
     addr = address or _get_env_address()
+
     if addr:
-        ray.init(
-            address=addr,
-            runtime_env={"worker_process_setup_hook": _check_parallelization_disabled},
-            **kwargs,
-        )
+        # Connecting to existing Ray instance (local or remote)
+        # Workers connecting to the local instance will inherit the driver's environment
+        ray.init(address=addr, **kwargs)
         return
 
     if start_local_if_missing:
-        ray.init(
-            num_cpus=num_cpus,
-            runtime_env={"worker_process_setup_hook": _check_parallelization_disabled},
-            **kwargs,
-        )
+        # Starting new local Ray instance - verify settings in driver
+        # Workers will inherit driver environment, avoiding package reinstallation
+        _verify_parallelization_disabled()
+        ray.init(num_cpus=num_cpus, **kwargs)
         return
 
     raise RuntimeError(

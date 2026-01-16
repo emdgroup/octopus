@@ -9,10 +9,6 @@
   2. Add the necessary imports after the code is working
   3. This prevents auto-formatter conflicts between code and import changes
 
-### Environment Management
-- **Always activate the octo conda environment** when running Python tools or commands
-- If any command fails due to missing dependencies or environment issues, prefix with `conda activate octo &&`
-- Default command pattern: `conda activate octo && [your command]`
 
 ### File Editing Strategy
 - Use `replace_in_file` for targeted changes to existing files
@@ -24,7 +20,6 @@
 - Run `ruff check .` to ensure code quality standards are maintained
 - **Regularly run `pre-commit run --all-files`** to ensure all formatting and linting standards are met
 - If pre-commit shows errors, run it **3 times** as pre-commit applies formatting incrementally
-- For Python changes, activate the octo environment before running tests
 
 ### Code Quality
 - Follow PEP 8 standards for Python code
@@ -36,27 +31,24 @@
 
 ### Octopus Framework
 - This is a machine learning framework with specific dependencies
-- Always use the `octo` conda environment for Python operations
 - Pay attention to sklearn compatibility requirements
 - Feature importance methods require proper configuration (e.g., positive_class for classification)
 
 ### Common Commands
 ```bash
-# Activate environment and run tests
-conda activate octo && python -m pytest [test_file] -v
+# run tests
+python -m pytest [test_file] -v
 
-# Activate environment and check code quality
-conda activate octo && ruff check .
+#  check code quality
+ruff check
 
 # Run pre-commit checks (run 3 times if errors occur)
-conda activate octo && pre-commit run --all-files
+pre-commit run --all-files
 
-# Activate environment and run Python scripts
-conda activate octo && python [script_name].py
+# run Python scripts
+ python [script_name].py
 ```
 
 ## Error Prevention
-- Before running any Python command, check if octo environment is needed
-- When encountering import errors or missing modules, activate octo environment
 - When making code changes that affect imports, change code first, then imports
 - Always wait for tool completion before proceeding to next step

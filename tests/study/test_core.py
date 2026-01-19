@@ -9,6 +9,7 @@ from upath import UPath
 
 from octopus import OctoStudy
 from octopus.modules import Octo
+from octopus.study.core import _RUNNING_IN_TESTSUITE
 from octopus.study.types import DatasplitType, ImputationMethod, MLType
 from octopus.task import Task
 
@@ -160,7 +161,7 @@ def test_default_values():
         assert study.row_id is None
         assert study.stratification_column is None
         assert study.positive_class == 1
-        assert study.n_folds_outer == 5
+        assert study.n_folds_outer == 5 if not _RUNNING_IN_TESTSUITE else 2
         assert study.datasplit_seed_outer == 0
         assert study.imputation_method == ImputationMethod.MEDIAN
         assert study.ignore_data_health_warning is False

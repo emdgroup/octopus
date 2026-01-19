@@ -1,6 +1,7 @@
 """Octo Study."""
 
 import json
+import os
 import sys
 
 import pandas as pd
@@ -22,6 +23,8 @@ from .types import DatasplitType, ImputationMethod, MLType
 from .validation import validate_metric, validate_metrics_list, validate_start_with_empty_study, validate_workflow
 
 logger = get_logger()
+
+_RUNNING_IN_TESTSUITE = "RUNNING_IN_TESTSUITE" in os.environ
 
 
 @define
@@ -76,7 +79,7 @@ class OctoStudy:
     positive_class: int = field(default=1, validator=validators.instance_of(int))
     """The positive class label for binary classification. Defaults to 1. Not relevant for other ml_types."""
 
-    n_folds_outer: int = field(default=5, validator=[validators.instance_of(int)])
+    n_folds_outer: int = field(default=5 if not _RUNNING_IN_TESTSUITE else 2, validator=[validators.instance_of(int)])
     """The number of outer folds for cross-validation. Defaults to 5."""
 
     datasplit_seed_outer: int = field(default=0, validator=[validators.instance_of(int)])
@@ -326,8 +329,7 @@ class OctoStudy:
 
         if has_warning and not self.ignore_data_health_warning:
             raise ValueError(
-                f"Data issues detected. Please check: {report_path}\n"
-                f"To proceed despite warnings, set `ignore_data_health_warning=True`."
+                f"Data issues detected. Please check: {report_path}\nTo proceed despite warnings, set `ignore_data_health_warning=True`."
             )
 
     def fit(

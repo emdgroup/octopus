@@ -23,9 +23,11 @@ class ModuleBaseCore[TaskConfigType: Task]:
 
     Attributes:
         experiment: The OctoExperiment instance containing configuration and data
+        log_dir: Directory for individual worker logs
     """
 
     experiment: OctoExperiment[TaskConfigType] = field(validator=[validators.instance_of(OctoExperiment)])
+    log_dir: UPath = field(validator=[validators.instance_of(UPath)])
 
     @property
     def path_module(self) -> UPath:

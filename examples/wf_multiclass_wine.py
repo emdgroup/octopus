@@ -38,7 +38,6 @@ study = OctoStudy(
     stratification_column="target",
     metrics=["AUCROC_MACRO", "AUCROC_WEIGHTED", "ACCBAL_MC"],
     datasplit_seed_outer=1234,
-    n_folds_outer=5,
     ignore_data_health_warning=True,
     outer_parallelization=True,
     run_single_experiment_num=0,  # only process first outer loop experiment, for quick testing

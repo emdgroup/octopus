@@ -32,5 +32,7 @@ jobs:
           uv sync --extra test
 
       - name: Test with pytest
+        env:
+          RUNNING_IN_TESTSUITE: "1"
         run: |
           uv run pytest

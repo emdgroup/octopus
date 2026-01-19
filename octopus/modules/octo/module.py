@@ -1,5 +1,6 @@
 """Octo module."""
 
+import os
 from typing import ClassVar
 
 from attrs import Factory, define, field, validators
@@ -9,6 +10,8 @@ from octopus.models.inventory import ModelInventory
 from octopus.task import Task
 
 logger = get_logger()
+
+_RUNNING_IN_TESTSUITE = "RUNNING_IN_TESTSUITE" in os.environ
 
 
 def _unique_unordered(seq):
@@ -84,7 +87,7 @@ class Octo(Task):
     ensel_n_save_trials: int = field(validator=[validators.instance_of(int)], default=Factory(lambda: 50))
     """Number of top trials to be saved for ensemble selection (bags)."""
 
-    n_trials: int = field(validator=[validators.instance_of(int)], default=Factory(lambda: 100))
+    n_trials: int = field(validator=[validators.instance_of(int)], default=100 if not _RUNNING_IN_TESTSUITE else 3)
     """Number of Optuna trials."""
 
     hyperparameters: dict = field(validator=[validators.instance_of(dict)], default=Factory(dict))

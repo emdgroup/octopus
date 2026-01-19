@@ -29,10 +29,8 @@ logger = get_logger()
 class MrmrCore(ModuleBaseCore[Mrmr]):
     """MRMR module for feature selection based on mutual information and redundancy.
 
-    Inherits common properties from BaseCore.
+    Inherits common properties from BaseCore including log_dir.
     """
-
-    log_dir: UPath = field(validator=[validators.instance_of(UPath)])
 
     @property
     def correlation_type(self) -> Literal["pearson", "spearman", "rdc"]:

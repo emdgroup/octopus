@@ -1,6 +1,12 @@
 """Manager module for Octopus experiments."""
 
-from octopus.manager.core import OctoManager
+from octopus.manager.core import OctoManager, ResourceConfig, get_available_cpus
+from octopus.manager.execution import (
+    ExecutionStrategy,
+    ParallelRayStrategy,
+    SequentialStrategy,
+    SingleExperimentStrategy,
+)
 from octopus.manager.ray_parallel import (
     init_ray,
     run_parallel_inner,
@@ -8,9 +14,17 @@ from octopus.manager.ray_parallel import (
     setup_ray_for_external_library,
     shutdown_ray,
 )
+from octopus.manager.workflow_runner import WorkflowTaskRunner
 
 __all__ = [
+    "ExecutionStrategy",
     "OctoManager",
+    "ParallelRayStrategy",
+    "ResourceConfig",
+    "SequentialStrategy",
+    "SingleExperimentStrategy",
+    "WorkflowTaskRunner",
+    "get_available_cpus",
     "init_ray",
     "run_parallel_inner",
     "run_parallel_outer_ray",

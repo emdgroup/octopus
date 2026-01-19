@@ -1,14 +1,20 @@
-"""Test octo manager."""
+"""Test octo manager and related components."""
 
-import os
 from unittest.mock import Mock, patch
 
+import attrs
 import pytest
 from upath import UPath
 from upath.implementations.local import PosixUPath
 
 from octopus.experiment import OctoExperiment
 from octopus.manager import OctoManager
+from octopus.manager.core import ResourceConfig
+from octopus.manager.workflow_runner import WorkflowTaskRunner
+
+# =============================================================================
+# Fixtures
+# =============================================================================
 
 
 @pytest.fixture
@@ -55,90 +61,177 @@ def octo_manager(mock_workflow, mock_experiment):
     )
 
 
-def test_run_outer_experiments_sequential(octo_manager):
-    """Test run outer experiments sequential."""
-    with patch.object(OctoManager, "create_execute_mlmodules") as mock_create_execute:
-        octo_manager.run_outer_experiments()
-        assert mock_create_execute.call_count == 1
+@pytest.fixture
+def resources():
+    """Create test resource config."""
+    return ResourceConfig(num_cpus=4, num_workers=2, cpus_per_experiment=2)
 
 
-def test_run_outer_experiments_parallel_A(octo_manager):
-    # Arrange
-    octo_manager.outer_parallelization = True
-
-    with (
-        patch.object(type(octo_manager), "_run_parallel_ray") as mock_run,
-        patch("octopus.manager.core.init_ray"),
-        patch("octopus.manager.core.shutdown_ray"),
-    ):
-        # Act
-        octo_manager.run_outer_experiments()
-        # Assert
-        mock_run.assert_called_once()
+# =============================================================================
+# ResourceConfig Tests
+# =============================================================================
 
 
-def test_run_outer_experiments_parallel_B(octo_manager):
-    octo_manager.outer_parallelization = True
+class TestResourceConfig:
+    """Tests for ResourceConfig."""
 
-    with (
-        patch("octopus.manager.core.init_ray"),
-        patch("octopus.manager.core.shutdown_ray"),
-        patch("octopus.manager.core.run_parallel_outer_ray", return_value=[True]) as mock_run,
-    ):
-        octo_manager.run_outer_experiments()
+    def test_create_with_parallelization(self):
+        """Test resource creation with outer parallelization."""
+        config = ResourceConfig.create(
+            num_experiments=4,
+            outer_parallelization=True,
+            num_cpus=8,
+        )
+        assert config.num_cpus == 8
+        assert config.num_workers == 4  # min(4 experiments, 8 cpus)
+        assert config.cpus_per_experiment == 2  # 8 / 4
 
-        mock_run.assert_called_once()
-        # Inspect args/kwargs
-        _, kwargs = mock_run.call_args
-        assert kwargs["base_experiments"] is octo_manager.base_experiments
-        assert callable(kwargs["create_execute_mlmodules"])
-        assert kwargs["num_workers"] == min(len(octo_manager.base_experiments), os.cpu_count() or 1)
+    def test_create_without_parallelization(self):
+        """Test resource creation without outer parallelization."""
+        config = ResourceConfig.create(
+            num_experiments=4,
+            outer_parallelization=False,
+            num_cpus=8,
+        )
+        assert config.num_cpus == 8
+        assert config.num_workers == 4
+        assert config.cpus_per_experiment == 8  # All CPUs for sequential
+
+    def test_create_more_experiments_than_cpus(self):
+        """Test when experiments exceed available CPUs."""
+        config = ResourceConfig.create(
+            num_experiments=16,
+            outer_parallelization=True,
+            num_cpus=4,
+        )
+        assert config.num_workers == 4  # Limited by CPUs
+        assert config.cpus_per_experiment == 1
+
+    def test_frozen(self):
+        """Test that ResourceConfig is immutable (attrs frozen)."""
+        config = ResourceConfig(num_cpus=4, num_workers=2, cpus_per_experiment=2)
+        with pytest.raises(attrs.exceptions.FrozenInstanceError):
+            config.num_cpus = 8
 
 
-def test_run_single_experiment(octo_manager):
-    """Test run single experiment."""
-    octo_manager.run_single_experiment_num = 0
-    with patch.object(OctoManager, "create_execute_mlmodules") as mock_create_execute:
-        octo_manager.run_outer_experiments()
-        mock_create_execute.assert_called_once_with(octo_manager.base_experiments[0])
+# =============================================================================
+# OctoManager Tests
+# =============================================================================
 
 
-def test_create_new_experiment(octo_manager, mock_experiment):
-    """Test create new experiment."""
-    element = octo_manager.workflow[0]
-    new_experiment = octo_manager._create_new_experiment(mock_experiment, element)
-    assert new_experiment.ml_module == element.module
-    assert new_experiment.task_id == element.task_id
+class TestOctoManager:
+    """Tests for OctoManager orchestration."""
+
+    def test_run_outer_experiments_sequential(self, octo_manager):
+        """Test run outer experiments sequential."""
+        with (
+            patch("octopus.manager.core.shutdown_ray"),
+            patch.object(WorkflowTaskRunner, "run") as mock_run,
+        ):
+            octo_manager.run_outer_experiments()
+            assert mock_run.call_count == 1
+
+    def test_run_outer_experiments_parallel(self, octo_manager):
+        """Test run outer experiments with parallelization."""
+        octo_manager.outer_parallelization = True
+
+        with (
+            patch("octopus.manager.core.shutdown_ray"),
+            patch("octopus.manager.execution.run_parallel_outer_ray", return_value=[True]) as mock_ray,
+        ):
+            octo_manager.run_outer_experiments()
+            mock_ray.assert_called_once()
+
+    def test_run_single_experiment(self, octo_manager):
+        """Test run single experiment."""
+        octo_manager.run_single_experiment_num = 0
+
+        with (
+            patch("octopus.manager.core.shutdown_ray"),
+            patch.object(WorkflowTaskRunner, "run") as mock_run,
+        ):
+            octo_manager.run_outer_experiments()
+            mock_run.assert_called_once_with(octo_manager.base_experiments[0])
+
+    def test_no_experiments_raises_error(self, mock_workflow):
+        """Test that empty experiments raises ValueError."""
+        manager = OctoManager(
+            base_experiments=[],
+            workflow=mock_workflow,
+            log_dir=UPath("/tmp/test"),
+        )
+        with pytest.raises(ValueError, match="No experiments defined"):
+            manager.run_outer_experiments()
+
+    def test_ray_shutdown_on_error(self, octo_manager):
+        """Test that Ray is shut down even if execution fails."""
+        with (
+            patch("octopus.manager.core.shutdown_ray") as mock_shutdown,
+            patch.object(WorkflowTaskRunner, "run", side_effect=RuntimeError("Test error")),
+        ):
+            with pytest.raises(RuntimeError):
+                octo_manager.run_outer_experiments()
+            mock_shutdown.assert_called_once()
 
 
-def test_update_from_input_item(octo_manager, mock_experiment):
-    """Test update from input item."""
-    input_experiment = Mock(spec=OctoExperiment)
-    input_experiment.selected_features = ["new_feature"]
+# =============================================================================
+# WorkflowTaskRunner Tests
+# =============================================================================
 
-    with (
-        patch.object(PosixUPath, "exists", return_value=True),
-        patch.object(OctoExperiment, "from_pickle", return_value=input_experiment),
-    ):
-        exp_path_dict = {1: UPath("/tmp/input_exp.pkl")}
+
+class TestWorkflowTaskRunner:
+    """Tests for WorkflowTaskRunner."""
+
+    def test_create_experiment(self, mock_workflow, mock_experiment, resources):
+        """Test experiment creation from base experiment."""
+        runner = WorkflowTaskRunner(mock_workflow, resources, UPath("/tmp/test"))
+        task = mock_workflow[0]
+
+        with patch("octopus.manager.workflow_runner.copy.deepcopy", return_value=mock_experiment):
+            experiment = runner._create_experiment(mock_experiment, task)
+
+        assert experiment.ml_module == task.module
+        assert experiment.task_id == task.task_id
+        assert experiment.num_assigned_cpus == resources.cpus_per_experiment
+
+    def test_load_experiment(self, mock_workflow, mock_experiment, resources):
+        """Test loading existing experiment."""
+        runner = WorkflowTaskRunner(mock_workflow, resources, UPath("/tmp/test"))
+        task = Mock(task_id=3)
+
+        with (
+            patch.object(PosixUPath, "exists", return_value=True),
+            patch.object(OctoExperiment, "from_pickle", return_value=mock_experiment),
+        ):
+            loaded = runner._load_experiment(mock_experiment, task)
+            assert loaded == mock_experiment
+
+    def test_load_experiment_not_found(self, mock_workflow, mock_experiment, resources):
+        """Test loading non-existent experiment raises error."""
+        runner = WorkflowTaskRunner(mock_workflow, resources, UPath("/tmp/test"))
+        task = Mock(task_id=3)
+
+        with (
+            patch.object(UPath, "exists", return_value=False),
+            pytest.raises(FileNotFoundError),
+        ):
+            runner._load_experiment(mock_experiment, task)
+
+    def test_apply_dependencies(self, mock_workflow, mock_experiment, resources):
+        """Test applying dependencies from previous task."""
+        runner = WorkflowTaskRunner(mock_workflow, resources, UPath("/tmp/test"))
+        input_experiment = Mock(spec=OctoExperiment)
+        input_experiment.selected_features = ["new_feature"]
+        input_experiment.results = {"key": "value"}
+
         mock_experiment.depends_on_task = 1
-        octo_manager._update_from_input_item(mock_experiment, exp_path_dict)
+        exp_path_dict = {1: UPath("/tmp/input_exp.pkl")}
+
+        with (
+            patch.object(PosixUPath, "exists", return_value=True),
+            patch.object(OctoExperiment, "from_pickle", return_value=input_experiment),
+        ):
+            runner._apply_dependencies(mock_experiment, exp_path_dict)
+
         assert mock_experiment.feature_columns == ["new_feature"]
-
-
-def test_load_existing_experiment(octo_manager, mock_experiment):
-    """Test load existing experiment."""
-    element = Mock(task_id=3)
-    with (
-        patch.object(PosixUPath, "exists", return_value=True),
-        patch.object(OctoExperiment, "from_pickle", return_value=mock_experiment),
-    ):
-        loaded_experiment = octo_manager._load_existing_experiment(mock_experiment, element)
-        assert loaded_experiment == mock_experiment
-
-
-def test_load_existing_experiment_not_found(octo_manager, mock_experiment):
-    """Test experiment not found."""
-    element = Mock(task_id=3)
-    with patch.object(UPath, "exists", return_value=False), pytest.raises(FileNotFoundError):
-        octo_manager._load_existing_experiment(mock_experiment, element)
+        assert mock_experiment.prior_results == {"key": "value"}

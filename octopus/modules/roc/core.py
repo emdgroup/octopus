@@ -51,9 +51,11 @@ filter_inventory = {
 
 @define
 class RocCore(ModuleBaseCore[Roc]):
-    """Roc Module (Removal of Correlated features)."""
+    """Roc Module (Removal of Correlated features).
 
-    log_dir: UPath = field(validator=[validators.instance_of(UPath)])
+    Inherits log_dir from ModuleBaseCore.
+    """
+
     feature_groups: list = field(init=False, validator=[validators.instance_of(list)])
 
     @property

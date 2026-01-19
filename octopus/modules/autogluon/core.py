@@ -106,9 +106,11 @@ except Exception as e:  # pylint: disable=W0718 # noqa: F841
 
 @define
 class AGCore(ModuleBaseCore[AutoGluon]):
-    """Autogluon TabularPredictor wrapper module."""
+    """Autogluon TabularPredictor wrapper module.
 
-    log_dir: UPath = field(validator=[validators.instance_of(UPath)])
+    Inherits log_dir from ModuleBaseCore.
+    """
+
     model = field(init=False)
     num_cpus = field(init=False)  # TODO: this is also in the AutoGluon class
 

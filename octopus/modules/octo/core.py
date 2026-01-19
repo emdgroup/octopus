@@ -41,7 +41,6 @@ class OctoCoreGeneric[TaskConfigType: Octo](ModuleBaseCore[TaskConfigType]):
     directories, and optimization processes.
 
     Attributes:
-        log_dir: Directory for individual worker logs.
         data_splits: Stores training and validation data splits.
         paths_optuna_db: File paths to Optuna databases for each experiment.
         top_trials: Keeps track of the best performing trials.
@@ -49,6 +48,7 @@ class OctoCoreGeneric[TaskConfigType: Octo](ModuleBaseCore[TaskConfigType]):
 
     Inherits from ModuleBaseCore:
         experiment: The OctoExperiment instance (from ModuleBaseCore).
+        log_dir: Directory for individual worker logs (from ModuleBaseCore).
         All common properties from ModuleBaseCore (paths, data, metadata).
 
     Raises:
@@ -60,7 +60,6 @@ class OctoCoreGeneric[TaskConfigType: Octo](ModuleBaseCore[TaskConfigType]):
         to conduct comprehensive machine learning optimization with Optuna.
     """
 
-    log_dir: UPath = field(validator=[validators.instance_of(UPath)])
     # model = field(default=None)
     data_splits: dict = field(default=Factory(dict), validator=[validators.instance_of(dict)])
 

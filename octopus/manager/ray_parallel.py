@@ -15,34 +15,9 @@ if TYPE_CHECKING:
     from octopus.experiment import OctoExperiment
 
 
-def _get_env_address() -> str | None:
-    """Return Ray address from environment or None if not set."""
-    return os.environ.get("RAY_ADDRESS") or os.environ.get("RAY_HEAD_ADDRESS")
-
-
-def _check_parallelization_disabled() -> None:
-    """Raise an error any kind of active parallelization (OMP, MKL, threadpools, ...) can be detected.
-
-    This is required to prevent accidental OMP paralleliztion inside ray processes that can lead to oversubscription.
-    """
-    from octopus.modules import _PARALLELIZATION_ENV_VARS  # noqa: PLC0415
-
-    for lib in threadpoolctl.threadpool_info():
-        if lib["num_threads"] > 1:
-            raise RuntimeError(
-                f"Active thread-level parallelization detected in {lib}."
-                "This may lead to resource oversubscription and slow execution. "
-                "Please disable thread-level parallelization by setting respective "
-                "environment variables."
-            )
-
-    for env_var in _PARALLELIZATION_ENV_VARS:
-        if os.environ.get(env_var, None) != "1":
-            raise RuntimeError(
-                f"Environment variable {env_var} is set to {os.environ.get(env_var)}. "
-                "This may lead to resource oversubscription and slow execution. "
-                "Please set it to 1 to disable thread-level parallelization."
-            )
+# =============================================================================
+# Ray Lifecycle
+# =============================================================================
 
 
 def init_ray(
@@ -69,7 +44,7 @@ def init_ray(
     if ray.is_initialized():
         return
 
-    addr = address or _get_env_address()
+    addr = address or os.environ.get("RAY_ADDRESS") or os.environ.get("RAY_HEAD_ADDRESS")
     if addr:
         ray.init(
             address=addr,
@@ -118,6 +93,36 @@ def setup_ray_for_external_library() -> None:
         os.environ.pop("RAY_ADDRESS", None)
 
 
+def _check_parallelization_disabled() -> None:
+    """Raise an error if any kind of active parallelization (OMP, MKL, threadpools, ...) can be detected.
+
+    This is required to prevent accidental OMP parallelization inside ray processes that can lead to oversubscription.
+    """
+    from octopus.modules import _PARALLELIZATION_ENV_VARS  # noqa: PLC0415
+
+    for lib in threadpoolctl.threadpool_info():
+        if lib["num_threads"] > 1:
+            raise RuntimeError(
+                f"Active thread-level parallelization detected in {lib}."
+                "This may lead to resource oversubscription and slow execution. "
+                "Please disable thread-level parallelization by setting respective "
+                "environment variables."
+            )
+
+    for env_var in _PARALLELIZATION_ENV_VARS:
+        if os.environ.get(env_var, None) != "1":
+            raise RuntimeError(
+                f"Environment variable {env_var} is set to {os.environ.get(env_var)}. "
+                "This may lead to resource oversubscription and slow execution. "
+                "Please set it to 1 to disable thread-level parallelization."
+            )
+
+
+# =============================================================================
+# Parallel Execution
+# =============================================================================
+
+
 def _setup_worker_logging(log_dir: UPath):
     """Setup logging for Ray worker processes."""
     # We could log to individual files, e.g. per task:
@@ -152,13 +157,13 @@ def run_parallel_outer_ray[T](
     # Ensure Ray is ready in the driver (connect or start local)
     init_ray(start_local_if_missing=True)
 
-    # ff outerjobs do non-trivial CPU tasks - use a small fractional CPU for outers,
+    # If outer jobs do non-trivial CPU tasks - use a small fractional CPU for outers,
     # e.g., num_cpus=0.1. This limits oversubscription.
     @ray.remote(num_cpus=0)
-    def _outer_task(idx: int, base_exp: "OctoExperiment", log_dir: UPath):
+    def outer_task(idx: int, experiment: "OctoExperiment", log_dir: UPath):
         _setup_worker_logging(log_dir)
         # Do not re-initialize Ray here; workers already have a Ray context.
-        return idx, create_execute_mlmodules(base_exp, idx)
+        return idx, create_execute_mlmodules(experiment, idx)
 
     items = list(base_experiments)
     n = len(items)
@@ -172,7 +177,7 @@ def run_parallel_outer_ray[T](
 
     # Prime up to max_concurrent tasks
     while next_i < n and len(inflight) < max_concurrent:
-        inflight.append(_outer_task.remote(next_i, items[next_i], log_dir))
+        inflight.append(outer_task.remote(next_i, items[next_i], log_dir))
         next_i += 1
 
     # Drain with backpressure; fill results by original index to preserve order
@@ -181,45 +186,33 @@ def run_parallel_outer_ray[T](
         idx, res = ray.get(done[0])
         results[idx] = res
         if next_i < n:
-            inflight.append(_outer_task.remote(next_i, items[next_i], log_dir))
+            inflight.append(outer_task.remote(next_i, items[next_i], log_dir))
             next_i += 1
 
     return cast("list[T]", results)
 
 
-def _execute_training(training: Any, idx: int, log_dir: UPath) -> Any:
-    """Call training.fit() and return the result."""
-    _setup_worker_logging(log_dir)
-    return training.fit()
-
-
 def run_parallel_inner(trainings: Iterable[Any], log_dir: UPath, num_cpus: int = 1) -> list[Any]:
-    """Run training.fit() for each item in parallel using Ray and preserve input order.
+    """Run training.fit() for each item in parallel.
 
     Args:
-        trainings: Iterable of training-like objects. Each object must implement a fit() method.
+        trainings: Objects with fit() method.
         log_dir: Directory to store individual Ray worker logs.
-        num_cpus: Number of CPUs to allocate per training task (default: 1).
+        num_cpus: CPUs per training task.
 
     Returns:
-        List[Any]: Results from each training.fit(), in the same order as the input iterable.
+        Results from each training.fit() in input order.
 
     Raises:
-        RuntimeError: If Ray is not initialized in this process.
-
-    Notes:
-        Exceptions raised by individual trainings will propagate as
-        ray.exceptions.RayTaskError when awaiting results with ray.get(). If you prefer
-        to handle or log per-item errors and continue, wrap each training so its fit()
-        catches/logs exceptions and returns a sentinel (e.g., None).
+        RuntimeError: If Ray is not initialized.
     """
     if not ray.is_initialized():
-        raise RuntimeError(
-            "Ray is not initialized in this process. Call init_ray(...) in the driver, or ensure this runs inside a Ray task."
-        )
+        raise RuntimeError("Ray is not initialized. Call init_ray() first.")
 
-    # Create the remote function with configurable num_cpus
-    execute_training_ray = ray.remote(num_cpus=num_cpus)(_execute_training)
+    @ray.remote(num_cpus=num_cpus)
+    def execute_training(training: Any, idx: int, log_dir: UPath) -> Any:
+        _setup_worker_logging(log_dir)
+        return training.fit()
 
-    futures = [execute_training_ray.remote(training, idx, log_dir) for idx, training in enumerate(trainings)]
+    futures = [execute_training.remote(training, idx, log_dir) for idx, training in enumerate(trainings)]
     return ray.get(futures)

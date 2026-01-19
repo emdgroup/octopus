@@ -13,9 +13,8 @@ from typing import Literal
 
 import numpy as np
 import pandas as pd
-from attrs import define, field, validators
+from attrs import define
 from sklearn.feature_selection import f_classif, f_regression
-from upath import UPath
 
 from octopus.logger import LogGroup, get_logger
 from octopus.modules.base import ModuleBaseCore
@@ -29,10 +28,8 @@ logger = get_logger()
 class MrmrCore(ModuleBaseCore[Mrmr]):
     """MRMR module for feature selection based on mutual information and redundancy.
 
-    Inherits common properties from BaseCore.
+    Inherits common properties from BaseCore including log_dir.
     """
-
-    log_dir: UPath = field(validator=[validators.instance_of(UPath)])
 
     @property
     def correlation_type(self) -> Literal["pearson", "spearman", "rdc"]:

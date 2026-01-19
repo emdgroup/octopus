@@ -44,6 +44,7 @@ dependencies = [
     "xgboost>=3.0",
     "fsspec>=2025.10.0",
     "universal_pathlib>=0.3.6",
+    "msgspec>=0.20.0",
 ]
 
 [project.urls]

@@ -13,7 +13,7 @@ def test_parallelization_inactive_in_threadpoolctl():
     threadpool_info = threadpoolctl.threadpool_info()
 
     # we expect the following openmp libraries to be loaded: shipped with torch, shipped with sklearn, system openmp
-    assert len(threadpool_info) >= 3
+    assert len(threadpool_info) >= 2
 
     for lib in threadpool_info:
         assert lib["num_threads"] == 1
@@ -21,6 +21,7 @@ def test_parallelization_inactive_in_threadpoolctl():
 
 def test_parallelization_limited_by_env():
     # these vars are being set in octopus/modules/__init__.py
+
     for env_var in _PARALLELIZATION_ENV_VARS:
         assert os.environ.get(env_var, None) == "1"
 

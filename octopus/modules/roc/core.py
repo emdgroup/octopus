@@ -15,7 +15,6 @@ from sklearn.feature_selection import (
     mutual_info_classif,
     mutual_info_regression,
 )
-from upath import UPath
 
 from octopus.logger import get_logger
 from octopus.modules.base import ModuleBaseCore
@@ -51,9 +50,11 @@ filter_inventory = {
 
 @define
 class RocCore(ModuleBaseCore[Roc]):
-    """Roc Module (Removal of Correlated features)."""
+    """Roc Module (Removal of Correlated features).
 
-    log_dir: UPath = field(validator=[validators.instance_of(UPath)])
+    Inherits log_dir from ModuleBaseCore.
+    """
+
     feature_groups: list = field(init=False, validator=[validators.instance_of(list)])
 
     @property

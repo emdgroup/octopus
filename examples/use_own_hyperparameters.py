@@ -18,7 +18,6 @@ diabetes = load_diabetes(as_frame=True)
 ### Create and run OctoStudy with custom hyperparameters
 study = OctoStudy(
     name="use_own_hyperparameters_example",
-    ml_type="regression",
     target_metric="MAE",
     feature_columns=diabetes["feature_names"],
     target_columns=["target"],

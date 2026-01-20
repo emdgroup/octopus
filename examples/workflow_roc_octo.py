@@ -28,7 +28,6 @@ features = [feature.replace(" ", "_") for feature in features]
 
 study = OctoStudy(
     name="example_roc_octo",
-    ml_type="classification",
     target_metric="ACCBAL",  # Balanced accuracy for binary classification
     feature_columns=features,
     target_columns=["target"],

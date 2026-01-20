@@ -203,7 +203,6 @@ print(df_warnings)
 
 study = OctoStudy(
     name="health_check",
-    ml_type="classification",
     target_metric="AUCROC",
     feature_columns=df_warnings.columns.drop("target").drop("id").drop("sample_id").drop("stratification").tolist(),
     target_columns=["target"],

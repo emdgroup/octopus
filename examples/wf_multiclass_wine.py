@@ -34,7 +34,6 @@ print(f"  Target distribution: {df['target'].value_counts().sort_index().to_dict
 ### Create and run OctoStudy for multiclass classification
 study = OctoStudy(
     name="multiclass_wine",
-    ml_type="multiclass",
     target_metric="AUCROC_MACRO",
     feature_columns=features,
     target_columns=["target"],

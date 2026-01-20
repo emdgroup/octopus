@@ -4,6 +4,8 @@
 # using Octopus with the diabetes dataset.
 
 ### Necessary imports for this example
+import os
+
 from sklearn.datasets import load_diabetes
 
 from octopus import OctoStudy
@@ -15,6 +17,7 @@ diabetes = load_diabetes(as_frame=True)
 ### Create and run OctoStudy with multi-step workflow
 study = OctoStudy(
     name="example_multiworkflow",
+    path=os.environ.get("STUDIES_PATH", "./studies"),
     ml_type="regression",
     target_metric="R2",
     feature_columns=diabetes["feature_names"],

@@ -2,6 +2,11 @@
 # (pre-commit, environment.yml, requirements.txt, pyproject.toml, ...)
 
 repos:
+  - repo: https://github.com/kynan/nbstripout
+    rev: 0.9.0
+    hooks:
+      - id: nbstripout
+        args: ['--extra-keys', 'metadata.kernelspec metadata.language_info']
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v6.0.0
     hooks:
@@ -24,7 +29,7 @@ repos:
         additional_dependencies: [pydoclint==0.7.3]
         args: [--select=DOC, --config=pydoclint.toml]
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.14.1
+    rev: v0.14.13
     hooks:
       - id: ruff-check
         types_or: [python, pyi]
@@ -38,12 +43,12 @@ repos:
         args: [--config=typos.toml]
         exclude: octopus.yml
   - repo: https://github.com/asottile/pyupgrade
-    rev: v3.21.0
+    rev: v3.21.2
     hooks:
       - id: pyupgrade
         args: [--py312-plus]
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: "v1.18.2"
+    rev: "v1.19.1"
     hooks:
       - id: mypy
         exclude: ^datasets/|examples/|tests/|studies/
@@ -68,7 +73,6 @@ repos:
           - plotly-stubs
           - duckdb
           - altair
-          - marimo
           - rapidfuzz
         #- boruta
   - repo: local

@@ -6,6 +6,8 @@
 # and that all features are numeric.
 
 ### Necessary imports for this example
+import os
+
 from sklearn.datasets import load_diabetes
 
 from octopus import OctoStudy
@@ -16,6 +18,7 @@ diabetes = load_diabetes(as_frame=True)
 ### Create and run OctoStudy
 study = OctoStudy(
     name="basic_regression",
+    path=os.environ.get("STUDIES_PATH", "./studies"),
     ml_type="regression",
     target_metric="MAE",
     feature_columns=diabetes["feature_names"],

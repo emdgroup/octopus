@@ -5,7 +5,7 @@ import os
 import re
 import subprocess
 import sys
-import tempfile
+from itertools import chain
 from pathlib import Path
 
 _log = logging.getLogger(Path(__file__).name)
@@ -26,7 +26,7 @@ _log.debug(f"Converting all scripts in {EXAMPLES_DIR} to markdown files in {TARG
 
 TARGET_DIR.mkdir(parents=True, exist_ok=True)
 
-for example_script in EXAMPLES_DIR.glob("*.py"):
+for example_script in chain.from_iterable([EXAMPLES_DIR.glob("*.py"), EXAMPLES_DIR.glob("*.ipynb")]):
     if example_script.name in EXCLUDED_FILES:
         continue
 
@@ -44,37 +44,57 @@ for example_script in EXAMPLES_DIR.glob("*.py"):
 
     env = os.environ | {"ALWAYS_OVERWRITE_STUDY": "yes"}
 
-    with tempfile.NamedTemporaryFile(suffix=".py") as temp:
-        marimo_script = Path(temp.name)
-
-        # TODO: rather convert to a jupyer notebook, execute and convert to markdown afterwards to also have results, etc.
-        # convert file to marimo notebook (inplace - is a no-op if the file already is a marimo notebook)
+    if example_script.suffix == ".py":
+        # Convert python script to notebook first
+        temp_notebook = TARGET_DIR / f"{example_script.stem}.ipynb"
         proc = subprocess.run(
-            [sys.executable, "-m", "marimo", "convert", example_script, "-o", marimo_script],
+            [
+                sys.executable,
+                "-m",
+                "jupytext",
+                "--to",
+                "notebook",
+                "--output",
+                str(temp_notebook),
+                str(example_script),
+            ],
             env=env,
             capture_output=True,
             text=True,
             check=False,
         )
         if proc.returncode != 0:
-            _log.error(f"✗ Failed to convert {example_script} to marimo notebook format.\n\tstderr:\n{proc.stderr}")
+            _log.error(f"✗ Failed to convert {example_script} to notebook format.\n\tstderr:\n{proc.stderr}")
             proc.check_returncode()
 
-        if "File is already a valid marimo notebook." in proc.stdout:
-            _log.debug(f"{example_script.name} is already a marimo notebook.")
-            marimo_script = example_script
+        example_script = temp_notebook  # noqa: PLW2901
 
-        # execute marimo notebook and export to markdown
-        proc = subprocess.run(  # TODO: markdown conversion does not seem to run/store results
-            [sys.executable, "-m", "marimo", "export", "md", marimo_script, "-o", target_file],
-            env=env,
-            capture_output=True,
-            text=True,
-            check=False,
-        )
-        if proc.returncode != 0:
-            _log.error(f"✗ Failed to export {example_script} to markdown format.\n\tstderr:\n{proc.stderr}")
-            proc.check_returncode()
+    # execute jupyter notebook and export to markdown
+    proc = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "jupyter",
+            "nbconvert",
+            # TODO: add "--execute", in case we want to try including results
+            "-y",
+            "--to",
+            "markdown",
+            "--embed-images",
+            "--output-dir",
+            str(target_file.parent),
+            "--output",
+            str(target_file.stem),
+            str(example_script),
+        ],
+        env=env,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if proc.returncode != 0:
+        _log.error(f"✗ Failed to export {example_script} to markdown format.\n\tstderr:\n{proc.stderr}")
+        proc.check_returncode()
 
     # CLEANUP
     # We wrap lines which are too long as long as they do not contain a link.
@@ -89,9 +109,6 @@ for example_script in EXAMPLES_DIR.glob("*.py"):
             r"<Figure size",
             r"it/s",
             r"s/it",
-            r"^---$",
-            r"^marimo-version:",
-            r"^width: ",
         )
 
         # Make a regex that matches if any of our regexes match.
@@ -102,7 +119,6 @@ for example_script in EXAMPLES_DIR.glob("*.py"):
                 continue
 
             line = line.replace("title: ", "# ")  # noqa: PLW2901
-            line = line.replace("```python {.marimo}", '```py linenums="1"')  # noqa: PLW2901
 
             wrapped_lines.append(line)
 

@@ -65,10 +65,8 @@ autogluon = [
     "tokenizers>=0.13.0", # Override old tokenizers, use version with Python 3.12 wheels
 ]
 survival = [
+    "scikit-survival>=0.25"
 ]
-# NOTE: The 'survival' extra is intentionally kept as an empty placeholder.
-# It is referenced elsewhere (e.g. in test dependencies as `octopus[survival]`)
-# and reserved for future survival-analysis backends without breaking that extra name.
 
 dev = [
     "octopus[test]",
@@ -145,6 +143,9 @@ warn_return_any = true
 warn_unused_ignores = true
 exclude = ["examples", "docs", "tests", "studies"]
 
+[[tool.mypy.overrides]]
+module = "sksurv.*"
+ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
 module = "mlxtend.*"

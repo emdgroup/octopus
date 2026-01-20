@@ -167,12 +167,14 @@ def test_default_values():
 
 
 def test_ml_type_values():
-    """Test all valid ml_type values with appropriate classes."""
-    test_cases = [
-        (MLType.CLASSIFICATION, OctoClassification, "AUCROC", {"target": "target"}),
-        (MLType.REGRESSION, OctoRegression, "R2", {"target": "target"}),
-    ]
-    for expected_ml_type, study_class, metric, extra_kwargs in test_cases:
+    """Test all valid ml_type values."""
+    ml_type_metrics = {
+        "classification": "AUCROC",
+        "regression": "R2",
+        "timetoevent": "CI",
+        "multiclass": "AUCROC_MACRO",
+    }
+    for ml_type, metric in ml_type_metrics.items():
         with tempfile.TemporaryDirectory() as temp_dir:
             study = study_class(
                 name="test",

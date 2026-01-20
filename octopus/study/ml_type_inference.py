@@ -142,20 +142,18 @@ def _infer_timetoevent(
     if unique1 == 2:
         unique_vals1 = set(data1.unique())
         # Check if values are binary: {0, 1} or {0.0, 1.0} or boolean
-        if unique_vals1 <= {0, 1}:
-            # Check if col2 is numeric with >2 values
-            if np.issubdtype(data2.dtype, np.number) and unique2 > 2:  # type: ignore[arg-type]
-                event_col = col1
-                duration_col = col2
+        # and if col2 is numeric with >2 values
+        if unique_vals1 <= {0, 1} and np.issubdtype(data2.dtype, np.number) and unique2 > 2:  # type: ignore[arg-type]
+            event_col = col1
+            duration_col = col2
 
     # Check col2 as potential event column if not found yet
     if event_col is None and unique2 == 2:
         unique_vals2 = set(data2.unique())
-        if unique_vals2 <= {0, 1}:
-            # Check if col1 is numeric with >2 values
-            if np.issubdtype(data1.dtype, np.number) and unique1 > 2:  # type: ignore[arg-type]
-                event_col = col2
-                duration_col = col1
+        # Check if values are binary and if col1 is numeric with >2 values
+        if unique_vals2 <= {0, 1} and np.issubdtype(data1.dtype, np.number) and unique1 > 2:  # type: ignore[arg-type]
+            event_col = col2
+            duration_col = col1
 
     # Validate we found valid event and duration columns
     if event_col is None or duration_col is None:

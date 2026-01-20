@@ -130,7 +130,11 @@ class AGCore:
     @property
     def y_traindev(self) -> pd.DataFrame:
         """y_train."""
-        return self.experiment.data_traindev[self.experiment.target_assignments.values()]
+        if self.experiment.ml_type == "timetoevent":
+            target_cols = [self.experiment.duration_column, self.experiment.event_column]
+        else:
+            target_cols = [self.experiment.target_column]
+        return self.experiment.data_traindev[target_cols]
 
     @property
     def x_test(self) -> pd.DataFrame:
@@ -140,12 +144,11 @@ class AGCore:
     @property
     def y_test(self) -> pd.DataFrame:
         """y_test."""
-        return self.experiment.data_test[self.experiment.target_assignments.values()]
-
-    @property
-    def target_assignments(self) -> dict:
-        """Target assignments."""
-        return self.experiment.target_assignments
+        if self.experiment.ml_type == "timetoevent":
+            target_cols = [self.experiment.duration_column, self.experiment.event_column]
+        else:
+            target_cols = [self.experiment.target_column]
+        return self.experiment.data_test[target_cols]
 
     @property
     def target_metric(self) -> str:
@@ -212,10 +215,14 @@ class AGCore:
         # Ensure AutoGluon uses existing Ray instance if available
         setup_ray_for_external_library()
 
-        if len(self.target_assignments) == 1:
-            target = next(iter(self.target_assignments.values()))
+        if self.experiment.ml_type != "timetoevent":
+            target = self.experiment.target_column
         else:
-            raise ValueError(f"Single target expected. Got keys: {self.target_assignments.keys()} ")
+            raise ValueError(
+                f"AutoGluon only supports single-target tasks. "
+                f"Got time-to-event task with duration_column={self.experiment.duration_column}, "
+                f"event_column={self.experiment.event_column}"
+            )
 
         # set up model and scoring type
         scoring_type = metrics_inventory_autogluon[self.target_metric]
@@ -408,7 +415,9 @@ class AGCore:
                 self.ag_test_data,
                 self.feature_columns,
                 metric,
-                self.target_assignments,
+                target_column=self.experiment.target_column,
+                duration_column=self.experiment.duration_column,
+                event_column=self.experiment.event_column,
                 positive_class=self.experiment.positive_class,
             )
             test_performance_octo[metric + "_test_octo"] = performance

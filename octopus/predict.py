@@ -126,10 +126,12 @@ class OctoPredict:
                     data_test=experiment.data_test,
                     feature_columns=experiment.feature_columns,
                     row_column=experiment.row_column,
-                    target_assignments=experiment.target_assignments,
                     target_metric=experiment.target_metric,
                     ml_type=experiment.ml_type,
                     feature_group_dict=experiment.feature_groups,
+                    target_column=experiment.target_column,
+                    duration_column=experiment.duration_column,
+                    event_column=experiment.event_column,
                     positive_class=experiment.positive_class,
                 )
         print(f"{len(experiments)} experiment(s) out of {self.n_experiments} found.")
@@ -293,10 +295,12 @@ class OctoPredict:
             data_test=experiment.data_test,  # not used
             feature_columns=list(set(feature_col_lst)),
             row_column=experiment.row_column,
-            target_assignments=experiment.target_assignments,
             target_metric=experiment.target_metric,
             ml_type=experiment.ml_type,
             feature_group_dict=experiment.feature_group_dict,
+            target_column=experiment.target_column,
+            duration_column=experiment.duration_column,
+            event_column=experiment.event_column,
             positive_class=experiment.positive_class,
         )
 

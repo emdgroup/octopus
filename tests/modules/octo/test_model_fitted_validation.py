@@ -88,17 +88,18 @@ def get_model_configs():
     return {
         "classification": {
             "models": available_models["classification"],
-            "target_assignments": {"target": "target_class"},
+            "target_column": "target_class",
             "target_metric": "accuracy",
         },
         "regression": {
             "models": available_models["regression"],
-            "target_assignments": {"target": "target_reg"},
+            "target_column": "target_reg",
             "target_metric": "mse",
         },
         "timetoevent": {
             "models": available_models["timetoevent"],
-            "target_assignments": {"duration": "duration", "event": "event"},
+            "duration_column": "duration",
+            "event_column": "event",
             "target_metric": "concordance_index",
         },
     }
@@ -243,7 +244,6 @@ def create_training_instance(
     return Training(
         training_id=f"test_{ml_type}_{model_name}",
         ml_type=ml_type,
-        target_assignments=config["target_assignments"],
         feature_columns=feature_columns,
         row_column="row_id",
         data_train=data_train,

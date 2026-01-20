@@ -134,7 +134,6 @@ def create_fake_training(trained_model, model_name, feature_indices, fold_data, 
     training = Training(
         training_id=training_id,
         ml_type="regression",
-        target_assignments={"default": "target"},
         feature_columns=[f"feature_{i}" for i in range(len(feature_indices))],
         row_column="row_id",
         data_train=train_df,
@@ -165,7 +164,6 @@ def create_fake_bag(trained_model, model_name, feature_indices, cv_folds, splits
     bag = Bag(
         bag_id=bag_id,
         trainings=trainings,
-        target_assignments={"default": "target"},
         row_column="row_id",
         target_metric="MAE",
         ml_type="regression",
@@ -228,7 +226,6 @@ def test_ensemble_selection_ensembled_data(tmp_path):
         path_trials=trials_path,
         max_n_iterations=50,  # Fewer iterations for speed
         row_column="row_id",
-        target_assignments={"default": "target"},
     )
 
     # Extract ensemble results

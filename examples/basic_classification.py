@@ -8,7 +8,7 @@
 ### Necessary imports for this example
 from sklearn.datasets import load_breast_cancer
 
-from octopus import OctoStudy
+from octopus import OctoClassification
 
 ### Load and Preprocess Data
 breast_cancer = load_breast_cancer(as_frame=True)
@@ -18,13 +18,12 @@ df.columns = df.columns.str.replace(" ", "_")
 features = list(breast_cancer["feature_names"])
 features = [feature.replace(" ", "_") for feature in features]
 
-### Create and run OctoStudy
-study = OctoStudy(
+### Create and run OctoClassification
+study = OctoClassification(
     name="basic_classification",
-    ml_type="classification",
     target_metric="AUCROC",
     feature_columns=features,
-    target_columns=["target"],
+    target="target",
     sample_id="index",
     stratification_column="target",
 )

@@ -124,11 +124,6 @@ class OctoStudy:
         raise NotImplementedError("Subclasses must implement target_columns property")
 
     @property
-    def target_assignments(self) -> dict[str, str]:
-        """Get target assignments dict. Override in subclasses."""
-        raise NotImplementedError("Subclasses must implement target_assignments property")
-
-    @property
     def output_path(self) -> UPath:
         """Full output path for this study (path/name)."""
         return self.path / self.name
@@ -158,7 +153,6 @@ class OctoStudy:
             sample_id=self.sample_id,
             row_id=self.row_id,
             stratification_column=self.stratification_column,
-            target_assignments=self.target_assignments,
             ml_type=self.ml_type.value,
             positive_class=getattr(self, "positive_class", None),
         )
@@ -207,7 +201,6 @@ class OctoStudy:
         config["prepared"] = {
             "feature_columns": self.prepared.feature_columns,
             "row_id": self.prepared.row_id,
-            "target_assignments": self.prepared.target_assignments,
         }
 
         config_path = self.output_path / "config.json"
@@ -237,7 +230,6 @@ class OctoStudy:
             target_columns=self.target_columns,
             sample_id=self.sample_id,
             row_id=self.row_id,
-            target_assignments=self.target_assignments,
         )
         prepared = preparator.prepare()
         object.__setattr__(self, "prepared", prepared)
@@ -290,7 +282,9 @@ class OctoStudy:
                 datasplit_column=datasplit_col,
                 row_column=self.prepared.row_id,
                 feature_columns=self.prepared.feature_columns,
-                target_assignments=self.prepared.target_assignments,
+                target_column=getattr(self, "target", None),
+                duration_column=getattr(self, "duration_column", None),
+                event_column=getattr(self, "event_column", None),
                 data_traindev=value["train"],
                 data_test=value["test"],
             )
@@ -395,11 +389,6 @@ class OctoRegression(OctoStudy):
         """Get target columns as a list."""
         return [self.target]
 
-    @property
-    def target_assignments(self) -> dict[str, str]:
-        """Get target assignments dict. Empty for single target."""
-        return {}
-
 
 @define
 class OctoClassification(OctoStudy):
@@ -449,11 +438,6 @@ class OctoClassification(OctoStudy):
         """Get target columns as a list."""
         return [self.target]
 
-    @property
-    def target_assignments(self) -> dict[str, str]:
-        """Get target assignments dict. Empty for single target."""
-        return {}
-
 
 @define
 class OctoTimeToEvent(OctoStudy):
@@ -490,8 +474,3 @@ class OctoTimeToEvent(OctoStudy):
     def target_columns(self) -> list[str]:
         """Get target columns as a list."""
         return [self.duration_column, self.event_column]
-
-    @property
-    def target_assignments(self) -> dict[str, str]:
-        """Get target assignments dict."""
-        return {"duration": self.duration_column, "event": self.event_column}

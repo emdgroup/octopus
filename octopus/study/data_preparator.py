@@ -34,9 +34,6 @@ class OctoDataPreparator:
     row_id: str | None
     """Unique row identifier."""
 
-    target_assignments: dict[str, str]
-    """Mapping of target assignments."""
-
     def prepare(self) -> PreparedData:
         """Run all data preparation steps and return PreparedData instance.
 
@@ -46,7 +43,6 @@ class OctoDataPreparator:
         self._sort_features()
         self._standardize_null_values()
         self._standardize_inf_values()
-        self._set_target_assignments()
         self._remove_singlevalue_features()
         self._transform_bool_to_int()
         self._create_row_id()
@@ -56,27 +52,11 @@ class OctoDataPreparator:
             data=self.data,
             feature_columns=self.feature_columns,
             row_id=self.row_id,  # type: ignore[arg-type]  # row_id is always set after _create_row_id
-            target_assignments=self.target_assignments,
         )
 
     def _sort_features(self):
         """Sort feature columns deterministically by length and lexicographically."""
         self.feature_columns = sorted(self.feature_columns, key=lambda col: (len(s := str(col)), s))
-
-    def _set_target_assignments(self):
-        """Set default target assignment for single-target scenarios.
-
-        For datasets with a single target column and no pre-defined target
-        assignments, automatically creates a default assignment mapping
-        "default" to the target column name.
-
-        Note:
-            This only applies when there is exactly one target column and
-            target_assignments is empty. Multi-target scenarios must have
-            explicit assignments defined by the user.
-        """
-        if len(self.target_columns) == 1 and not self.target_assignments:
-            self.target_assignments["default"] = self.target_columns[0]
 
     def _remove_singlevalue_features(self):
         """Remove features that contain only a single unique value."""

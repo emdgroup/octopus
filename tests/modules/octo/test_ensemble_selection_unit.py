@@ -58,9 +58,9 @@ def create_mock_training(training_id, performance_dev, performance_test, n_sampl
     training = Training(
         training_id=training_id,
         ml_type="regression",
-        target_assignments={"default": "target"},
         feature_columns=[f"feature_{i}" for i in range(4)],
         row_column="row_id",
+        target_column="target",
         data_train=train_df,
         data_dev=dev_df,
         data_test=test_df,
@@ -95,8 +95,8 @@ def create_mock_bag(bag_id, target_dev_mae, target_test_mae, n_trainings=3, exac
     bag = Bag(
         bag_id=bag_id,
         trainings=trainings,
-        target_assignments={"default": "target"},
         row_column="row_id",
+        target_column="target",
         target_metric="MAE",
         ml_type="regression",
         parallel_execution=False,
@@ -151,10 +151,11 @@ def create_partial_ensel(trials_path, target_metric="MAE", methods_to_run=None):
 
     return PartialEnSel(
         target_metric=target_metric,
-        target_assignments={"default": "target"},
         path_trials=trials_path,
         max_n_iterations=10,
         row_column="row_id",
+        ml_type="regression",
+        target_column="target",
     )
 
 

@@ -93,7 +93,16 @@ def _(json, study_dir):
 
 @app.cell
 def _(config):
-    target = config["target_columns"][0]
+    # Handle both old and new config structures
+    if "target_columns" in config:
+        # Old structure
+        target = config["target_columns"][0]
+    else:
+        # New structure
+        if config.get("ml_type") == "timetoevent":
+            target = f"{config.get('duration', 'duration')}/{config.get('event', 'event')}"
+        else:
+            target = config.get("target", "target")
     print(f"Target column: {target}")
     return (target,)
 

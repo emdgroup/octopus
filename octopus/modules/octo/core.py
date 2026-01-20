@@ -130,7 +130,11 @@ class OctoCoreGeneric[TaskConfigType: Octo]:
         # prepare inputs
         feature_columns = self.experiment.feature_columns
         features = self.experiment.data_traindev[feature_columns]
-        target = self.experiment.data_traindev[self.experiment.target_assignments.values()]
+        if self.experiment.ml_type == "timetoevent":
+            target_cols = [self.experiment.duration_column, self.experiment.event_column]
+        else:
+            target_cols = [self.experiment.target_column]
+        target = self.experiment.data_traindev[target_cols]
 
         # create relevance information
         re_df = relevance_fstats(
@@ -182,7 +186,10 @@ class OctoCoreGeneric[TaskConfigType: Octo]:
             path_trials=self.path_trials,
             max_n_iterations=100,
             row_column=self.experiment.row_column,
-            target_assignments=self.experiment.target_assignments,
+            ml_type=self.experiment.ml_type,
+            target_column=self.experiment.target_column,
+            duration_column=self.experiment.duration_column,
+            event_column=self.experiment.event_column,
             positive_class=self.experiment.positive_class,
         )
         ensemble_paths_dict = ensel.start_ensemble
@@ -215,7 +222,9 @@ class OctoCoreGeneric[TaskConfigType: Octo]:
             bag_id=self.experiment.id + "_ensel",
             trainings=trainings,
             train_status=True,
-            target_assignments=self.experiment.target_assignments,
+            target_column=self.experiment.target_column,
+            duration_column=self.experiment.duration_column,
+            event_column=self.experiment.event_column,
             parallel_execution=self.experiment.ml_config.inner_parallelization,
             num_workers=self.experiment.ml_config.n_workers,
             target_metric=self.experiment.target_metric,
@@ -370,7 +379,9 @@ class OctoCoreGeneric[TaskConfigType: Octo]:
                 Training(
                     training_id=self.experiment.id + "_" + str(key),
                     ml_type=self.experiment.ml_type,
-                    target_assignments=self.experiment.target_assignments,
+                    target_column=self.experiment.target_column,
+                    duration_column=self.experiment.duration_column,
+                    event_column=self.experiment.event_column,
                     feature_columns=best_bag_feature_columns,
                     row_column=self.experiment.row_column,
                     data_train=split["train"],  # inner datasplit, train
@@ -386,7 +397,9 @@ class OctoCoreGeneric[TaskConfigType: Octo]:
         best_bag = Bag(
             bag_id=self.experiment.id + "_best",
             trainings=best_trainings,
-            target_assignments=self.experiment.target_assignments,
+            target_column=self.experiment.target_column,
+            duration_column=self.experiment.duration_column,
+            event_column=self.experiment.event_column,
             parallel_execution=self.experiment.ml_config.inner_parallelization,
             num_workers=self.experiment.ml_config.n_workers,
             target_metric=self.experiment.target_metric,

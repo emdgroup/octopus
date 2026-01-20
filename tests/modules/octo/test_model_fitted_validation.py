@@ -88,17 +88,18 @@ def get_model_configs():
     return {
         "classification": {
             "models": available_models["classification"],
-            "target_assignments": {"target": "target_class"},
+            "target_column": "target_class",
             "target_metric": "accuracy",
         },
         "regression": {
             "models": available_models["regression"],
-            "target_assignments": {"target": "target_reg"},
+            "target_column": "target_reg",
             "target_metric": "mse",
         },
         "timetoevent": {
             "models": available_models["timetoevent"],
-            "target_assignments": {"duration": "duration", "event": "event"},
+            "duration_column": "duration",
+            "event_column": "event",
             "target_metric": "concordance_index",
         },
     }
@@ -240,10 +241,17 @@ def create_training_instance(
         "outl_reduction": 0,
     }
 
+    # Prepare column kwargs based on ml_type
+    column_kwargs = {}
+    if ml_type == "timetoevent":
+        column_kwargs["duration_column"] = config["duration_column"]
+        column_kwargs["event_column"] = config["event_column"]
+    else:
+        column_kwargs["target_column"] = config["target_column"]
+
     return Training(
         training_id=f"test_{ml_type}_{model_name}",
         ml_type=ml_type,
-        target_assignments=config["target_assignments"],
         feature_columns=feature_columns,
         row_column="row_id",
         data_train=data_train,
@@ -253,6 +261,7 @@ def create_training_instance(
         max_features=0,  # Disable automatic feature selection
         feature_groups=feature_groups,
         config_training=training_config,
+        **column_kwargs,
     )
 
 

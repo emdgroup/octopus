@@ -36,14 +36,18 @@ class ExperimentInfo:
     """Feature columns."""
     row_column: str = field(validator=validators.instance_of(str))
     """Row identifier column."""
-    target_assignments: dict[str, str] = field(validator=validators.instance_of(dict))
-    """Target assignments."""
     target_metric: str = field(validator=validators.instance_of(str))
     """Target metric."""
     ml_type: str = field(validator=validators.instance_of(str))
     """Machine learning type."""
     feature_group_dict: dict = field(validator=validators.instance_of(dict))
     """Feature group dictionary."""
+    target_column: str | None = field(default=None, validator=validators.optional(validators.instance_of(str)))
+    """Target column for single-target tasks."""
+    duration_column: str | None = field(default=None, validator=validators.optional(validators.instance_of(str)))
+    """Duration column for time-to-event tasks."""
+    event_column: str | None = field(default=None, validator=validators.optional(validators.instance_of(str)))
+    """Event indicator column for time-to-event tasks."""
     positive_class: int | str | None = field(default=None)
     """Positive class for binary classification."""
 
@@ -159,7 +163,6 @@ def get_fi_permutation(experiment: ExperimentInfo, n_repeat, data: pd.DataFrame 
     feature_columns = experiment.feature_columns
     data_traindev = experiment.data_traindev
     data_test = experiment.data_test
-    target_assignments = experiment.target_assignments
     target_metric = experiment.target_metric
     model = experiment.model
 
@@ -171,7 +174,14 @@ def get_fi_permutation(experiment: ExperimentInfo, n_repeat, data: pd.DataFrame 
 
     # calculate baseline score
     baseline_score = get_score_from_model(
-        model, data, feature_columns, target_metric, target_assignments, positive_class=experiment.positive_class
+        model,
+        data,
+        feature_columns,
+        target_metric,
+        target_column=experiment.target_column,
+        duration_column=experiment.duration_column,
+        event_column=experiment.event_column,
+        positive_class=experiment.positive_class,
     )
 
     # get all data select random feature values
@@ -201,7 +211,9 @@ def get_fi_permutation(experiment: ExperimentInfo, n_repeat, data: pd.DataFrame 
                 data_pfi,
                 feature_columns,
                 target_metric,
-                target_assignments,
+                target_column=experiment.target_column,
+                duration_column=experiment.duration_column,
+                event_column=experiment.event_column,
                 positive_class=experiment.positive_class,
             )
             fi_lst.append(baseline_score - pfi_score)
@@ -248,7 +260,6 @@ def get_fi_group_permutation(experiment: ExperimentInfo, n_repeat, data: pd.Data
     feature_columns = experiment.feature_columns
     data_traindev = experiment.data_traindev
     data_test = experiment.data_test
-    target_assignments = experiment.target_assignments
     target_metric = experiment.target_metric
     model = experiment.model
     feature_groups = experiment.feature_group_dict
@@ -271,7 +282,14 @@ def get_fi_group_permutation(experiment: ExperimentInfo, n_repeat, data: pd.Data
 
     # calculate baseline score
     baseline_score = get_score_from_model(
-        model, data, feature_columns, target_metric, target_assignments, positive_class=experiment.positive_class
+        model,
+        data,
+        feature_columns,
+        target_metric,
+        target_column=experiment.target_column,
+        duration_column=experiment.duration_column,
+        event_column=experiment.event_column,
+        positive_class=experiment.positive_class,
     )
 
     # get all data select random feature values
@@ -303,7 +321,9 @@ def get_fi_group_permutation(experiment: ExperimentInfo, n_repeat, data: pd.Data
                 data_pfi,
                 feature_columns,
                 target_metric,
-                target_assignments,
+                target_column=experiment.target_column,
+                duration_column=experiment.duration_column,
+                event_column=experiment.event_column,
                 positive_class=experiment.positive_class,
             )
             fi_lst.append(baseline_score - pfi_score)

@@ -183,14 +183,25 @@ class TestRocCore:
 
         return df, feature_names
 
-    def create_mock_experiment(self, data, feature_columns, ml_type, target_assignments, roc_config):
+    def create_mock_experiment(
+        self,
+        data,
+        feature_columns,
+        ml_type,
+        target_column=None,
+        duration_column=None,
+        event_column=None,
+        roc_config=None,
+    ):
         """Create a mock experiment object for testing."""
         with tempfile.TemporaryDirectory() as temp_dir:
             mock_experiment = Mock(spec=OctoExperiment)
             mock_experiment.data_traindev = data
             mock_experiment.feature_columns = feature_columns
             mock_experiment.ml_type = ml_type
-            mock_experiment.target_assignments = target_assignments
+            mock_experiment.target_column = target_column
+            mock_experiment.duration_column = duration_column
+            mock_experiment.event_column = event_column
             mock_experiment.ml_config = roc_config
             mock_experiment.path_study = UPath(temp_dir)
             mock_experiment.task_path = UPath("roc_test")
@@ -203,10 +214,8 @@ class TestRocCore:
         data, feature_columns = sample_classification_data
 
         roc_config = Roc(task_id=0, threshold=0.8, correlation_type="spearmanr", filter_type="f_statistics")
-
-        target_assignments = {"target": "target"}
         mock_experiment = self.create_mock_experiment(
-            data, feature_columns, "classification", target_assignments, roc_config
+            data, feature_columns, "classification", target_column="target", roc_config=roc_config
         )
 
         with patch("shutil.rmtree"), patch("pathlib.Path.mkdir"):
@@ -226,10 +235,8 @@ class TestRocCore:
         data, feature_columns = sample_classification_data
 
         roc_config = Roc(task_id=0, threshold=0.7, correlation_type="rdc", filter_type="mutual_info")
-
-        target_assignments = {"target": "target"}
         mock_experiment = self.create_mock_experiment(
-            data, feature_columns, "classification", target_assignments, roc_config
+            data, feature_columns, "classification", target_column="target", roc_config=roc_config
         )
 
         with patch("shutil.rmtree"), patch("pathlib.Path.mkdir"):
@@ -246,10 +253,8 @@ class TestRocCore:
         data, feature_columns = sample_regression_data
 
         roc_config = Roc(task_id=0, threshold=0.85, correlation_type="spearmanr", filter_type="f_statistics")
-
-        target_assignments = {"target": "target"}
         mock_experiment = self.create_mock_experiment(
-            data, feature_columns, "regression", target_assignments, roc_config
+            data, feature_columns, "regression", target_column="target", roc_config=roc_config
         )
 
         with patch("shutil.rmtree"), patch("pathlib.Path.mkdir"):
@@ -266,10 +271,8 @@ class TestRocCore:
         data, feature_columns = sample_regression_data
 
         roc_config = Roc(task_id=0, threshold=0.9, correlation_type="rdc", filter_type="mutual_info")
-
-        target_assignments = {"target": "target"}
         mock_experiment = self.create_mock_experiment(
-            data, feature_columns, "regression", target_assignments, roc_config
+            data, feature_columns, "regression", target_column="target", roc_config=roc_config
         )
 
         with patch("shutil.rmtree"), patch("pathlib.Path.mkdir"):
@@ -290,10 +293,13 @@ class TestRocCore:
             correlation_type="spearmanr",
             filter_type="f_statistics",  # This should be ignored for timetoevent
         )
-
-        target_assignments = {"duration": "duration", "event": "event"}
         mock_experiment = self.create_mock_experiment(
-            data, feature_columns, "timetoevent", target_assignments, roc_config
+            data,
+            feature_columns,
+            "timetoevent",
+            duration_column="duration",
+            event_column="event",
+            roc_config=roc_config,
         )
 
         with patch("shutil.rmtree"), patch("pathlib.Path.mkdir"):
@@ -311,10 +317,8 @@ class TestRocCore:
         data, feature_columns = sample_classification_data
 
         roc_config = Roc(task_id=0, threshold=threshold, correlation_type="spearmanr", filter_type="f_statistics")
-
-        target_assignments = {"target": "target"}
         mock_experiment = self.create_mock_experiment(
-            data, feature_columns, "classification", target_assignments, roc_config
+            data, feature_columns, "classification", target_column="target", roc_config=roc_config
         )
 
         with patch("shutil.rmtree"), patch("pathlib.Path.mkdir"):
@@ -346,10 +350,8 @@ class TestRocCore:
         data["sample_id"] = range(len(data))
 
         roc_config = Roc(task_id=0, threshold=0.8, correlation_type="spearmanr", filter_type="f_statistics")
-
-        target_assignments = {"target": "target"}
         mock_experiment = self.create_mock_experiment(
-            data, feature_names, "classification", target_assignments, roc_config
+            data, feature_names, "classification", target_column="target", roc_config=roc_config
         )
 
         with patch("shutil.rmtree"), patch("pathlib.Path.mkdir"):
@@ -382,10 +384,8 @@ class TestRocCore:
         data["sample_id"] = range(len(data))
 
         roc_config = Roc(task_id=0, threshold=0.8, correlation_type="spearmanr", filter_type="f_statistics")
-
-        target_assignments = {"target": "target"}
         mock_experiment = self.create_mock_experiment(
-            data, feature_names, "classification", target_assignments, roc_config
+            data, feature_names, "classification", target_column="target", roc_config=roc_config
         )
 
         with patch("shutil.rmtree"), patch("pathlib.Path.mkdir"):
@@ -400,9 +400,8 @@ class TestRocCore:
         data, feature_columns = sample_classification_data
 
         roc_config = Roc(task_id=0)
-        target_assignments = {"target": "target"}
         mock_experiment = self.create_mock_experiment(
-            data, feature_columns, "classification", target_assignments, roc_config
+            data, feature_columns, "classification", target_column="target", roc_config=roc_config
         )
 
         with patch("shutil.rmtree"), patch("pathlib.Path.mkdir"):
@@ -425,10 +424,8 @@ class TestRocCore:
         roc_config.threshold = 0.8
         roc_config.correlation_type = "invalid_correlation"
         roc_config.filter_type = "f_statistics"
-
-        target_assignments = {"target": "target"}
         mock_experiment = self.create_mock_experiment(
-            data, feature_columns, "classification", target_assignments, roc_config
+            data, feature_columns, "classification", target_column="target", roc_config=roc_config
         )
 
         with patch("shutil.rmtree"), patch("pathlib.Path.mkdir"):
@@ -457,10 +454,8 @@ class TestRocCore:
 
         # Use mutual_info filter which can handle NaN values better, or expect ValueError for f_statistics
         roc_config = Roc(task_id=0, threshold=0.8, correlation_type="spearmanr", filter_type="f_statistics")
-
-        target_assignments = {"target": "target"}
         mock_experiment = self.create_mock_experiment(
-            data, feature_names, "classification", target_assignments, roc_config
+            data, feature_names, "classification", target_column="target", roc_config=roc_config
         )
 
         with patch("shutil.rmtree"), patch("pathlib.Path.mkdir"):
@@ -532,11 +527,23 @@ class TestRocIntegration:
         roc_config = Roc(task_id=0, threshold=0.8)
 
         with tempfile.TemporaryDirectory() as temp_dir:
+            # Extract target column information based on ml_type
+            if ml_type == "timetoevent":
+                target_column = None
+                duration_column = target_cols.get("duration")
+                event_column = target_cols.get("event")
+            else:
+                target_column = target_cols.get("target")
+                duration_column = None
+                event_column = None
+
             mock_experiment = Mock(spec=OctoExperiment)
             mock_experiment.data_traindev = data
             mock_experiment.feature_columns = feature_names
             mock_experiment.ml_type = ml_type
-            mock_experiment.target_assignments = target_cols
+            mock_experiment.target_column = target_column
+            mock_experiment.duration_column = duration_column
+            mock_experiment.event_column = event_column
             mock_experiment.ml_config = roc_config
             mock_experiment.path_study = UPath(temp_dir)
             mock_experiment.task_path = UPath("roc_test")

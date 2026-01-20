@@ -108,7 +108,9 @@ class ObjectiveOptuna:
                 Training(
                     training_id=self.experiment.id + "_" + str(key),
                     ml_type=self.experiment.ml_type,
-                    target_assignments=self.experiment.target_assignments,
+                    target_column=self.experiment.target_column,
+                    duration_column=self.experiment.duration_column,
+                    event_column=self.experiment.event_column,
                     feature_columns=feature_columns,
                     row_column=self.experiment.row_column,
                     data_train=split["train"],  # inner datasplit, train
@@ -125,7 +127,9 @@ class ObjectiveOptuna:
         bag_trainings = Bag(
             bag_id=self.experiment.id + "_" + str(trial.number),
             trainings=trainings,
-            target_assignments=self.experiment.target_assignments,
+            target_column=self.experiment.target_column,
+            duration_column=self.experiment.duration_column,
+            event_column=self.experiment.event_column,
             parallel_execution=self.parallel_execution,
             num_workers=self.num_workers,
             target_metric=self.experiment.target_metric,

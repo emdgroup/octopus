@@ -129,7 +129,12 @@ class EfsCore:
     @property
     def y_traindev(self) -> pd.DataFrame:
         """y_traindev."""
-        return self.experiment.data_traindev[self.experiment.target_assignments.values()]
+        target_cols = (
+            [self.experiment.target_column]
+            if self.experiment.ml_type != "timetoevent"
+            else [self.experiment.duration_column, self.experiment.event_column]
+        )
+        return self.experiment.data_traindev[target_cols]
 
     @property
     def x_test(self) -> pd.DataFrame:
@@ -139,7 +144,12 @@ class EfsCore:
     @property
     def y_test(self) -> pd.DataFrame:
         """y_test."""
-        return self.experiment.data_test[self.experiment.target_assignments.values()]
+        target_cols = (
+            [self.experiment.target_column]
+            if self.experiment.ml_type != "timetoevent"
+            else [self.experiment.duration_column, self.experiment.event_column]
+        )
+        return self.experiment.data_test[target_cols]
 
     @property
     def config(self) -> Efs:

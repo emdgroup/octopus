@@ -45,9 +45,6 @@ class Training:
     ml_type: str = field(validator=[validators.instance_of(str)])
     """ML-type."""
 
-    target_assignments: dict = field(validator=[validators.instance_of(dict)])
-    """Target assignments."""
-
     feature_columns: list[str] = field(validator=[validators.instance_of(list)])
     """Feature columns."""
 
@@ -74,6 +71,15 @@ class Training:
 
     config_training: dict = field(validator=[validators.instance_of(dict)])
     """Training configuration."""
+
+    target_column: str | None = field(default=None, validator=validators.optional(validators.instance_of(str)))
+    """Target column for single-target tasks (regression, classification)."""
+
+    duration_column: str | None = field(default=None, validator=validators.optional(validators.instance_of(str)))
+    """Duration column for time-to-event tasks."""
+
+    event_column: str | None = field(default=None, validator=validators.optional(validators.instance_of(str)))
+    """Event indicator column for time-to-event tasks."""
 
     training_weight: int = field(default=1, validator=[validators.instance_of(int)])
     """Training weight for ensembling"""
@@ -146,40 +152,40 @@ class Training:
     def y_train(self):
         """y_train."""
         if self.ml_type == "timetoevent":
-            duration = self.data_train[self.target_assignments["duration"]]
-            event = self.data_train[self.target_assignments["event"]]
+            duration = self.data_train[self.duration_column]
+            event = self.data_train[self.event_column]
             return np.array(
                 list(zip(event, duration, strict=False)),
                 dtype={"names": ("c1", "c2"), "formats": ("bool", "f8")},
             )
         else:
-            return self.data_train[self.target_assignments.values()]
+            return self.data_train[[self.target_column]]
 
     @property
     def y_dev(self):
         """y_dev."""
         if self.ml_type == "timetoevent":
-            duration = self.data_dev[self.target_assignments["duration"]]
-            event = self.data_dev[self.target_assignments["event"]]
+            duration = self.data_dev[self.duration_column]
+            event = self.data_dev[self.event_column]
             return np.array(
                 list(zip(event, duration, strict=False)),
                 dtype={"names": ("c1", "c2"), "formats": ("bool", "f8")},
             )
         else:
-            return self.data_dev[self.target_assignments.values()]
+            return self.data_dev[[self.target_column]]
 
     @property
     def y_test(self):
         """y_dev."""
         if self.ml_type == "timetoevent":
-            duration = self.data_test[self.target_assignments["duration"]]
-            event = self.data_test[self.target_assignments["event"]]
+            duration = self.data_test[self.duration_column]
+            event = self.data_test[self.event_column]
             return np.array(
                 list(zip(event, duration, strict=False)),
                 dtype={"names": ("c1", "c2"), "formats": ("bool", "f8")},
             )
         else:
-            return self.data_test[self.target_assignments.values()]
+            return self.data_test[[self.target_column]]
 
     def __attrs_post_init__(self):
         # Set up preprocessing pipeline
@@ -292,7 +298,7 @@ class Training:
         self.model = ModelInventory().get_model_instance(self.ml_model_type, self.ml_model_params)
 
         try:
-            if len(self.target_assignments) == 1:
+            if self.ml_type != "timetoevent":
                 # standard sklearn single target models
                 self.model.fit(
                     self.x_train_processed,
@@ -323,13 +329,12 @@ class Training:
         self.predictions["test"]["prediction"] = self.model.predict(self.x_test_processed)
 
         # special treatment of targets due to sklearn
-        if len(self.target_assignments) == 1:
-            target_col = list(self.target_assignments.values())[0]
-            self.predictions["train"][target_col] = y_train.squeeze(axis=1)
-            self.predictions["dev"][target_col] = self.y_dev.squeeze(axis=1)
-            self.predictions["test"][target_col] = self.y_test.squeeze(axis=1)
+        if self.ml_type != "timetoevent":
+            self.predictions["train"][self.target_column] = y_train.squeeze(axis=1)
+            self.predictions["dev"][self.target_column] = self.y_dev.squeeze(axis=1)
+            self.predictions["test"][self.target_column] = self.y_test.squeeze(axis=1)
         else:
-            for target_col in self.target_assignments.values():
+            for target_col in [self.duration_column, self.event_column]:
                 self.predictions["train"][target_col] = data_train[target_col]
                 self.predictions["dev"][target_col] = self.data_dev[target_col]
                 self.predictions["test"][target_col] = self.data_test[target_col]
@@ -469,12 +474,15 @@ class Training:
         # fixed confidence level
         confidence_level = 0.95
         feature_columns = self.feature_columns
-        target_assignments = self.target_assignments
         target_metric = self.target_metric
         model = self.model
         feature_groups = self.feature_groups
 
-        target_cols = list(target_assignments.values())
+        if self.ml_type == "timetoevent":
+            target_cols = [self.duration_column, self.event_column]
+        else:
+            target_cols = [self.target_column]
+
         if partition == "dev":
             # concat processed input + target columns
             data = pd.concat([self.x_dev_processed, self.data_dev[target_cols]], axis=1)
@@ -495,7 +503,9 @@ class Training:
             data,
             feature_columns,
             target_metric,
-            target_assignments,
+            target_column=self.target_column,
+            duration_column=self.duration_column,
+            event_column=self.event_column,
             positive_class=self.config_training.get("positive_class"),
         )
 
@@ -525,7 +535,9 @@ class Training:
                     data_pfi,
                     feature_columns,
                     target_metric,
-                    target_assignments,
+                    target_column=self.target_column,
+                    duration_column=self.duration_column,
+                    event_column=self.event_column,
                     positive_class=self.config_training.get("positive_class"),
                 )
                 fi_lst.append(baseline_score - pfi_score)
@@ -606,9 +618,12 @@ class Training:
         logger.info("Calculating LOFO feature importance. This may take a while...")
         # first, dev only
         feature_columns = self.feature_columns
-        target_assignments = self.target_assignments
         # calculate dev+test baseline scores
-        target_cols = list(target_assignments.values())
+        if self.ml_type == "timetoevent":
+            target_cols = [self.duration_column, self.event_column]
+        else:
+            target_cols = [self.target_column]
+
         data_dev = pd.concat([self.x_dev_processed, self.data_dev[target_cols]], axis=1)
         data_test = pd.concat([self.x_test_processed, self.data_test[target_cols]], axis=1)
 
@@ -617,7 +632,9 @@ class Training:
             data_dev,
             feature_columns,
             self.target_metric,
-            self.target_assignments,
+            target_column=self.target_column,
+            duration_column=self.duration_column,
+            event_column=self.event_column,
             positive_class=self.config_training.get("positive_class"),
         )
         baseline_test = get_score_from_model(
@@ -625,7 +642,9 @@ class Training:
             data_test,
             feature_columns,
             self.target_metric,
-            self.target_assignments,
+            target_column=self.target_column,
+            duration_column=self.duration_column,
+            event_column=self.event_column,
             positive_class=self.config_training.get("positive_class"),
         )
 
@@ -641,7 +660,7 @@ class Training:
             model = copy.deepcopy(self.model)
             selected_features = [x for x in selected_features if x not in lofo_feature]
             # retrain model
-            if len(self.target_assignments) == 1:
+            if self.ml_type != "timetoevent":
                 # standard sklearn single target models
                 model.fit(
                     self.x_train_processed[selected_features],
@@ -657,7 +676,9 @@ class Training:
                 data_dev,
                 selected_features,
                 self.target_metric,
-                self.target_assignments,
+                target_column=self.target_column,
+                duration_column=self.duration_column,
+                event_column=self.event_column,
                 positive_class=self.config_training.get("positive_class"),
             )
             score_test = get_score_from_model(
@@ -665,7 +686,9 @@ class Training:
                 data_test,
                 selected_features,
                 self.target_metric,
-                self.target_assignments,
+                target_column=self.target_column,
+                duration_column=self.duration_column,
+                event_column=self.event_column,
                 positive_class=self.config_training.get("positive_class"),
             )
 

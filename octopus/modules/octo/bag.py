@@ -118,9 +118,11 @@ class BagBase(BaseEstimator):
     parallel_execution: bool = field(validator=[validators.instance_of(bool)])
     num_workers: int = field(validator=[validators.instance_of(int)])
     target_metric: str = field(validator=[validators.instance_of(str)])
-    target_assignments: dict = field(validator=[validators.instance_of(dict)])
     row_column: str = field(validator=[validators.instance_of(str)])
     ml_type: str = field(validator=[validators.instance_of(str)])
+    target_column: str | None = field(default=None, validator=validators.optional(validators.instance_of(str)))
+    duration_column: str | None = field(default=None, validator=validators.optional(validators.instance_of(str)))
+    event_column: str | None = field(default=None, validator=validators.optional(validators.instance_of(str)))
     train_status: bool = field(default=False)
 
     # bag training outputs, initialized in post_init
@@ -347,7 +349,11 @@ class BagBase(BaseEstimator):
         predictions["ensemble"] = {}
         for part, pool_value in pool.items():
             ensemble = pd.concat(pool_value, axis=0).groupby(by=self.row_column).mean().reset_index()
-            for column in list(self.target_assignments.values()):
+            if self.ml_type == "timetoevent":
+                target_cols = [self.duration_column, self.event_column]
+            else:
+                target_cols = [self.target_column]
+            for column in target_cols:
                 ensemble[column] = ensemble[column].astype(self.trainings[0].data_train[column].dtype)
             predictions["ensemble"][part] = ensemble
 
@@ -371,7 +377,9 @@ class BagBase(BaseEstimator):
         performance = get_performance_from_predictions(
             predictions=predictions,
             target_metric=self.target_metric,
-            target_assignments=self.target_assignments,
+            target_column=self.target_column,
+            duration_column=self.duration_column,
+            event_column=self.event_column,
             positive_class=self.positive_class,
         )
 

@@ -31,7 +31,7 @@ class TestGetPerformanceFromModel:
             data=data,
             feature_columns=X.columns.tolist(),
             target_metric="AUCROC",
-            target_assignments={"default": "target"},
+            target_column="target",
             positive_class=1,
         )
 
@@ -53,7 +53,7 @@ class TestGetPerformanceFromModel:
             data=data,
             feature_columns=X.columns.tolist(),
             target_metric="ACCBAL_MC",
-            target_assignments={"default": "target"},
+            target_column="target",
         )
 
         assert isinstance(performance, float)
@@ -74,7 +74,7 @@ class TestGetPerformanceFromModel:
             data=data,
             feature_columns=X.columns.tolist(),
             target_metric="R2",
-            target_assignments={"default": "target"},
+            target_column="target",
         )
 
         assert isinstance(performance, float)
@@ -105,7 +105,7 @@ class TestGetPerformanceFromPredictions:
         }
 
         performance = get_performance_from_predictions(
-            predictions=predictions, target_metric="AUCROC", target_assignments={"default": "target"}, positive_class=1
+            predictions=predictions, target_metric="AUCROC", target_column="target", positive_class=1
         )
 
         assert "training_0" in performance
@@ -130,7 +130,7 @@ class TestGetPerformanceFromPredictions:
         }
 
         performance = get_performance_from_predictions(
-            predictions=predictions, target_metric="ACCBAL_MC", target_assignments={"default": "target"}
+            predictions=predictions, target_metric="ACCBAL_MC", target_column="target"
         )
 
         assert "training_0" in performance
@@ -154,7 +154,7 @@ class TestGetPerformanceFromPredictions:
         }
 
         performance = get_performance_from_predictions(
-            predictions=predictions, target_metric="ACCBAL_MC", target_assignments={"default": "target"}
+            predictions=predictions, target_metric="ACCBAL_MC", target_column="target"
         )
 
         assert "training_0" in performance
@@ -178,7 +178,7 @@ class TestGetPerformanceFromPredictions:
         }
 
         performance = get_performance_from_predictions(
-            predictions=predictions, target_metric="ACCBAL_MC", target_assignments={"default": "target"}
+            predictions=predictions, target_metric="ACCBAL_MC", target_column="target"
         )
 
         assert "training_0" in performance
@@ -202,7 +202,7 @@ class TestGetPerformanceFromPredictions:
         }
 
         performance = get_performance_from_predictions(
-            predictions=predictions, target_metric="ACCBAL_MC", target_assignments={"default": "target"}
+            predictions=predictions, target_metric="ACCBAL_MC", target_column="target"
         )
 
         assert "training_0" in performance
@@ -223,7 +223,7 @@ class TestGetPerformanceFromPredictions:
         }
 
         performance = get_performance_from_predictions(
-            predictions=predictions, target_metric="R2", target_assignments={"default": "target"}
+            predictions=predictions, target_metric="R2", target_column="target"
         )
 
         assert "training_0" in performance
@@ -250,7 +250,7 @@ class TestGetScoreFromPrediction:
         }
 
         scores = get_score_from_prediction(
-            predictions=predictions, target_metric="AUCROC", target_assignments={"default": "target"}, positive_class=1
+            predictions=predictions, target_metric="AUCROC", target_column="target", positive_class=1
         )
 
         assert "training_0" in scores
@@ -270,9 +270,7 @@ class TestGetScoreFromPrediction:
             }
         }
 
-        scores = get_score_from_prediction(
-            predictions=predictions, target_metric="MSE", target_assignments={"default": "target"}
-        )
+        scores = get_score_from_prediction(predictions=predictions, target_metric="MSE", target_column="target")
 
         assert "training_0" in scores
         assert scores["training_0"]["dev"] < 0  # minimize: score = -performance
@@ -296,7 +294,7 @@ class TestGetScoreFromModel:
             data=data,
             feature_columns=X.columns.tolist(),
             target_metric="AUCROC",
-            target_assignments={"default": "target"},
+            target_column="target",
             positive_class=1,
         )
 
@@ -318,7 +316,7 @@ class TestGetScoreFromModel:
             data=data,
             feature_columns=X.columns.tolist(),
             target_metric="MSE",
-            target_assignments={"default": "target"},
+            target_column="target",
         )
 
         assert isinstance(score, float)

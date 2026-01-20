@@ -85,14 +85,20 @@ class OctoExperiment[ConfigType: Task]:
     feature_columns: list[str] = field(validator=[validators.instance_of(list)])
     """List of column names used as features in the experiment."""
 
-    target_assignments: dict[str, str] = field(validator=[validators.instance_of(dict)])
-    """Mapping of target variables to their assignments."""
-
     data_traindev: pd.DataFrame = field(validator=[validators.instance_of(pd.DataFrame)])
     """DataFrame containing training and development data."""
 
     data_test: pd.DataFrame = field(validator=[validators.instance_of(pd.DataFrame)])
     """DataFrame containing test data."""
+
+    target_column: str | None = field(default=None, validator=validators.optional(validators.instance_of(str)))
+    """Target column for single-target tasks (regression, classification)."""
+
+    duration_column: str | None = field(default=None, validator=validators.optional(validators.instance_of(str)))
+    """Duration column for time-to-event tasks."""
+
+    event_column: str | None = field(default=None, validator=validators.optional(validators.instance_of(str)))
+    """Event indicator column for time-to-event tasks."""
 
     stratification_column: str | None = field(default=None, validator=validators.optional(validators.instance_of(str)))
     """Column name used for stratification, if applicable."""
@@ -160,8 +166,32 @@ class OctoExperiment[ConfigType: Task]:
         return self._task_path
 
     def __attrs_post_init__(self):
+        self._validate_target_columns()
         self._validate_experiment_state()
         self.feature_groups = self.calculate_feature_groups(self.feature_columns)
+
+    def _validate_target_columns(self) -> None:
+        """Validate that required target columns are provided for the ml_type.
+
+        Ensures that time-to-event tasks have both duration and event columns,
+        and that classification/regression tasks have a target column.
+
+        Raises:
+            ValueError: If required columns are missing or ml_type is unknown.
+        """
+        if self.ml_type == "timetoevent":
+            if self.duration_column is None or self.event_column is None:
+                raise ValueError(
+                    f"Time-to-event tasks require both duration_column and event_column. "
+                    f"Got duration_column={self.duration_column}, event_column={self.event_column}"
+                )
+        elif self.ml_type in ("classification", "multiclass", "regression"):
+            if self.target_column is None:
+                raise ValueError(
+                    f"{self.ml_type} tasks require target_column to be set. Got target_column={self.target_column}"
+                )
+        else:
+            raise ValueError(f"Unknown ml_type: {self.ml_type}")
 
     def _validate_experiment_state(self) -> None:
         """Validate consistency between base and workflow experiment fields.

@@ -31,10 +31,13 @@ class EnSel:
     """Ensemble Selection."""
 
     target_metric: str = field(validator=[validators.instance_of(str)])
-    target_assignments: dict = field(validator=[validators.instance_of(dict)])
     path_trials: UPath = field(validator=[validators.instance_of(UPath)], converter=UPath)
     max_n_iterations: int = field(validator=[validators.instance_of(int)])
     row_column: str = field(validator=[validators.instance_of(str)])
+    ml_type: str = field(validator=[validators.instance_of(str)])
+    target_column: str | None = field(default=None, validator=validators.optional(validators.instance_of(str)))
+    duration_column: str | None = field(default=None, validator=validators.optional(validators.instance_of(str)))
+    event_column: str | None = field(default=None, validator=validators.optional(validators.instance_of(str)))
     positive_class = field(default=None)
     model_table: pd.DataFrame = field(
         init=False,
@@ -129,7 +132,11 @@ class EnSel:
         first_bag = Bag.from_pickle(first_bag_key)
         for part, pool_value in pool.items():
             ensemble = pd.concat(pool_value, axis=0).groupby(by=self.row_column).mean().reset_index()
-            for column in list(self.target_assignments.values()):
+            if self.ml_type == "timetoevent":
+                target_cols = [self.duration_column, self.event_column]
+            else:
+                target_cols = [self.target_column]
+            for column in target_cols:
                 ensemble[column] = ensemble[column].astype(first_bag.trainings[0].data_train[column].dtype)
             predictions["ensemble"][part] = ensemble
 
@@ -137,7 +144,9 @@ class EnSel:
         performance = get_performance_from_predictions(
             predictions=predictions,
             target_metric=self.target_metric,
-            target_assignments=self.target_assignments,
+            target_column=self.target_column,
+            duration_column=self.duration_column,
+            event_column=self.event_column,
             positive_class=self.positive_class,
         )
 

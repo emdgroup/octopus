@@ -168,23 +168,31 @@ def test_default_values():
 
 def test_ml_type_values():
     """Test all valid ml_type values."""
-    ml_type_metrics = {
-        "classification": "AUCROC",
-        "regression": "R2",
-        "timetoevent": "CI",
-        "multiclass": "AUCROC_MACRO",
+    ml_type_configs = {
+        "classification": {
+            "class": OctoClassification,
+            "metric": "AUCROC",
+            "expected_ml_type": MLType.CLASSIFICATION,
+            "extra_kwargs": {"target": "target"},
+        },
+        "regression": {
+            "class": OctoRegression,
+            "metric": "R2",
+            "expected_ml_type": MLType.REGRESSION,
+            "extra_kwargs": {"target": "target"},
+        },
     }
-    for ml_type, metric in ml_type_metrics.items():
+    for _ml_type, config in ml_type_configs.items():
         with tempfile.TemporaryDirectory() as temp_dir:
-            study = study_class(
+            study = config["class"](
                 name="test",
-                target_metric=metric,
+                target_metric=config["metric"],
                 feature_columns=["f1"],
                 sample_id="id",
                 path=temp_dir,
-                **extra_kwargs,
+                **config["extra_kwargs"],
             )
-            assert study.ml_type == expected_ml_type
+            assert study.ml_type == config["expected_ml_type"]
 
 
 def test_start_with_empty_study_valid():

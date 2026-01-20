@@ -6,7 +6,8 @@ from pathlib import Path
 import pytest
 
 _examples_dir = Path(__file__).parent.parent / "examples"
-_all_examples = {f for f in _examples_dir.glob("*.py") if f.name not in {"__init__.py", "main.py"}}
+_example_globs = ["*.py", "*.ipynb"]
+_all_examples = {f for g in _example_globs for f in _examples_dir.glob(g) if f.name not in {"__init__.py", "main.py"}}
 
 
 _all_examples_basic = {f for f in _all_examples if "basic_" in f.name}
@@ -14,7 +15,37 @@ _all_examples_others = _all_examples - _all_examples_basic
 
 
 def run_example(example_path: Path):
-    result = subprocess.run([sys.executable, str(example_path)], check=False, capture_output=True, text=True)
+    env = os.environ | {"STUDIES_PATH": Path().cwd() / "studies"}
+
+    if example_path.suffix == ".ipynb":
+        result = subprocess.run(
+            [
+                sys.executable,
+                "-m",
+                "jupyter",
+                "nbconvert",
+                "--execute",
+                "-y",
+                "--to",
+                "notebook",
+                str(example_path),
+                "--stdout",
+            ],
+            check=False,
+            capture_output=True,
+            text=True,
+            env=env,
+        )
+    elif example_path.suffix == ".py":
+        result = subprocess.run(
+            [sys.executable, str(example_path)],
+            check=False,
+            capture_output=True,
+            text=True,
+            env=env,
+        )
+    else:
+        raise ValueError(f"Unsupported example file type: {example_path}")
 
     try:
         result.check_returncode()

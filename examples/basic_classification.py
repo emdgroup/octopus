@@ -6,6 +6,8 @@
 # and that all features are numeric.
 
 ### Necessary imports for this example
+import os
+
 from sklearn.datasets import load_breast_cancer
 
 from octopus import OctoStudy
@@ -21,6 +23,7 @@ features = [feature.replace(" ", "_") for feature in features]
 ### Create and run OctoStudy
 study = OctoStudy(
     name="basic_classification",
+    path=os.environ.get("STUDIES_PATH", "./studies"),
     ml_type="classification",
     target_metric="AUCROC",
     feature_columns=features,

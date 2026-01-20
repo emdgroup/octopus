@@ -8,6 +8,8 @@
 # Please ensure your dataset is clean, with no missing values (`NaN`),
 # and that all features are numeric.
 
+import os
+
 from sklearn.datasets import load_wine
 
 from octopus import OctoStudy
@@ -30,6 +32,7 @@ print(f"  Target distribution: {df['target'].value_counts().sort_index().to_dict
 ### Create and run OctoStudy for multiclass classification
 study = OctoStudy(
     name="multiclass_wine",
+    path=os.environ.get("STUDIES_PATH", "./studies"),
     ml_type="multiclass",
     target_metric="AUCROC_MACRO",
     feature_columns=features,

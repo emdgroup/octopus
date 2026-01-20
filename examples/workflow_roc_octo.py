@@ -6,6 +6,8 @@
 # 1. ROC module for feature correlation analysis and filtering
 # 2. Octo module for model training and hyperparameter optimization
 
+import os
+
 from sklearn.datasets import load_breast_cancer
 
 from octopus import OctoStudy
@@ -28,6 +30,7 @@ features = [feature.replace(" ", "_") for feature in features]
 
 study = OctoStudy(
     name="example_roc_octo",
+    path=os.environ.get("STUDIES_PATH", "./studies"),
     ml_type="classification",
     target_metric="ACCBAL",  # Balanced accuracy for binary classification
     feature_columns=features,

@@ -1,5 +1,6 @@
 """Data health check example."""
 
+import os
 import random
 from decimal import Decimal
 
@@ -203,6 +204,7 @@ print(df_warnings)
 
 study = OctoStudy(
     name="health_check",
+    path=os.environ.get("STUDIES_PATH", "./studies"),
     ml_type="classification",
     target_metric="AUCROC",
     feature_columns=df_warnings.columns.drop("target").drop("id").drop("sample_id").drop("stratification").tolist(),

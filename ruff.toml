@@ -10,8 +10,6 @@ respect-gitignore = true
     "PLR1711", # Useless return statement
     "E402",    # Module import not at top of file
     "PLC0415", # Import outside top-level
-    "B018",    # Found useless expression. Either assign it to a variable or remove it. - Those might make sense in marimo notebooks
-    "E266",    # Too many leading '#' for block comment. These make sense as markdown headings in marimo notebooks
     "T201",    # Print statements OK in examples
 ]
 "tests/*" = [

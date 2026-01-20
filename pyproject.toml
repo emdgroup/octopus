@@ -75,9 +75,7 @@ dev = [
     "octopus[test]",
     "octopus[mypy]",
     "octopus[docs]",
-    "nbformat>=5.10", # analysis notebook
-    "seaborn>=0.13", # analysis notebook
-    "ipywidgets>=8", # analysis notebook
+    "nbstripout>=0.8.2",
 ]
 docs = [
     "octopus[examples]", # docs cannot be built without running examples
@@ -87,10 +85,16 @@ docs = [
     "mkdocstrings-python>=2.0.1",
     "mkdocs-gen-files>=0.6.0",
     "mkdocs-include-dir-to-nav>=1.2.0",
+    "nbconvert>=7.16.6",
+    "jupytext>=1.19.0",
 ]
 examples = [
-    "marimo>=0.18.4",
-    "sqlglot>=28.5.0",
+    "nbformat>=5.10",
+    "nbconvert>=7.16.6",
+    "notebook>=7.5.2",
+    "seaborn>=0.13",
+    "ipywidgets>=8",
+    "ipykernel>=7.1.0",
     "altair>=5.5.0",
 ]
 lint = [

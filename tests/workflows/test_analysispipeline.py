@@ -50,7 +50,6 @@ def trained_study(classification_dataset, tmp_path_factory):
     # Create OctoStudy with new unified API
     study = OctoStudy(
         name="test_analysis_pipeline",
-        ml_type="classification",
         target_metric="ACCBAL",
         metrics=["AUCROC", "ACCBAL", "ACC", "F1", "AUCPR"],
         feature_columns=features,

@@ -31,7 +31,6 @@ def base_study_kwargs():
     """Base kwargs for creating OctoStudy instances."""
     return {
         "name": "test",
-        "ml_type": "classification",
         "target_metric": "AUCROC",
         "feature_columns": ["f1"],
         "target_columns": ["target"],

@@ -19,9 +19,10 @@ features = list(breast_cancer["feature_names"])
 features = [feature.replace(" ", "_") for feature in features]
 
 ### Create and run OctoStudy
+# Note: ml_type is now automatically inferred from the data
+# The target column has 2 unique values, so it will be inferred as "classification"
 study = OctoStudy(
     name="basic_classification",
-    ml_type="classification",
     target_metric="AUCROC",
     feature_columns=features,
     target_columns=["target"],

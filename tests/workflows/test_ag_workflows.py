@@ -51,7 +51,6 @@ class TestAutogluonWorkflows:
         """Test the complete classification workflow execution."""
         study = OctoStudy(
             name="test_classification_workflow",
-            ml_type="classification",
             target_metric="ACCBAL",
             feature_columns=self.features,
             target_columns=["target"],
@@ -107,7 +106,6 @@ class TestAutogluonWorkflows:
 
         study = OctoStudy(
             name="test_regression_workflow",
-            ml_type="regression",
             target_metric="MAE",
             feature_columns=feature_names,
             target_columns=["target"],

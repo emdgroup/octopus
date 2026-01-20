@@ -120,7 +120,6 @@ class TestRocOctoRocWorkflow:
         with tempfile.TemporaryDirectory() as temp_dir:
             study = OctoStudy(
                 name="test_roc_octo_roc",
-                ml_type="classification",
                 target_metric="ACCBAL",
                 feature_columns=feature_names,
                 target_columns=["target"],
@@ -279,7 +278,6 @@ class TestRocOctoRocWorkflow:
         with tempfile.TemporaryDirectory() as temp_dir:
             study = OctoStudy(
                 name="test_roc_octo_roc_execution",
-                ml_type="classification",
                 target_metric="ACCBAL",
                 feature_columns=feature_names,
                 target_columns=["target"],

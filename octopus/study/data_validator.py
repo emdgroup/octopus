@@ -147,7 +147,8 @@ class OctoDataValidator:
     def _validate_target_assignments(self):
         """Validate target assignments for multi-target scenarios.
 
-        For single target columns, ensures no assignments are provided (not needed).
+        For single target columns, ensures no assignments are provided (not needed),
+        except for the auto-generated {"default": target_col} format.
         For multiple target columns, validates that:
         - All target columns have assignments
         - All assignments reference valid target columns
@@ -161,7 +162,10 @@ class OctoDataValidator:
             None: Returns early for single target columns after validation.
         """
         if len(self.target_columns) == 1:
-            if self.target_assignments:
+            # Allow auto-generated {"default": target_col} format
+            if self.target_assignments and not (
+                len(self.target_assignments) == 1 and "default" in self.target_assignments
+            ):
                 raise ValueError(
                     "Target assignments provided for a single target column. Assignments are only needed for multiple target columns."
                 )

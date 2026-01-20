@@ -62,7 +62,6 @@ class TestOctoIntroClassification:
         with tempfile.TemporaryDirectory() as temp_dir:
             study = OctoStudy(
                 name="test_classification",
-                ml_type="classification",
                 target_metric="ACCBAL",
                 feature_columns=features,
                 target_columns=["target"],
@@ -191,7 +190,6 @@ class TestOctoIntroClassification:
         with tempfile.TemporaryDirectory() as temp_dir:
             study = OctoStudy(
                 name="test_octo_intro_execution",
-                ml_type="classification",
                 target_metric="ACCBAL",
                 feature_columns=features,
                 target_columns=["target"],

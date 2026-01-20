@@ -22,6 +22,10 @@ def validate_metric(instance: "OctoStudy", attribute: Attribute, value: str) -> 
     Raises:
         ValueError: If the target_metric is not valid for the given ml_type.
     """
+    # Skip validation if ml_type hasn't been inferred yet (during __init__)
+    if not hasattr(instance, "ml_type"):
+        return
+
     metric_ml_type = metrics_inventory.get_metric_config(value).ml_type
 
     if metric_ml_type != instance.ml_type:
@@ -39,6 +43,10 @@ def validate_metrics_list(instance: "OctoStudy", attribute: Attribute, value: li
     Raises:
         ValueError: If any metric is not valid for the given ml_type.
     """
+    # Skip validation if ml_type hasn't been inferred yet (during __init__)
+    if not hasattr(instance, "ml_type"):
+        return
+
     for metric in value:
         metric_ml_type = metrics_inventory.get_metric_config(metric).ml_type
 

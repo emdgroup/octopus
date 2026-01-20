@@ -30,7 +30,7 @@ class TestOctoMulticlass:
 
         feature_names = [f"feature_{i}" for i in range(5)]
         df = pd.DataFrame(X, columns=feature_names)
-        df["target"] = y
+        df["target"] = pd.Categorical(y)
         df = df.reset_index()
 
         class MockWine:
@@ -72,7 +72,6 @@ class TestOctoMulticlass:
         with tempfile.TemporaryDirectory() as temp_dir:
             study = OctoStudy(
                 name="test_multiclass",
-                ml_type="multiclass",
                 target_metric="AUCROC_MACRO",
                 feature_columns=features,
                 target_columns=["target"],
@@ -157,7 +156,6 @@ class TestOctoMulticlass:
         with tempfile.TemporaryDirectory() as temp_dir:
             study = OctoStudy(
                 name="test_multiclass_metrics",
-                ml_type="multiclass",
                 target_metric="AUCROC_MACRO",
                 feature_columns=["f1"],
                 target_columns=["target"],
@@ -208,7 +206,6 @@ class TestOctoMulticlass:
         with tempfile.TemporaryDirectory() as temp_dir:
             study = OctoStudy(
                 name="test_multiclass_execution",
-                ml_type="multiclass",
                 target_metric="AUCROC_MACRO",
                 feature_columns=features,
                 target_columns=["target"],
@@ -303,23 +300,25 @@ class TestOctoMulticlass:
         assert octo_task.n_workers == 5
         assert octo_task.n_trials == 20
 
-    def test_multiclass_target_metric_options(self):
+    def test_multiclass_target_metric_options(self, wine_dataset):
         """Test different target metrics suitable for multiclass classification."""
         target_metrics = ["AUCROC_MACRO", "AUCROC_WEIGHTED", "ACCBAL_MC"]
+        df, features, _wine = wine_dataset
 
         for target_metric in target_metrics:
             with tempfile.TemporaryDirectory() as temp_dir:
                 study = OctoStudy(
                     name=f"test_multiclass_{target_metric.lower()}",
-                    ml_type="multiclass",
                     target_metric=target_metric,
-                    feature_columns=["f1"],
+                    feature_columns=features,
                     target_columns=["target"],
                     sample_id="index",
                     metrics=["AUCROC_MACRO", "AUCROC_WEIGHTED", "ACCBAL_MC"],
                     path=temp_dir,
                     ignore_data_health_warning=True,
                 )
+                # Need to call fit to infer ml_type
+                study.fit(df)
 
                 assert study.target_metric == target_metric
                 assert study.ml_type.value == "multiclass"

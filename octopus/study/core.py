@@ -18,6 +18,7 @@ from octopus.utils import DataSplit
 from .data_preparator import OctoDataPreparator
 from .data_validator import OctoDataValidator
 from .healthChecker import HealthCheckConfig, OctoDataHealthChecker
+from .ml_type_inference import infer_ml_type
 from .prepared_data import PreparedData
 from .types import DatasplitType, ImputationMethod, MLType
 from .validation import validate_metric, validate_metrics_list, validate_start_with_empty_study, validate_workflow
@@ -30,12 +31,6 @@ _RUNNING_IN_TESTSUITE = "RUNNING_IN_TESTSUITE" in os.environ
 @define
 class OctoStudy:
     """OctoStudy."""
-
-    ml_type: MLType = field(
-        converter=lambda x: MLType(x.lower()) if isinstance(x, str) else x,
-        validator=validators.instance_of(MLType),
-    )
-    """The type of machine learning model."""
 
     target_metric: str = field(validator=[validate_metric])
     """The primary metric used for model evaluation."""
@@ -67,14 +62,17 @@ class OctoStudy:
     )
     """Unique row identifier."""
 
-    target_assignments: dict[str, str] = field(default=Factory(dict), validator=[validators.instance_of(dict)])
-    """Mapping of target assignments."""
+    ml_type: MLType = field(init=False)
+    """The type of machine learning model. Automatically inferred from data."""
+
+    target_assignments: dict[str, str] = field(init=False, default=Factory(dict))
+    """Mapping of target assignments. Automatically extracted for timetoevent problems."""
 
     stratification_column: str | None = field(
         default=Factory(lambda: None),
         validator=validators.optional(validators.instance_of(str)),
     )
-    """List of columns used for stratification."""
+    """Name of column used for stratification in data split."""
 
     positive_class: int = field(default=1, validator=validators.instance_of(int))
     """The positive class label for binary classification. Defaults to 1. Not relevant for other ml_types."""
@@ -146,6 +144,16 @@ class OctoStudy:
         if "group_sample_and_features" in self.prepared.data.columns:
             relevant_columns.append("group_sample_and_features")
         return list(set(relevant_columns))
+
+    def _infer_ml_type_and_assignments(self, data: pd.DataFrame) -> None:
+        """Infer ML type and target assignments from data."""
+        ml_type, target_assignments = infer_ml_type(
+            data=data,
+            target_columns=self.target_columns,
+            silent=False,
+        )
+        object.__setattr__(self, "ml_type", ml_type)
+        object.__setattr__(self, "target_assignments", target_assignments)
 
     def _validate_data(self, data: pd.DataFrame) -> None:
         """Validate the input data."""
@@ -235,6 +243,7 @@ class OctoStudy:
             sample_id=self.sample_id,
             row_id=self.row_id,
             target_assignments=self.target_assignments,
+            stratification_column=self.stratification_column,
         )
         prepared = preparator.prepare()
         object.__setattr__(self, "prepared", prepared)
@@ -343,6 +352,7 @@ class OctoStudy:
             data: DataFrame containing the dataset.
             health_check_config: Optional configuration for health check thresholds.
         """
+        self._infer_ml_type_and_assignments(data)
         self._validate_data(data)
         prepared_data = self._prepare_data(data)
         self._initialize_study_outputs(data)

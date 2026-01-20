@@ -51,7 +51,9 @@ def get_performance_from_model(
     data: pd.DataFrame,
     feature_columns: list,
     target_metric: str,
-    target_assignments: dict,
+    target_column: str | None = None,
+    duration_column: str | None = None,
+    event_column: str | None = None,
     threshold: float = 0.5,
     positive_class: int | str | None = None,
 ) -> float:
@@ -62,7 +64,9 @@ def get_performance_from_model(
         data: DataFrame containing features and targets
         feature_columns: List of feature column names
         target_metric: Name of the metric to calculate
-        target_assignments: Dictionary mapping target types to column names
+        target_column: Target column for single-target tasks
+        duration_column: Duration column for time-to-event tasks
+        event_column: Event indicator column for time-to-event tasks
         threshold: Classification threshold (default: 0.5)
         positive_class: Positive class for binary classification
 
@@ -88,14 +92,13 @@ def get_performance_from_model(
     # Time-to-event
     if ml_type == "timetoevent":
         estimate = model.predict(data[feature_columns])
-        event_time = data[target_assignments["duration"]].astype(float)
-        event_indicator = data[target_assignments["event"]].astype(bool)
+        event_time = data[duration_column].astype(float)
+        event_indicator = data[event_column].astype(bool)
         metric_function = metrics_inventory.get_metric_function(target_metric)
         return float(metric_function(event_indicator, event_time, estimate)[0])
 
     # Get target for non-time-to-event tasks
-    target_col = list(target_assignments.values())[0]
-    target = data[target_col]
+    target = data[target_column]
 
     # Binary classification
     if ml_type == "classification":
@@ -138,7 +141,9 @@ def get_performance_from_model(
 def get_performance_from_predictions(
     predictions: dict,
     target_metric: str,
-    target_assignments: dict,
+    target_column: str | None = None,
+    duration_column: str | None = None,
+    event_column: str | None = None,
     threshold: float = 0.5,
     positive_class: int | str | None = None,
 ) -> dict:
@@ -149,7 +154,9 @@ def get_performance_from_predictions(
                     Expected structure: {training_id: {partition: df}, 'ensemble': {partition: df}}
                     where partition is 'train', 'dev', or 'test'
         target_metric: Name of the metric to calculate
-        target_assignments: Dictionary mapping target types to column names
+        target_column: Target column for single-target tasks
+        duration_column: Duration column for time-to-event tasks
+        event_column: Event indicator column for time-to-event tasks
         threshold: Classification threshold (default: 0.5)
         positive_class: Positive class for binary classification (required for classification)
 
@@ -174,15 +181,14 @@ def get_performance_from_predictions(
             # Time-to-event
             if ml_type == "timetoevent":
                 estimate = pred_df["prediction"]
-                event_time = pred_df[target_assignments["duration"]].astype(float)
-                event_indicator = pred_df[target_assignments["event"]].astype(bool)
+                event_time = pred_df[duration_column].astype(float)
+                event_indicator = pred_df[event_column].astype(bool)
                 metric_function = metrics_inventory.get_metric_function(target_metric)
                 perf_value = float(metric_function(event_indicator, event_time, estimate)[0])
 
             else:
                 # Get target for non-time-to-event tasks
-                target_col = list(target_assignments.values())[0]
-                target = pred_df[target_col]
+                target = pred_df[target_column]
 
                 # Binary classification
                 if ml_type == "classification":
@@ -200,7 +206,8 @@ def get_performance_from_predictions(
                 # Multiclass classification
                 elif ml_type == "multiclass":
                     if prediction_type == "predict_proba":
-                        prob_columns = _get_probability_columns(pred_df, target_col)
+                        assert target_column is not None
+                        prob_columns = _get_probability_columns(pred_df, target_column)
                         probabilities = pred_df[prob_columns].values
                         perf_value = metric_config.compute(target, probabilities)
                     else:
@@ -226,7 +233,9 @@ def get_performance_from_predictions(
 def get_score_from_prediction(
     predictions: dict,
     target_metric: str,
-    target_assignments: dict,
+    target_column: str | None = None,
+    duration_column: str | None = None,
+    event_column: str | None = None,
     threshold: float = 0.5,
     positive_class: int | str | None = None,
 ) -> dict:
@@ -238,7 +247,9 @@ def get_score_from_prediction(
     Args:
         predictions: Dictionary from bag.get_predictions()
         target_metric: Name of the metric to calculate
-        target_assignments: Dictionary mapping target types to column names
+        target_column: Target column for single-target tasks
+        duration_column: Duration column for time-to-event tasks
+        event_column: Event indicator column for time-to-event tasks
         threshold: Classification threshold (default: 0.5)
         positive_class: Positive class for binary classification
 
@@ -249,7 +260,9 @@ def get_score_from_prediction(
     performance = get_performance_from_predictions(
         predictions=predictions,
         target_metric=target_metric,
-        target_assignments=target_assignments,
+        target_column=target_column,
+        duration_column=duration_column,
+        event_column=event_column,
         threshold=threshold,
         positive_class=positive_class,
     )
@@ -274,7 +287,9 @@ def get_score_from_model(
     data: pd.DataFrame,
     feature_columns: list,
     target_metric: str,
-    target_assignments: dict,
+    target_column: str | None = None,
+    duration_column: str | None = None,
+    event_column: str | None = None,
     positive_class: int | str | None = None,
 ) -> float:
     """Calculate score from model with optimization direction applied.
@@ -287,14 +302,23 @@ def get_score_from_model(
         data: DataFrame containing features and targets
         feature_columns: List of feature column names
         target_metric: Name of the metric to calculate
-        target_assignments: Dictionary mapping target types to column names
+        target_column: Target column for single-target tasks
+        duration_column: Duration column for time-to-event tasks
+        event_column: Event indicator column for time-to-event tasks
         positive_class: Positive class for binary classification
 
     Returns:
         Score value (direction-adjusted performance)
     """
     performance = get_performance_from_model(
-        model, data, feature_columns, target_metric, target_assignments, positive_class=positive_class
+        model,
+        data,
+        feature_columns,
+        target_metric,
+        target_column=target_column,
+        duration_column=duration_column,
+        event_column=event_column,
+        positive_class=positive_class,
     )
 
     # Apply optimization direction

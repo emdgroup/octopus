@@ -85,7 +85,8 @@ class TestOctoTimeToEvent:
             assert study.target_columns == ["duration", "event"]
             assert len(study.feature_columns) == 5
             assert study.sample_id == "index"
-            assert study.target_assignments == {"duration": "duration", "event": "event"}
+            assert study.duration_column == "duration"
+            assert study.event_column == "event"
 
     def test_octo_task_configuration(self):
         """Test that Octo task can be properly configured for time-to-event."""

@@ -112,7 +112,6 @@ class TestAnalysisPipeline:
             assert hasattr(experiment, "model")
             assert hasattr(experiment, "data_test")
             assert hasattr(experiment, "feature_columns")
-            assert hasattr(experiment, "target_assignments")
 
     @pytest.mark.slow
     def test_predict_on_test_data(self, trained_study):
@@ -172,7 +171,9 @@ class TestAnalysisPipeline:
                     experiment.data_test,
                     experiment.feature_columns,
                     metric,
-                    experiment.target_assignments,
+                    target_column=experiment.target_column,
+                    duration_column=experiment.duration_column,
+                    event_column=experiment.event_column,
                     positive_class=1,
                 )
 
@@ -199,7 +200,7 @@ class TestAnalysisPipeline:
             data_test = experiment.data_test
             feature_columns = experiment.feature_columns
             row_column = experiment.row_column
-            target_col = list(experiment.target_assignments.values())[0]
+            target_col = experiment.target_column
 
             df = pd.DataFrame()
             df["row_id"] = data_test[row_column]
@@ -303,7 +304,6 @@ class TestAnalysisPipeline:
             assert hasattr(experiment, "data_test")
             assert hasattr(experiment, "feature_columns")
             assert hasattr(experiment, "row_column")
-            assert hasattr(experiment, "target_assignments")
             assert hasattr(experiment, "target_metric")
             assert hasattr(experiment, "ml_type")
             assert hasattr(experiment, "feature_group_dict")
@@ -313,7 +313,6 @@ class TestAnalysisPipeline:
             assert isinstance(experiment.id, int)
             assert isinstance(experiment.data_test, pd.DataFrame)
             assert isinstance(experiment.feature_columns, list)
-            assert isinstance(experiment.target_assignments, dict)
             assert experiment.ml_type == "classification"
 
     @pytest.mark.slow

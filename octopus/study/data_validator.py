@@ -30,9 +30,6 @@ class OctoDataValidator:
     stratification_column: str | None
     """List of columns used for stratification."""
 
-    target_assignments: dict[str, str]
-    """Mapping of target assignments."""
-
     ml_type: str
     """Machine learning type (classification, regression, etc.)."""
 
@@ -76,7 +73,6 @@ class OctoDataValidator:
             self._validate_duplicated_columns,
             self._validate_feature_target_overlap,
             self._validate_stratification_column,
-            self._validate_target_assignments,
             self._validate_number_of_targets,
             self._validate_column_dtypes,
             self._validate_positive_class,
@@ -144,80 +140,18 @@ class OctoDataValidator:
         ]:
             raise ValueError("Stratification column cannot be the same as sample_id or row_id")
 
-    def _validate_target_assignments(self):
-        """Validate target assignments for multi-target scenarios.
-
-        For single target columns, ensures no assignments are provided (not needed).
-        For multiple target columns, validates that:
-        - All target columns have assignments
-        - All assignments reference valid target columns
-        - Each target column has a unique assignment
-
-        Raises:
-            ValueError: If target assignments are invalid, missing, or contain
-                duplicates. Specific error messages indicate the exact issue.
-
-        Returns:
-            None: Returns early for single target columns after validation.
-        """
-        if len(self.target_columns) == 1:
-            if self.target_assignments:
-                raise ValueError(
-                    "Target assignments provided for a single target column. Assignments are only needed for multiple target columns."
-                )
-            return
-        if not self.target_assignments:
-            raise ValueError(
-                f"Multiple target columns detected ({len(self.target_columns)}), "
-                "but no target assignments provided. "
-                f"Please specify assignments for: {', '.join(self.target_columns)}"
-            )
-
-        missing_assignments = set(self.target_columns) - set(self.target_assignments.values())
-        if missing_assignments:
-            raise ValueError(
-                "Missing assignments for target column(s): "
-                f"{', '.join(missing_assignments)}. "
-                "Please provide assignments for all target columns: "
-                f"{', '.join(self.target_columns)}"
-            )
-
-        invalid_assignments = set(self.target_assignments.values()) - set(self.target_columns)
-        if invalid_assignments:
-            raise ValueError(
-                "Invalid assignment key(s) detected: "
-                f"{', '.join(invalid_assignments)}. Assignments must be made "
-                f"only for existing target columns: {', '.join(self.target_columns)}"
-            )
-
-        if len(set(self.target_assignments.values())) != len(self.target_assignments):
-            duplicate_values = [
-                val for val in self.target_assignments.values() if list(self.target_assignments.values()).count(val) > 1
-            ]
-            raise ValueError(
-                f"Duplicate assignment(s) found: {', '.join(set(duplicate_values))}. "
-                "Each target column must have a unique assignment. "
-                f"Current assignments: {dict(self.target_assignments)}"
-            )
-
     def _validate_number_of_targets(self):
         """Validate the number of target columns.
 
         Ensures that:
         - No more than 2 target columns are specified
-        - If 2 targets are specified, target_assignments must be provided
-          (required for time-to-event modeling)
+        - 2 targets are only allowed for time-to-event modeling
 
         Raises:
-            ValueError: If more than 2 targets are specified, or if 2 targets
-                are provided without target assignments.
+            ValueError: If more than 2 targets are specified.
         """
         if len(self.target_columns) > 2:
             raise ValueError("More than two targets are not allowed")
-        if len(self.target_columns) == 2 and not self.target_assignments:
-            raise ValueError(
-                "Target assignments are required when two targets are selected. This is only for ml_type = 'timetoevent'."
-            )
 
     def _validate_column_dtypes(self):
         """Validate that feature and target columns have supported data types.
@@ -318,12 +252,7 @@ class OctoDataValidator:
             return
 
         # Get target column - for single target, use target_columns[0]
-        # For assigned targets, use the first assignment value
-        if self.target_assignments:
-            target_col = list(self.target_assignments.values())[0]
-        else:
-            target_col = self.target_columns[0]
-
+        target_col = self.target_columns[0]
         target_data = self.data[target_col]
 
         if not pd.api.types.is_integer_dtype(target_data):

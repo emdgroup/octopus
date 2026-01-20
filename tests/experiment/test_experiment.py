@@ -32,13 +32,13 @@ def octo_experiment(sample_data):
         study_name="test",
         ml_type="regression",
         target_metric="R2",
+        target_column="target",
         positive_class=1,
         metrics=["R2"],
         imputation_method="median",
         datasplit_column="target",
         row_column="row_id",
         feature_columns=["feature1", "feature2", "feature3"],
-        target_assignments={"target": [0, 1]},
         data_traindev=sample_data,
         data_test=sample_data,
     )
@@ -54,7 +54,6 @@ def test_initialization(octo_experiment):
     assert octo_experiment.datasplit_column == "target"
     assert octo_experiment.row_column == "row_id"
     assert octo_experiment.feature_columns == ["feature1", "feature2", "feature3"]
-    assert octo_experiment.target_assignments == {"target": [0, 1]}
     assert isinstance(octo_experiment.data_traindev, pd.DataFrame)
     assert isinstance(octo_experiment.data_test, pd.DataFrame)
 

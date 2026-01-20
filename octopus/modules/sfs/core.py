@@ -98,7 +98,12 @@ class SfsCore:
     @property
     def y_traindev(self) -> pd.DataFrame:
         """y_train."""
-        return self.experiment.data_traindev[self.experiment.target_assignments.values()]
+        target_cols = (
+            [self.experiment.target_column]
+            if self.experiment.ml_type != "timetoevent"
+            else [self.experiment.duration_column, self.experiment.event_column]
+        )
+        return self.experiment.data_traindev[target_cols]
 
     @property
     def data_test(self) -> pd.DataFrame:
@@ -113,12 +118,12 @@ class SfsCore:
     @property
     def y_test(self) -> pd.DataFrame:
         """y_test."""
-        return self.experiment.data_test[self.experiment.target_assignments.values()]
-
-    @property
-    def target_assignments(self) -> dict:
-        """Target assignments."""
-        return self.experiment.target_assignments
+        target_cols = (
+            [self.experiment.target_column]
+            if self.experiment.ml_type != "timetoevent"
+            else [self.experiment.duration_column, self.experiment.event_column]
+        )
+        return self.experiment.data_test[target_cols]
 
     @property
     def target_metric(self) -> str:
@@ -252,7 +257,9 @@ class SfsCore:
             self.data_test,
             self.experiment.selected_features,
             self.target_metric,
-            self.target_assignments,
+            target_column=self.experiment.target_column,
+            duration_column=self.experiment.duration_column,
+            event_column=self.experiment.event_column,
             positive_class=self.experiment.positive_class,
         )
         print(f"Test set (refit) performance: {test_score_refit:.3f}")
@@ -267,7 +274,9 @@ class SfsCore:
             self.data_test,
             self.experiment.selected_features,
             self.target_metric,
-            self.target_assignments,
+            target_column=self.experiment.target_column,
+            duration_column=self.experiment.duration_column,
+            event_column=self.experiment.event_column,
             positive_class=self.experiment.positive_class,
         )
         print(f"Test set (gridsearch+refit) performance: {test_score_gsrefit:.3f}")

@@ -37,6 +37,9 @@ class OctoDataPreparator:
     target_assignments: dict[str, str]
     """Mapping of target assignments."""
 
+    stratification_column: str | None = None
+    """Optional column name used for stratified data splitting."""
+
     def prepare(self) -> PreparedData:
         """Run all data preparation steps and return PreparedData instance.
 
@@ -46,9 +49,9 @@ class OctoDataPreparator:
         self._sort_features()
         self._standardize_null_values()
         self._standardize_inf_values()
-        self._set_target_assignments()
         self._remove_singlevalue_features()
         self._transform_bool_to_int()
+        self._encode_stratification_column()
         self._create_row_id()
         self._add_group_features()  # needs to be done at the end
 
@@ -63,21 +66,6 @@ class OctoDataPreparator:
         """Sort feature columns deterministically by length and lexicographically."""
         self.feature_columns = sorted(self.feature_columns, key=lambda col: (len(s := str(col)), s))
 
-    def _set_target_assignments(self):
-        """Set default target assignment for single-target scenarios.
-
-        For datasets with a single target column and no pre-defined target
-        assignments, automatically creates a default assignment mapping
-        "default" to the target column name.
-
-        Note:
-            This only applies when there is exactly one target column and
-            target_assignments is empty. Multi-target scenarios must have
-            explicit assignments defined by the user.
-        """
-        if len(self.target_columns) == 1 and not self.target_assignments:
-            self.target_assignments["default"] = self.target_columns[0]
-
     def _remove_singlevalue_features(self):
         """Remove features that contain only a single unique value."""
         removed_features = [feature for feature in self.feature_columns if self.data[feature].nunique() <= 1]
@@ -89,6 +77,62 @@ class OctoDataPreparator:
         """Convert all boolean columns to integer."""
         bool_cols = self.data.select_dtypes(include="bool").columns
         self.data[bool_cols] = self.data[bool_cols].astype(int)
+
+    def _encode_stratification_column(self):
+        """Encode categorical stratification column to integers.
+
+        The DataSplit utility requires stratification columns to be integer, unsigned
+        integer, or boolean dtype. This method converts categorical/object/string dtypes
+        to integer codes using pandas' categorical codes.
+
+        If the column is already int/uint/bool, no conversion is needed.
+        For categorical columns, uses .cat.codes which assigns integers starting from 0.
+
+        Note:
+            - NaN values are preserved as -1 in categorical codes
+            - The original column is replaced with integer codes in-place
+            - Logs the conversion for transparency
+        """
+        if not self.stratification_column:
+            return
+
+        col_dtype = self.data[self.stratification_column].dtype
+
+        # Check if dtype is already acceptable (int, uint, bool)
+        if col_dtype.kind in "iub":
+            logger.info(
+                f"Stratification column '{self.stratification_column}' already has acceptable dtype: {col_dtype}"
+            )
+            return
+
+        # Convert categorical/object/string to integer codes
+        if col_dtype.name in ["object", "category", "string"]:
+            logger.info(
+                f"Converting stratification column '{self.stratification_column}' from {col_dtype} to integer codes"
+            )
+
+            # Convert to categorical if not already
+            if col_dtype.name != "category":
+                self.data[self.stratification_column] = self.data[self.stratification_column].astype("category")
+
+            # Get the codes (integers starting from 0)
+            # NaN values will be encoded as -1
+            codes = self.data[self.stratification_column].cat.codes
+
+            # Replace the column with integer codes
+            self.data[self.stratification_column] = codes
+
+            logger.info(
+                f"  Converted to integer codes with {codes.nunique()} unique values "
+                f"(range: {codes.min()} to {codes.max()})"
+            )
+        else:
+            # Float or other numeric type - log warning but allow it
+            logger.warning(
+                f"Stratification column '{self.stratification_column}' has dtype {col_dtype}. "
+                f"Converting to int, but be aware this may lose precision."
+            )
+            self.data[self.stratification_column] = self.data[self.stratification_column].astype(int)
 
     def _create_row_id(self):
         """Create a unique row identifier if not provided."""

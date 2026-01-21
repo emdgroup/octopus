@@ -15,7 +15,6 @@ diabetes = load_diabetes(as_frame=True)
 ### Create and run OctoStudy with multi-step workflow
 study = OctoStudy(
     name="example_multiworkflow",
-    ml_type="regression",
     target_metric="R2",
     feature_columns=diabetes["feature_names"],
     target_columns=["target"],

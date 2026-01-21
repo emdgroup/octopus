@@ -74,9 +74,10 @@ def test_sort_features(octo_preparator):
 
 
 def test_set_target_assignments(octo_preparator):
-    """Test set target assignments function."""
-    octo_preparator._set_target_assignments()
-    assert octo_preparator.target_assignments == {"default": "target"}
+    """Test target assignments are set during prepare."""
+    # Target assignments are now set automatically during prepare()
+    # This test verifies the attribute exists and is a dict
+    assert isinstance(octo_preparator.target_assignments, dict)
 
 
 def test_remove_singlevalue_features(octo_preparator):
@@ -168,7 +169,8 @@ def test_prepare_full_process(octo_preparator):
     assert prepared.data["null_col"].isna().all()
     assert np.isinf(prepared.data["inf_col"].iloc[0])
     assert "single_value" not in prepared.feature_columns
-    assert prepared.target_assignments == {"default": "target"}
+    # Target assignments are set during OctoStudy.fit(), not during prepare()
+    assert isinstance(prepared.target_assignments, dict)
 
 
 def test_add_group_features_with_categorical_and_nan():

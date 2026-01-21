@@ -8,6 +8,7 @@
 # Please ensure your dataset is clean, with no missing values (`NaN`),
 # and that all features are numeric.
 
+import pandas as pd
 from sklearn.datasets import load_wine
 
 from octopus import OctoStudy
@@ -21,6 +22,9 @@ df.columns = df.columns.str.replace(" ", "_")
 features = list(wine["feature_names"])
 features = [feature.replace(" ", "_") for feature in features]
 
+# Convert target to categorical for multiclass classification
+df["target"] = pd.Categorical(df["target"])
+
 print("Dataset info:")
 print(f"  Features: {len(features)}")
 print(f"  Samples: {df.shape[0]}")
@@ -30,7 +34,6 @@ print(f"  Target distribution: {df['target'].value_counts().sort_index().to_dict
 ### Create and run OctoStudy for multiclass classification
 study = OctoStudy(
     name="multiclass_wine",
-    ml_type="multiclass",
     target_metric="AUCROC_MACRO",
     feature_columns=features,
     target_columns=["target"],

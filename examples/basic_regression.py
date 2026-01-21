@@ -14,9 +14,10 @@ from octopus import OctoStudy
 diabetes = load_diabetes(as_frame=True)
 
 ### Create and run OctoStudy
+# Note: ml_type is now automatically inferred from the data
+# The target column is numeric with many unique values, so it will be inferred as "regression"
 study = OctoStudy(
     name="basic_regression",
-    ml_type="regression",
     target_metric="MAE",
     feature_columns=diabetes["feature_names"],
     target_columns=["target"],

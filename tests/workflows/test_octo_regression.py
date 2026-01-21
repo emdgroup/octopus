@@ -57,7 +57,6 @@ class TestOctoRegression:
         with tempfile.TemporaryDirectory() as temp_dir:
             study = OctoStudy(
                 name="test_regression",
-                ml_type="regression",
                 target_metric="MAE",
                 feature_columns=features,
                 target_columns=["target"],
@@ -201,7 +200,6 @@ class TestOctoRegression:
         with tempfile.TemporaryDirectory() as temp_dir:
             study = OctoStudy(
                 name="test_octo_regression_execution",
-                ml_type="regression",
                 target_metric="MAE",
                 feature_columns=features,
                 target_columns=["target"],

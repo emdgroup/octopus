@@ -74,12 +74,10 @@ class TestOctoTimeToEvent:
         with tempfile.TemporaryDirectory() as temp_dir:
             study = OctoStudy(
                 name="test_t2e",
-                ml_type="timetoevent",
                 target_metric="CI",
                 feature_columns=features,
                 target_columns=["duration", "event"],
                 sample_id="index",
-                target_assignments={"duration": "duration", "event": "event"},
                 path=temp_dir,
                 ignore_data_health_warning=True,
             )
@@ -87,7 +85,6 @@ class TestOctoTimeToEvent:
             assert study.target_columns == ["duration", "event"]
             assert len(study.feature_columns) == 5
             assert study.sample_id == "index"
-            assert study.target_assignments == {"duration": "duration", "event": "event"}
 
     def test_octo_task_configuration(self):
         """Test that Octo task can be properly configured for time-to-event."""
@@ -180,12 +177,10 @@ class TestOctoTimeToEvent:
         with tempfile.TemporaryDirectory() as temp_dir:
             study = OctoStudy(
                 name="test_octo_t2e_execution",
-                ml_type="timetoevent",
                 target_metric="CI",
                 feature_columns=features,
                 target_columns=["duration", "event"],
                 sample_id="index",
-                target_assignments={"duration": "duration", "event": "event"},
                 metrics=["CI"],
                 datasplit_seed_outer=1234,
                 n_folds_outer=2,

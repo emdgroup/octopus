@@ -18,8 +18,6 @@ if TYPE_CHECKING:
 class Models:
     """Central registry and inventory for models.
 
-    This replaces the old ModelRegistry + ModelInventory design.
-
     Usage:
         # Get config
         cfg = Models.get_model_config("ExtraTreesClassifier")
@@ -47,12 +45,6 @@ class Models:
     def register(cls, name: str) -> Callable[[Callable[[], ModelConfig]], Callable[[], ModelConfig]]:
         """Register a model configuration factory function under a given name.
 
-        New pattern (replaces @ModelRegistry.register + wrapper class):
-
-            @Models.register("ExtraTreesClassifier")
-            def extra_trees_classifier() -> ModelConfig:
-                return ModelConfig(...)
-
         Args:
             name: The name to register the model under.
 
@@ -71,8 +63,6 @@ class Models:
     @classmethod
     def get_model_config(cls, name: str) -> ModelConfig:
         """Get model configuration by name.
-
-        This preserves the old ModelInventory.get_model_config behavior.
 
         Args:
             name: The name of the model to retrieve.
@@ -105,8 +95,6 @@ class Models:
     def get_model_instance(cls, name: str, params: dict[str, Any]):
         """Get model class by name and initialize it with the provided parameters.
 
-        This preserves the old ModelInventory.get_model_instance behavior.
-
         Args:
             name: The name of the model to retrieve.
             params: The parameters for model initialization.
@@ -120,8 +108,6 @@ class Models:
     @classmethod
     def get_feature_method(cls, name: str) -> str:
         """Get feature method by name.
-
-        This preserves the old ModelInventory.get_feature_method behavior.
 
         Args:
             name: The name of the model to retrieve.
@@ -142,8 +128,6 @@ class Models:
         model_seed: int,
     ) -> dict[str, Any]:
         """Create Optuna parameters for a specific model.
-
-        This is a direct port of ModelInventory.create_trial_parameters.
 
         Args:
             trial: The Optuna trial object.

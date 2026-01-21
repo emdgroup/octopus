@@ -1,13 +1,15 @@
-name: Documentation
-
+name: Documentation Build and Deploy
 on:
   push:
+    branches:
+      - main
+  pull_request:
     branches:
       - main
   release:
     types:
       - published
-  workflow_dispatch:  # Allow manually triggering the workflow
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}
@@ -41,5 +43,9 @@ jobs:
             git config --local user.email "mkdocs-upload[bot]@users.noreply.github.com"
             git config --local user.name "mkdocs-upload[bot]"
 
-      - name: Build and Deploy with MkDocs
+      - name: Build with MkDocs
+        run: uv run mkdocs build
+
+      - name: Deploy with MkDocs (only on main branch)
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: uv run mkdocs gh-deploy --force

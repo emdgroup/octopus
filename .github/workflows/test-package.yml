@@ -35,4 +35,4 @@ jobs:
         env:
           RUNNING_IN_TESTSUITE: "1"
         run: |
-          uv run pytest -n auto
+          uv run pytest

@@ -6,15 +6,14 @@ import copy
 import json
 
 import pandas as pd
-from attrs import define, field, validators
+from attrs import define
 from sklearn.feature_selection import RFECV
 from sklearn.model_selection import GridSearchCV, StratifiedKFold
-from upath import UPath
 
-from octopus.experiment import OctoExperiment
 from octopus.metrics.inventory import MetricsInventory
 from octopus.metrics.utils import get_score_from_model
 from octopus.models.inventory import ModelInventory
+from octopus.modules.base import ModuleBaseCore
 from octopus.modules.rfe.module import Rfe
 from octopus.results import ModuleResults
 
@@ -105,79 +104,8 @@ def get_param_grid(model_type):
 
 
 @define
-class RfeCore:
+class RfeCore(ModuleBaseCore[Rfe]):
     """RFE Module."""
-
-    experiment: OctoExperiment[Rfe] = field(validator=[validators.instance_of(OctoExperiment)])
-
-    @property
-    def path_module(self) -> UPath:
-        """Module path."""
-        return self.experiment.path_study / self.experiment.task_path
-
-    @property
-    def path_results(self) -> UPath:
-        """Results path."""
-        return self.path_module / "results"
-
-    @property
-    def x_traindev(self) -> pd.DataFrame:
-        """x_train."""
-        return self.experiment.data_traindev[self.experiment.feature_columns]
-
-    @property
-    def y_traindev(self) -> pd.DataFrame:
-        """y_train."""
-        return self.experiment.data_traindev[self.experiment.target_assignments.values()]
-
-    @property
-    def x_test(self) -> pd.DataFrame:
-        """x_test."""
-        return self.experiment.data_test[self.experiment.feature_columns]
-
-    @property
-    def y_test(self) -> pd.DataFrame:
-        """y_test."""
-        return self.experiment.data_test[self.experiment.target_assignments.values()]
-
-    @property
-    def data_test(self) -> pd.DataFrame:
-        """data_test."""
-        return self.experiment.data_test
-
-    @property
-    def target_assignments(self) -> dict:
-        """Target assignments."""
-        return self.experiment.target_assignments
-
-    @property
-    def target_metric(self) -> str:
-        """Target metric."""
-        return self.experiment.target_metric
-
-    @property
-    def config(self) -> Rfe:
-        """Module configuration."""
-        return self.experiment.ml_config
-
-    @property
-    def feature_columns(self) -> list[str]:
-        """Feature Columns."""
-        return self.experiment.feature_columns
-
-    @property
-    def stratification_column(self) -> str | None:
-        """Stratification Column."""
-        return self.experiment.stratification_column
-
-    def __attrs_post_init__(self):
-        # delete directories /trials /optuna /results to ensure clean state
-        # of module when restarted
-        # create directory if it does not exist
-        for directory in [self.path_results]:
-            if directory.exists():
-                directory.rmdir(recursive=True)
-            directory.mkdir(parents=True, exist_ok=True)
 
     def run_experiment(self):
         """Run RFE module on experiment."""

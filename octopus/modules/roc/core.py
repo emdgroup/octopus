@@ -17,8 +17,8 @@ from sklearn.feature_selection import (
 )
 from upath import UPath
 
-from octopus.experiment import OctoExperiment
 from octopus.logger import get_logger
+from octopus.modules.base import ModuleBaseCore
 from octopus.modules.roc.module import Roc
 from octopus.modules.utils import rdc_correlation_matrix
 
@@ -50,42 +50,11 @@ filter_inventory = {
 
 
 @define
-class RocCore:
-    """Roc Module."""
+class RocCore(ModuleBaseCore[Roc]):
+    """Roc Module (Removal of Correlated features)."""
 
-    experiment: OctoExperiment[Roc] = field(validator=[validators.instance_of(OctoExperiment)])
     log_dir: UPath = field(validator=[validators.instance_of(UPath)])
     feature_groups: list = field(init=False, validator=[validators.instance_of(list)])
-
-    @property
-    def path_module(self) -> UPath:
-        """Module path."""
-        return self.experiment.path_study / self.experiment.task_path
-
-    @property
-    def path_results(self) -> UPath:
-        """Results path."""
-        return self.path_module / "results"
-
-    @property
-    def x_traindev(self) -> pd.DataFrame:
-        """x_traindev."""
-        return self.experiment.data_traindev[self.experiment.feature_columns]
-
-    @property
-    def y_traindev(self) -> pd.DataFrame:
-        """y_traindev."""
-        return self.experiment.data_traindev[self.experiment.target_assignments.values()]
-
-    @property
-    def feature_columns(self) -> list:
-        """feature_columns."""
-        return self.experiment.feature_columns
-
-    @property
-    def ml_type(self) -> str:
-        """ML type."""
-        return self.experiment.ml_type
 
     @property
     def config(self) -> Roc:
@@ -98,14 +67,9 @@ class RocCore:
         return self.experiment.ml_config.filter_type
 
     def __attrs_post_init__(self):
+        """Initialize feature groups and prepare directories."""
         self.feature_groups = []
-        # delete directories /trials /optuna /results to ensure clean state
-        # of module when restarted
-        # create directory if it does not exist
-        for directory in [self.path_results]:
-            if directory.exists():
-                directory.rmdir(recursive=True)
-            directory.mkdir(parents=True, exist_ok=True)
+        super().__attrs_post_init__()  # Clean/create results directory
 
     def run_experiment(self):
         """Run ROC module on experiment."""

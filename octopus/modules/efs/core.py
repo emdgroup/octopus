@@ -17,12 +17,11 @@ from sklearn.model_selection import (
     StratifiedKFold,
     cross_val_predict,
 )
-from upath import UPath
 
-from octopus.experiment import OctoExperiment
 from octopus.metrics import metrics_inventory
 from octopus.metrics.inventory import MetricsInventory
 from octopus.models.inventory import ModelInventory
+from octopus.modules.base import ModuleBaseCore
 from octopus.modules.efs.module import Efs
 from octopus.results import ModuleResults
 
@@ -84,11 +83,10 @@ def get_param_grid(model_type):
 
 
 @define
-class EfsCore:
+class EfsCore(ModuleBaseCore[Efs]):
     """EFS Module."""
 
-    experiment: OctoExperiment[Efs] = field(validator=[validators.instance_of(OctoExperiment)])
-
+    # Module-specific attributes
     model_table: pd.DataFrame = field(
         init=False,
         default=pd.DataFrame(),
@@ -102,49 +100,9 @@ class EfsCore:
     optimized_ensemble: dict = field(default=Factory(dict), validator=[validators.instance_of(dict)])
 
     @property
-    def path_module(self) -> UPath:
-        """Module path."""
-        return self.experiment.path_study / self.experiment.task_path
-
-    @property
-    def path_results(self) -> UPath:
-        """Results path."""
-        return self.path_module / "results"
-
-    @property
-    def ml_type(self) -> str:
-        """ML type."""
-        return self.experiment.ml_type
-
-    @property
-    def x_traindev(self) -> pd.DataFrame:
-        """x_traindev."""
-        return self.experiment.data_traindev[self.experiment.feature_columns]
-
-    @property
     def row_ids_traindev(self) -> pd.Series:
         """Row IDs for traindev."""
         return self.experiment.data_traindev[self.row_column]
-
-    @property
-    def y_traindev(self) -> pd.DataFrame:
-        """y_traindev."""
-        return self.experiment.data_traindev[self.experiment.target_assignments.values()]
-
-    @property
-    def x_test(self) -> pd.DataFrame:
-        """x_test."""
-        return self.experiment.data_test[self.experiment.feature_columns]
-
-    @property
-    def y_test(self) -> pd.DataFrame:
-        """y_test."""
-        return self.experiment.data_test[self.experiment.target_assignments.values()]
-
-    @property
-    def config(self) -> Efs:
-        """Module configuration."""
-        return self.experiment.ml_config
 
     @property
     def max_n_iterations(self) -> int:
@@ -155,21 +113,6 @@ class EfsCore:
     def max_n_models(self) -> int:
         """Maximum number of models using during optimization."""
         return self.config.max_n_models
-
-    @property
-    def feature_columns(self) -> list[str]:
-        """Feature Columns."""
-        return self.experiment.feature_columns
-
-    @property
-    def stratification_column(self) -> str | None:
-        """Stratification Column."""
-        return self.experiment.stratification_column
-
-    @property
-    def target_metric(self) -> str:
-        """Target metric."""
-        return self.experiment.target_metric
 
     @property
     def metric_input(self) -> str:
@@ -183,20 +126,6 @@ class EfsCore:
     def direction(self) -> str:
         """Optuna direction."""
         return metrics_inventory.get_direction(self.target_metric)
-
-    @property
-    def row_column(self) -> str:
-        """Row column."""
-        return self.experiment.row_column
-
-    def __attrs_post_init__(self):
-        # delete directories /trials /optuna /results to ensure clean state
-        # of module when restarted
-        # create directory if it does not exist
-        for directory in [self.path_results]:
-            if directory.exists():
-                directory.rmdir(recursive=True)
-            directory.mkdir(parents=True, exist_ok=True)
 
     def run_experiment(self):
         """Run EFS module on experiment."""

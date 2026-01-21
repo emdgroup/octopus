@@ -23,10 +23,10 @@ from autogluon.tabular import TabularPredictor
 from sklearn.base import BaseEstimator, ClassifierMixin, RegressorMixin
 from upath import UPath
 
-from octopus.experiment import OctoExperiment
 from octopus.logger import LogGroup, get_logger
 from octopus.manager.ray_parallel import setup_ray_for_external_library
 from octopus.modules.autogluon.module import AutoGluon
+from octopus.modules.base import ModuleBaseCore
 from octopus.modules.utils import (
     get_fi_group_shap,
     get_fi_shap,
@@ -105,68 +105,12 @@ except Exception as e:  # pylint: disable=W0718 # noqa: F841
 
 
 @define
-class AGCore:
-    """Autogluon."""
+class AGCore(ModuleBaseCore[AutoGluon]):
+    """Autogluon TabularPredictor wrapper module."""
 
-    experiment: "OctoExperiment[AutoGluon]" = field(validator=[validators.instance_of(OctoExperiment)])
     log_dir: UPath = field(validator=[validators.instance_of(UPath)])
     model = field(init=False)
     num_cpus = field(init=False)  # TODO: this is also in the AutoGluon class
-
-    @property
-    def path_module(self) -> UPath:
-        """Module path."""
-        return self.experiment.path_study / self.experiment.task_path
-
-    @property
-    def path_results(self) -> UPath:
-        """Results path."""
-        return self.path_module / "results"
-
-    @property
-    def x_traindev(self) -> pd.DataFrame:
-        """x_train."""
-        return self.experiment.data_traindev[self.experiment.feature_columns]
-
-    @property
-    def y_traindev(self) -> pd.DataFrame:
-        """y_train."""
-        return self.experiment.data_traindev[self.experiment.target_assignments.values()]
-
-    @property
-    def x_test(self) -> pd.DataFrame:
-        """x_test."""
-        return self.experiment.data_test[self.experiment.feature_columns]
-
-    @property
-    def y_test(self) -> pd.DataFrame:
-        """y_test."""
-        return self.experiment.data_test[self.experiment.target_assignments.values()]
-
-    @property
-    def target_assignments(self) -> dict:
-        """Target assignments."""
-        return self.experiment.target_assignments
-
-    @property
-    def target_metric(self) -> str:
-        """Target metric."""
-        return self.experiment.target_metric
-
-    @property
-    def metrics(self) -> list[str]:
-        """Metrics."""
-        return self.experiment.metrics
-
-    @property
-    def config(self) -> AutoGluon:
-        """Module configuration."""
-        return self.experiment.ml_config
-
-    @property
-    def feature_columns(self) -> list[str]:
-        """Feature Columns."""
-        return self.experiment.feature_columns
 
     @property
     def ag_train_data(self) -> pd.DataFrame:
@@ -179,14 +123,8 @@ class AGCore:
         return pd.concat([self.x_test, self.y_test], axis=1)
 
     def __attrs_post_init__(self):
-        # delete directories /results to ensure clean state
-        # create directory if it does not exist
-        for directory in [self.path_results]:
-            if directory.exists():
-                directory.rmdir(recursive=True)
-            directory.mkdir(parents=True, exist_ok=True)
-
-        # set and validate resources assigned to the experiment
+        """Initialize and validate resources."""
+        super().__attrs_post_init__()
         self._set_resources()
 
     def _set_resources(self):

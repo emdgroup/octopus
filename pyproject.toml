@@ -180,5 +180,5 @@ ignore_missing_imports = true
 [tool.pytest]
 testpaths = ["tests"]
 markers = ["slow: mark test as slow."]
-addopts = ["--cov=octopus", "--durations=15", "--n=auto"]
+addopts = ["--cov=octopus", "--durations=15", "-n", "auto"]
 tmp_path_retention_policy = "none"

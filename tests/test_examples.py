@@ -6,11 +6,17 @@ from pathlib import Path
 import pytest
 
 _examples_dir = Path(__file__).parent.parent / "examples"
-_all_examples = {f for f in _examples_dir.glob("*.py") if f.name not in {"__init__.py", "main.py"}}
+_all_examples = sorted(
+    [f for f in _examples_dir.glob("*.py") if f.name not in {"__init__.py", "main.py"}],
+    key=lambda p: p.name,
+)
 
 
-_all_examples_basic = {f for f in _all_examples if "basic_" in f.name}
-_all_examples_others = _all_examples - _all_examples_basic
+_all_examples_basic = sorted([f for f in _all_examples if "basic_" in f.name], key=lambda p: p.name)
+_all_examples_others = sorted(
+    [f for f in _all_examples if "basic_" not in f.name],
+    key=lambda p: p.name,
+)
 
 
 def run_example(example_path: Path):

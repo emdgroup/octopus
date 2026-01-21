@@ -12,8 +12,8 @@ from attrs import Factory, define, field, validators
 from optuna.trial import TrialState
 from upath import UPath
 
-from octopus.experiment import OctoExperiment
 from octopus.logger import LogGroup, get_logger
+from octopus.modules.base import ModuleBaseCore
 from octopus.modules.mrmr.core import maxrminr, relevance_fstats
 from octopus.modules.octo.bag import Bag
 from octopus.modules.octo.enssel import EnSel
@@ -29,7 +29,7 @@ logger = get_logger()
 
 
 @define
-class OctoCoreGeneric[TaskConfigType: Octo]:
+class OctoCoreGeneric[TaskConfigType: Octo](ModuleBaseCore[TaskConfigType]):
     """Manages and executes machine learning experiments.
 
     This class integrates all components necessary for conducting
@@ -41,28 +41,24 @@ class OctoCoreGeneric[TaskConfigType: Octo]:
     directories, and optimization processes.
 
     Attributes:
-        experiment (OctoExperiment): Configuration and data container
-            for the experiment.
-        log_dir (UPath): Directory for individual worker logs
-        data_splits (dict): Stores training and validation data splits.
-        paths_optuna_db (dict): Stores file paths to Optuna databases
-            for each experiment.
-        top_trials (list): Keeps track of the best performing trials.
-        mrmr_features (dict): Stores feature lists created by MRMR.
+        log_dir: Directory for individual worker logs.
+        data_splits: Stores training and validation data splits.
+        paths_optuna_db: File paths to Optuna databases for each experiment.
+        top_trials: Keeps track of the best performing trials.
+        mrmr_features: Feature lists created by MRMR for different feature counts.
+
+    Inherits from ModuleBaseCore:
+        experiment: The OctoExperiment instance (from ModuleBaseCore).
+        All common properties from ModuleBaseCore (paths, data, metadata).
 
     Raises:
-        ValueError: Thrown when encountering invalid operations or unsupported
-            configurations during the experiment's execution.
+        ValueError: When encountering invalid operations or unsupported
+            configurations during experiment execution.
 
     Usage:
-        An instance of this class is initialized with an OctoExperiment
-        object and utilizes its methods to run comprehensive machine
-        learning experiments. This includes preparing data, optimizing
-        model parameters, and evaluating results. Proper error handling
-        is incorporated to manage any discrepancies during the experiment phases.
+        Initialize with an OctoExperiment object and call run_experiment()
+        to conduct comprehensive machine learning optimization with Optuna.
     """
-
-    experiment: OctoExperiment[TaskConfigType] = field(validator=[validators.instance_of(OctoExperiment)])
 
     log_dir: UPath = field(validator=[validators.instance_of(UPath)])
     # model = field(default=None)
@@ -75,21 +71,17 @@ class OctoCoreGeneric[TaskConfigType: Octo]:
     mrmr_features: dict = field(default=Factory(dict), validator=[validators.instance_of(dict)])
 
     @property
-    def path_module(self) -> UPath:
-        """Module path."""
-        return self.experiment.path_study / self.experiment.task_path
-
-    @property
     def path_trials(self) -> UPath:
         """Trials path."""
         return self.path_module / "trials"
 
-    @property
-    def path_results(self) -> UPath:
-        """Results path."""
-        return self.path_module / "results"
-
     def __attrs_post_init__(self):
+        """Initialize OctoCoreGeneric with data splits and configuration.
+
+        Note: Does NOT call super().__attrs_post_init__() because this has
+        custom directory management (handles path_trials) that differs from
+        the base class.
+        """
         # create datasplit during init
         self.data_splits = DataSplit(
             dataset=self.experiment.data_traindev,

@@ -17,8 +17,8 @@ from attrs import define, field, validators
 from sklearn.feature_selection import f_classif, f_regression
 from upath import UPath
 
-from octopus.experiment import OctoExperiment
 from octopus.logger import LogGroup, get_logger
+from octopus.modules.base import ModuleBaseCore
 from octopus.modules.mrmr.module import Mrmr
 from octopus.modules.utils import rdc_correlation_matrix
 
@@ -26,36 +26,13 @@ logger = get_logger()
 
 
 @define
-class MrmrCore:
-    """MRMR module."""
+class MrmrCore(ModuleBaseCore[Mrmr]):
+    """MRMR module for feature selection based on mutual information and redundancy.
 
-    experiment: OctoExperiment[Mrmr] = field(validator=[validators.instance_of(OctoExperiment)])
+    Inherits common properties from BaseCore.
+    """
+
     log_dir: UPath = field(validator=[validators.instance_of(UPath)])
-
-    @property
-    def data_traindev(self) -> pd.DataFrame:
-        """data_traindev."""
-        return self.experiment.data_traindev
-
-    @property
-    def x_traindev(self) -> pd.DataFrame:
-        """x_traindev."""
-        return self.experiment.data_traindev[self.experiment.feature_columns]
-
-    @property
-    def y_traindev(self) -> pd.DataFrame:
-        """y_traindev."""
-        return self.experiment.data_traindev[self.experiment.target_assignments.values()]
-
-    @property
-    def feature_columns(self) -> list:
-        """feature_columns."""
-        return self.experiment.feature_columns
-
-    @property
-    def ml_type(self) -> str:
-        """ML type."""
-        return self.experiment.ml_type
 
     @property
     def correlation_type(self) -> Literal["pearson", "spearman", "rdc"]:
@@ -90,6 +67,8 @@ class MrmrCore:
         return f"{'internal' if fi_method == 'internal' else fi_method + '_dev'}_{fi_type}"
 
     def __attrs_post_init__(self):
+        """Initialize and validate MRMR configuration."""
+        super().__attrs_post_init__()  # Create/clean results directory
         logger.set_log_group(LogGroup.PROCESSING, "MRMR")
         self._validate_configuration()
 

@@ -84,15 +84,10 @@ class ObjectiveOptuna:
             feature_columns = self.experiment.feature_columns
 
         # get hyper parameter space for selected model
-        # get hyperparameters for selected model
-        model_item = Models.get_config(ml_model_type)
-
-        hyperparameters = self.hyper_parameters.get(ml_model_type, model_item.hyperparameters)
-
         model_params = Models.create_trial_parameters(
             trial,
-            model_item,
-            hyperparameters,
+            ml_model_type,
+            self.hyper_parameters,
             n_jobs=self.ml_jobs,
             model_seed=self.ml_seed,
         )

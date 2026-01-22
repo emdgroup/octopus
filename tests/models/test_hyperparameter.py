@@ -132,21 +132,29 @@ def test_create_trial_parameters():
         FixedHyperparameter(name="fixed_param", value=42),
     ]
 
-    model_config = ModelConfig(
-        name="TestModel",
-        model_class=object,
-        feature_method="test",
-        ml_type="classification",
-        hyperparameters=hyperparameters,
-        n_jobs="n_jobs",
-        model_seed="random_state",
-    )
+    # Register a test model for this test
+    @Models.register("TestModel")
+    def test_model() -> ModelConfig:
+        """Test model config."""
+        return ModelConfig(
+            model_class=object,
+            feature_method="test",
+            ml_type="classification",
+            hyperparameters=hyperparameters,
+            n_jobs="n_jobs",
+            model_seed="random_state",
+        )
 
-    result = Models.create_trial_parameters(
-        trial=mock_trial, model_item=model_config, hyperparameters=hyperparameters, n_jobs=2, model_seed=123
-    )
+    try:
+        result = Models.create_trial_parameters(
+            trial=mock_trial, model_name="TestModel", custom_hyperparameters=None, n_jobs=2, model_seed=123
+        )
 
-    mock_trial.suggest_int.assert_called_once_with(name="int_param_TestModel", low=1, high=10, log=False)
+        mock_trial.suggest_int.assert_called_once_with(name="int_param_TestModel", low=1, high=10, log=False)
 
-    expected = {"int_param": 5, "fixed_param": 42, "n_jobs": 2, "random_state": 123}
-    assert result == expected
+        expected = {"int_param": 5, "fixed_param": 42, "n_jobs": 2, "random_state": 123}
+        assert result == expected
+    finally:
+        # Clean up test model registration to avoid polluting other tests
+        Models._config_factories.pop("TestModel", None)
+        Models._model_configs.pop("TestModel", None)

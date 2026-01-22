@@ -22,11 +22,11 @@ class Models:
         # Get config
         cfg = Models.get_config("ExtraTreesClassifier")
 
-        # Create Optuna params
+        # Create Optuna params (with optional custom hyperparameters)
         params = Models.create_trial_parameters(
             trial=trial,
-            model_item=cfg,
-            hyperparameters=cfg.hyperparameters,
+            model_name="ExtraTreesClassifier",
+            custom_hyperparameters=None,  # or {"ExtraTreesClassifier": [custom_hps]}
             n_jobs=4,
             model_seed=42,
         )
@@ -109,8 +109,8 @@ class Models:
     def create_trial_parameters(
         cls,
         trial: optuna.trial.Trial,
-        model_item: ModelConfig,
-        hyperparameters: list[Hyperparameter],
+        model_name: str,
+        custom_hyperparameters: dict[str, list[Hyperparameter]] | None,
         n_jobs: int,
         model_seed: int,
     ) -> dict[str, Any]:
@@ -118,14 +118,25 @@ class Models:
 
         Args:
             trial: The Optuna trial object.
-            model_item: The model configuration.
-            hyperparameters: List of hyperparameters to suggest.
+            model_name: The name of the model to create parameters for.
+            custom_hyperparameters: Optional dict mapping model names to custom hyperparameter lists.
+                                   If None or model not in dict, uses default hyperparameters from config.
             n_jobs: Number of jobs for parallel execution.
             model_seed: Random seed for the model.
 
         Returns:
             Dictionary of parameter names to values.
         """
+        # Get model configuration
+        model_item = cls.get_config(model_name)
+
+        # Resolve hyperparameters: use custom if provided, otherwise use defaults
+        if custom_hyperparameters is not None and model_name in custom_hyperparameters:
+            hyperparameters = custom_hyperparameters[model_name]
+        else:
+            hyperparameters = model_item.hyperparameters
+
+        # Create parameters
         params: dict[str, Any] = {}
 
         for hp in hyperparameters:

@@ -195,7 +195,7 @@ class Training:
         Note: Categorical encoding (one-hot, ordinal) is handled elsewhere in the pipeline.
         """
         # Get model configuration
-        model_config = Models.get_model_config(self.ml_model_type)
+        model_config = Models.get_config(self.ml_model_type)
 
         # Identify column types
         sample_data = self.data_train[self.feature_columns]
@@ -289,7 +289,7 @@ class Training:
             self.x_train_processed = processed_data
 
         # (3) Model training
-        self.model = Models.get_model_instance(self.ml_model_type, self.ml_model_params)
+        self.model = Models.get_instance(self.ml_model_type, self.ml_model_params)
 
         try:
             if len(self.target_assignments) == 1:
@@ -366,7 +366,7 @@ class Training:
 
     def _calculate_features_used(self):
         """Calculate used features, method based on model type."""
-        feature_method = Models.get_model_config(self.ml_model_type).feature_method
+        feature_method = Models.get_config(self.ml_model_type).feature_method
 
         if feature_method == "internal":
             self.calculate_fi_internal()

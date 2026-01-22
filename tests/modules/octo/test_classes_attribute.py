@@ -24,7 +24,7 @@ def get_classification_models():
     # Get all models from the registry
     for model_name in Models._config_factories:
         try:
-            config = Models.get_model_config(model_name)
+            config = Models.get_config(model_name)
             if config.ml_type == "classification" and model_name not in excluded_models:
                 models.append(model_name)
         except Exception:
@@ -37,7 +37,7 @@ def get_classification_models():
 def get_default_params(model_name):
     """Get default parameters for a model."""
     # Models uses classmethods, no instantiation needed
-    config = Models.get_model_config(model_name)
+    config = Models.get_config(model_name)
     params = {}
 
     for hp in config.hyperparameters:

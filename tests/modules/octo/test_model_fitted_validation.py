@@ -60,7 +60,7 @@ class ModelCache:
 
         for model_name in all_models:
             try:
-                model_config = Models.get_model_config(model_name)
+                model_config = Models.get_config(model_name)
                 ml_type = model_config.ml_type
                 if ml_type in models_by_type:
                     models_by_type[ml_type].append(model_name)
@@ -111,7 +111,7 @@ def get_default_model_params(model_name: str) -> dict:
     to ensure test results match real-world behavior.
     """
     # Models uses classmethods, no instantiation needed
-    model_config = Models.get_model_config(model_name)
+    model_config = Models.get_config(model_name)
 
     params = {}
 
@@ -281,7 +281,7 @@ def _test_model_fitted_validation(training: Training, model_name: str) -> dict:
     try:
         # Get the model instance but don't fit it
         # Models uses classmethods, no instantiation needed
-        training.model = Models.get_model_instance(training.ml_model_type, training.ml_model_params)
+        training.model = Models.get_instance(training.ml_model_type, training.ml_model_params)
 
         # This should raise RuntimeError
         training._validate_model_trained()
@@ -336,7 +336,7 @@ def _display_model_info(model_name: str, model_params: dict, verbose: bool = Fal
 
     try:
         # Models uses classmethods, no instantiation needed
-        model_config = Models.get_model_config(model_name)
+        model_config = Models.get_config(model_name)
 
         print(f"\n  📊 {model_name}")
         print(f"     Model Class: {model_config.model_class.__name__}")

@@ -20,7 +20,7 @@ class Models:
 
     Usage:
         # Get config
-        cfg = Models.get_model_config("ExtraTreesClassifier")
+        cfg = Models.get_config("ExtraTreesClassifier")
 
         # Create Optuna params
         params = Models.create_trial_parameters(
@@ -32,7 +32,7 @@ class Models:
         )
 
         # Instantiate estimator
-        model = Models.get_model_instance("ExtraTreesClassifier", params)
+        model = Models.get_instance("ExtraTreesClassifier", params)
     """
 
     # Internal registry: model name -> function returning ModelConfig
@@ -61,7 +61,7 @@ class Models:
         return decorator
 
     @classmethod
-    def get_model_config(cls, name: str) -> ModelConfig:
+    def get_config(cls, name: str) -> ModelConfig:
         """Get model configuration by name.
 
         Args:
@@ -92,7 +92,7 @@ class Models:
         return config
 
     @classmethod
-    def get_model_instance(cls, name: str, params: dict[str, Any]):
+    def get_instance(cls, name: str, params: dict[str, Any]):
         """Get model class by name and initialize it with the provided parameters.
 
         Args:
@@ -102,7 +102,7 @@ class Models:
         Returns:
             The initialized model instance.
         """
-        model_config = cls.get_model_config(name)
+        model_config = cls.get_config(name)
         return model_config.model_class(**params)
 
     @classmethod

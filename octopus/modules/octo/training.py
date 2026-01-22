@@ -366,7 +366,7 @@ class Training:
 
     def _calculate_features_used(self):
         """Calculate used features, method based on model type."""
-        feature_method = Models.get_feature_method(self.ml_model_type)
+        feature_method = Models.get_model_config(self.ml_model_type).feature_method
 
         if feature_method == "internal":
             self.calculate_fi_internal()

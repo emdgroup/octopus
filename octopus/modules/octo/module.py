@@ -124,7 +124,7 @@ class Octo(Task):
                 try:
                     # Resolve model_config either by name (str) or by using get_model_config() on a class/object
                     if isinstance(m, str):
-                        config = Models.get_model_config(m)
+                        config = Models.get_config(m)
                     else:
                         get_cfg = getattr(m, "get_model_config", None)
                         if callable(get_cfg):

@@ -85,7 +85,7 @@ class BorutaCore(ModuleBaseCore[Boruta]):
         print("Model used:", model_type)
 
         # set up model and scoring type
-        model = Models.get_model_instance(model_type, {"random_state": 42, "verbose": False})
+        model = Models.get_instance(model_type, {"random_state": 42, "verbose": False})
         # Get scorer string from metrics inventory
         metrics_inventory = MetricsInventory()
         metric_config = metrics_inventory.get_metric_config(self.target_metric)

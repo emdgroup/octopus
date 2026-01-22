@@ -77,7 +77,7 @@ class ModelCache:
 
         for model_name in all_models:
             try:
-                model_config = Models.get_model_config(model_name)
+                model_config = Models.get_config(model_name)
                 ml_type = model_config.ml_type
                 if ml_type in models_by_type:
                     models_by_type[ml_type].append(model_name)
@@ -129,7 +129,7 @@ def get_model_configs():
 def get_default_model_params(model_name: str) -> dict:
     """Get default parameters for a model from its hyperparameter configuration."""
     # Models uses classmethods, no instantiation needed
-    model_config = Models.get_model_config(model_name)
+    model_config = Models.get_config(model_name)
 
     params = {}
 

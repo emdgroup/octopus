@@ -99,7 +99,7 @@ class SfsCore(ModuleBaseCore[Sfs]):
         print("Model used:", model_type)
 
         # set up model and scoring type
-        model = Models.get_model_instance(model_type, {"random_state": 42})
+        model = Models.get_instance(model_type, {"random_state": 42})
 
         # Get scorer string from metrics inventory
         metrics_inventory = MetricsInventory()

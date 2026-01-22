@@ -26,7 +26,7 @@ def get_all_models():
 def generate_param_combinations(model_name: str, max_combos: int = 20) -> list[dict[str, Any]]:
     """Generate parameter combinations from model config."""
     # Models uses classmethods, no instantiation needed
-    config = Models.get_model_config(model_name)
+    config = Models.get_config(model_name)
 
     params = {}
     categorical_choices = {}
@@ -80,7 +80,7 @@ def test_model_parameter_compatibility(model_name):
         try:
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore")
-                Models.get_model_instance(model_name, params)
+                Models.get_instance(model_name, params)
         except ValueError as e:
             # Check for parameter compatibility issues
             error_msg = str(e).lower()
@@ -105,7 +105,7 @@ def test_all_models_have_valid_configs():
 
     for model_name in get_all_models():
         try:
-            config = Models.get_model_config(model_name)
+            config = Models.get_config(model_name)
             assert config.name == model_name
             assert config.model_class is not None
             assert config.ml_type in ML_TYPES
@@ -122,7 +122,7 @@ def test_model_instantiation_with_default_params():
 
     for model_name in get_all_models():
         try:
-            config = Models.get_model_config(model_name)
+            config = Models.get_config(model_name)
             params = {}
 
             # Use first choice for categorical, fixed values for fixed params
@@ -144,7 +144,7 @@ def test_model_instantiation_with_default_params():
 
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore")
-                Models.get_model_instance(model_name, params)
+                Models.get_instance(model_name, params)
 
         except ValueError as e:
             # Parameter compatibility issues are what we want to catch

@@ -8,6 +8,8 @@ import sys
 from itertools import chain
 from pathlib import Path
 
+import mkdocs_gen_files
+
 _log = logging.getLogger(Path(__file__).name)
 _log.setLevel(logging.INFO)
 
@@ -17,8 +19,10 @@ if not _log.hasHandlers():
     handler.setFormatter(formatter)
     _log.addHandler(handler)
 
-EXAMPLES_DIR = Path(__file__).parent.parent.parent / "examples"
-TARGET_DIR = Path(__file__).parent.parent / "examples"
+REPOSITORY_ROOT = Path(__file__).parent.parent.parent.absolute()
+EXAMPLES_DIR = REPOSITORY_ROOT / "examples"
+DOCS_DIR = REPOSITORY_ROOT / "docs"
+TARGET_DIR = DOCS_DIR / "examples"
 EXCLUDED_FILES = {"__init__.py"}
 FORCE = False
 
@@ -34,28 +38,57 @@ for example_script in chain.from_iterable([EXAMPLES_DIR.glob("*.py"), EXAMPLES_D
 
     target_file = TARGET_DIR / f"{example_script.stem}.md"
 
-    if target_file.exists():
-        if not FORCE:
-            _log.debug(f"Skipping existing file {target_file}")
-            continue
-        else:
-            _log.debug(f"Removing existing file {target_file}")
-            target_file.unlink()
+    if not target_file.exists() or FORCE:
+        env = os.environ | {"ALWAYS_OVERWRITE_STUDY": "yes"}
 
-    env = os.environ | {"ALWAYS_OVERWRITE_STUDY": "yes"}
+        if example_script.suffix == ".py":
+            # remove a module docstring
+            temp_script = TARGET_DIR / f"{example_script.stem}.py"
+            with open(example_script) as inp, open(temp_script, "w", encoding="UTF-8") as out:
+                module_code = inp.read()
+                module_code_no_docstring = re.sub(r'^("""|\'\'\')[^"\']*\1\n*', "", module_code, flags=re.DOTALL)
+                out.write(module_code_no_docstring)
 
-    if example_script.suffix == ".py":
-        # Convert python script to notebook first
-        temp_notebook = TARGET_DIR / f"{example_script.stem}.ipynb"
+            # Convert python script to notebook first
+            temp_notebook = TARGET_DIR / f"{example_script.stem}.ipynb"
+            proc = subprocess.run(
+                [
+                    sys.executable,
+                    "-m",
+                    "jupytext",
+                    "--to",
+                    "notebook",
+                    "--output",
+                    str(temp_notebook),
+                    str(temp_script),
+                ],
+                env=env,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            if proc.returncode != 0:
+                _log.error(f"✗ Failed to convert {example_script} to notebook format.\n\tstderr:\n{proc.stderr}")
+                proc.check_returncode()
+
+            example_script = temp_notebook  # noqa: PLW2901
+
+        # execute jupyter notebook and export to markdown
         proc = subprocess.run(
             [
                 sys.executable,
                 "-m",
-                "jupytext",
+                "jupyter",
+                "nbconvert",
+                # TODO: add "--execute", in case we want to try including results
+                "-y",
                 "--to",
-                "notebook",
+                "markdown",
+                "--embed-images",
+                "--output-dir",
+                str(target_file.parent),
                 "--output",
-                str(temp_notebook),
+                str(target_file.stem),
                 str(example_script),
             ],
             env=env,
@@ -64,68 +97,15 @@ for example_script in chain.from_iterable([EXAMPLES_DIR.glob("*.py"), EXAMPLES_D
             check=False,
         )
         if proc.returncode != 0:
-            _log.error(f"✗ Failed to convert {example_script} to notebook format.\n\tstderr:\n{proc.stderr}")
+            _log.error(f"✗ Failed to export {example_script} to markdown format.\n\tstderr:\n{proc.stderr}")
             proc.check_returncode()
 
-        example_script = temp_notebook  # noqa: PLW2901
+        _log.debug(f"Converted {example_script.name} to {target_file.name}")
 
-    # execute jupyter notebook and export to markdown
-    proc = subprocess.run(
-        [
-            sys.executable,
-            "-m",
-            "jupyter",
-            "nbconvert",
-            # TODO: add "--execute", in case we want to try including results
-            "-y",
-            "--to",
-            "markdown",
-            "--embed-images",
-            "--output-dir",
-            str(target_file.parent),
-            "--output",
-            str(target_file.stem),
-            str(example_script),
-        ],
-        env=env,
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-    if proc.returncode != 0:
-        _log.error(f"✗ Failed to export {example_script} to markdown format.\n\tstderr:\n{proc.stderr}")
-        proc.check_returncode()
+    else:
+        _log.debug(f"Not re-building existing file {target_file}")
 
-    # CLEANUP
-    # We wrap lines which are too long as long as they do not contain a link.
-    # To discover whether a line contains a link, we check if the string "]("
-    # is contained.
-    with open(target_file, encoding="UTF-8") as markdown_file:
-        content = markdown_file.read()
-        wrapped_lines = []
-        ignored_substrings = (
-            r"!\[svg\]",
-            r"!\[png\]",
-            r"<Figure size",
-            r"it/s",
-            r"s/it",
-        )
-
-        # Make a regex that matches if any of our regexes match.
-        ignored_patterns = "(" + ")|(".join(ignored_substrings) + ")"
-
-        for line in content.splitlines():
-            if re.search(ignored_patterns, line):
-                continue
-
-            line = line.replace("title: ", "# ")  # noqa: PLW2901
-
-            wrapped_lines.append(line)
-
-        lines = [line + "\n" for line in wrapped_lines]
-
-    # Rewrite the file
-    with open(target_file, "w", encoding="UTF-8") as markdown_file:
-        markdown_file.writelines(lines)
-
-    _log.debug(f"Converted {example_script.name} to {target_file.name}")
+    # Hook the file into mkdocs
+    output_file = target_file.relative_to(DOCS_DIR)
+    with open(target_file, encoding="UTF-8") as inp, mkdocs_gen_files.open(output_file, "w") as out:
+        out.write(inp.read())

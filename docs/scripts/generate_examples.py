@@ -9,7 +9,7 @@ from itertools import chain
 from pathlib import Path
 
 _log = logging.getLogger(Path(__file__).name)
-_log.setLevel(logging.INFO)
+_log.setLevel(logging.DEBUG)
 
 if not _log.hasHandlers():
     handler = logging.StreamHandler(sys.stdout)

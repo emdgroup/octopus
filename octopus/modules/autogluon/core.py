@@ -5,7 +5,11 @@ import json
 import numpy as np
 import pandas as pd
 from attrs import define, field, validators
-from autogluon.core.metrics import (
+from sklearn.base import BaseEstimator, ClassifierMixin, RegressorMixin
+from upath import UPath
+
+from octopus._optional.autogluon import (
+    TabularPredictor,
     accuracy,
     average_precision,
     balanced_accuracy,
@@ -19,10 +23,6 @@ from autogluon.core.metrics import (
     roc_auc,
     root_mean_squared_error,
 )
-from autogluon.tabular import TabularPredictor
-from sklearn.base import BaseEstimator, ClassifierMixin, RegressorMixin
-from upath import UPath
-
 from octopus.logger import LogGroup, get_logger
 from octopus.manager.ray_parallel import setup_ray_for_external_library
 from octopus.modules.autogluon.module import AutoGluon

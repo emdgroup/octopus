@@ -5,10 +5,15 @@ from octopus.exceptions import OptionalImportError
 try:
     from autogluon.core.metrics import (
         accuracy,
+        average_precision,
         balanced_accuracy,
+        f1,
         log_loss,
+        mcc,
         mean_absolute_error,
+        precision,
         r2,
+        recall,
         roc_auc,
         root_mean_squared_error,
     )
@@ -26,10 +31,15 @@ except ModuleNotFoundError as ex:
 __all__ = [
     "TabularPredictor",
     "accuracy",
+    "average_precision",
     "balanced_accuracy",
+    "f1",
     "log_loss",
+    "mcc",
     "mean_absolute_error",
+    "precision",
     "r2",
+    "recall",
     "roc_auc",
     "root_mean_squared_error",
 ]

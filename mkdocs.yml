@@ -68,8 +68,7 @@ markdown_extensions:
 plugins:
   - search
   - mkdocstrings
-  - include_dir_to_nav:
-      file_pattern: '.*\.md$'
+  - literate-nav
   - gen-files:
       scripts:
         - docs/scripts/generate_examples.py
@@ -81,7 +80,7 @@ nav:
       - Classification: 'userguide/classification.md'
       - Regression: 'userguide/regression.md'
       - Time to Event: 'userguide/time_to_event.md'
-  - Examples: examples
+  - Examples: examples/
   - FAQ: faq.md
   - Changelog: changelog.md
   - Github: 'https://github.com/emdgroup/octopus/'

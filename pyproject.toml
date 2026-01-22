@@ -47,9 +47,9 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "TBD"
-Documentation = "TBD"
-Changelog = "TBD"
+Homepage = "https://emdgroup.github.io/octopus/"
+Documentation = "https://emdgroup.github.io/octopus/"
+Changelog = "https://github.com/emdgroup/octopus/releases"
 GitHub = "https://github.com/emdgroup/octopus/"
 Issues = "https://github.com/emdgroup/octopus/issues/"
 # DEV TOOLS NOTE: The versions of all dev tools should be consistent everywhere

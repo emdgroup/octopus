@@ -44,7 +44,11 @@ jobs:
             git config --local user.name "mkdocs-upload[bot]"
 
       - name: Build with MkDocs
-        run: uv run mkdocs build
+        run: |
+          uv run mkdocs build
+          pwd
+          ls -alt docs/*
+          ls - alt site
 
       - name: Deploy with MkDocs (only on main branch)
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'

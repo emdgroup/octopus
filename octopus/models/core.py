@@ -106,19 +106,6 @@ class Models:
         return model_config.model_class(**params)
 
     @classmethod
-    def get_feature_method(cls, name: str) -> str:
-        """Get feature method by name.
-
-        Args:
-            name: The name of the model to retrieve.
-
-        Returns:
-            The feature method of the model.
-        """
-        model_config = cls.get_model_config(name)
-        return model_config.feature_method
-
-    @classmethod
     def create_trial_parameters(
         cls,
         trial: optuna.trial.Trial,

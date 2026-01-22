@@ -87,7 +87,8 @@ class Models:
 
         # Build config via factory and enforce name consistency
         config = factory()
-        config.name = name
+        # Use object.__setattr__ to bypass attrs' attribute restrictions
+        object.__setattr__(config, "name", name)
         cls._model_configs[name] = config
         return config
 
@@ -140,7 +141,8 @@ class Models:
         params: dict[str, Any] = {}
 
         for hp in hyperparameters:
-            unique_name = f"{hp.name}_{model_item.name}"
+            # get_config() always sets name, safe to access
+            unique_name = f"{hp.name}_{model_item.name}"  # type: ignore[attr-defined]
             params[hp.name] = hp.suggest(trial, unique_name)
 
         if model_item.n_jobs is not None:

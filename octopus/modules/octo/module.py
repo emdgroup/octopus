@@ -138,10 +138,11 @@ class Octo(Task):
 
                     chpo_flag = bool(getattr(config, "chpo_compatible", False))
                     # print/log chpo_compatible for each model
-                    logger.info(f"Model '{config.name}': chpo_compatible={chpo_flag}")
+                    # Models.get_config() always sets name, safe to access
+                    logger.info(f"Model '{config.name}': chpo_compatible={chpo_flag}")  # type: ignore[attr-defined]
 
                     if not chpo_flag:
-                        incompatible_models.append(config.name)
+                        incompatible_models.append(config.name)  # type: ignore[attr-defined]
 
                 except Exception as exc:
                     logger.error(f"Could not retrieve model_config for model '{m}': {exc}")

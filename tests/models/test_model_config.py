@@ -14,7 +14,6 @@ def test_model_config_initialization():
     ]
 
     model = ModelConfig(
-        name="test_model",
         model_class=object,
         feature_method="some_method",
         ml_type="regression",
@@ -23,7 +22,8 @@ def test_model_config_initialization():
         model_seed="random_seed",
     )
 
-    assert model.name == "test_model"
+    # Name is not set during initialization - it's added by Models.get_config()
+    assert not hasattr(model, "name")
     assert isinstance(model.model_class, object)
     assert model.feature_method == "some_method"
     assert model.ml_type == "regression"
@@ -45,7 +45,6 @@ def test_model_config_with_conflict():
         match=r"Hyperparameter 'n_jobs' is not allowed in 'hyperparameters'\.",
     ):
         ModelConfig(
-            name="test_model",
             model_class=object,
             feature_method="some_method",
             ml_type="regression",

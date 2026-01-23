@@ -11,6 +11,7 @@ from octopus import OctoStudy
 from octopus.modules import Octo
 
 
+@pytest.mark.windows
 class TestOctoIntroClassification:
     """Test suite for Octopus intro classification workflow."""
 

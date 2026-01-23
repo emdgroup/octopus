@@ -4,7 +4,10 @@ These tests run early in the test suite to catch import issues quickly.
 They verify that all core modules can be imported without errors.
 """
 
+import pytest
 
+
+@pytest.mark.windows
 def test_core_imports() -> None:
     """Test all core package imports work without optional dependencies."""
     import octopus  # noqa: F401, PLC0415
@@ -17,6 +20,7 @@ def test_core_imports() -> None:
     from octopus.task import Task  # noqa: F401, PLC0415
 
 
+@pytest.mark.windows
 def test_core_functionality() -> None:
     """Test that core functionality can be instantiated."""
     from octopus.metrics import MetricsInventory  # noqa: PLC0415

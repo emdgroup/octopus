@@ -49,7 +49,6 @@ theme:
         icon: material/brightness-4
         name: Switch to system preference
 
-
 markdown_extensions:
   - pymdownx.highlight:
       anchor_linenums: true
@@ -74,25 +73,28 @@ plugins:
         - docs/scripts/generate_examples.py
 
 nav:
-  - Octopus Documentation: index.md
+  - Octopus: index.md
   - User Guide:
-      - 'userguide/userguide.md'
-      - Classification: 'userguide/classification.md'
-      - Regression: 'userguide/regression.md'
-      - Time to Event: 'userguide/time_to_event.md'
-  - Examples: examples
-  - FAQ: faq.md
-  - Changelog: changelog.md
-  - Github: 'https://github.com/emdgroup/octopus/'
-  - Known Issues: 'https://github.com/emdgroup/octopus/issues/'
+      - "userguide/userguide.md"
+      - Classification: "userguide/classification.md"
+      - Regression: "userguide/regression.md"
+      - Time to Event: "userguide/time_to_event.md"
+      - Examples: examples
+      - FAQ: faq.md
+  - Concepts:
+      - "concepts/concepts.md"
+      - Nested Cross-Validation: "concepts/nested_cv.md"
   - API Reference:
-      - 'reference/reference.md'
-      - octopus.manager: 'reference/manager.md'
-      - octopus.metrics: 'reference/metrics.md'
-      - octopus.models: 'reference/models.md'
-      - octopus.modules: 'reference/modules.md'
-      - octopus.study: 'reference/study.md'
-      - octopus.task: 'reference/task.md'
-  - Contribute: contributing.md
-  - Contributors: contributors.md
-  - License: license.md
+      - "reference/reference.md"
+      - octopus.manager: "reference/manager.md"
+      - octopus.metrics: "reference/metrics.md"
+      - octopus.models: "reference/models.md"
+      - octopus.modules: "reference/modules.md"
+      - octopus.study: "reference/study.md"
+      - octopus.task: "reference/task.md"
+  - Project Info:
+      - Contributing: contributing.md
+      - Contributors: contributors.md
+      - Changelog: changelog.md
+      - Known Issues: "https://github.com/emdgroup/octopus/issues/"
+      - License: license.md

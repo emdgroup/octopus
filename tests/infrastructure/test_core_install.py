@@ -13,7 +13,7 @@ def test_core_imports() -> None:
     import octopus  # noqa: F401, PLC0415
     from octopus.experiment import OctoExperiment  # noqa: F401, PLC0415
     from octopus.manager import OctoManager  # noqa: F401, PLC0415
-    from octopus.metrics import MetricsInventory  # noqa: F401, PLC0415
+    from octopus.metrics import Metrics  # noqa: F401, PLC0415
     from octopus.models import Models  # noqa: F401, PLC0415
     from octopus.predict import OctoPredict  # noqa: F401, PLC0415
     from octopus.study import OctoStudy  # noqa: F401, PLC0415
@@ -23,7 +23,7 @@ def test_core_imports() -> None:
 @pytest.mark.windows
 def test_core_functionality() -> None:
     """Test that core functionality can be instantiated."""
-    from octopus.metrics import MetricsInventory  # noqa: PLC0415
+    from octopus.metrics import Metrics  # noqa: PLC0415
     from octopus.models import Models  # noqa: PLC0415
 
     # Verify model registry is accessible
@@ -31,5 +31,5 @@ def test_core_functionality() -> None:
     assert num_models > 0, "Models registry should have at least one model"
 
     # Verify metrics inventory can be instantiated
-    metrics = MetricsInventory()
-    assert len(metrics.metrics) > 0, "MetricsInventory should have at least one metric"
+    metrics = Metrics
+    assert len(metrics.get_all_metrics()) > 0, "Metrics should have at least one available metric"

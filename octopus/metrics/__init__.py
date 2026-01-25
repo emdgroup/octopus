@@ -1,9 +1,9 @@
 """Init metrics."""
 
-from .classification import *  # noqa F403
-from .inventory import MetricsInventory
-from .multiclass import *  # noqa F403
-from .regression import *  # noqa F403
-from .timetoevent import *  # noqa F403
+from .classification import *  # noqa: F403
+from .core import Metrics
+from .multiclass import *  # noqa: F403
+from .regression import *  # noqa: F403
+from .timetoevent import *  # noqa: F403
 
-metrics_inventory = MetricsInventory()
+__all__ = ["Metrics"]

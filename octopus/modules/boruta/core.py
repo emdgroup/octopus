@@ -11,7 +11,7 @@ import pandas as pd
 from attrs import define
 from sklearn.model_selection import GridSearchCV, StratifiedKFold, cross_val_score
 
-from octopus.metrics.inventory import MetricsInventory
+from octopus.metrics import Metrics
 from octopus.metrics.utils import get_score_from_model
 from octopus.models import Models
 from octopus.modules.base import ModuleBaseCore
@@ -86,10 +86,9 @@ class BorutaCore(ModuleBaseCore[Boruta]):
 
         # set up model and scoring type
         model = Models.get_instance(model_type, {"random_state": 42, "verbose": False})
-        # Get scorer string from metrics inventory
-        metrics_inventory = MetricsInventory()
-        metric_config = metrics_inventory.get_metric_config(self.target_metric)
-        scoring_type = metric_config.scorer_string
+        # Get scorer string from metrics
+        metric = Metrics.get_instance(self.target_metric)
+        scoring_type = metric.scorer_string
 
         cv: int | StratifiedKFold
         stratification_column = self.experiment.stratification_column

@@ -17,11 +17,10 @@ MetricFunction = Callable[..., Any]
 
 
 @define
-class MetricConfig:
-    """Metric config.
+class Metric:
+    """Metric instance.
 
-    Stores configuration for a metric function including the function itself
-    and any additional parameters needed to call it.
+    Represents a metric with its configuration and calculation methods.
     """
 
     name: str
@@ -32,14 +31,55 @@ class MetricConfig:
     scorer_string: str = field(validator=validators.instance_of(str))  # needed for some sklearn functionalities
     metric_params: dict[str, Any] = field(factory=dict)
 
-    def compute(self, y_true: OctoArrayLike, y_pred: OctoArrayLike) -> float:
-        """Compute the metric with stored parameters.
+    @property
+    def direction(self) -> str:
+        """Optimization direction for Optuna ('maximize' or 'minimize')."""
+        return "maximize" if self.higher_is_better else "minimize"
+
+    def calculate(self, y_true: OctoArrayLike, y_pred: OctoArrayLike, **kwargs) -> float:
+        """Calculate metric for classification/regression tasks.
 
         Args:
             y_true: True target values
-            y_pred: Predicted values
+            y_pred: Predicted values (predictions or probabilities depending on prediction_type)
+            **kwargs: Additional keyword arguments passed to metric function
 
         Returns:
-            float: The computed metric value
+            Metric value as float
+
+        Raises:
+            ValueError: If called on a time-to-event metric
         """
+        if self.ml_type == "timetoevent":
+            raise ValueError(
+                f"Metric '{self.name}' is a time-to-event metric. "
+                "Use calculate_t2e(event_indicator, event_time, estimate) instead."
+            )
         return float(self.metric_function(y_true, y_pred, **self.metric_params))
+
+    def calculate_t2e(
+        self, event_indicator: OctoArrayLike, event_time: OctoArrayLike, estimate: OctoArrayLike, **kwargs
+    ) -> float:
+        """Calculate metric for time-to-event tasks.
+
+        Args:
+            event_indicator: Boolean array indicating whether event occurred
+            event_time: Array of event/censoring times
+            estimate: Predicted risk/survival estimates from model
+            **kwargs: Additional keyword arguments passed to metric function
+
+        Returns:
+            Metric value as float
+
+        Raises:
+            ValueError: If called on a non-time-to-event metric
+        """
+        if self.ml_type != "timetoevent":
+            raise ValueError(f"Metric '{self.name}' is a {self.ml_type} metric. Use calculate(y_true, y_pred) instead.")
+
+        # Merge metric_params with any additional kwargs
+        params = {**self.metric_params, **kwargs}
+        result = self.metric_function(event_indicator, event_time, estimate, **params)
+
+        # Handle tuple return (some T2E metrics return tuple)
+        return float(result[0] if isinstance(result, tuple) else result)

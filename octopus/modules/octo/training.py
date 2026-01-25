@@ -23,7 +23,7 @@ from sklearn.utils.validation import check_is_fitted
 from upath import UPath
 
 from octopus.logger import LogGroup, get_logger
-from octopus.metrics.inventory import MetricsInventory
+from octopus.metrics import Metrics
 from octopus.metrics.utils import get_score_from_model
 from octopus.models import Models
 
@@ -574,9 +574,8 @@ class Training:
             scoring_type = None
         else:
             # Get scorer string from metrics inventory
-            metrics_inventory = MetricsInventory()
-            metric_config = metrics_inventory.get_metric_config(self.target_metric)
-            scoring_type = metric_config.scorer_string
+            metric = Metrics.get_instance(self.target_metric)
+            scoring_type = metric.scorer_string
 
         if partition == "dev":
             x = self.x_dev_processed

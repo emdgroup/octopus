@@ -13,189 +13,135 @@ from sklearn.metrics import (
     roc_auc_score,
 )
 
-from .config import MetricConfig
-from .registry import MetricRegistry
+from .config import Metric
+from .core import Metrics
 
 
-@MetricRegistry.register("AUCROC")
-class AUCROCMetric:
-    """AUCROC metric class."""
-
-    @staticmethod
-    def get_metric_config():
-        """Create metric config."""
-        return MetricConfig(
-            name="AUCROC",
-            metric_function=roc_auc_score,
-            ml_type="classification",
-            higher_is_better=True,
-            prediction_type="predict_proba",
-            scorer_string="roc_auc",
-        )
+@Metrics.register("AUCROC")
+def aucroc_metric() -> Metric:
+    """AUCROC metric configuration."""
+    return Metric(
+        name="AUCROC",
+        metric_function=roc_auc_score,
+        ml_type="classification",
+        higher_is_better=True,
+        prediction_type="predict_proba",
+        scorer_string="roc_auc",
+    )
 
 
-@MetricRegistry.register("ACC")
-class ACCMetric:
-    """Accuracy metric class."""
-
-    @staticmethod
-    def get_metric_config():
-        """Create metric config."""
-        return MetricConfig(
-            name="ACC",
-            metric_function=accuracy_score,
-            ml_type="classification",
-            higher_is_better=True,
-            prediction_type="predict",
-            scorer_string="accuracy",
-        )
+@Metrics.register("ACC")
+def acc_metric() -> Metric:
+    """Accuracy metric configuration."""
+    return Metric(
+        name="ACC",
+        metric_function=accuracy_score,
+        ml_type="classification",
+        higher_is_better=True,
+        prediction_type="predict",
+        scorer_string="accuracy",
+    )
 
 
-@MetricRegistry.register("ACCBAL")
-class ACCBALMetric:
-    """Balanced accuracy metric class."""
-
-    @staticmethod
-    def get_metric_config():
-        """Create metric config."""
-        return MetricConfig(
-            name="ACCBAL",
-            metric_function=balanced_accuracy_score,
-            ml_type="classification",
-            higher_is_better=True,
-            prediction_type="predict",
-            scorer_string="balanced_accuracy",
-        )
+@Metrics.register("ACCBAL")
+def accbal_metric() -> Metric:
+    """Balanced accuracy metric configuration."""
+    return Metric(
+        name="ACCBAL",
+        metric_function=balanced_accuracy_score,
+        ml_type="classification",
+        higher_is_better=True,
+        prediction_type="predict",
+        scorer_string="balanced_accuracy",
+    )
 
 
-@MetricRegistry.register("LOGLOSS")
-class LOGLOSSMetric:
-    """Log loss metric class."""
-
-    @staticmethod
-    def get_metric_config():
-        """Create metric config."""
-        return MetricConfig(
-            name="LOGLOSS",
-            metric_function=log_loss,
-            ml_type="classification",
-            higher_is_better=True,
-            prediction_type="predict_proba",
-            scorer_string="neg_log_loss",
-        )
+@Metrics.register("LOGLOSS")
+def logloss_metric() -> Metric:
+    """Log loss metric configuration."""
+    return Metric(
+        name="LOGLOSS",
+        metric_function=log_loss,
+        ml_type="classification",
+        higher_is_better=True,
+        prediction_type="predict_proba",
+        scorer_string="neg_log_loss",
+    )
 
 
-@MetricRegistry.register("F1")
-class F1Metric:
-    """F1 metric class."""
-
-    @staticmethod
-    def get_metric_config():
-        """Create metric config."""
-        return MetricConfig(
-            name="F1",
-            metric_function=f1_score,
-            ml_type="classification",
-            higher_is_better=True,
-            prediction_type="predict",
-            scorer_string="f1",
-        )
+@Metrics.register("F1")
+def f1_metric() -> Metric:
+    """F1 metric configuration."""
+    return Metric(
+        name="F1",
+        metric_function=f1_score,
+        ml_type="classification",
+        higher_is_better=True,
+        prediction_type="predict",
+        scorer_string="f1",
+    )
 
 
-@MetricRegistry.register("NEGBRIERSCORE")
-class NEGBRIERSCOREMetric:
-    """Brier metric class."""
-
-    @staticmethod
-    def get_metric_config():
-        """Create metric config."""
-        return MetricConfig(
-            name="NEGBRIERSCORE",
-            metric_function=brier_score_loss,
-            ml_type="classification",
-            higher_is_better=True,
-            prediction_type="predict_proba",
-            scorer_string="neg_brier_score",
-        )
+@Metrics.register("NEGBRIERSCORE")
+def negbrierscore_metric() -> Metric:
+    """Brier score metric configuration."""
+    return Metric(
+        name="NEGBRIERSCORE",
+        metric_function=brier_score_loss,
+        ml_type="classification",
+        higher_is_better=True,
+        prediction_type="predict_proba",
+        scorer_string="neg_brier_score",
+    )
 
 
-@MetricRegistry.register("AUCPR")
-class AUCPRMetric:
-    """AUCPR metric class."""
-
-    @staticmethod
-    def get_metric_config():
-        """Create metric config."""
-        return MetricConfig(
-            name="AUCPR",
-            metric_function=average_precision_score,
-            ml_type="classification",
-            higher_is_better=True,
-            prediction_type="predict_proba",
-            scorer_string="average_precision",
-        )
+@Metrics.register("AUCPR")
+def aucpr_metric() -> Metric:
+    """AUCPR metric configuration."""
+    return Metric(
+        name="AUCPR",
+        metric_function=average_precision_score,
+        ml_type="classification",
+        higher_is_better=True,
+        prediction_type="predict_proba",
+        scorer_string="average_precision",
+    )
 
 
-@MetricRegistry.register("MCC")
-class MCCMetric:
-    """Matthews Correlation Coefficient metric class."""
-
-    @staticmethod
-    def get_metric_config():
-        """Create metric config."""
-        return MetricConfig(
-            name="MCC",
-            metric_function=matthews_corrcoef,
-            ml_type="classification",
-            higher_is_better=True,
-            prediction_type="predict",
-            scorer_string="matthews_corrcoef",
-        )
+@Metrics.register("MCC")
+def mcc_metric() -> Metric:
+    """Matthews Correlation Coefficient metric configuration."""
+    return Metric(
+        name="MCC",
+        metric_function=matthews_corrcoef,
+        ml_type="classification",
+        higher_is_better=True,
+        prediction_type="predict",
+        scorer_string="matthews_corrcoef",
+    )
 
 
-@MetricRegistry.register("PRECISION")
-class PRECISIONMetric:
-    """Precision metric class."""
-
-    @staticmethod
-    def get_metric_config():
-        """Create metric config."""
-        return MetricConfig(
-            name="PRECISION",
-            metric_function=precision_score,
-            ml_type="classification",
-            higher_is_better=True,
-            prediction_type="predict",
-            scorer_string="precision",
-        )
+@Metrics.register("PRECISION")
+def precision_metric() -> Metric:
+    """Precision metric configuration."""
+    return Metric(
+        name="PRECISION",
+        metric_function=precision_score,
+        ml_type="classification",
+        higher_is_better=True,
+        prediction_type="predict",
+        scorer_string="precision",
+    )
 
 
-@MetricRegistry.register("RECALL")
-class RECALLMetric:
-    """Recall metric class."""
-
-    @staticmethod
-    def get_metric_config():
-        """Create metric config."""
-        return MetricConfig(
-            name="RECALL",
-            metric_function=recall_score,
-            ml_type="classification",
-            higher_is_better=True,
-            prediction_type="predict",
-            scorer_string="recall",
-        )
-
-
-__all__ = [
-    "ACCBALMetric",
-    "ACCMetric",
-    "AUCPRMetric",
-    "AUCROCMetric",
-    "F1Metric",
-    "LOGLOSSMetric",
-    "MCCMetric",
-    "NEGBRIERSCOREMetric",
-    "PRECISIONMetric",
-    "RECALLMetric",
-]
+@Metrics.register("RECALL")
+def recall_metric() -> Metric:
+    """Recall metric configuration."""
+    return Metric(
+        name="RECALL",
+        metric_function=recall_score,
+        ml_type="classification",
+        higher_is_better=True,
+        prediction_type="predict",
+        scorer_string="recall",
+    )

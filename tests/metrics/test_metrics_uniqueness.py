@@ -8,8 +8,7 @@ from collections import Counter, defaultdict
 
 import pytest
 
-from octopus.metrics.inventory import MetricsInventory
-from octopus.metrics.registry import MetricRegistry
+from octopus.metrics import Metrics
 from octopus.models.config import ML_TYPES
 
 
@@ -18,8 +17,7 @@ class TestMetricsUniqueness:
 
     def setup_method(self):
         """Set up test fixtures."""
-        self.metrics_inventory = MetricsInventory()
-        self.all_metrics = MetricRegistry.get_all_metrics()
+        self.all_metrics = Metrics.get_all_metrics()
 
     def test_registry_keys_are_unique(self):
         """Test that all registry keys are unique.
@@ -42,9 +40,9 @@ class TestMetricsUniqueness:
         config_names = []
         config_name_to_registry_key = {}
 
-        for registry_key, metric_class in self.all_metrics.items():
+        for registry_key in self.all_metrics:
             try:
-                config = metric_class.get_metric_config()
+                config = Metrics.get_instance(registry_key)
                 config_name = config.name
                 config_names.append(config_name)
 
@@ -75,13 +73,13 @@ class TestMetricsUniqueness:
     def test_registry_key_matches_config_name(self):
         """Test that registry keys match their corresponding config names.
 
-        Ensures consistency between @MetricRegistry.register("KEY") and config.name.
+        Ensures consistency between @Metrics.register("KEY") and config.name.
         """
         mismatches = []
 
-        for registry_key, metric_class in self.all_metrics.items():
+        for registry_key in self.all_metrics:
             try:
-                config = metric_class.get_metric_config()
+                config = Metrics.get_instance(registry_key)
                 config_name = config.name
 
                 if registry_key != config_name:
@@ -101,9 +99,9 @@ class TestMetricsUniqueness:
         invalid_metrics = []
         ml_type_distribution = defaultdict(list)
 
-        for registry_key, metric_class in self.all_metrics.items():
+        for registry_key in self.all_metrics:
             try:
-                config = metric_class.get_metric_config()
+                config = Metrics.get_instance(registry_key)
                 ml_type = config.ml_type
 
                 if ml_type not in valid_ml_types:
@@ -131,9 +129,9 @@ class TestMetricsUniqueness:
         valid_prediction_types = {"predict", "predict_proba"}
         invalid_metrics = []
 
-        for registry_key, metric_class in self.all_metrics.items():
+        for registry_key in self.all_metrics:
             try:
-                config = metric_class.get_metric_config()
+                config = Metrics.get_instance(registry_key)
                 prediction_type = config.prediction_type
 
                 if prediction_type not in valid_prediction_types:
@@ -154,9 +152,9 @@ class TestMetricsUniqueness:
 
         # Verify we have metrics from different categories
         ml_types = set()
-        for metric_class in self.all_metrics.values():
+        for registry_key in self.all_metrics:
             try:
-                config = metric_class.get_metric_config()
+                config = Metrics.get_instance(registry_key)
                 ml_types.add(config.ml_type)
             except Exception:
                 continue
@@ -170,30 +168,14 @@ class TestMetricsUniqueness:
             f"This suggests some metric modules may not be imported properly."
         )
 
-    def test_metrics_inventory_consistency(self):
-        """Test that MetricsInventory is consistent with MetricRegistry."""
-        inventory_metrics = self.metrics_inventory.metrics
-        registry_metrics = self.all_metrics
-
-        # They should contain the same metrics
-        inventory_keys = set(inventory_metrics.keys())
-        registry_keys = set(registry_metrics.keys())
-
-        missing_in_inventory = registry_keys - inventory_keys
-        extra_in_inventory = inventory_keys - registry_keys
-
-        assert not missing_in_inventory, f"Metrics in registry but not in inventory: {sorted(missing_in_inventory)}"
-
-        assert not extra_in_inventory, f"Metrics in inventory but not in registry: {sorted(extra_in_inventory)}"
-
     def test_no_metric_config_attribute_conflicts(self):
         """Test that metric configs don't have conflicting attributes for same names."""
         configs_by_name = {}
         conflicts = []
 
-        for registry_key, metric_class in self.all_metrics.items():
+        for registry_key in self.all_metrics:
             try:
-                config = metric_class.get_metric_config()
+                config = Metrics.get_instance(registry_key)
                 config_name = config.name
 
                 if config_name in configs_by_name:
@@ -230,9 +212,9 @@ class TestMetricsUniqueness:
         metrics_by_prediction_type = defaultdict(list)
         total_metrics = len(self.all_metrics)
 
-        for registry_key, metric_class in self.all_metrics.items():
+        for registry_key in self.all_metrics:
             try:
-                config = metric_class.get_metric_config()
+                config = Metrics.get_instance(registry_key)
                 metrics_by_ml_type[config.ml_type].append(registry_key)
                 metrics_by_prediction_type[config.prediction_type].append(registry_key)
             except Exception:

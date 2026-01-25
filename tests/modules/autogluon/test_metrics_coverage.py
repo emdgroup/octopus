@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from octopus.metrics.inventory import MetricsInventory
+from octopus.metrics import Metrics
 
 
 class TestAutogluonMetricsCoverage:
@@ -14,11 +14,7 @@ class TestAutogluonMetricsCoverage:
 
     def setup_method(self):
         """Set up test fixtures."""
-        self.metrics_inventory = MetricsInventory()
-
         # Get autogluon metrics inventory from octopus autogluon module
-
-        # Get the path to the autogluon core module
         autogluon_core_path = (
             Path(__file__).parent.parent.parent.parent / "octopus" / "modules" / "autogluon" / "core.py"
         )
@@ -34,12 +30,12 @@ class TestAutogluonMetricsCoverage:
 
     def get_octopus_classification_metrics(self):
         """Get all octopus classification metrics."""
-        all_metrics = self.metrics_inventory.metrics
+        all_metrics = Metrics.get_all_metrics()
         classification_metrics = []
 
-        for metric_name, metric_class in all_metrics.items():
+        for metric_name in all_metrics:
             try:
-                config = metric_class.get_metric_config()
+                config = Metrics.get_instance(metric_name)
                 if config.ml_type == "classification":
                     classification_metrics.append(metric_name)
             except Exception:
@@ -50,12 +46,12 @@ class TestAutogluonMetricsCoverage:
 
     def get_octopus_regression_metrics(self):
         """Get all octopus regression metrics."""
-        all_metrics = self.metrics_inventory.metrics
+        all_metrics = Metrics.get_all_metrics()
         regression_metrics = []
 
-        for metric_name, metric_class in all_metrics.items():
+        for metric_name in all_metrics:
             try:
-                config = metric_class.get_metric_config()
+                config = Metrics.get_instance(metric_name)
                 if config.ml_type == "regression":
                     regression_metrics.append(metric_name)
             except Exception:
@@ -120,12 +116,12 @@ class TestAutogluonMetricsCoverage:
 
     def test_no_time_to_event_metrics_included(self):
         """Verify that time-to-event metrics are excluded from the comparison."""
-        all_metrics = self.metrics_inventory.metrics
+        all_metrics = Metrics.get_all_metrics()
         time_to_event_metrics = []
 
-        for metric_name, metric_class in all_metrics.items():
+        for metric_name in all_metrics:
             try:
-                config = metric_class.get_metric_config()
+                config = Metrics.get_instance(metric_name)
                 if config.ml_type == "timetoevent":
                     time_to_event_metrics.append(metric_name)
             except Exception:
@@ -138,7 +134,7 @@ class TestAutogluonMetricsCoverage:
                 # This test just documents that they exist and are excluded
                 print(f"Time-to-event metric excluded from comparison: {metric}")
 
-        # This test always passes - it's just for documentation
+        # This test always passes - it's for documentation
         assert True, "Time-to-event metrics are properly excluded from the comparison"
 
 

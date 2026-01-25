@@ -19,7 +19,7 @@ from attrs import define, field, validators
 from upath import UPath
 
 from octopus.logger import get_logger
-from octopus.metrics import metrics_inventory
+from octopus.metrics import Metrics
 from octopus.metrics.utils import get_performance_from_predictions
 from octopus.modules.octo.bag import Bag
 
@@ -53,7 +53,7 @@ class EnSel:
     @property
     def direction(self) -> str:
         """Optuna direction."""
-        return metrics_inventory.get_direction(self.target_metric)
+        return Metrics.get_direction(self.target_metric)
 
     def __attrs_post_init__(self):
         # initialization here due to "Python immutable default"

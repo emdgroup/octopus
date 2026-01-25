@@ -44,17 +44,6 @@ class MetricsInventory:
                 )
         return self._metric_configs[name]
 
-    def get_inventory_item(self, name: str) -> MetricConfig:
-        """Get the metric configuration for a given metric name."""
-        for item in self._metric_configs.values():
-            if item.name == name:
-                return item
-        raise ValueError(f"Metric item with name '{name}' not found")
-
-    def get_metric_by_name(self, name: str) -> MetricConfig:
-        """Get metric class by name."""
-        return self.get_metric_config(name)
-
     def get_metric_function(self, name: str) -> MetricFunction:
         """Get metric function by name."""
         return self.get_metric_config(name).metric_function

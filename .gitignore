@@ -67,3 +67,4 @@ env*
 docs/examples
 site
 .ipynb_checkpoints
+dist

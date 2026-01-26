@@ -54,6 +54,7 @@ markdown_extensions:
       anchor_linenums: true
       line_spans: __span
       pygments_lang_class: true
+      default_lang: python
   - pymdownx.inlinehilite
   - pymdownx.snippets
   - admonition
@@ -67,7 +68,7 @@ markdown_extensions:
 plugins:
   - search
   - mkdocstrings
-  - include_dir_to_nav
+  - literate-nav
   - gen-files:
       scripts:
         - docs/scripts/generate_examples.py
@@ -79,11 +80,12 @@ nav:
       - Classification: "userguide/classification.md"
       - Regression: "userguide/regression.md"
       - Time to Event: "userguide/time_to_event.md"
-      - Examples: examples
+      - Examples: examples/
       - FAQ: faq.md
   - Concepts:
       - "concepts/concepts.md"
       - Nested Cross-Validation: "concepts/nested_cv.md"
+      - Understanding the Results: "concepts/understanding_results.md"
   - API Reference:
       - "reference/reference.md"
       - octopus.manager: "reference/manager.md"

@@ -47,11 +47,12 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "TBD"
-Documentation = "TBD"
-Changelog = "TBD"
+Homepage = "https://emdgroup.github.io/octopus/"
+Documentation = "https://emdgroup.github.io/octopus/"
+Changelog = "https://github.com/emdgroup/octopus/releases"
 GitHub = "https://github.com/emdgroup/octopus/"
 Issues = "https://github.com/emdgroup/octopus/issues/"
+
 # DEV TOOLS NOTE: The versions of all dev tools should be consistent everywhere
 # (pre-commit, environment.yml, requirements.txt, pyproject.toml, ...)
 # AUDIT NOTE: The marked packages are secondary dependencies but their versions are
@@ -88,7 +89,7 @@ docs = [
     "mkdocs-material>=9.7.1",
     "mkdocstrings-python>=2.0.1",
     "mkdocs-gen-files>=0.6.0",
-    "mkdocs-include-dir-to-nav>=1.2.0",
+    "mkdocs-literate-nav>=0.6.2",
     "nbconvert>=7.16.6",
     "jupytext>=1.19.0",
 ]
@@ -140,6 +141,9 @@ test_core = [
     "pytest-cov>=6.2.1",
 ]
 
+[project.scripts]
+octopus = "octopus.cli:cli_main"
+
 [build-system]
 requires = [
     "setuptools>=80.9",
@@ -149,8 +153,10 @@ build-backend = "setuptools.build_meta"
 [tool.setuptools_scm]
 version_scheme = 'post-release'
 local_scheme = "dirty-tag"
-[tool.setuptools]
-packages = ["octopus"]
+
+[tool.setuptools.package-dir]
+"octopus" = "octopus"
+"octopus.examples" = "examples"
 
 [tool.uv]
 # licensecheck depends indirectly on attrs<24 but we need attrs>=25.3.0

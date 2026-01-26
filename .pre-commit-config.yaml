@@ -92,8 +92,9 @@ repos:
               "nvidia-cu*"
               "nvidia-nc*"
               "nvidia-nv*"
-              matplotlib-inline
-              mypy-extensions
+              "cuda-bindings"
+              "matplotlib-inline"
+              "mypy-extensions"
           --requirements-paths
       language: python
       files: pyproject.toml

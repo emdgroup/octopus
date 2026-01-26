@@ -47,24 +47,22 @@ What distinguishes Octopus from others
 
 ## Hardware
 
-For maximum speed it is recommended to run Octopus on a compute node with n\*m Cpus for a n\*m nested cross validation. Octopus development is done, for example, on a c5.9xlarge EC2 instance.
+For maximum speed it is recommended to run Octopus on a compute node with $n\times m$ CPUS for a $n \times m$ nested cross validation. Octopus development is done, for example, on a c5.9xlarge EC2 instance.
 
 ## Installation
 
-Install the package (requires [uv](https://docs.astral.sh/uv/)):
+Package Installation works via `pip` or any other standard Python package manager:
 
-    uv sync
+```bash
+    pip install octopus-automl
 
-Activate the virtual environment:
+    # Install with extras
+    pip install "octopus-automl[autogluon]"     # AutoGluon reference
+    pip install "octopus-automl[boruta]"        # Boruta feature selection
+    pip install "octopus-automl[sfs]"           # SequentialFeatureSelector feature selection
+    pip install "octopus-automl[survival]"      # Support time-to-event / survival analysis
+    pip install "octopus-automl[examples]"      # Dependencies for running examples
 
-    # Linux/macOS
-    source .venv/bin/activate
-
-    # Windows
-    .venv\Scripts\activate
-
-Install with extras:
-
-    uv sync --extra autogluon     # AutoGluon reference
-    uv sync --extra boruta        # Boruta feature selection
-    uv sync --all-extras          # All extras
+    # Install with more than one extras, e.g.
+    pip install "octopus-automl[autogluon,examples]"
+```

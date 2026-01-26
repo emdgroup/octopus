@@ -5,7 +5,7 @@ import math
 import numpy as np
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 
-from .config import MetricConfig
+from .config import Metric
 from .core import Metrics
 
 
@@ -23,9 +23,9 @@ def root_mean_squared_error(y_true: np.ndarray, y_pred: np.ndarray) -> float:
 
 
 @Metrics.register("R2")
-def r2_metric() -> MetricConfig:
+def r2_metric() -> Metric:
     """R2 metric configuration."""
-    return MetricConfig(
+    return Metric(
         name="R2",
         metric_function=r2_score,
         ml_type="regression",
@@ -36,9 +36,9 @@ def r2_metric() -> MetricConfig:
 
 
 @Metrics.register("MAE")
-def mae_metric() -> MetricConfig:
+def mae_metric() -> Metric:
     """MAE metric configuration."""
-    return MetricConfig(
+    return Metric(
         name="MAE",
         metric_function=mean_absolute_error,
         ml_type="regression",
@@ -49,9 +49,9 @@ def mae_metric() -> MetricConfig:
 
 
 @Metrics.register("MSE")
-def mse_metric() -> MetricConfig:
+def mse_metric() -> Metric:
     """MSE metric configuration."""
-    return MetricConfig(
+    return Metric(
         name="MSE",
         metric_function=mean_squared_error,
         ml_type="regression",
@@ -62,9 +62,9 @@ def mse_metric() -> MetricConfig:
 
 
 @Metrics.register("RMSE")
-def rmse_metric() -> MetricConfig:
+def rmse_metric() -> Metric:
     """RMSE metric configuration."""
-    return MetricConfig(
+    return Metric(
         name="RMSE",
         metric_function=root_mean_squared_error,
         ml_type="regression",

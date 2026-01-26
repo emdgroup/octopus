@@ -17,11 +17,10 @@ MetricFunction = Callable[..., Any]
 
 
 @define
-class MetricConfig:
-    """Metric config.
+class Metric:
+    """Metric instance.
 
-    Stores configuration for a metric function including the function itself
-    and any additional parameters needed to call it.
+    Represents a metric with its configuration and calculation methods.
     """
 
     name: str
@@ -36,18 +35,6 @@ class MetricConfig:
     def direction(self) -> str:
         """Optimization direction for Optuna ('maximize' or 'minimize')."""
         return "maximize" if self.higher_is_better else "minimize"
-
-    def compute(self, y_true: OctoArrayLike, y_pred: OctoArrayLike) -> float:
-        """Compute the metric with stored parameters.
-
-        Args:
-            y_true: True target values
-            y_pred: Predicted values
-
-        Returns:
-            float: The computed metric value
-        """
-        return float(self.metric_function(y_true, y_pred, **self.metric_params))
 
     def calculate(self, y_true: OctoArrayLike, y_pred: OctoArrayLike, **kwargs) -> float:
         """Calculate metric for classification/regression tasks.
@@ -68,7 +55,7 @@ class MetricConfig:
                 f"Metric '{self.name}' is a time-to-event metric. "
                 "Use calculate_t2e(event_indicator, event_time, estimate) instead."
             )
-        return self.compute(y_true, y_pred)
+        return float(self.metric_function(y_true, y_pred, **self.metric_params))
 
     def calculate_t2e(
         self, event_indicator: OctoArrayLike, event_time: OctoArrayLike, estimate: OctoArrayLike, **kwargs

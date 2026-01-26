@@ -102,7 +102,7 @@ class SfsCore(ModuleBaseCore[Sfs]):
         model = Models.get_instance(model_type, {"random_state": 42})
 
         # Get scorer string from metrics inventory
-        metric_config = Metrics.get_config(self.target_metric)
+        metric_config = Metrics.get_instance(self.target_metric)
         scoring_type = metric_config.scorer_string
 
         cv: int | BaseCrossValidator

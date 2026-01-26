@@ -87,7 +87,7 @@ class BorutaCore(ModuleBaseCore[Boruta]):
         # set up model and scoring type
         model = Models.get_instance(model_type, {"random_state": 42, "verbose": False})
         # Get scorer string from metrics
-        metric_config = Metrics.get_config(self.target_metric)
+        metric_config = Metrics.get_instance(self.target_metric)
         scoring_type = metric_config.scorer_string
 
         cv: int | StratifiedKFold

@@ -2,14 +2,14 @@
 
 from sklearn.metrics import balanced_accuracy_score, roc_auc_score
 
-from .config import MetricConfig
+from .config import Metric
 from .core import Metrics
 
 
 @Metrics.register("ACCBAL_MC")
-def accbal_multiclass_metric() -> MetricConfig:
+def accbal_multiclass_metric() -> Metric:
     """Balanced accuracy metric configuration for multiclass problems."""
-    return MetricConfig(
+    return Metric(
         name="ACCBAL_MC",
         metric_function=balanced_accuracy_score,
         ml_type="multiclass",
@@ -20,9 +20,9 @@ def accbal_multiclass_metric() -> MetricConfig:
 
 
 @Metrics.register("AUCROC_MACRO")
-def aucroc_macro_multiclass_metric() -> MetricConfig:
+def aucroc_macro_multiclass_metric() -> Metric:
     """AUCROC metric configuration for multiclass problems (macro-average)."""
-    return MetricConfig(
+    return Metric(
         name="AUCROC_MACRO",
         metric_function=roc_auc_score,
         metric_params={"multi_class": "ovr", "average": "macro"},
@@ -34,9 +34,9 @@ def aucroc_macro_multiclass_metric() -> MetricConfig:
 
 
 @Metrics.register("AUCROC_WEIGHTED")
-def aucroc_weighted_multiclass_metric() -> MetricConfig:
+def aucroc_weighted_multiclass_metric() -> Metric:
     """AUCROC metric configuration for multiclass problems (weighted-average)."""
-    return MetricConfig(
+    return Metric(
         name="AUCROC_WEIGHTED",
         metric_function=roc_auc_score,
         metric_params={"multi_class": "ovr", "average": "weighted"},

@@ -13,14 +13,14 @@ from sklearn.metrics import (
     roc_auc_score,
 )
 
-from .config import MetricConfig
+from .config import Metric
 from .core import Metrics
 
 
 @Metrics.register("AUCROC")
-def aucroc_metric() -> MetricConfig:
+def aucroc_metric() -> Metric:
     """AUCROC metric configuration."""
-    return MetricConfig(
+    return Metric(
         name="AUCROC",
         metric_function=roc_auc_score,
         ml_type="classification",
@@ -31,9 +31,9 @@ def aucroc_metric() -> MetricConfig:
 
 
 @Metrics.register("ACC")
-def acc_metric() -> MetricConfig:
+def acc_metric() -> Metric:
     """Accuracy metric configuration."""
-    return MetricConfig(
+    return Metric(
         name="ACC",
         metric_function=accuracy_score,
         ml_type="classification",
@@ -44,9 +44,9 @@ def acc_metric() -> MetricConfig:
 
 
 @Metrics.register("ACCBAL")
-def accbal_metric() -> MetricConfig:
+def accbal_metric() -> Metric:
     """Balanced accuracy metric configuration."""
-    return MetricConfig(
+    return Metric(
         name="ACCBAL",
         metric_function=balanced_accuracy_score,
         ml_type="classification",
@@ -57,9 +57,9 @@ def accbal_metric() -> MetricConfig:
 
 
 @Metrics.register("LOGLOSS")
-def logloss_metric() -> MetricConfig:
+def logloss_metric() -> Metric:
     """Log loss metric configuration."""
-    return MetricConfig(
+    return Metric(
         name="LOGLOSS",
         metric_function=log_loss,
         ml_type="classification",
@@ -70,9 +70,9 @@ def logloss_metric() -> MetricConfig:
 
 
 @Metrics.register("F1")
-def f1_metric() -> MetricConfig:
+def f1_metric() -> Metric:
     """F1 metric configuration."""
-    return MetricConfig(
+    return Metric(
         name="F1",
         metric_function=f1_score,
         ml_type="classification",
@@ -83,9 +83,9 @@ def f1_metric() -> MetricConfig:
 
 
 @Metrics.register("NEGBRIERSCORE")
-def negbrierscore_metric() -> MetricConfig:
+def negbrierscore_metric() -> Metric:
     """Brier score metric configuration."""
-    return MetricConfig(
+    return Metric(
         name="NEGBRIERSCORE",
         metric_function=brier_score_loss,
         ml_type="classification",
@@ -96,9 +96,9 @@ def negbrierscore_metric() -> MetricConfig:
 
 
 @Metrics.register("AUCPR")
-def aucpr_metric() -> MetricConfig:
+def aucpr_metric() -> Metric:
     """AUCPR metric configuration."""
-    return MetricConfig(
+    return Metric(
         name="AUCPR",
         metric_function=average_precision_score,
         ml_type="classification",
@@ -109,9 +109,9 @@ def aucpr_metric() -> MetricConfig:
 
 
 @Metrics.register("MCC")
-def mcc_metric() -> MetricConfig:
+def mcc_metric() -> Metric:
     """Matthews Correlation Coefficient metric configuration."""
-    return MetricConfig(
+    return Metric(
         name="MCC",
         metric_function=matthews_corrcoef,
         ml_type="classification",
@@ -122,9 +122,9 @@ def mcc_metric() -> MetricConfig:
 
 
 @Metrics.register("PRECISION")
-def precision_metric() -> MetricConfig:
+def precision_metric() -> Metric:
     """Precision metric configuration."""
-    return MetricConfig(
+    return Metric(
         name="PRECISION",
         metric_function=precision_score,
         ml_type="classification",
@@ -135,9 +135,9 @@ def precision_metric() -> MetricConfig:
 
 
 @Metrics.register("RECALL")
-def recall_metric() -> MetricConfig:
+def recall_metric() -> Metric:
     """Recall metric configuration."""
-    return MetricConfig(
+    return Metric(
         name="RECALL",
         metric_function=recall_score,
         ml_type="classification",

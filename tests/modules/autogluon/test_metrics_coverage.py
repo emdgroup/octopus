@@ -35,7 +35,7 @@ class TestAutogluonMetricsCoverage:
 
         for metric_name in all_metrics:
             try:
-                config = Metrics.get_config(metric_name)
+                config = Metrics.get_instance(metric_name)
                 if config.ml_type == "classification":
                     classification_metrics.append(metric_name)
             except Exception:
@@ -51,7 +51,7 @@ class TestAutogluonMetricsCoverage:
 
         for metric_name in all_metrics:
             try:
-                config = Metrics.get_config(metric_name)
+                config = Metrics.get_instance(metric_name)
                 if config.ml_type == "regression":
                     regression_metrics.append(metric_name)
             except Exception:
@@ -121,7 +121,7 @@ class TestAutogluonMetricsCoverage:
 
         for metric_name in all_metrics:
             try:
-                config = Metrics.get_config(metric_name)
+                config = Metrics.get_instance(metric_name)
                 if config.ml_type == "timetoevent":
                     time_to_event_metrics.append(metric_name)
             except Exception:

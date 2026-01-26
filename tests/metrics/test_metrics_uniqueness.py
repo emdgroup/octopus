@@ -42,7 +42,7 @@ class TestMetricsUniqueness:
 
         for registry_key in self.all_metrics:
             try:
-                config = Metrics.get_config(registry_key)
+                config = Metrics.get_instance(registry_key)
                 config_name = config.name
                 config_names.append(config_name)
 
@@ -79,7 +79,7 @@ class TestMetricsUniqueness:
 
         for registry_key in self.all_metrics:
             try:
-                config = Metrics.get_config(registry_key)
+                config = Metrics.get_instance(registry_key)
                 config_name = config.name
 
                 if registry_key != config_name:
@@ -101,7 +101,7 @@ class TestMetricsUniqueness:
 
         for registry_key in self.all_metrics:
             try:
-                config = Metrics.get_config(registry_key)
+                config = Metrics.get_instance(registry_key)
                 ml_type = config.ml_type
 
                 if ml_type not in valid_ml_types:
@@ -131,7 +131,7 @@ class TestMetricsUniqueness:
 
         for registry_key in self.all_metrics:
             try:
-                config = Metrics.get_config(registry_key)
+                config = Metrics.get_instance(registry_key)
                 prediction_type = config.prediction_type
 
                 if prediction_type not in valid_prediction_types:
@@ -154,7 +154,7 @@ class TestMetricsUniqueness:
         ml_types = set()
         for registry_key in self.all_metrics:
             try:
-                config = Metrics.get_config(registry_key)
+                config = Metrics.get_instance(registry_key)
                 ml_types.add(config.ml_type)
             except Exception:
                 continue
@@ -175,7 +175,7 @@ class TestMetricsUniqueness:
 
         for registry_key in self.all_metrics:
             try:
-                config = Metrics.get_config(registry_key)
+                config = Metrics.get_instance(registry_key)
                 config_name = config.name
 
                 if config_name in configs_by_name:
@@ -214,7 +214,7 @@ class TestMetricsUniqueness:
 
         for registry_key in self.all_metrics:
             try:
-                config = Metrics.get_config(registry_key)
+                config = Metrics.get_instance(registry_key)
                 metrics_by_ml_type[config.ml_type].append(registry_key)
                 metrics_by_prediction_type[config.prediction_type].append(registry_key)
             except Exception:

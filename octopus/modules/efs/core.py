@@ -190,7 +190,7 @@ class EfsCore(ModuleBaseCore[Efs]):
         # set up model and scoring type
         model = Models.get_instance(model_type, {"random_state": 42})
         # Get scorer string from metrics inventory
-        metric_config = Metrics.get_config(self.target_metric)
+        metric_config = Metrics.get_instance(self.target_metric)
         scoring_type = metric_config.scorer_string
 
         # needs general improvements (consider groups and stratification column)
@@ -257,11 +257,11 @@ class EfsCore(ModuleBaseCore[Efs]):
             feature_importance_df = pd.DataFrame({"feature": subset, "importance": feature_importances})
 
             # ensemble metric
-            metric_config = Metrics.get_config(self.target_metric)
+            metric_config = Metrics.get_instance(self.target_metric)
             if self.metric_input == "probabilities":
-                best_ensel_performance = metric_config.compute(y, cv_preds_df["probabilities"])
+                best_ensel_performance = metric_config.calculate(y, cv_preds_df["probabilities"])
             else:
-                best_ensel_performance = metric_config.compute(y, cv_preds_df["predictions"])
+                best_ensel_performance = metric_config.calculate(y, cv_preds_df["predictions"])
             print(f"Subset {i}, best ensemble performance: {best_ensel_performance:.4f}")
 
             # Select features with non-zero importance
@@ -314,11 +314,11 @@ class EfsCore(ModuleBaseCore[Efs]):
             else groupby_df["predictions"]
         )
 
-        metric_config = Metrics.get_config(self.target_metric)
+        metric_config = Metrics.get_instance(self.target_metric)
         ensel_performance = (
-            metric_config.compute(y, model_predictions)
+            metric_config.calculate(y, model_predictions)
             if self.metric_input == "predictions"
-            else metric_config.compute(y, groupby_df["probabilities"])
+            else metric_config.calculate(y, groupby_df["probabilities"])
         )
 
         return ensel_performance

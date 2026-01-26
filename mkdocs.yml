@@ -81,6 +81,7 @@ nav:
       - Regression: "userguide/regression.md"
       - Time to Event: "userguide/time_to_event.md"
       - Examples: examples/
+      - Command Line Interface: "userguide/cli.md"
       - FAQ: faq.md
   - Concepts:
       - "concepts/concepts.md"

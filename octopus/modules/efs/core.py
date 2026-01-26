@@ -18,8 +18,7 @@ from sklearn.model_selection import (
     cross_val_predict,
 )
 
-from octopus.metrics import metrics_inventory
-from octopus.metrics.inventory import MetricsInventory
+from octopus.metrics import Metrics
 from octopus.models import Models
 from octopus.modules.base import ModuleBaseCore
 from octopus.modules.efs.module import Efs
@@ -125,7 +124,7 @@ class EfsCore(ModuleBaseCore[Efs]):
     @property
     def direction(self) -> str:
         """Optuna direction."""
-        return metrics_inventory.get_direction(self.target_metric)
+        return Metrics.get_direction(self.target_metric)
 
     def run_experiment(self):
         """Run EFS module on experiment."""
@@ -191,8 +190,7 @@ class EfsCore(ModuleBaseCore[Efs]):
         # set up model and scoring type
         model = Models.get_instance(model_type, {"random_state": 42})
         # Get scorer string from metrics inventory
-        metrics_inventory = MetricsInventory()
-        metric_config = metrics_inventory.get_metric_config(self.target_metric)
+        metric_config = Metrics.get_config(self.target_metric)
         scoring_type = metric_config.scorer_string
 
         # needs general improvements (consider groups and stratification column)
@@ -259,7 +257,7 @@ class EfsCore(ModuleBaseCore[Efs]):
             feature_importance_df = pd.DataFrame({"feature": subset, "importance": feature_importances})
 
             # ensemble metric
-            metric_config = metrics_inventory.get_metric_config(self.target_metric)
+            metric_config = Metrics.get_config(self.target_metric)
             if self.metric_input == "probabilities":
                 best_ensel_performance = metric_config.compute(y, cv_preds_df["probabilities"])
             else:
@@ -316,7 +314,7 @@ class EfsCore(ModuleBaseCore[Efs]):
             else groupby_df["predictions"]
         )
 
-        metric_config = metrics_inventory.get_metric_config(self.target_metric)
+        metric_config = Metrics.get_config(self.target_metric)
         ensel_performance = (
             metric_config.compute(y, model_predictions)
             if self.metric_input == "predictions"

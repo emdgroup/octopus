@@ -18,7 +18,7 @@ from octopus.modules import AutoGluon, Octo
 
 ### Generate Synthetic Binary Classification Dataset
 n_informative = 30
-n_redundant = 200
+n_redundant = 30
 n_repeated = 0
 
 X, y = make_classification(
@@ -29,7 +29,7 @@ X, y = make_classification(
     n_repeated=n_repeated,  # drawn randomly from the informative and the redundant features.
     n_classes=2,
     class_sep=1.0,  # Controls class separability (higher = easier)
-    weights=[0.6, 0.4],  # 60% class 0, 40% class 1
+    weights=[0.5, 0.5],  # 60% class 0, 40% class 1
     flip_y=0.01,  # Add 1% label noise for realism
     random_state=42,
     shuffle=False,  # ensure order of features
@@ -64,7 +64,7 @@ print("=====================================\n")
 ### Create and run OctoStudy with PARALLEL Octo + AutoGluon workflow
 
 study = OctoStudy(
-    name="example_octo_autogluon_parallel",
+    name="example_octo_autogluon_parallel_split0",
     path=os.environ.get("STUDIES_PATH", "./studies"),
     ml_type="classification",
     target_metric="AUCROC",  # Area Under ROC Curve for binary classification
@@ -76,7 +76,7 @@ study = OctoStudy(
     n_folds_outer=5,  # 5-fold outer cross-validation
     ignore_data_health_warning=True,
     outer_parallelization=True,
-    run_single_experiment_num=0,  # Run only first fold for faster testing
+    run_single_experiment_num=0,  # process allyes outersplits
     workflow=[
         # Step 0: octo
         Octo(
@@ -87,28 +87,28 @@ study = OctoStudy(
             n_folds_inner=5,
             # Model selection - using tree-based models for feature importance
             models=[
-                "RandomForestClassifier",
+                "ExtraTreesClassifier",
             ],
             fi_methods_bestbag=["permutation"],  # Feature importance method
             # Parallelization settings
             inner_parallelization=True,
             n_workers=5,
-            n_trials=500,  # Number of hyperparameter optimization trials
+            n_trials=100,  # Number of hyperparameter optimization trials
             # Constrained hyperparameter optimization
-            max_features=60,  # Maximum number of features to select
-            penalty_factor=1.0,  # Complexity penalty for feature selection
+            # max_features=60,  # Maximum number of features to select
+            # penalty_factor=1.0,  # Complexity penalty for feature selection
         ),
         # Step 1: AutoGluon
         AutoGluon(
             description="step_1_autogluon",
             task_id=1,
             depends_on_task=-1,  # -1 = base input (parallel with Octo)
-            verbosity=2,  # Standard logging
+            verbosity=3,  # Standard logging
             time_limit=600,
             presets=["medium_quality"],  # Balance between speed and accuracy
             num_bag_folds=5,  # 5-fold bagging for ensemble models
             included_model_types=[
-                "RF",  # Random Forest
+                "XT",  # ExtraTrees
             ],
         ),
     ],

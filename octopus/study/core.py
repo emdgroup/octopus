@@ -1,7 +1,6 @@
 """Octo Study."""
 
 import json
-import os
 import sys
 
 import pandas as pd
@@ -9,7 +8,7 @@ from attrs import Factory, asdict, define, field, fields, has, validators
 from upath import UPath
 
 from octopus.experiment import OctoExperiment
-from octopus.logger import get_logger, set_logger_filename
+from octopus.logger import get_logger
 from octopus.manager.core import OctoManager
 from octopus.modules import Octo
 from octopus.task import Task
@@ -23,8 +22,6 @@ from .types import DatasplitType, ImputationMethod, MLType
 from .validation import validate_metric, validate_metrics_list, validate_start_with_empty_study, validate_workflow
 
 logger = get_logger()
-
-_RUNNING_IN_TESTSUITE = "RUNNING_IN_TESTSUITE" in os.environ
 
 
 @define
@@ -79,7 +76,7 @@ class OctoStudy:
     positive_class: int = field(default=1, validator=validators.instance_of(int))
     """The positive class label for binary classification. Defaults to 1. Not relevant for other ml_types."""
 
-    n_folds_outer: int = field(default=5 if not _RUNNING_IN_TESTSUITE else 2, validator=[validators.instance_of(int)])
+    n_folds_outer: int = field(default=5, validator=[validators.instance_of(int)])
     """The number of outer folds for cross-validation. Defaults to 5."""
 
     datasplit_seed_outer: int = field(default=0, validator=[validators.instance_of(int)])
@@ -132,11 +129,6 @@ class OctoStudy:
         return self.path / self.name
 
     @property
-    def log_dir(self) -> UPath:
-        """Directory where logs are stored."""
-        return self.output_path
-
-    @property
     def relevant_columns(self) -> list[str]:
         """Relevant columns for the dataset (computed from prepared data)."""
         relevant_columns = list(set(self.prepared.feature_columns + self.target_columns))
@@ -167,8 +159,8 @@ class OctoStudy:
         )
         validator.validate()
 
-    def _initialize_study_directory(self) -> None:
-        """Initialize study directory."""
+    def _initialize_study_outputs(self, data: pd.DataFrame) -> None:
+        """Initialize study by setting up directory and saving config and data."""
         if self.output_path.exists():
             if not self.silently_overwrite_study:
                 confirmation = input("Study exists, do you want to continue? (yes/no): ")
@@ -185,12 +177,6 @@ class OctoStudy:
 
         self.output_path.mkdir(parents=True, exist_ok=True)
 
-        self.log_dir.mkdir(parents=True, exist_ok=True)
-        set_logger_filename(log_file=self.log_dir / "octo_manager.log")
-
-    def _initialize_study_outputs(self, data: pd.DataFrame) -> None:
-        """Initialize study saving config and data into study directory."""
-
         def serialize_value(value):
             """Convert a value to JSON-serializable format."""
             if hasattr(value, "value"):
@@ -198,7 +184,14 @@ class OctoStudy:
             elif isinstance(value, UPath):
                 return str(value)
             elif has(type(value)):
-                return asdict(value, value_serializer=lambda _, __, v: serialize_value(v))
+                # Convert to dict using asdict
+                result = asdict(value, value_serializer=lambda _, __, v: serialize_value(v))
+
+                # Add ClassVar 'module' field if it exists (for workflow tasks)
+                if hasattr(value, "module"):
+                    result["module"] = value.module
+
+                return result
             elif isinstance(value, list):
                 return [serialize_value(item) for item in value]
             elif isinstance(value, dict):
@@ -340,16 +333,9 @@ class OctoStudy:
 
         if has_warning and not self.ignore_data_health_warning:
             raise ValueError(
-                f"Data issues detected. Please check: {report_path}\nTo proceed despite warnings, set `ignore_data_health_warning=True`."
+                f"Data issues detected. Please check: {report_path}\n"
+                f"To proceed despite warnings, set `ignore_data_health_warning=True`."
             )
-
-    def _flush_logger(self):
-        """Flush and close all handlers of the logger."""
-        for handler in logger.handlers:
-            handler.flush()
-            handler.close()
-
-        set_logger_filename(log_file=None)
 
     def fit(
         self,
@@ -362,7 +348,6 @@ class OctoStudy:
             data: DataFrame containing the dataset.
             health_check_config: Optional configuration for health check thresholds.
         """
-        self._initialize_study_directory()
         self._validate_data(data)
         prepared_data = self._prepare_data(data)
         self._initialize_study_outputs(data)
@@ -373,10 +358,8 @@ class OctoStudy:
         manager = OctoManager(
             base_experiments=experiments,
             workflow=self.workflow,
+            log_dir=self.output_path,
             outer_parallelization=self.outer_parallelization,
             run_single_experiment_num=self.run_single_experiment_num,
-            log_dir=self.log_dir,
         )
         manager.run_outer_experiments()
-
-        self._flush_logger()

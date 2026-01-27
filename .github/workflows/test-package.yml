@@ -8,9 +8,14 @@ on:
       - main
   workflow_dispatch:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   test_core:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     strategy:
       fail-fast: true
       matrix:
@@ -42,6 +47,7 @@ jobs:
   test:
     needs: test_core
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     strategy:
       fail-fast: false
       matrix:
@@ -73,6 +79,7 @@ jobs:
   test_windows:
     needs: test_core
     runs-on: windows-latest
+    timeout-minutes: 5
     strategy:
       fail-fast: true
       matrix:

@@ -15,6 +15,7 @@ import numpy as np
 import pandas as pd
 from attrs import define, field, validators
 from sklearn.feature_selection import f_classif, f_regression
+from upath import UPath
 
 from octopus.experiment import OctoExperiment
 from octopus.logger import LogGroup, get_logger
@@ -29,6 +30,7 @@ class MrmrCore:
     """MRMR module."""
 
     experiment: OctoExperiment[Mrmr] = field(validator=[validators.instance_of(OctoExperiment)])
+    log_dir: UPath = field(validator=[validators.instance_of(UPath)])
 
     @property
     def data_traindev(self) -> pd.DataFrame:

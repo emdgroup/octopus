@@ -43,7 +43,6 @@ echo "=========================================="
 
 # Set env var to indicate running in testsuite - octopus will look for this variable
 # to reduce default number of trials, splits, etc. for faster test runs
-export RUNNING_IN_TESTSUITE=1
 uv run pytest --cov=octopus
 
 TEST_RESULT=$?

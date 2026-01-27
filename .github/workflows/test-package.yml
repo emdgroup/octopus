@@ -39,8 +39,6 @@ jobs:
           uv sync --extra test_core
 
       - name: Test Minimal Installation (no extra dependencies) with pytest
-        env:
-          RUNNING_IN_TESTSUITE: "1"
         run: |
           uv run pytest tests/infrastructure/test_core_install.py
 
@@ -71,8 +69,6 @@ jobs:
           uv sync --extra test
 
       - name: Test with pytest
-        env:
-          RUNNING_IN_TESTSUITE: "1"
         run: |
           uv run pytest
 
@@ -103,7 +99,5 @@ jobs:
           uv sync --extra test
 
       - name: Test with pytest
-        env:
-          RUNNING_IN_TESTSUITE: "1"
         run: |
           uv run pytest -m "windows and not slow"

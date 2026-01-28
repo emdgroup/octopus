@@ -1,15 +1,15 @@
 <div align="center">
   <br/>
 
-[![Test Suite](https://img.shields.io/github/actions/workflow/status/emdgroup/octopus/test-package.yml?branch=main&style=flat-square&label=Test%20Suite&labelColor=0f69af&color=ffdcb9)](https://github.com/emdgroup/baybe/actions/workflows/ci.yml?query=branch%3Amain)
-[![Code Quality](https://img.shields.io/github/actions/workflow/status/emdgroup/octopus/ruff.yml?branch=main&style=flat-square&label=Code%20Quality&labelColor=0f69af&color=ffdcb9)](https://github.com/emdgroup/baybe/actions/workflows/regular.yml?query=branch%3Amain)
-[![Docs](https://img.shields.io/github/actions/workflow/status/emdgroup/octopus/docs.yml?branch=main&style=flat-square&label=Docs&labelColor=0f69af&color=ffdcb9)](https://github.com/emdgroup/baybe/actions/workflows/docs.yml?query=branch%3Amain)
+[![Test Suite](https://img.shields.io/github/actions/workflow/status/emdgroup/octopus/test-package.yml?branch=main&style=flat-square&label=Test%20Suite&labelColor=0f69af&color=ffdcb9)](https://github.com/emdgroup/octopus/actions/workflows/test-package.yml?query=branch%3Amain)
+[![Code Quality](https://img.shields.io/github/actions/workflow/status/emdgroup/octopus/ruff.yml?branch=main&style=flat-square&label=Code%20Quality&labelColor=0f69af&color=ffdcb9)](https://github.com/emdgroup/octopus/actions/workflows/ruff.yml?query=branch%3Amain)
+[![Docs](https://img.shields.io/github/actions/workflow/status/emdgroup/octopus/docs.yml?branch=main&style=flat-square&label=Docs&labelColor=0f69af&color=ffdcb9)](https://github.com/emdgroup/octopus/actions/workflows/docs.yml?query=branch%3Amain)
 
-[![Supports Python](https://img.shields.io/pypi/pyversions/octopus-automl?style=flat-square&label=Supports%20Python&labelColor=96d7d2&color=ffdcb9)](https://pypi.org/project/baybe/)
-[![PyPI version](https://img.shields.io/pypi/v/octopus-automl.svg?style=flat-square&label=PyPI%20Version&labelColor=96d7d2&color=ffdcb9)](https://pypi.org/project/baybe/)
-[![Downloads](https://img.shields.io/pypi/dm/octopus-automl?style=flat-square&label=Downloads&labelColor=96d7d2&color=ffdcb9)](https://pypistats.org/packages/baybe)
-[![Issues](https://img.shields.io/github/issues/emdgroup/octopus?style=flat-square&label=Issues&labelColor=96d7d2&color=ffdcb9)](https://github.com/emdgroup/baybe/issues/)
-[![PRs](https://img.shields.io/github/issues-pr/emdgroup/octopus?style=flat-square&label=PRs&labelColor=96d7d2&color=ffdcb9)](https://github.com/emdgroup/baybe/pulls/)
+[![Supports Python](https://img.shields.io/pypi/pyversions/octopus-automl?style=flat-square&label=Supports%20Python&labelColor=96d7d2&color=ffdcb9)](https://pypi.org/project/octopus-automl/)
+[![PyPI version](https://img.shields.io/pypi/v/octopus-automl.svg?style=flat-square&label=PyPI%20Version&labelColor=96d7d2&color=ffdcb9)](https://pypi.org/project/octopus-automl/)
+[![Downloads](https://img.shields.io/pypi/dm/octopus-automl?style=flat-square&label=Downloads&labelColor=96d7d2&color=ffdcb9)](https://pypistats.org/packages/octopus-automl)
+[![Issues](https://img.shields.io/github/issues/emdgroup/octopus?style=flat-square&label=Issues&labelColor=96d7d2&color=ffdcb9)](https://github.com/emdgroup/octopus/issues/)
+[![PRs](https://img.shields.io/github/issues-pr/emdgroup/octopus?style=flat-square&label=PRs&labelColor=96d7d2&color=ffdcb9)](https://github.com/emdgroup/octopus/pulls/)
 [![License](https://shields.io/badge/License-Apache%202.0-green.svg?style=flat-square&labelColor=96d7d2&color=ffdcb9)](http://www.apache.org/licenses/LICENSE-2.0)
 
 [![Logo](https://raw.githubusercontent.com/emdgroup/octopus/main/docs/assets/logo.png)](https://github.com/emdgroup/octopus/)

@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING
 
 from attrs import Attribute
 
-from octopus.metrics import metrics_inventory
+from octopus.metrics import Metrics
 from octopus.task import Task
 
 if TYPE_CHECKING:
@@ -22,7 +22,7 @@ def validate_metric(instance: "OctoStudy", attribute: Attribute, value: str) -> 
     Raises:
         ValueError: If the target_metric is not valid for the given ml_type.
     """
-    metric_ml_type = metrics_inventory.get_metric_config(value).ml_type
+    metric_ml_type = Metrics.get_instance(value).ml_type
 
     if metric_ml_type != instance.ml_type:
         raise ValueError(f"Invalid target metric '{value}' for ml_type '{instance.ml_type}'.")
@@ -40,7 +40,7 @@ def validate_metrics_list(instance: "OctoStudy", attribute: Attribute, value: li
         ValueError: If any metric is not valid for the given ml_type.
     """
     for metric in value:
-        metric_ml_type = metrics_inventory.get_metric_config(metric).ml_type
+        metric_ml_type = Metrics.get_instance(metric).ml_type
 
         if metric_ml_type != instance.ml_type:
             raise ValueError(f"Invalid metric '{metric}' for ml_type '{instance.ml_type}'.")

@@ -6,7 +6,7 @@ from upath import UPath
 
 from octopus.experiment import OctoExperiment
 from octopus.logger import LogGroup, get_logger
-from octopus.metrics import metrics_inventory
+from octopus.metrics import Metrics
 from octopus.models import Models
 from octopus.modules.octo.bag import Bag, BagClassifier, BagRegressor  # type: ignore
 from octopus.modules.octo.training import Training  # type: ignore
@@ -162,7 +162,7 @@ class ObjectiveOptuna:
 
         # adjust direction, optuna in octofull always minimizes
         target_metric = self.experiment.target_metric
-        if metrics_inventory.get_direction(target_metric) == "minimize":
+        if Metrics.get_direction(target_metric) == "minimize":
             optuna_target = -optuna_target
 
         # add penaltiy for n_features > max_features if configured

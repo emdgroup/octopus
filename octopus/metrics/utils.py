@@ -5,7 +5,7 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
-from octopus.metrics import metrics_inventory
+from octopus.metrics import Metrics
 
 
 def _to_numpy(data: Any) -> np.ndarray:
@@ -80,25 +80,22 @@ def get_performance_from_model(
     if input_data.empty or not all(col in input_data.columns for col in feature_columns):
         raise ValueError("Input data is empty or does not contain the required feature columns.")
 
-    # Get metric configuration
-    metric_config = metrics_inventory.get_metric_config(target_metric)
-    ml_type = metric_config.ml_type
-    prediction_type = metric_config.prediction_type
+    # Get metric instance
+    metric = Metrics.get_instance(target_metric)
 
     # Time-to-event
-    if ml_type == "timetoevent":
-        estimate = model.predict(data[feature_columns])
+    if metric.ml_type == "timetoevent":
+        estimate = model.predict(input_data)
         event_time = data[target_assignments["duration"]].astype(float)
         event_indicator = data[target_assignments["event"]].astype(bool)
-        metric_function = metrics_inventory.get_metric_function(target_metric)
-        return float(metric_function(event_indicator, event_time, estimate)[0])
+        return metric.calculate_t2e(event_indicator, event_time, estimate)
 
     # Get target for non-time-to-event tasks
     target_col = list(target_assignments.values())[0]
     target = data[target_col]
 
     # Binary classification
-    if ml_type == "classification":
+    if metric.ml_type == "classification":
         if positive_class is None:
             raise ValueError("positive_class must be provided for classification tasks")
 
@@ -109,30 +106,30 @@ def get_performance_from_model(
 
         probabilities = _to_numpy(model.predict_proba(input_data))[:, positive_class_idx]
 
-        if prediction_type == "predict_proba":
-            return metric_config.compute(target, probabilities)
+        if metric.prediction_type == "predict_proba":
+            return metric.calculate(target, probabilities)
 
         predictions = (probabilities >= threshold).astype(int)
-        return metric_config.compute(target, predictions)
+        return metric.calculate(target, predictions)
 
     # Multiclass classification
-    if ml_type == "multiclass":
-        if prediction_type == "predict_proba":
+    if metric.ml_type == "multiclass":
+        if metric.prediction_type == "predict_proba":
             probabilities = _to_numpy(model.predict_proba(input_data))
-            return metric_config.compute(target, probabilities)
+            return metric.calculate(target, probabilities)
 
         predictions = _to_numpy(model.predict(input_data))
-        return metric_config.compute(target, predictions)
+        return metric.calculate(target, predictions)
 
     # Regression
-    if ml_type == "regression":
-        if prediction_type == "predict_proba":
+    if metric.ml_type == "regression":
+        if metric.prediction_type == "predict_proba":
             raise ValueError("predict_proba not supported for regression")
 
         predictions = _to_numpy(model.predict(input_data))
-        return metric_config.compute(target, predictions)
+        return metric.calculate(target, predictions)
 
-    raise ValueError(f"Unknown ml_type: {ml_type}")
+    raise ValueError(f"Unknown ml_type: {metric.ml_type}")
 
 
 def get_performance_from_predictions(
@@ -161,10 +158,8 @@ def get_performance_from_predictions(
                    are invalid for multiclass, predict_proba used for regression,
                    or ml_type is unknown
     """
-    # Get metric configuration
-    metric_config = metrics_inventory.get_metric_config(target_metric)
-    ml_type = metric_config.ml_type
-    prediction_type = metric_config.prediction_type
+    # Get metric instance
+    metric = Metrics.get_instance(target_metric)
 
     performance: dict[Any, dict[str, float]] = {}
     for training_id, partitions in predictions.items():
@@ -172,12 +167,11 @@ def get_performance_from_predictions(
 
         for part, pred_df in partitions.items():
             # Time-to-event
-            if ml_type == "timetoevent":
+            if metric.ml_type == "timetoevent":
                 estimate = pred_df["prediction"]
                 event_time = pred_df[target_assignments["duration"]].astype(float)
                 event_indicator = pred_df[target_assignments["event"]].astype(bool)
-                metric_function = metrics_inventory.get_metric_function(target_metric)
-                perf_value = float(metric_function(event_indicator, event_time, estimate)[0])
+                perf_value = metric.calculate_t2e(event_indicator, event_time, estimate)
 
             else:
                 # Get target for non-time-to-event tasks
@@ -185,38 +179,38 @@ def get_performance_from_predictions(
                 target = pred_df[target_col]
 
                 # Binary classification
-                if ml_type == "classification":
+                if metric.ml_type == "classification":
                     if positive_class is None:
                         raise ValueError("positive_class must be provided for classification tasks")
 
                     probabilities = pred_df[positive_class]
 
-                    if prediction_type == "predict_proba":
-                        perf_value = metric_config.compute(target, probabilities)
+                    if metric.prediction_type == "predict_proba":
+                        perf_value = metric.calculate(target, probabilities)
                     else:
                         predictions_binary = (probabilities >= threshold).astype(int)
-                        perf_value = metric_config.compute(target, predictions_binary)
+                        perf_value = metric.calculate(target, predictions_binary)
 
                 # Multiclass classification
-                elif ml_type == "multiclass":
-                    if prediction_type == "predict_proba":
+                elif metric.ml_type == "multiclass":
+                    if metric.prediction_type == "predict_proba":
                         prob_columns = _get_probability_columns(pred_df, target_col)
                         probabilities = pred_df[prob_columns].values
-                        perf_value = metric_config.compute(target, probabilities)
+                        perf_value = metric.calculate(target, probabilities)
                     else:
                         predictions_class = pred_df["prediction"].astype(int)
-                        perf_value = metric_config.compute(target, predictions_class)
+                        perf_value = metric.calculate(target, predictions_class)
 
                 # Regression
-                elif ml_type == "regression":
-                    if prediction_type == "predict_proba":
+                elif metric.ml_type == "regression":
+                    if metric.prediction_type == "predict_proba":
                         raise ValueError("predict_proba not supported for regression")
 
                     predictions_reg = pred_df["prediction"]
-                    perf_value = metric_config.compute(target, predictions_reg)
+                    perf_value = metric.calculate(target, predictions_reg)
 
                 else:
-                    raise ValueError(f"Unknown ml_type: {ml_type}")
+                    raise ValueError(f"Unknown ml_type: {metric.ml_type}")
 
             performance[training_id][part] = perf_value
 
@@ -256,12 +250,12 @@ def get_score_from_prediction(
 
     # Convert performance to score based on optimization direction
     scores: dict[Any, dict[str, float]] = {}
-    direction = metrics_inventory.get_direction(target_metric)
+    metric = Metrics.get_instance(target_metric)
 
     for training_id, partitions in performance.items():
         scores[training_id] = {}
         for part, perf_value in partitions.items():
-            if direction == "maximize":
+            if metric.direction == "maximize":
                 scores[training_id][part] = perf_value
             else:
                 scores[training_id][part] = -perf_value
@@ -298,5 +292,5 @@ def get_score_from_model(
     )
 
     # Apply optimization direction
-    direction = metrics_inventory.get_direction(target_metric)
-    return performance if direction == "maximize" else -performance
+    metric = Metrics.get_instance(target_metric)
+    return performance if metric.direction == "maximize" else -performance

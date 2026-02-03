@@ -9,6 +9,8 @@ This example demonstrates a multi-step workflow using:
 - Sequential tasks: Octo -> Mrmr -> Octo (with reduced features)
 """
 
+import os
+
 import numpy as np
 import pandas as pd
 from sklearn.datasets import make_classification

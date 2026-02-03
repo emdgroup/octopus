@@ -55,7 +55,7 @@ print()
 
 # Create and run OctoStudy with sequential multi-step workflow
 study = OctoStudy(
-    name="workflow_sequential_tasks",
+    name="wf_octo_mrmr_octo",
     ml_type="classification",
     target_metric="ACCBAL",
     feature_columns=feature_names,
@@ -92,6 +92,7 @@ study = OctoStudy(
             models=["ExtraTreesClassifier"],
             n_trials=100,
             n_folds_inner=5,
+            ensemble_selection=True,
         ),
     ],
 )
@@ -100,5 +101,5 @@ print("Starting workflow execution...")
 
 study.fit(data=df)
 
-print()
-print(f"Study saved to: {study.path}")
+print("Workflow completed successfully!")
+print(f"Results saved to: {os.path.join(study.path, study.name)}")

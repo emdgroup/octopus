@@ -64,7 +64,7 @@ print("=====================================\n")
 ### Create and run OctoStudy with PARALLEL Octo + AutoGluon workflow
 
 study = OctoStudy(
-    name="example_octo_autogluon_parallel_split0",
+    name="wf_octo_autogluon_parallel",
     path=os.environ.get("STUDIES_PATH", "./studies"),
     ml_type="classification",
     target_metric="AUCROC",  # Area Under ROC Curve for binary classification
@@ -76,7 +76,7 @@ study = OctoStudy(
     n_folds_outer=5,  # 5-fold outer cross-validation
     ignore_data_health_warning=True,
     outer_parallelization=True,
-    run_single_experiment_num=0,  # process allyes outersplits
+    run_single_experiment_num=-1,  # process all outersplits
     workflow=[
         # Step 0: octo
         Octo(

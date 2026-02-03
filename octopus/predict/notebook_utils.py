@@ -3,11 +3,40 @@
 import json
 import re
 from pathlib import Path
+from typing import Any
 
 import pandas as pd
 
 from octopus.experiment import OctoExperiment
 from octopus.metrics.utils import get_performance_from_model
+
+try:
+    from IPython.display import display as ipython_display
+except ImportError:
+    ipython_display = None
+
+
+def display_table(data: Any) -> None:
+    """Display a table in Jupyter notebooks or print in other environments.
+
+    This function attempts to use IPython's display functionality when running
+    in a Jupyter notebook environment. If not available, it falls back to using
+    the standard print function.
+
+    Args:
+        data: The data to display. Can be a pandas DataFrame, Series, or any
+            object that can be displayed by IPython.display or printed.
+
+    Example:
+        >>> import pandas as pd
+        >>> from octopus.predict.notebook_utils import display_table
+        >>> df = pd.DataFrame({'A': [1, 2, 3], 'B': [4, 5, 6]})
+        >>> display_table(df)
+    """
+    if ipython_display is not None:
+        ipython_display(data)
+    else:
+        print(data)
 
 
 def show_study_details(study_directory: str | Path, expected_ml_type: str | None = None, verbose: bool = True) -> dict:
@@ -175,7 +204,7 @@ def show_study_details(study_directory: str | Path, expected_ml_type: str | None
     }
 
 
-def show_target_metric_performance(study_info: dict, details: bool = False) -> pd.DataFrame:
+def show_target_metric_performance(study_info: dict, details: bool = False) -> tuple[pd.DataFrame, list[pd.DataFrame]]:
     """Display performance metrics for all workflow tasks in a study.
 
     This function loads experiments from all workflow tasks across outer splits,
@@ -187,21 +216,24 @@ def show_target_metric_performance(study_info: dict, details: bool = False) -> p
             overview first, then detailed information for each experiment.
 
     Returns:
-        DataFrame containing performance metrics with columns:
-            - OuterSplit: Outer split number
-            - Workflow: Workflow task number
-            - Workflow_name: Name of the workflow directory
-            - Results_key: Key identifying the result
-            - Scores_dict: Dictionary of performance scores
-            - n_features: Number of selected features
-            - Selected_features: List of selected feature names
+        Tuple containing:
+            - DataFrame containing performance metrics with columns:
+                - OuterSplit: Outer split number
+                - Workflow: Workflow task number
+                - Workflow_name: Name of the workflow directory
+                - Results_key: Key identifying the result
+                - Scores_dict: Dictionary of performance scores
+                - n_features: Number of selected features
+                - Selected_features: List of selected feature names
+            - List of DataFrames, one for each task/key combination with performance metrics
 
     Example:
         >>> from octopus.predict.notebook_utils import show_study_details, show_target_metric_performance
         >>> study_info = show_study_details("./studies/my_study/")
-        >>> df = show_target_metric_performance(study_info, details=False)
+        >>> df, tables = show_target_metric_performance(study_info, details=False)
     """
     # Initialize results dataframe
+    performance_tables = []
     df = pd.DataFrame(
         columns=[
             "OuterSplit",
@@ -277,6 +309,9 @@ def show_target_metric_performance(study_info: dict, details: bool = False) -> p
             result_df = df_workflow_selected[["OuterSplit"]].join(scores_df).set_index("OuterSplit")
             # Remove columns that do not contain numeric values
             result_df = result_df.select_dtypes(include="number")
+            # Add Task and Key columns
+            result_df.insert(0, "Task", _item["task_id"])
+            result_df.insert(1, "Key", _key)
             mean_values = {}
             # Iterate through the columns
             for column in result_df.columns:
@@ -284,9 +319,14 @@ def show_target_metric_performance(study_info: dict, details: bool = False) -> p
                     mean_values[column] = result_df[column].mean()
                 else:
                     mean_values[column] = ""
+            # Set non-numeric values for Mean row
+            mean_values["Task"] = _item["task_id"]
+            mean_values["Key"] = _key
             # Append the mean values as a new row
             result_df.loc["Mean"] = mean_values
-            print(result_df)
+            # Collect the table
+            performance_tables.append(result_df.copy())
+            display_table(result_df)
 
     # Detailed printout (only if details=True)
     if details:
@@ -320,7 +360,7 @@ def show_target_metric_performance(study_info: dict, details: bool = False) -> p
                     for key, result in exp.results.items():
                         print(f"\t\t{key}: {'\n\t\t\t'.join(f'{m}: {s}' for m, s in result.scores.items())}")
 
-    return df
+    return df, performance_tables
 
 
 def show_selected_features(
@@ -359,13 +399,19 @@ def show_selected_features(
     mean_row = feature_table.mean(axis=0)
     feature_table.loc["Mean"] = mean_row
 
+    # Convert to integers
+    feature_table = feature_table.astype(int)
+
+    # Add multi-level column header
+    feature_table.columns = pd.MultiIndex.from_product([["Task"], feature_table.columns])
+    feature_table.index.name = "OuterSplit"
+
     # Display the table
-    print("\n" + "=" * 80)
+    print("\n" + "=" * 40)
     print("NUMBER OF SELECTED FEATURES")
-    print("=" * 80)
-    print("Rows: OuterSplit | Columns: Task ID")
-    print(feature_table)
-    print("=" * 80 + "\n")
+    print("=" * 40)
+    print("Rows: OuterSplit | Columns: Task ID | Values: Number of Features")
+    display_table(feature_table)
 
     # Create feature frequency table
     # Get all unique tasks
@@ -403,14 +449,17 @@ def show_selected_features(
     if sort_col in list(frequency_table.columns):
         frequency_table = frequency_table.sort_values(by=sort_col, ascending=False)  # type: ignore[call-overload]
 
+    # Add multi-level column header
+    frequency_table.columns = pd.MultiIndex.from_product([["Task"], frequency_table.columns])
+    frequency_table.index.name = "Feature"
+
     # Display the frequency table
-    print("\n" + "=" * 80)
+    print("\n" + "=" * 40)
     print("FEATURE FREQUENCY ACROSS OUTER SPLITS")
-    print("=" * 80)
-    print("Rows: Features | Columns: Task ID")
+    print("=" * 40)
+    print("Rows: Features | Columns: Task ID | Values: Feature Frequency")
     print(f"Sorted by Task {sort_task} frequency (highest first)")
-    print(frequency_table)
-    print("=" * 80 + "\n")
+    display_table(frequency_table)
 
     return feature_table, frequency_table
 
@@ -467,5 +516,5 @@ def testset_performance_overview(predictor: "OctoPredict", metrics: list[str]) -
     mean_row = df.mean(axis=0)
     df.loc["Mean"] = mean_row
 
-    print(df)
+    display_table(df)
     return df

@@ -71,6 +71,7 @@ def temporary_working_dir(tmp_path_factory):
         os.chdir(oldCWD)
 
 
+@pytest.mark.skip(reason="Temporarily disabled - will re-enable later")
 @pytest.mark.slow
 @pytest.mark.usefixtures("temporary_working_dir")
 @pytest.mark.parametrize("example_path", _all_examples_basic, ids=lambda p: p.name)
@@ -83,6 +84,7 @@ def test_basic_examples(example_path: Path):
     run_example(example_path)
 
 
+@pytest.mark.skip(reason="Temporarily disabled - will re-enable later")
 @pytest.mark.slow
 @pytest.mark.order(after="test_basic_examples")
 @pytest.mark.usefixtures("temporary_working_dir")

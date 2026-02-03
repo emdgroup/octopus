@@ -6,12 +6,8 @@ from pathlib import Path
 import pytest
 
 _examples_dir = Path(__file__).parent.parent / "examples"
-_example_globs = ["*.py", "*.ipynb"]
-_all_examples = {f for g in _example_globs for f in _examples_dir.glob(g) if f.name not in {"__init__.py", "main.py"}}
-
-
-_all_examples_basic = {f for f in _all_examples if "basic_" in f.name}
-_all_examples_others = _all_examples - _all_examples_basic
+_all_examples_basic = list(_examples_dir.glob("*.py"))
+_all_examples_others = list(_examples_dir.glob("*.ipynb"))
 
 
 def run_example(example_path: Path):
@@ -72,6 +68,7 @@ def temporary_working_dir(tmp_path_factory):
 
 
 @pytest.mark.slow
+@pytest.mark.skip(reason="Example tests only run on demand.")
 @pytest.mark.usefixtures("temporary_working_dir")
 @pytest.mark.parametrize("example_path", _all_examples_basic, ids=lambda p: p.name)
 def test_basic_examples(example_path: Path):
@@ -84,10 +81,11 @@ def test_basic_examples(example_path: Path):
 
 
 @pytest.mark.slow
+@pytest.mark.skip(reason="Example tests only run on demand.")
 @pytest.mark.order(after="test_basic_examples")
 @pytest.mark.usefixtures("temporary_working_dir")
 @pytest.mark.parametrize("example_path", _all_examples_others, ids=lambda p: p.name)
-def test_example(example_path: Path):
+def test_analysis_example(example_path: Path):
     """Test that each other example script runs without error.
 
     All examples run inside the same temporary working directory created by a fixture

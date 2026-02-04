@@ -7,6 +7,10 @@ catboost_info/
 # macOS
 .DS_Store
 
+# coding support
+.clinerules
+COPILOT_INSTRUCTIONS
+
 # Python
 __pycache__
 

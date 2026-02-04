@@ -86,4 +86,5 @@ study = OctoStudy(
 
 study.fit(data=df)
 
-print("ROC + Octo workflow completed successfully")
+print("Workflow completed successfully!")
+print(f"Results saved to: {study.output_path}")

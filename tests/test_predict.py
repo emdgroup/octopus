@@ -49,6 +49,7 @@ def mock_model():
 
     model.predict = Mock(side_effect=predict_side_effect)
     model.predict_proba = Mock(side_effect=predict_proba_side_effect)
+    model.classes_ = np.array([0, 1])  # Required for classification tasks
     return model
 
 
@@ -64,7 +65,7 @@ def mock_experiment(sample_data, mock_model):
     experiment.datasplit_column = "target"
     experiment.row_column = "row_id"
     experiment.feature_columns = ["feature1", "feature2", "feature3"]
-    experiment.target_assignments = {"target": [0, 1]}
+    experiment.target_assignments = {"target": "target"}
     experiment.target_metric = "AUCROC"
     experiment.ml_type = "classification"
     experiment.positive_class = 1
@@ -143,7 +144,7 @@ def predictor_with_experiments(mock_study_path, mock_experiment, sample_data, mo
                 data_test=sample_data.iloc[80:],
                 feature_columns=["feature1", "feature2", "feature3"],
                 row_column="row_id",
-                target_assignments={"target": [0, 1]},
+                target_assignments={"target": "target"},
                 target_metric="AUCROC",
                 ml_type="classification",
                 feature_group_dict={"group0": ["feature1", "feature2"]},

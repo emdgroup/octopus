@@ -70,5 +70,5 @@ study = OctoStudy(
 
 study.fit(data=df)
 
-print("Multiclass workflow completed")
-print(f"Results saved to: ./studies/{study.name}/")
+print("Workflow completed successfully!")
+print(f"Results saved to: {study.output_path}")

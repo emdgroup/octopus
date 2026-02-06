@@ -8,21 +8,20 @@ import os
 
 from sklearn.datasets import load_diabetes
 
-from octopus import OctoStudy
+from octopus import OctoRegression
 from octopus.modules import Mrmr, Octo
 
 ### Load the diabetes dataset
 diabetes = load_diabetes(as_frame=True)
 
-### Create and run OctoStudy with multi-step workflow
-study = OctoStudy(
+### Create and run OctoRegression with multi-step workflow
+study = OctoRegression(
     name="example_multiworkflow",
     path=os.environ.get("STUDIES_PATH", "./studies"),
-    ml_type="regression",
     target_metric="R2",
-    feature_columns=diabetes["feature_names"],
-    target_columns=["target"],
-    sample_id="index",
+    feature_cols=diabetes["feature_names"],
+    target="target",
+    sample_id_col="index",
     ignore_data_health_warning=True,
     outer_parallelization=False,
     run_single_experiment_num=1,

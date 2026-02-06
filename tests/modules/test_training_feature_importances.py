@@ -187,7 +187,7 @@ def test_data():
     data["nominal_col"] = nominal_col
 
     # Add row identifier
-    data["row_id"] = range(n_samples)
+    data["row_id_col"] = range(n_samples)
 
     # Generate targets
     data["target_class"] = np.random.choice([0, 1], n_samples)
@@ -219,12 +219,12 @@ def test_data():
 @pytest.fixture(scope="session")
 def feature_config():
     """Feature configuration for tests - optimized for speed."""
-    feature_columns = ["num_col1", "num_col2", "nominal_col"]  # Reduced to 3 features
+    feature_cols = ["num_col1", "num_col2", "nominal_col"]  # Reduced to 3 features
     feature_groups = {
         "numerical_group": ["num_col1", "num_col2"],
         "categorical_group": ["nominal_col"],
     }
-    return feature_columns, feature_groups
+    return feature_cols, feature_groups
 
 
 def create_training_instance(
@@ -233,7 +233,7 @@ def create_training_instance(
     data_test: pd.DataFrame,
     ml_type: str,
     model_name: str,
-    feature_columns: list[str],
+    feature_cols: list[str],
     feature_groups: dict[str, list[str]],
 ) -> Training:
     """Create a Training instance for testing."""
@@ -257,8 +257,8 @@ def create_training_instance(
         training_id=f"test_{ml_type}_{model_name}",
         ml_type=ml_type,
         target_assignments=config["target_assignments"],
-        feature_columns=feature_columns,
-        row_column="row_id",
+        feature_cols=feature_cols,
+        row_column="row_id_col",
         data_train=data_train,
         data_dev=data_dev,
         data_test=data_test,
@@ -368,7 +368,7 @@ def run_comprehensive_feature_importance_tests():
     nominal_col[::15] = np.nan
     data["nominal_col"] = nominal_col
 
-    data["row_id"] = range(n_samples)
+    data["row_id_col"] = range(n_samples)
 
     # Generate targets
     data["target_class"] = np.random.choice([0, 1], n_samples)
@@ -394,7 +394,7 @@ def run_comprehensive_feature_importance_tests():
     data_dev = data.iloc[dev_idx].reset_index(drop=True)
     data_test = data.iloc[test_idx].reset_index(drop=True)
 
-    feature_columns = ["num_col1", "num_col2", "nominal_col"]  # Reduced to 3 features
+    feature_cols = ["num_col1", "num_col2", "nominal_col"]  # Reduced to 3 features
     feature_groups = {
         "numerical_group": ["num_col1", "num_col2"],
         "categorical_group": ["nominal_col"],
@@ -424,7 +424,7 @@ def run_comprehensive_feature_importance_tests():
             try:
                 # Create and fit training instance
                 training = create_training_instance(
-                    data_train, data_dev, data_test, ml_type, model_name, feature_columns, feature_groups
+                    data_train, data_dev, data_test, ml_type, model_name, feature_cols, feature_groups
                 )
 
                 # Fit the model
@@ -590,7 +590,7 @@ class TestFeatureImportanceComprehensive:
     def test_all_feature_importance_methods(self, test_data, feature_config):
         """Test all feature importance methods across all models."""
         data_train, data_dev, data_test = test_data
-        feature_columns, feature_groups = feature_config
+        feature_cols, feature_groups = feature_config
 
         warnings.filterwarnings("ignore")
 
@@ -602,7 +602,7 @@ class TestFeatureImportanceComprehensive:
                 try:
                     # Create and fit training instance
                     training = create_training_instance(
-                        data_train, data_dev, data_test, ml_type, model_name, feature_columns, feature_groups
+                        data_train, data_dev, data_test, ml_type, model_name, feature_cols, feature_groups
                     )
                     training.fit()
 

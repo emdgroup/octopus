@@ -7,7 +7,7 @@ from sklearn.datasets import make_classification
 from sklearn.metrics import auc, roc_curve
 from upath import UPath
 
-from octopus import OctoStudy
+from octopus import OctoClassification
 from octopus.metrics.utils import get_performance_from_model
 from octopus.modules import Octo
 from octopus.predict import OctoPredict
@@ -47,17 +47,16 @@ def trained_study(classification_dataset, tmp_path_factory):
 
     temp_dir = tmp_path_factory.mktemp("test_data")
 
-    # Create OctoStudy with new unified API
-    study = OctoStudy(
+    # Create OctoClassification study
+    study = OctoClassification(
         name="test_analysis_pipeline",
-        ml_type="classification",
         target_metric="ACCBAL",
         metrics=["AUCROC", "ACCBAL", "ACC", "F1", "AUCPR"],
-        feature_columns=features,
-        target_columns=["target"],
-        sample_id="index",
+        feature_cols=features,
+        target="target",
+        sample_id_col="index",
         datasplit_type="sample",
-        stratification_column="target",
+        stratification_col="target",
         datasplit_seed_outer=1234,
         n_folds_outer=5,
         start_with_empty_study=True,
@@ -112,7 +111,7 @@ class TestAnalysisPipeline:
         for _exp_id, experiment in task_item.experiments.items():
             assert hasattr(experiment, "model")
             assert hasattr(experiment, "data_test")
-            assert hasattr(experiment, "feature_columns")
+            assert hasattr(experiment, "feature_cols")
             assert hasattr(experiment, "target_assignments")
 
     @pytest.mark.slow
@@ -171,7 +170,7 @@ class TestAnalysisPipeline:
                 performance = get_performance_from_model(
                     experiment.model,
                     experiment.data_test,
-                    experiment.feature_columns,
+                    experiment.feature_cols,
                     metric,
                     experiment.target_assignments,
                     positive_class=1,
@@ -198,15 +197,15 @@ class TestAnalysisPipeline:
         res_lst = []
         for _key, experiment in task_item.experiments.items():
             data_test = experiment.data_test
-            feature_columns = experiment.feature_columns
+            feature_cols = experiment.feature_cols
             row_column = experiment.row_column
             target_col = list(experiment.target_assignments.values())[0]
 
             df = pd.DataFrame()
-            df["row_id"] = data_test[row_column]
-            df["prediction"] = experiment.model.predict(data_test[feature_columns])
+            df["row_id_col"] = data_test[row_column]
+            df["prediction"] = experiment.model.predict(data_test[feature_cols])
 
-            pred = experiment.model.predict_proba(data_test[feature_columns])
+            pred = experiment.model.predict_proba(data_test[feature_cols])
             if isinstance(pred, pd.DataFrame):
                 df["probabilities"] = pred[1]
             elif isinstance(pred, np.ndarray):
@@ -302,7 +301,7 @@ class TestAnalysisPipeline:
             assert hasattr(experiment, "model")
             assert hasattr(experiment, "data_traindev")
             assert hasattr(experiment, "data_test")
-            assert hasattr(experiment, "feature_columns")
+            assert hasattr(experiment, "feature_cols")
             assert hasattr(experiment, "row_column")
             assert hasattr(experiment, "target_assignments")
             assert hasattr(experiment, "target_metric")
@@ -313,7 +312,7 @@ class TestAnalysisPipeline:
             # Verify attribute types
             assert isinstance(experiment.id, int)
             assert isinstance(experiment.data_test, pd.DataFrame)
-            assert isinstance(experiment.feature_columns, list)
+            assert isinstance(experiment.feature_cols, list)
             assert isinstance(experiment.target_assignments, dict)
             assert experiment.ml_type == "classification"
 

@@ -8,7 +8,7 @@ import pandas as pd
 import pytest
 from sklearn.datasets import make_classification
 
-from octopus import OctoStudy
+from octopus import OctoClassification
 from octopus.modules import Octo
 
 
@@ -70,22 +70,21 @@ class TestOctoMulticlass:
         _, features, _wine = wine_dataset
 
         with tempfile.TemporaryDirectory() as temp_dir:
-            study = OctoStudy(
+            study = OctoClassification(
                 name="test_multiclass",
-                ml_type="multiclass",
                 target_metric="AUCROC_MACRO",
-                feature_columns=features,
-                target_columns=["target"],
-                sample_id="index",
-                stratification_column="target",
+                feature_cols=features,
+                target="target",
+                sample_id_col="index",
+                stratification_col="target",
                 path=temp_dir,
                 ignore_data_health_warning=True,
             )
 
-            assert study.target_columns == ["target"]
-            assert len(study.feature_columns) == 5
-            assert study.sample_id == "index"
-            assert study.stratification_column == "target"
+            assert study.target_cols == ["target"]
+            assert len(study.feature_cols) == 5
+            assert study.sample_id_col == "index"
+            assert study.stratification_col == "target"
 
     def test_multiclass_task_configuration(self):
         """Test that multiclass Octo task can be properly configured."""
@@ -155,13 +154,12 @@ class TestOctoMulticlass:
     def test_multiclass_metrics_configuration(self):
         """Test multiclass-specific metrics configuration."""
         with tempfile.TemporaryDirectory() as temp_dir:
-            study = OctoStudy(
+            study = OctoClassification(
                 name="test_multiclass_metrics",
-                ml_type="multiclass",
                 target_metric="AUCROC_MACRO",
-                feature_columns=["f1"],
-                target_columns=["target"],
-                sample_id="index",
+                feature_cols=["f1"],
+                target="target",
+                sample_id_col="index",
                 metrics=["AUCROC_MACRO", "AUCROC_WEIGHTED", "ACCBAL_MC"],
                 path=temp_dir,
                 ignore_data_health_warning=True,
@@ -206,14 +204,13 @@ class TestOctoMulticlass:
         df, features, _wine = wine_dataset
 
         with tempfile.TemporaryDirectory() as temp_dir:
-            study = OctoStudy(
+            study = OctoClassification(
                 name="test_multiclass_execution",
-                ml_type="multiclass",
                 target_metric="AUCROC_MACRO",
-                feature_columns=features,
-                target_columns=["target"],
-                sample_id="index",
-                stratification_column="target",
+                feature_cols=features,
+                target="target",
+                sample_id_col="index",
+                stratification_col="target",
                 metrics=["AUCROC_MACRO", "AUCROC_WEIGHTED", "ACCBAL_MC"],
                 datasplit_seed_outer=1234,
                 n_folds_outer=2,
@@ -311,17 +308,17 @@ class TestOctoMulticlass:
 
         for target_metric in target_metrics:
             with tempfile.TemporaryDirectory() as temp_dir:
-                study = OctoStudy(
+                study = OctoClassification(
                     name=f"test_multiclass_{target_metric.lower()}",
-                    ml_type="multiclass",
                     target_metric=target_metric,
-                    feature_columns=["f1"],
-                    target_columns=["target"],
-                    sample_id="index",
+                    feature_cols=["f1"],
+                    target="target",
+                    sample_id_col="index",
                     metrics=["AUCROC_MACRO", "AUCROC_WEIGHTED", "ACCBAL_MC"],
                     path=temp_dir,
                     ignore_data_health_warning=True,
                 )
 
                 assert study.target_metric == target_metric
-                assert study.ml_type.value == "multiclass"
+                # ml_type will be set to MULTICLASS or CLASSIFICATION in fit() based on actual data
+                assert study.ml_type.value == "classification"  # Default before fit()

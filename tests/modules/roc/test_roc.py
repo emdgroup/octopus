@@ -122,7 +122,7 @@ class TestRocCore:
 
         df = pd.DataFrame(X_corr, columns=feature_names)
         df["target"] = y
-        df["sample_id"] = range(len(df))
+        df["sample_id_col"] = range(len(df))
 
         return df, feature_names
 
@@ -149,7 +149,7 @@ class TestRocCore:
 
         df = pd.DataFrame(X_corr, columns=feature_names)
         df["target"] = y
-        df["sample_id"] = range(len(df))
+        df["sample_id_col"] = range(len(df))
 
         return df, feature_names
 
@@ -179,16 +179,16 @@ class TestRocCore:
         df = pd.DataFrame(X_corr, columns=feature_names)
         df["duration"] = duration
         df["event"] = event
-        df["sample_id"] = range(len(df))
+        df["sample_id_col"] = range(len(df))
 
         return df, feature_names
 
-    def create_mock_experiment(self, data, feature_columns, ml_type, target_assignments, roc_config):
+    def create_mock_experiment(self, data, feature_cols, ml_type, target_assignments, roc_config):
         """Create a mock experiment object for testing."""
         with tempfile.TemporaryDirectory() as temp_dir:
             mock_experiment = Mock(spec=OctoExperiment)
             mock_experiment.data_traindev = data
-            mock_experiment.feature_columns = feature_columns
+            mock_experiment.feature_cols = feature_cols
             mock_experiment.ml_type = ml_type
             mock_experiment.target_assignments = target_assignments
             mock_experiment.ml_config = roc_config
@@ -196,17 +196,21 @@ class TestRocCore:
             mock_experiment.task_path = UPath("roc_test")
             mock_experiment.selected_features = []
 
+            # Add properties that compute x_traindev and y_traindev
+            mock_experiment.x_traindev = data[feature_cols]
+            mock_experiment.y_traindev = data[list(target_assignments.values())]
+
             return mock_experiment
 
     def test_roc_core_classification_spearmanr_f_statistics(self, sample_classification_data):
         """Test ROC core with classification data, Spearman correlation, and F-statistics."""
-        data, feature_columns = sample_classification_data
+        data, feature_cols = sample_classification_data
 
         roc_config = Roc(task_id=0, threshold=0.8, correlation_type="spearmanr", filter_type="f_statistics")
 
         target_assignments = {"target": "target"}
         mock_experiment = self.create_mock_experiment(
-            data, feature_columns, "classification", target_assignments, roc_config
+            data, feature_cols, "classification", target_assignments, roc_config
         )
 
         with patch("shutil.rmtree"), patch("pathlib.Path.mkdir"):
@@ -216,20 +220,20 @@ class TestRocCore:
             # Verify that features were selected
             assert hasattr(result_experiment, "selected_features")
             assert len(result_experiment.selected_features) > 0
-            assert len(result_experiment.selected_features) <= len(feature_columns)
+            assert len(result_experiment.selected_features) <= len(feature_cols)
 
             # Verify that highly correlated features were removed
-            assert len(result_experiment.selected_features) < len(feature_columns)
+            assert len(result_experiment.selected_features) < len(feature_cols)
 
     def test_roc_core_classification_rdc_mutual_info(self, sample_classification_data):
         """Test ROC core with classification data, RDC correlation, and mutual information."""
-        data, feature_columns = sample_classification_data
+        data, feature_cols = sample_classification_data
 
         roc_config = Roc(task_id=0, threshold=0.7, correlation_type="rdc", filter_type="mutual_info")
 
         target_assignments = {"target": "target"}
         mock_experiment = self.create_mock_experiment(
-            data, feature_columns, "classification", target_assignments, roc_config
+            data, feature_cols, "classification", target_assignments, roc_config
         )
 
         with patch("shutil.rmtree"), patch("pathlib.Path.mkdir"):
@@ -239,18 +243,16 @@ class TestRocCore:
             # Verify that features were selected
             assert hasattr(result_experiment, "selected_features")
             assert len(result_experiment.selected_features) > 0
-            assert len(result_experiment.selected_features) <= len(feature_columns)
+            assert len(result_experiment.selected_features) <= len(feature_cols)
 
     def test_roc_core_regression_spearmanr_f_statistics(self, sample_regression_data):
         """Test ROC core with regression data, Spearman correlation, and F-statistics."""
-        data, feature_columns = sample_regression_data
+        data, feature_cols = sample_regression_data
 
         roc_config = Roc(task_id=0, threshold=0.85, correlation_type="spearmanr", filter_type="f_statistics")
 
         target_assignments = {"target": "target"}
-        mock_experiment = self.create_mock_experiment(
-            data, feature_columns, "regression", target_assignments, roc_config
-        )
+        mock_experiment = self.create_mock_experiment(data, feature_cols, "regression", target_assignments, roc_config)
 
         with patch("shutil.rmtree"), patch("pathlib.Path.mkdir"):
             roc_core = RocCore(experiment=mock_experiment, log_dir=mock_experiment.path_study)
@@ -259,18 +261,16 @@ class TestRocCore:
             # Verify that features were selected
             assert hasattr(result_experiment, "selected_features")
             assert len(result_experiment.selected_features) > 0
-            assert len(result_experiment.selected_features) <= len(feature_columns)
+            assert len(result_experiment.selected_features) <= len(feature_cols)
 
     def test_roc_core_regression_rdc_mutual_info(self, sample_regression_data):
         """Test ROC core with regression data, RDC correlation, and mutual information."""
-        data, feature_columns = sample_regression_data
+        data, feature_cols = sample_regression_data
 
         roc_config = Roc(task_id=0, threshold=0.9, correlation_type="rdc", filter_type="mutual_info")
 
         target_assignments = {"target": "target"}
-        mock_experiment = self.create_mock_experiment(
-            data, feature_columns, "regression", target_assignments, roc_config
-        )
+        mock_experiment = self.create_mock_experiment(data, feature_cols, "regression", target_assignments, roc_config)
 
         with patch("shutil.rmtree"), patch("pathlib.Path.mkdir"):
             roc_core = RocCore(experiment=mock_experiment, log_dir=mock_experiment.path_study)
@@ -282,7 +282,7 @@ class TestRocCore:
 
     def test_roc_core_timetoevent(self, sample_timetoevent_data):
         """Test ROC core with time-to-event data."""
-        data, feature_columns = sample_timetoevent_data
+        data, feature_cols = sample_timetoevent_data
 
         roc_config = Roc(
             task_id=0,
@@ -292,9 +292,7 @@ class TestRocCore:
         )
 
         target_assignments = {"duration": "duration", "event": "event"}
-        mock_experiment = self.create_mock_experiment(
-            data, feature_columns, "timetoevent", target_assignments, roc_config
-        )
+        mock_experiment = self.create_mock_experiment(data, feature_cols, "timetoevent", target_assignments, roc_config)
 
         with patch("shutil.rmtree"), patch("pathlib.Path.mkdir"):
             roc_core = RocCore(experiment=mock_experiment, log_dir=mock_experiment.path_study)
@@ -303,18 +301,18 @@ class TestRocCore:
             # Verify that features were selected
             assert hasattr(result_experiment, "selected_features")
             assert len(result_experiment.selected_features) > 0
-            assert len(result_experiment.selected_features) <= len(feature_columns)
+            assert len(result_experiment.selected_features) <= len(feature_cols)
 
     @pytest.mark.parametrize("threshold", [0.5, 0.7, 0.8, 0.9, 0.95])
     def test_roc_core_different_thresholds(self, sample_classification_data, threshold):
         """Test ROC core with different correlation thresholds."""
-        data, feature_columns = sample_classification_data
+        data, feature_cols = sample_classification_data
 
         roc_config = Roc(task_id=0, threshold=threshold, correlation_type="spearmanr", filter_type="f_statistics")
 
         target_assignments = {"target": "target"}
         mock_experiment = self.create_mock_experiment(
-            data, feature_columns, "classification", target_assignments, roc_config
+            data, feature_cols, "classification", target_assignments, roc_config
         )
 
         with patch("shutil.rmtree"), patch("pathlib.Path.mkdir"):
@@ -328,7 +326,7 @@ class TestRocCore:
             # Higher thresholds should generally result in more features being kept
             # (less strict correlation removal)
             if threshold >= 0.9:
-                assert len(result_experiment.selected_features) >= len(feature_columns) * 0.7
+                assert len(result_experiment.selected_features) >= len(feature_cols) * 0.7
 
     def test_roc_core_no_correlations(self):
         """Test ROC core with data that has no high correlations."""
@@ -343,7 +341,7 @@ class TestRocCore:
         feature_names = [f"feature_{i}" for i in range(n_features)]
         data = pd.DataFrame(X, columns=feature_names)
         data["target"] = y
-        data["sample_id"] = range(len(data))
+        data["sample_id_col"] = range(len(data))
 
         roc_config = Roc(task_id=0, threshold=0.8, correlation_type="spearmanr", filter_type="f_statistics")
 
@@ -379,7 +377,7 @@ class TestRocCore:
         feature_names = [f"feature_{i}" for i in range(X.shape[1])]
         data = pd.DataFrame(X, columns=feature_names)
         data["target"] = y
-        data["sample_id"] = range(len(data))
+        data["sample_id_col"] = range(len(data))
 
         roc_config = Roc(task_id=0, threshold=0.8, correlation_type="spearmanr", filter_type="f_statistics")
 
@@ -397,19 +395,19 @@ class TestRocCore:
 
     def test_roc_core_properties(self, sample_classification_data):
         """Test ROC core properties."""
-        data, feature_columns = sample_classification_data
+        data, feature_cols = sample_classification_data
 
         roc_config = Roc(task_id=0)
         target_assignments = {"target": "target"}
         mock_experiment = self.create_mock_experiment(
-            data, feature_columns, "classification", target_assignments, roc_config
+            data, feature_cols, "classification", target_assignments, roc_config
         )
 
         with patch("shutil.rmtree"), patch("pathlib.Path.mkdir"):
             roc_core = RocCore(experiment=mock_experiment, log_dir=mock_experiment.path_study)
 
             # Test properties
-            assert roc_core.feature_columns == feature_columns
+            assert roc_core.feature_cols == feature_cols
             assert roc_core.ml_type == "classification"
             assert roc_core.filter_type == "f_statistics"
             assert isinstance(roc_core.x_traindev, pd.DataFrame)
@@ -418,7 +416,7 @@ class TestRocCore:
 
     def test_roc_core_invalid_correlation_type_runtime(self, sample_classification_data):
         """Test ROC core with invalid correlation type at runtime."""
-        data, feature_columns = sample_classification_data
+        data, feature_cols = sample_classification_data
 
         # Create a mock config with invalid correlation type
         roc_config = Mock()
@@ -428,7 +426,7 @@ class TestRocCore:
 
         target_assignments = {"target": "target"}
         mock_experiment = self.create_mock_experiment(
-            data, feature_columns, "classification", target_assignments, roc_config
+            data, feature_cols, "classification", target_assignments, roc_config
         )
 
         with patch("shutil.rmtree"), patch("pathlib.Path.mkdir"):
@@ -453,7 +451,7 @@ class TestRocCore:
         feature_names = [f"feature_{i}" for i in range(n_features)]
         data = pd.DataFrame(X, columns=feature_names)
         data["target"] = y
-        data["sample_id"] = range(len(data))
+        data["sample_id_col"] = range(len(data))
 
         # Use mutual_info filter which can handle NaN values better, or expect ValueError for f_statistics
         roc_config = Roc(task_id=0, threshold=0.8, correlation_type="spearmanr", filter_type="f_statistics")
@@ -484,7 +482,7 @@ class TestRocIntegration:
         feature_names = [f"feature_{i}" for i in range(X.shape[1])]
         data = pd.DataFrame(X, columns=feature_names)
         data["target"] = y
-        data["sample_id"] = range(len(data))
+        data["sample_id_col"] = range(len(data))
 
         # Create ROC module configuration
         roc_module = Roc(
@@ -527,20 +525,24 @@ class TestRocIntegration:
             data["duration"] = np.random.exponential(10, n_samples)
             data["event"] = np.random.choice([True, False], n_samples)
 
-        data["sample_id"] = range(len(data))
+        data["sample_id_col"] = range(len(data))
 
         roc_config = Roc(task_id=0, threshold=0.8)
 
         with tempfile.TemporaryDirectory() as temp_dir:
             mock_experiment = Mock(spec=OctoExperiment)
             mock_experiment.data_traindev = data
-            mock_experiment.feature_columns = feature_names
+            mock_experiment.feature_cols = feature_names
             mock_experiment.ml_type = ml_type
             mock_experiment.target_assignments = target_cols
             mock_experiment.ml_config = roc_config
             mock_experiment.path_study = UPath(temp_dir)
             mock_experiment.task_path = UPath("roc_test")
             mock_experiment.selected_features = []
+
+            # Add properties that compute x_traindev and y_traindev
+            mock_experiment.x_traindev = data[feature_names]
+            mock_experiment.y_traindev = data[list(target_cols.values())]
 
             with patch("shutil.rmtree"), patch("pathlib.Path.mkdir"):
                 roc_core = RocCore(experiment=mock_experiment, log_dir=mock_experiment.path_study)

@@ -91,8 +91,8 @@ class BorutaCore(ModuleBaseCore[Boruta]):
         scoring_type = metric.scorer_string
 
         cv: int | StratifiedKFold
-        stratification_column = self.experiment.stratification_column
-        if stratification_column:
+        stratification_col = self.experiment.stratification_col
+        if stratification_col:
             cv = StratifiedKFold(n_splits=self.config.cv, shuffle=True, random_state=42)
         else:
             cv = self.config.cv
@@ -131,7 +131,7 @@ class BorutaCore(ModuleBaseCore[Boruta]):
 
         print("Feature Selection completed")
         self.experiment.selected_features = [
-            self.feature_columns[i] for i in range(len(boruta.support_)) if boruta.support_[i]
+            self.feature_cols[i] for i in range(len(boruta.support_)) if boruta.support_[i]
         ]
         n_optimal_features = len(self.experiment.selected_features)
 

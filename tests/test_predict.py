@@ -1,7 +1,6 @@
 """Tests for octopus/predict.py."""
 
 import json
-from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
 import numpy as np
@@ -14,12 +13,30 @@ from octopus.predict import OctoPredict
 from octopus.results import ModuleResults
 
 
+class MockExperiment:
+    """Mock experiment with properties like OctoExperiment."""
+
+    def __init__(self, **kwargs):
+        for key, value in kwargs.items():
+            setattr(self, key, value)
+
+    @property
+    def x_test(self):
+        """Feature matrix for test set."""
+        return self.data_test[self.feature_cols]
+
+    @property
+    def row_test(self):
+        """Row identifiers for test set."""
+        return self.data_test[self.row_column]
+
+
 @pytest.fixture
 def sample_data():
     """Fixture to provide sample data for testing."""
     np.random.seed(42)
     data = {
-        "row_id": [f"row_{i}" for i in range(100)],
+        "row_id_col": [f"row_{i}" for i in range(100)],
         "feature1": np.random.randn(100),
         "feature2": np.random.randn(100),
         "feature3": np.random.randn(100),
@@ -63,8 +80,8 @@ def mock_experiment(sample_data, mock_model):
     experiment.depends_on_task = -1
     experiment._task_path = UPath("outersplit0/workflowtask0")
     experiment.datasplit_column = "target"
-    experiment.row_column = "row_id"
-    experiment.feature_columns = ["feature1", "feature2", "feature3"]
+    experiment.row_column = "row_id_col"
+    experiment.feature_cols = ["feature1", "feature2", "feature3"]
     experiment.target_assignments = {"target": "target"}
     experiment.target_metric = "AUCROC"
     experiment.ml_type = "classification"
@@ -91,10 +108,10 @@ def mock_study_path(tmp_path):
     config_data = {
         "name": "test_study",
         "ml_type": "classification",
-        "feature_columns": ["feature1", "feature2", "feature3"],
-        "row_id": "row_id",
-        "sample_id": "row_id",
-        "target_columns": ["target"],
+        "feature_cols": ["feature1", "feature2", "feature3"],
+        "row_id_col": "row_id_col",
+        "sample_id_col": "row_id_col",
+        "target_cols": ["target"],
         "target_metric": "AUCROC",
         "n_folds_outer": 3,
         "path": str(study_path),
@@ -135,15 +152,15 @@ def predictor_with_experiments(mock_study_path, mock_experiment, sample_data, mo
         predictor = OctoPredict(study_path=mock_study_path)
 
         # Manually populate experiments since mocking file system is complex
-        # Using SimpleNamespace for attribute access instead of custom dict class
+        # Using MockExperiment with properties like OctoExperiment
         for exp_id in range(3):
-            predictor.experiments[exp_id] = SimpleNamespace(
+            predictor.experiments[exp_id] = MockExperiment(
                 id=exp_id,
                 model=mock_model,
                 data_traindev=sample_data.iloc[:80],
                 data_test=sample_data.iloc[80:],
-                feature_columns=["feature1", "feature2", "feature3"],
-                row_column="row_id",
+                feature_cols=["feature1", "feature2", "feature3"],
+                row_column="row_id_col",
                 target_assignments={"target": "target"},
                 target_metric="AUCROC",
                 ml_type="classification",

@@ -134,8 +134,8 @@ class RfeCore(ModuleBaseCore[Rfe]):
         scoring_type = metric.scorer_string
 
         cv: int | StratifiedKFold
-        stratification_column = self.experiment.stratification_column
-        if stratification_column:
+        stratification_col = self.experiment.stratification_col
+        if stratification_col:
             cv = StratifiedKFold(n_splits=self.config.cv, shuffle=True, random_state=42)
         else:
             cv = self.config.cv
@@ -188,7 +188,7 @@ class RfeCore(ModuleBaseCore[Rfe]):
 
         rfecv.fit(self.x_traindev, self.y_traindev.squeeze(axis=1))
         optimal_features = rfecv.n_features_
-        selected_features = [self.feature_columns[i] for i in range(len(rfecv.support_)) if rfecv.support_[i]]
+        selected_features = [self.feature_cols[i] for i in range(len(rfecv.support_)) if rfecv.support_[i]]
         self.experiment.selected_features = sorted(selected_features, key=lambda x: (len(x), sorted(x)))
 
         print("RFE completed")

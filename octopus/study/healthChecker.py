@@ -149,11 +149,11 @@ class OctoDataHealthChecker:
 
     Attributes:
         data: The pandas DataFrame containing the dataset to be checked.
-        feature_columns: List of column names designated as features. Can be empty.
-        target_columns: List of column names designated as targets. Can be empty.
-        row_id: Name of the column containing unique row identifiers. Can be None.
-        sample_id: Name of the column containing sample identifiers. Can be None.
-        stratification_column: Name of the column used for stratification. Can be None.
+        feature_cols: List of column names designated as features. Can be empty.
+        target_cols: List of column names designated as targets. Can be empty.
+        row_id_col: Name of the column containing unique row identifiers. Can be None.
+        sample_id_col: Name of the column containing sample identifiers. Can be None.
+        stratification_col: Name of the column used for stratification. Can be None.
         config: Configuration object containing customizable thresholds for health checks.
             Uses default HealthCheckConfig if not provided.
         issues: List of dictionaries storing detected data quality issues. Each issue
@@ -164,19 +164,19 @@ class OctoDataHealthChecker:
     data: pd.DataFrame = field(validator=[validators.instance_of(pd.DataFrame)])
     """DataFrame containing the dataset to check."""
 
-    feature_columns: list[str] = field(factory=list, validator=validators.instance_of(list))
+    feature_cols: list[str] = field(factory=list, validator=validators.instance_of(list))
     """List of feature column names."""
 
-    target_columns: list[str] = field(factory=list, validator=validators.instance_of(list))
+    target_cols: list[str] = field(factory=list, validator=validators.instance_of(list))
     """List of target column names."""
 
-    row_id: str | None = field(default=None, validator=validators.optional(validators.instance_of(str)))
+    row_id_col: str | None = field(default=None, validator=validators.optional(validators.instance_of(str)))
     """Name of the row ID column."""
 
-    sample_id: str | None = field(default=None, validator=validators.optional(validators.instance_of(str)))
+    sample_id_col: str | None = field(default=None, validator=validators.optional(validators.instance_of(str)))
     """Name of the sample ID column."""
 
-    stratification_column: str | None = field(default=None, validator=validators.optional(validators.instance_of(str)))
+    stratification_col: str | None = field(default=None, validator=validators.optional(validators.instance_of(str)))
     """Name of the stratification column."""
 
     config: HealthCheckConfig = field(
@@ -235,10 +235,10 @@ class OctoDataHealthChecker:
                 - Recommended Action: Suggested steps to address the issue
         """
         self._check_minimum_samples()
-        self._check_row_id_unique()
+        self._check_row_id_col_unique()
         self._check_critical_column_missing_values()
         self._check_features_not_all_null()
-        self._check_feature_column_missing_values()
+        self._check_feature_cols_missing_values()
         self._check_row_missing_values()
         self._check_int_col_with_few_uniques()
         self._check_duplicated_features()
@@ -254,7 +254,7 @@ class OctoDataHealthChecker:
     def _check_critical_column_missing_values(self):
         """Check for missing values in critical columns.
 
-        Examines target columns, sample_id, row_id, and stratification_column for any
+        Examines target columns, sample_id_col, row_id_col, and stratification_col for any
         missing values. These columns are considered critical for model training and
         data integrity, so any missing values are flagged as Critical severity.
 
@@ -265,10 +265,10 @@ class OctoDataHealthChecker:
         missing_value_share_col = self.data.isnull().mean()
 
         critical_columns = [
-            *self.target_columns,
-            self.sample_id,
-            self.row_id,
-            self.stratification_column,
+            *self.target_cols,
+            self.sample_id_col,
+            self.row_id_col,
+            self.stratification_col,
         ]
         critical_columns_not_none = [col for col in critical_columns if col is not None]
 
@@ -279,13 +279,13 @@ class OctoDataHealthChecker:
                 issue_type="critical_missing_values",
                 affected_items=critical_missing,
                 severity="Critical",
-                description=("These critical columns (target, sample_id, or row_id) have missing values."),
+                description=("These critical columns (target, sample_id_col, or row_id_col) have missing values."),
                 action=(
                     "Investigate and resolve missing values in these columns immediately. These are crucial for model training and data integrity."
                 ),
             )
 
-    def _check_feature_column_missing_values(self):
+    def _check_feature_cols_missing_values(self):
         """Check for missing values in feature columns.
 
         Analyzes each feature column for missing values and categorizes them based
@@ -299,8 +299,8 @@ class OctoDataHealthChecker:
         missing_value_share_col = self.data.isnull().mean(axis=0)
 
         threshold = self.config.missing_value_column_threshold
-        high_missing_cols = [col for col in self.feature_columns if missing_value_share_col.get(col, 0) > threshold]
-        low_missing_cols = [col for col in self.feature_columns if 0 < missing_value_share_col.get(col, 0) <= threshold]
+        high_missing_cols = [col for col in self.feature_cols if missing_value_share_col.get(col, 0) > threshold]
+        low_missing_cols = [col for col in self.feature_cols if 0 < missing_value_share_col.get(col, 0) <= threshold]
 
         if high_missing_cols:
             self.add_issue(
@@ -379,7 +379,7 @@ class OctoDataHealthChecker:
         threshold = self.config.int_few_uniques_threshold
         int_cols_with_few_uniques = {
             col: self.data[col].nunique()
-            for col in self.feature_columns
+            for col in self.feature_cols
             if pd.api.types.is_integer_dtype(self.data[col]) and 2 < self.data[col].nunique() <= threshold
         }
 
@@ -402,18 +402,18 @@ class OctoDataHealthChecker:
         """Check for duplicate rows based on feature values.
 
         Identifies rows that have identical values across all feature columns.
-        If sample_id is provided, also checks for duplicates when considering
-        both features and sample_id together.
+        If sample_id_col is provided, also checks for duplicates when considering
+        both features and sample_id_col together.
 
         Note:
-            Duplicates in features AND sample_id are flagged as Critical, as they
+            Duplicates in features AND sample_id_col are flagged as Critical, as they
             may indicate serious data integrity issues. Duplicates in features only
             are flagged as Warning.
         """
-        duplicated_features = self.data[self.feature_columns].duplicated().any()
+        duplicated_features = self.data[self.feature_cols].duplicated().any()
 
-        if self.sample_id is not None:
-            duplicated_features_and_sample = self.data[[*self.feature_columns, self.sample_id]].duplicated().any()
+        if self.sample_id_col is not None:
+            duplicated_features_and_sample = self.data[[*self.feature_cols, self.sample_id_col]].duplicated().any()
         else:
             duplicated_features_and_sample = None
 
@@ -431,7 +431,7 @@ class OctoDataHealthChecker:
             self.add_issue(
                 category="rows",
                 issue_type="duplicated_features_and_sample",
-                affected_items=["all_features_and_sample_id"],
+                affected_items=["all_features_and_sample_id_col"],
                 severity="Critical",
                 description=("There are duplicated rows when considering all feature columns and the sample ID."),
                 action=(
@@ -459,7 +459,7 @@ class OctoDataHealthChecker:
             features are excluded from this check.
         """
         threshold = self.config.feature_correlation_threshold
-        numeric_features = self.data[self.feature_columns].select_dtypes(include=[float, int]).columns
+        numeric_features = self.data[self.feature_cols].select_dtypes(include=[float, int]).columns
         corr_matrix = self.data[numeric_features].corr(method=method)
 
         highly_correlated: dict[str, set[str]] = {}
@@ -514,10 +514,10 @@ class OctoDataHealthChecker:
             This check is more strict than correlation checking - it identifies
             features that are 100% identical, not just highly correlated.
         """
-        identical_features: dict[str, list[str]] = {col: [] for col in self.feature_columns}
+        identical_features: dict[str, list[str]] = {col: [] for col in self.feature_cols}
 
-        for col in self.feature_columns:
-            for other_col in self.feature_columns:
+        for col in self.feature_cols:
+            for other_col in self.feature_cols:
                 if col != other_col and self.data[col].equals(self.data[other_col]):
                     identical_features[col].append(other_col)
 
@@ -573,7 +573,7 @@ class OctoDataHealthChecker:
             Non-numeric columns are coerced to numeric before checking, with errors
             being ignored. This ensures robust checking across mixed data types.
         """
-        numeric_df = self.data[self.feature_columns].apply(pd.to_numeric, errors="coerce")
+        numeric_df = self.data[self.feature_cols].apply(pd.to_numeric, errors="coerce")
         infinity_mask = numeric_df.map(np.isinf)
         infinity_value_share = infinity_mask.mean()
         infinity_value_dict = {col: share for col, share in infinity_value_share.items() if share > 0}
@@ -633,7 +633,7 @@ class OctoDataHealthChecker:
             """Check if all non-null values in a series are integers."""
             return series.dropna().apply(lambda x: str(x).isdigit()).all()
 
-        for column in self.feature_columns:
+        for column in self.feature_cols:
             if self.data[column].dtype == object or self.data[column].dtype.name == "category":
                 if is_all_integers(self.data[column]):
                     continue
@@ -697,7 +697,7 @@ class OctoDataHealthChecker:
         """
         length_threshold_factor = self.config.string_length_threshold_factor
         long_string = {}
-        for column in self.feature_columns:
+        for column in self.feature_cols:
             if self.data[column].dtype == object or self.data[column].dtype.name == "category":
                 try:
                     column_values = self.data[column].dropna().tolist()
@@ -749,7 +749,7 @@ class OctoDataHealthChecker:
         """
         threshold = self.config.class_imbalance_threshold
 
-        for target_col in self.target_columns:
+        for target_col in self.target_cols:
             if target_col not in self.data.columns:
                 continue
 
@@ -808,7 +808,7 @@ class OctoDataHealthChecker:
         total_rows = len(self.data)
         high_cardinality_features = {}
 
-        for column in self.feature_columns:
+        for column in self.feature_cols:
             if self.data[column].dtype not in [object, "category"] and self.data[column].dtype.name != "category":
                 continue
 
@@ -858,14 +858,14 @@ class OctoDataHealthChecker:
 
         numeric_targets = [
             col
-            for col in self.target_columns
+            for col in self.target_cols
             if col in self.data.columns and pd.api.types.is_numeric_dtype(self.data[col])
         ]
 
         if not numeric_targets:
             return
 
-        numeric_features = self.data[self.feature_columns].select_dtypes(include=[float, int]).columns
+        numeric_features = self.data[self.feature_cols].select_dtypes(include=[float, int]).columns
 
         if len(numeric_features) == 0:
             return
@@ -923,7 +923,7 @@ class OctoDataHealthChecker:
         skewness_threshold = self.config.target_skewness_threshold
         kurtosis_threshold = self.config.target_kurtosis_threshold
 
-        for target_col in self.target_columns:
+        for target_col in self.target_cols:
             if target_col not in self.data.columns:
                 continue
 
@@ -1023,20 +1023,20 @@ class OctoDataHealthChecker:
                 ),
             )
 
-    def _check_row_id_unique(self):
-        """Check if row_id column contains unique values.
+    def _check_row_id_col_unique(self):
+        """Check if row_id_col column contains unique values.
 
-        If a row_id column is specified, ensures that all values in that column
+        If a row_id_col column is specified, ensures that all values in that column
         are unique, as row IDs are used to uniquely identify each data row.
         """
-        if self.row_id and self.row_id in self.data.columns and not self.data[self.row_id].is_unique:
-            duplicate_count = self.data[self.row_id].duplicated().sum()
+        if self.row_id_col and self.row_id_col in self.data.columns and not self.data[self.row_id_col].is_unique:
+            duplicate_count = self.data[self.row_id_col].duplicated().sum()
             self.add_issue(
                 category="columns",
                 issue_type="duplicate_row_ids",
-                affected_items=[self.row_id],
+                affected_items=[self.row_id_col],
                 severity="Critical",
-                description=f"Row ID column '{self.row_id}' contains {duplicate_count} duplicate values. Each row ID must be unique.",
+                description=f"Row ID column '{self.row_id_col}' contains {duplicate_count} duplicate values. Each row ID must be unique.",
                 action="Investigate and resolve duplicate row IDs. Each row must have a unique identifier.",
             )
 
@@ -1046,11 +1046,11 @@ class OctoDataHealthChecker:
         Checks that each feature column contains at least one non-null value.
         Features with all null values provide no information for modeling.
         """
-        if not self.feature_columns:
+        if not self.feature_cols:
             return
 
         all_null_features = [
-            col for col in self.feature_columns if col in self.data.columns and self.data[col].isnull().all()
+            col for col in self.feature_cols if col in self.data.columns and self.data[col].isnull().all()
         ]
 
         if all_null_features:

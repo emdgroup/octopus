@@ -32,7 +32,7 @@ class ExperimentInfo:
     """Train/Dev dataset."""
     data_test: pd.DataFrame = field(validator=validators.instance_of(pd.DataFrame))
     """Test dataset."""
-    feature_columns: list[str] = field(validator=validators.instance_of(list))
+    feature_cols: list[str] = field(validator=validators.instance_of(list))
     """Feature columns."""
     row_column: str = field(validator=validators.instance_of(str))
     """Row identifier column."""
@@ -46,6 +46,36 @@ class ExperimentInfo:
     """Feature group dictionary."""
     positive_class: int | str | None = field(default=None)
     """Positive class for binary classification."""
+
+    @property
+    def x_traindev(self) -> pd.DataFrame:
+        """Feature matrix for training/development set."""
+        return self.data_traindev[self.feature_cols]
+
+    @property
+    def y_traindev(self) -> pd.DataFrame:
+        """Target values for training/development set."""
+        return self.data_traindev[list(self.target_assignments.values())]
+
+    @property
+    def x_test(self) -> pd.DataFrame:
+        """Feature matrix for test set."""
+        return self.data_test[self.feature_cols]
+
+    @property
+    def y_test(self) -> pd.DataFrame:
+        """Target values for test set."""
+        return self.data_test[list(self.target_assignments.values())]
+
+    @property
+    def row_traindev(self) -> pd.Series:
+        """Row identifiers for training/development set."""
+        return self.data_traindev[self.row_column]
+
+    @property
+    def row_test(self) -> pd.Series:
+        """Row identifiers for test set."""
+        return self.data_test[self.row_column]
 
 
 def rdc(x, y, f=np.sin, k=20, s=1 / 6.0, n=5):
@@ -156,7 +186,7 @@ def get_fi_permutation(experiment: ExperimentInfo, n_repeat, data: pd.DataFrame 
     """Calculate permutation feature importances."""
     # fixed confidence level
     confidence_level = 0.95
-    feature_columns = experiment.feature_columns
+    feature_cols = experiment.feature_cols
     data_traindev = experiment.data_traindev
     data_test = experiment.data_test
     target_assignments = experiment.target_assignments
@@ -166,12 +196,12 @@ def get_fi_permutation(experiment: ExperimentInfo, n_repeat, data: pd.DataFrame 
     # support prediction on new data as well as test data
     if data is None:  # new data
         data = data_test
-    if not set(feature_columns).issubset(data.columns):
+    if not set(feature_cols).issubset(data.columns):
         raise ValueError("Features missing in provided dataset.")
 
     # calculate baseline score
     baseline_score = get_score_from_model(
-        model, data, feature_columns, target_metric, target_assignments, positive_class=experiment.positive_class
+        model, data, feature_cols, target_metric, target_assignments, positive_class=experiment.positive_class
     )
 
     # get all data select random feature values
@@ -188,7 +218,7 @@ def get_fi_permutation(experiment: ExperimentInfo, n_repeat, data: pd.DataFrame 
             "ci_high_95",
         ]
     )
-    for feature in feature_columns:
+    for feature in feature_cols:
         data_pfi = data.copy()
         fi_lst = []
 
@@ -199,7 +229,7 @@ def get_fi_permutation(experiment: ExperimentInfo, n_repeat, data: pd.DataFrame 
             pfi_score = get_score_from_model(
                 model,
                 data_pfi,
-                feature_columns,
+                feature_cols,
                 target_metric,
                 target_assignments,
                 positive_class=experiment.positive_class,
@@ -245,7 +275,7 @@ def get_fi_group_permutation(experiment: ExperimentInfo, n_repeat, data: pd.Data
     """Calculate permutation feature importances."""
     # fixed confidence level
     confidence_level = 0.95
-    feature_columns = experiment.feature_columns
+    feature_cols = experiment.feature_cols
     data_traindev = experiment.data_traindev
     data_test = experiment.data_test
     target_assignments = experiment.target_assignments
@@ -258,7 +288,7 @@ def get_fi_group_permutation(experiment: ExperimentInfo, n_repeat, data: pd.Data
     # support prediction on new data as well as test data
     if data is None:  # new data
         data = data_test
-    if not set(feature_columns).issubset(data.columns):
+    if not set(feature_cols).issubset(data.columns):
         raise ValueError("Features missing in provided dataset.")
 
     # check that targets are in dataset
@@ -266,12 +296,12 @@ def get_fi_group_permutation(experiment: ExperimentInfo, n_repeat, data: pd.Data
 
     # keep all features and add group features
     # create features dict
-    feature_columns_dict = {x: [x] for x in feature_columns}
-    features_dict = {**feature_columns_dict, **feature_groups}
+    feature_cols_dict = {x: [x] for x in feature_cols}
+    features_dict = {**feature_cols_dict, **feature_groups}
 
     # calculate baseline score
     baseline_score = get_score_from_model(
-        model, data, feature_columns, target_metric, target_assignments, positive_class=experiment.positive_class
+        model, data, feature_cols, target_metric, target_assignments, positive_class=experiment.positive_class
     )
 
     # get all data select random feature values
@@ -301,7 +331,7 @@ def get_fi_group_permutation(experiment: ExperimentInfo, n_repeat, data: pd.Data
             pfi_score = get_score_from_model(
                 model,
                 data_pfi,
-                feature_columns,
+                feature_cols,
                 target_metric,
                 target_assignments,
                 positive_class=experiment.positive_class,
@@ -365,8 +395,8 @@ def get_fi_shap(
         ValueError: If shap_type is not one of 'exact', 'permutation', or 'kernel'.
     """
     # experiment_id = experiment["id"]
-    feature_columns = experiment.feature_columns
-    data_test = experiment.data_test[feature_columns]
+    feature_cols = experiment.feature_cols
+    data_test = experiment.x_test
     model = experiment.model
     ml_type = experiment.ml_type
 
@@ -374,23 +404,23 @@ def get_fi_shap(
     if data is None:  # no external data, use test data
         data = data_test
 
-    if not set(feature_columns).issubset(data.columns):
+    if not set(feature_cols).issubset(data.columns):
         raise ValueError("Features missing in provided dataset.")
 
-    data = data[feature_columns]
+    data = data[feature_cols]
 
     def predict_wrapper(data):
         if isinstance(data, pd.Series):
             data = data.to_numpy().reshape(1, -1)
         if not isinstance(data, pd.DataFrame):
-            data = pd.DataFrame(data, columns=feature_columns)
+            data = pd.DataFrame(data, columns=feature_cols)
         return model.predict(data)
 
     def predict_proba_wrapper(data):
         if isinstance(data, pd.Series):
             data = data.to_numpy().reshape(1, -1)
         if not isinstance(data, pd.DataFrame):
-            data = pd.DataFrame(data, columns=feature_columns)
+            data = pd.DataFrame(data, columns=feature_cols)
         return model.predict_proba(data)
 
     if ml_type == "classification":
@@ -439,8 +469,8 @@ def get_fi_group_shap(
 ) -> pd.DataFrame:
     """Calculate SHAP feature importances for feature groups."""
     # experiment_id = experiment["id"]
-    feature_columns = experiment.feature_columns
-    data_test = experiment.data_test[feature_columns]
+    feature_cols = experiment.feature_cols
+    data_test = experiment.x_test
     model = experiment.model
     ml_type = experiment.ml_type
     feature_groups = experiment.feature_group_dict
@@ -449,23 +479,23 @@ def get_fi_group_shap(
     if data is None:  # No external data, use test data
         data = data_test
 
-    if not set(feature_columns).issubset(data.columns):
+    if not set(feature_cols).issubset(data.columns):
         raise ValueError("Features missing in provided dataset.")
 
-    data = data[feature_columns]
+    data = data[feature_cols]
 
     def predict_wrapper(data):
         if isinstance(data, pd.Series):
             data = data.to_numpy().reshape(1, -1)
         if not isinstance(data, pd.DataFrame):
-            data = pd.DataFrame(data, columns=feature_columns)
+            data = pd.DataFrame(data, columns=feature_cols)
         return model.predict(data)
 
     def predict_proba_wrapper(data):
         if isinstance(data, pd.Series):
             data = data.to_numpy().reshape(1, -1)
         if not isinstance(data, pd.DataFrame):
-            data = pd.DataFrame(data, columns=feature_columns)
+            data = pd.DataFrame(data, columns=feature_cols)
         return model.predict_proba(data)
 
     if ml_type == "classification":

@@ -196,7 +196,7 @@ class AGCore(ModuleBaseCore[AutoGluon]):
             model=self._get_sklearn_model(),
             feature_importances=self._get_feature_importances(),
             scores=self._get_scores(),
-            selected_features=self.feature_columns,  # no feature selection
+            selected_features=self.feature_cols,  # no feature selection
             predictions={"test": self._get_predictions()},
         )
 
@@ -285,7 +285,7 @@ class AGCore(ModuleBaseCore[AutoGluon]):
                         "id": self.experiment.id,
                         "model": self.model,
                         "data_test": self.ag_test_data,
-                        "feature_columns": self.feature_columns,
+                        "feature_cols": self.feature_cols,
                         "ml_type": self.model.problem_type,
                         "feature_group_dict": self.experiment.feature_groups,
                     },
@@ -298,7 +298,7 @@ class AGCore(ModuleBaseCore[AutoGluon]):
                         "id": self.experiment.id,
                         "model": self.model,
                         "data_test": self.ag_test_data,
-                        "feature_columns": self.feature_columns,
+                        "feature_cols": self.feature_cols,
                         "ml_type": self.model.problem_type,
                     },
                     data=None,
@@ -343,7 +343,7 @@ class AGCore(ModuleBaseCore[AutoGluon]):
             performance = get_score_from_model(
                 self.model,
                 self.ag_test_data,
-                self.feature_columns,
+                self.feature_cols,
                 metric,
                 self.target_assignments,
                 positive_class=self.experiment.positive_class,
@@ -412,8 +412,8 @@ class AGCore(ModuleBaseCore[AutoGluon]):
         row_column = self.experiment.row_column
 
         # (A) test predictions
-        # DataFrame with 'row_id' from test data
-        rowid_test = pd.DataFrame({row_column: self.experiment.data_test[row_column]})
+        # DataFrame with 'row_id_col' from test data
+        rowid_test = pd.DataFrame({row_column: self.experiment.row_test})
 
         if problem_type == "regression":
             # Predictions for regression on test data
@@ -431,15 +431,15 @@ class AGCore(ModuleBaseCore[AutoGluon]):
 
         # Verify alignment
         assert len(rowid_test) == len(test_pred), "Mismatch in number of test rows!"
-        # Combine 'row_id' and test predictions
+        # Combine 'row_id_col' and test predictions
         predictions["test"] = pd.concat(
             [rowid_test.reset_index(drop=True), test_pred.reset_index(drop=True)],
             axis=1,
         )
 
         # (B) validation predictions
-        # DataFrame with 'row_id' from validation data
-        rowid_val = pd.DataFrame({row_column: self.experiment.data_traindev[row_column]})
+        # DataFrame with 'row_id_col' from validation data
+        rowid_val = pd.DataFrame({row_column: self.experiment.row_traindev})
 
         if problem_type == "regression":
             # Out-of-fold (OOF) predictions for regression
@@ -457,7 +457,7 @@ class AGCore(ModuleBaseCore[AutoGluon]):
 
         # Verify alignment
         assert len(rowid_val) == len(oof_pred), "Mismatch in number of validation rows!"
-        # Combine 'row_id' and validation predictions
+        # Combine 'row_id_col' and validation predictions
         predictions["val"] = pd.concat(
             [rowid_val.reset_index(drop=True), oof_pred.reset_index(drop=True)],
             axis=1,

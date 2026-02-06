@@ -8,7 +8,7 @@ import pandas as pd
 import pytest
 from sklearn.datasets import make_classification
 
-from octopus import OctoStudy
+from octopus import OctoClassification
 from octopus.modules import Octo, Roc
 
 
@@ -47,7 +47,7 @@ class TestRocOctoRocWorkflow:
 
         df = pd.DataFrame(X_extended, columns=feature_names)
         df["target"] = y
-        df["sample_id"] = range(len(df))
+        df["sample_id_col"] = range(len(df))
 
         return df, feature_names
 
@@ -118,14 +118,13 @@ class TestRocOctoRocWorkflow:
         _, feature_names = sample_classification_dataset
 
         with tempfile.TemporaryDirectory() as temp_dir:
-            study = OctoStudy(
+            study = OctoClassification(
                 name="test_roc_octo_roc",
-                ml_type="classification",
                 target_metric="ACCBAL",
-                feature_columns=feature_names,
-                target_columns=["target"],
-                sample_id="sample_id",
-                stratification_column="target",
+                feature_cols=feature_names,
+                target="target",
+                sample_id_col="sample_id_col",
+                stratification_col="target",
                 path=temp_dir,
                 ignore_data_health_warning=True,
                 workflow=[
@@ -277,14 +276,13 @@ class TestRocOctoRocWorkflow:
         df, feature_names = sample_classification_dataset
 
         with tempfile.TemporaryDirectory() as temp_dir:
-            study = OctoStudy(
+            study = OctoClassification(
                 name="test_roc_octo_roc_execution",
-                ml_type="classification",
                 target_metric="ACCBAL",
-                feature_columns=feature_names,
-                target_columns=["target"],
-                sample_id="sample_id",
-                stratification_column="target",
+                feature_cols=feature_names,
+                target="target",
+                sample_id_col="sample_id_col",
+                stratification_col="target",
                 metrics=["AUCROC", "ACCBAL"],
                 datasplit_seed_outer=1234,
                 n_folds_outer=2,

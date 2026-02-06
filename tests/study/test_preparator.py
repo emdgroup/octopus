@@ -15,7 +15,7 @@ def sample_data():
             "feature1": [1, 2, 1, 2, 3, 3, 4, 4],
             "feature2": ["a", "b", "a", "b", "c", "c", "d", "e"],
             "target": [0, 1, 0, 1, 1, 0, 1, 1],
-            "sample_id": ["s1", "s2", "s3", "s4", "s5", "s5", "s6", "s6"],
+            "sample_id_col": ["s1", "s2", "s3", "s4", "s5", "s5", "s6", "s6"],
             "bool_col": [True, False, True, False, True, True, False, True],
             "null_col": ["none", "null", "nan", "na", "", "\x00", "\x00\x00", "n/a"],
             "inf_col": ["inf", "-infinity", "inf", "-inf", "∞", "-infinity", 5, 6],
@@ -28,10 +28,10 @@ def octo_preparator(sample_data):
     """Create OctoDataPreparator instance from sample data."""
     return OctoDataPreparator(
         data=sample_data,
-        feature_columns=["feature1", "feature2", "bool_col", "null_col", "inf_col"],
-        target_columns=["target"],
-        sample_id="sample_id",
-        row_id=None,
+        feature_cols=["feature1", "feature2", "bool_col", "null_col", "inf_col"],
+        target_cols=["target"],
+        sample_id_col="sample_id_col",
+        row_id_col=None,
         target_assignments={},
     )
 
@@ -41,14 +41,14 @@ def test_prepare(octo_preparator):
     prepared = octo_preparator.prepare()
 
     assert isinstance(prepared.data, pd.DataFrame)
-    assert isinstance(prepared.feature_columns, list)
-    assert isinstance(prepared.row_id, str)
+    assert isinstance(prepared.feature_cols, list)
+    assert isinstance(prepared.row_id_col, str)
     assert isinstance(prepared.target_assignments, dict)
 
 
 def test_sort_features(octo_preparator):
     """Test sort features function."""
-    octo_preparator.feature_columns = [
+    octo_preparator.feature_cols = [
         "feature1",
         "feature2",
         "bool_col",
@@ -60,7 +60,7 @@ def test_sort_features(octo_preparator):
         "b",
     ]
     octo_preparator._sort_features()
-    assert octo_preparator.feature_columns == [
+    assert octo_preparator.feature_cols == [
         "a",
         "b",
         "aa",
@@ -82,9 +82,9 @@ def test_set_target_assignments(octo_preparator):
 def test_remove_singlevalue_features(octo_preparator):
     """Test remove single value features function."""
     octo_preparator.data["single_value"] = [1, 1, 1, 1, 1, 1, 1, 1]
-    octo_preparator.feature_columns.append("single_value")
+    octo_preparator.feature_cols.append("single_value")
     octo_preparator._remove_singlevalue_features()
-    assert "single_value" not in octo_preparator.feature_columns
+    assert "single_value" not in octo_preparator.feature_cols
 
 
 def test_transform_bool_to_int(octo_preparator):
@@ -94,12 +94,12 @@ def test_transform_bool_to_int(octo_preparator):
     assert octo_preparator.data["bool_col"].tolist() == [1, 0, 1, 0, 1, 1, 0, 1]
 
 
-def test_create_row_id(octo_preparator):
+def test_create_row_id_col(octo_preparator):
     """Test create row id function."""
-    octo_preparator._create_row_id()
-    assert "row_id" in octo_preparator.data.columns
-    assert octo_preparator.row_id == "row_id"
-    assert octo_preparator.data["row_id"].tolist() == list(range(8))
+    octo_preparator._create_row_id_col()
+    assert "row_id_col" in octo_preparator.data.columns
+    assert octo_preparator.row_id_col == "row_id_col"
+    assert octo_preparator.data["row_id_col"].tolist() == list(range(8))
 
 
 def test_add_group_features(octo_preparator):
@@ -161,13 +161,13 @@ def test_prepare_full_process(octo_preparator):
     """Test preparation function."""
     prepared = octo_preparator.prepare()
 
-    assert "row_id" in prepared.data.columns
+    assert "row_id_col" in prepared.data.columns
     assert "group_features" in prepared.data.columns
     assert "group_sample_and_features" in prepared.data.columns
     assert prepared.data["bool_col"].dtype == int
     assert prepared.data["null_col"].isna().all()
     assert np.isinf(prepared.data["inf_col"].iloc[0])
-    assert "single_value" not in prepared.feature_columns
+    assert "single_value" not in prepared.feature_cols
     assert prepared.target_assignments == {"default": "target"}
 
 
@@ -183,16 +183,16 @@ def test_add_group_features_with_categorical_and_nan():
             "cat_feature": pd.Categorical(["a", "b", "a", None, "c", None]),
             "num_feature": [1, 2, 1, 3, 4, 3],
             "target": [0, 1, 0, 1, 1, 0],
-            "sample_id": ["s1", "s2", "s3", "s4", "s5", "s6"],
+            "sample_id_col": ["s1", "s2", "s3", "s4", "s5", "s6"],
         }
     )
 
     prep = OctoDataPreparator(
         data=data,
-        feature_columns=["cat_feature", "num_feature"],
-        target_columns=["target"],
-        sample_id="sample_id",
-        row_id=None,
+        feature_cols=["cat_feature", "num_feature"],
+        target_cols=["target"],
+        sample_id_col="sample_id_col",
+        row_id_col=None,
         target_assignments={},
     )
 
@@ -214,16 +214,16 @@ def test_add_group_features_with_mixed_types_and_nan():
             "str_col": ["alpha", "beta", "alpha", "alpha", "beta"],
             "inf_col": [np.inf, -np.inf, 1.0, np.inf, -np.inf],
             "target": [0, 1, 0, 1, 1],
-            "sample_id": ["s1", "s2", "s3", "s4", "s5"],
+            "sample_id_col": ["s1", "s2", "s3", "s4", "s5"],
         }
     )
 
     prep = OctoDataPreparator(
         data=data,
-        feature_columns=["cat_col", "num_col", "str_col", "inf_col"],
-        target_columns=["target"],
-        sample_id="sample_id",
-        row_id=None,
+        feature_cols=["cat_col", "num_col", "str_col", "inf_col"],
+        target_cols=["target"],
+        sample_id_col="sample_id_col",
+        row_id_col=None,
         target_assignments={},
     )
 
@@ -246,16 +246,16 @@ def test_add_group_features_with_all_nan_column():
             "all_nan": [np.nan, np.nan, np.nan, np.nan],
             "feat2": [1, 2, 1, 2],
             "target": [0, 1, 0, 1],
-            "sample_id": ["s1", "s2", "s3", "s4"],
+            "sample_id_col": ["s1", "s2", "s3", "s4"],
         }
     )
 
     prep = OctoDataPreparator(
         data=data,
-        feature_columns=["all_nan", "feat2"],
-        target_columns=["target"],
-        sample_id="sample_id",
-        row_id=None,
+        feature_cols=["all_nan", "feat2"],
+        target_cols=["target"],
+        sample_id_col="sample_id_col",
+        row_id_col=None,
         target_assignments={},
     )
 
@@ -268,26 +268,26 @@ def test_add_group_features_with_all_nan_column():
 
 
 def test_add_group_features_same_sample_different_features():
-    """Test grouping when rows have same sample_id but different features.
+    """Test grouping when rows have same sample_id_col but different features.
 
-    This ensures that group_features groups by features only (ignores sample_id),
-    while group_sample_and_features correctly groups rows with same sample_id.
+    This ensures that group_features groups by features only (ignores sample_id_col),
+    while group_sample_and_features correctly groups rows with same sample_id_col.
     """
     data = pd.DataFrame(
         {
             "feat1": [1, 2, 3, 4],
             "feat2": ["a", "b", "c", "d"],
             "target": [0, 1, 0, 1],
-            "sample_id": ["s1", "s1", "s2", "s2"],
+            "sample_id_col": ["s1", "s1", "s2", "s2"],
         }
     )
 
     prep = OctoDataPreparator(
         data=data,
-        feature_columns=["feat1", "feat2"],
-        target_columns=["target"],
-        sample_id="sample_id",
-        row_id=None,
+        feature_cols=["feat1", "feat2"],
+        target_cols=["target"],
+        sample_id_col="sample_id_col",
+        row_id_col=None,
         target_assignments={},
     )
 
@@ -299,7 +299,7 @@ def test_add_group_features_same_sample_different_features():
 
 
 def test_add_group_features_same_features_different_samples():
-    """Test grouping when rows have same features but different sample_ids.
+    """Test grouping when rows have same features but different sample_id_cols.
 
     This ensures that rows with identical features are grouped together
     in both group_features and group_sample_and_features.
@@ -309,16 +309,16 @@ def test_add_group_features_same_features_different_samples():
             "feat1": [1, 1, 2, 2],
             "feat2": ["a", "a", "b", "b"],
             "target": [0, 1, 0, 1],
-            "sample_id": ["s1", "s2", "s3", "s4"],
+            "sample_id_col": ["s1", "s2", "s3", "s4"],
         }
     )
 
     prep = OctoDataPreparator(
         data=data,
-        feature_columns=["feat1", "feat2"],
-        target_columns=["target"],
-        sample_id="sample_id",
-        row_id=None,
+        feature_cols=["feat1", "feat2"],
+        target_cols=["target"],
+        sample_id_col="sample_id_col",
+        row_id_col=None,
         target_assignments={},
     )
 
@@ -341,16 +341,16 @@ def test_add_group_features_large_dataset_with_duplicates():
             "feat1": [1, 2, 3] * 27,
             "feat2": ["a", "b", "c"] * 27,
             "target": [0, 1] * 40 + [0],
-            "sample_id": [f"s{i}" for i in range(81)],
+            "sample_id_col": [f"s{i}" for i in range(81)],
         }
     )
 
     prep = OctoDataPreparator(
         data=data,
-        feature_columns=["feat1", "feat2"],
-        target_columns=["target"],
-        sample_id="sample_id",
-        row_id=None,
+        feature_cols=["feat1", "feat2"],
+        target_cols=["target"],
+        sample_id_col="sample_id_col",
+        row_id_col=None,
         target_assignments={},
     )
 
@@ -367,15 +367,15 @@ def test_add_group_features_large_dataset_with_duplicates():
 def test_add_group_features_transitive_closure():
     """Test transitive closure in group_sample_and_features.
 
-    Critical scenario: Row 0 and 1 share sample_id, Row 1 and 2 share features.
+    Critical scenario: Row 0 and 1 share sample_id_col, Row 1 and 2 share features.
     Therefore, rows 0, 1, and 2 must ALL be in the same group through transitive
-    closure, even though rows 0 and 2 don't directly share sample_id or features.
+    closure, even though rows 0 and 2 don't directly share sample_id_col or features.
 
     Example:
-        Row 0: sample_id="s1", features=[1, "a"]
-        Row 1: sample_id="s1", features=[2, "b"]  <- shares sample_id with row 0
-        Row 2: sample_id="s2", features=[2, "b"]  <- shares features with row 1
-        Row 3: sample_id="s3", features=[3, "c"]  <- independent
+        Row 0: sample_id_col="s1", features=[1, "a"]
+        Row 1: sample_id_col="s1", features=[2, "b"]  <- shares sample_id_col with row 0
+        Row 2: sample_id_col="s2", features=[2, "b"]  <- shares features with row 1
+        Row 3: sample_id_col="s3", features=[3, "c"]  <- independent
 
     Expected result: Rows 0, 1, 2 should all have the same group_sample_and_features
     """
@@ -384,16 +384,16 @@ def test_add_group_features_transitive_closure():
             "feat1": [1, 2, 2, 3],
             "feat2": ["a", "b", "b", "c"],
             "target": [0, 1, 0, 1],
-            "sample_id": ["s1", "s1", "s2", "s3"],
+            "sample_id_col": ["s1", "s1", "s2", "s3"],
         }
     )
 
     prep = OctoDataPreparator(
         data=data,
-        feature_columns=["feat1", "feat2"],
-        target_columns=["target"],
-        sample_id="sample_id",
-        row_id=None,
+        feature_cols=["feat1", "feat2"],
+        target_cols=["target"],
+        sample_id_col="sample_id_col",
+        row_id_col=None,
         target_assignments={},
     )
 
@@ -418,9 +418,9 @@ def test_add_group_features_transitive_closure_long_chain():
     """Test transitive closure with a longer chain of connections.
 
     This tests a more complex transitive closure scenario:
-        Row 0-1: same sample_id
+        Row 0-1: same sample_id_col
         Row 1-2: same features
-        Row 2-3: same sample_id
+        Row 2-3: same sample_id_col
         Row 3-4: same features
 
     All rows 0-4 should end up in the same group.
@@ -430,16 +430,16 @@ def test_add_group_features_transitive_closure_long_chain():
             "feat1": [1, 2, 2, 3, 3, 9],
             "feat2": ["a", "b", "b", "c", "c", "z"],
             "target": [0, 1, 0, 1, 0, 1],
-            "sample_id": ["s1", "s1", "s2", "s2", "s3", "s4"],
+            "sample_id_col": ["s1", "s1", "s2", "s2", "s3", "s4"],
         }
     )
 
     prep = OctoDataPreparator(
         data=data,
-        feature_columns=["feat1", "feat2"],
-        target_columns=["target"],
-        sample_id="sample_id",
-        row_id=None,
+        feature_cols=["feat1", "feat2"],
+        target_cols=["target"],
+        sample_id_col="sample_id_col",
+        row_id_col=None,
         target_assignments={},
     )
 
@@ -459,9 +459,9 @@ def test_add_group_features_transitive_closure_long_chain():
 
 
 def test_add_group_features_same_sample_consecutive():
-    """Test (a): Multiple rows with same sample_id - consecutive in table.
+    """Test (a): Multiple rows with same sample_id_col - consecutive in table.
 
-    Rows 0, 1, 2 have same sample_id and appear consecutively.
+    Rows 0, 1, 2 have same sample_id_col and appear consecutively.
     All should be grouped together.
     """
     data = pd.DataFrame(
@@ -469,22 +469,22 @@ def test_add_group_features_same_sample_consecutive():
             "feat1": [1, 2, 3, 4, 5],
             "feat2": ["a", "b", "c", "d", "e"],
             "target": [0, 1, 0, 1, 0],
-            "sample_id": ["s1", "s1", "s1", "s2", "s3"],
+            "sample_id_col": ["s1", "s1", "s1", "s2", "s3"],
         }
     )
 
     prep = OctoDataPreparator(
         data=data,
-        feature_columns=["feat1", "feat2"],
-        target_columns=["target"],
-        sample_id="sample_id",
-        row_id=None,
+        feature_cols=["feat1", "feat2"],
+        target_cols=["target"],
+        sample_id_col="sample_id_col",
+        row_id_col=None,
         target_assignments={},
     )
 
     prep._add_group_features()
 
-    # Rows 0, 1, 2 should be in same group (same sample_id)
+    # Rows 0, 1, 2 should be in same group (same sample_id_col)
     assert prep.data.loc[0, "group_sample_and_features"] == prep.data.loc[1, "group_sample_and_features"]
     assert prep.data.loc[1, "group_sample_and_features"] == prep.data.loc[2, "group_sample_and_features"]
 
@@ -495,9 +495,9 @@ def test_add_group_features_same_sample_consecutive():
 
 
 def test_add_group_features_same_sample_with_gaps():
-    """Test (a): Multiple rows with same sample_id - with gaps in table.
+    """Test (a): Multiple rows with same sample_id_col - with gaps in table.
 
-    Rows 0, 3, 5 have same sample_id but are not consecutive.
+    Rows 0, 3, 5 have same sample_id_col but are not consecutive.
     All should still be grouped together.
     """
     data = pd.DataFrame(
@@ -505,22 +505,22 @@ def test_add_group_features_same_sample_with_gaps():
             "feat1": [1, 2, 3, 4, 5, 6],
             "feat2": ["a", "b", "c", "d", "e", "f"],
             "target": [0, 1, 0, 1, 0, 1],
-            "sample_id": ["s1", "s2", "s3", "s1", "s4", "s1"],
+            "sample_id_col": ["s1", "s2", "s3", "s1", "s4", "s1"],
         }
     )
 
     prep = OctoDataPreparator(
         data=data,
-        feature_columns=["feat1", "feat2"],
-        target_columns=["target"],
-        sample_id="sample_id",
-        row_id=None,
+        feature_cols=["feat1", "feat2"],
+        target_cols=["target"],
+        sample_id_col="sample_id_col",
+        row_id_col=None,
         target_assignments={},
     )
 
     prep._add_group_features()
 
-    # Rows 0, 3, 5 should be in same group (same sample_id "s1")
+    # Rows 0, 3, 5 should be in same group (same sample_id_col "s1")
     assert prep.data.loc[0, "group_sample_and_features"] == prep.data.loc[3, "group_sample_and_features"]
     assert prep.data.loc[3, "group_sample_and_features"] == prep.data.loc[5, "group_sample_and_features"]
 
@@ -541,16 +541,16 @@ def test_add_group_features_same_features_consecutive():
             "feat1": [1, 2, 2, 2, 5],
             "feat2": ["a", "b", "b", "b", "e"],
             "target": [0, 1, 0, 1, 0],
-            "sample_id": ["s1", "s2", "s3", "s4", "s5"],
+            "sample_id_col": ["s1", "s2", "s3", "s4", "s5"],
         }
     )
 
     prep = OctoDataPreparator(
         data=data,
-        feature_columns=["feat1", "feat2"],
-        target_columns=["target"],
-        sample_id="sample_id",
-        row_id=None,
+        feature_cols=["feat1", "feat2"],
+        target_cols=["target"],
+        sample_id_col="sample_id_col",
+        row_id_col=None,
         target_assignments={},
     )
 
@@ -576,16 +576,16 @@ def test_add_group_features_same_features_with_gaps():
             "feat1": [1, 2, 3, 4, 2, 5, 6, 2],
             "feat2": ["a", "b", "c", "d", "b", "e", "f", "b"],
             "target": [0, 1, 0, 1, 0, 1, 0, 1],
-            "sample_id": ["s1", "s2", "s3", "s4", "s5", "s6", "s7", "s8"],
+            "sample_id_col": ["s1", "s2", "s3", "s4", "s5", "s6", "s7", "s8"],
         }
     )
 
     prep = OctoDataPreparator(
         data=data,
-        feature_columns=["feat1", "feat2"],
-        target_columns=["target"],
-        sample_id="sample_id",
-        row_id=None,
+        feature_cols=["feat1", "feat2"],
+        target_cols=["target"],
+        sample_id_col="sample_id_col",
+        row_id_col=None,
         target_assignments={},
     )
 
@@ -602,14 +602,14 @@ def test_add_group_features_same_features_with_gaps():
 
 
 def test_add_group_features_complex_with_gaps():
-    """Test (c) + (d): Complex scenario with sample_id and feature connections with gaps.
+    """Test (c) + (d): Complex scenario with sample_id_col and feature connections with gaps.
 
     Specific test case:
-        - Rows 1, 3, 5 have same sample_id "s1"
+        - Rows 1, 3, 5 have same sample_id_col "s1"
         - Rows 5, 9, 20 have same features [100, "x"]
 
     Expected: All rows 1, 3, 5, 9, 20 should be in the same group due to transitive closure:
-        1-3-5 connected by sample_id
+        1-3-5 connected by sample_id_col
         5-9-20 connected by features
         Therefore: 1-3-5-9-20 all connected
     """
@@ -671,7 +671,7 @@ def test_add_group_features_complex_with_gaps():
                 "z",
             ],
             "target": [0] * 25,
-            "sample_id": [
+            "sample_id_col": [
                 "s0",
                 "s1",
                 "s2",
@@ -703,16 +703,16 @@ def test_add_group_features_complex_with_gaps():
 
     prep = OctoDataPreparator(
         data=data,
-        feature_columns=["feat1", "feat2"],
-        target_columns=["target"],
-        sample_id="sample_id",
-        row_id=None,
+        feature_cols=["feat1", "feat2"],
+        target_cols=["target"],
+        sample_id_col="sample_id_col",
+        row_id_col=None,
         target_assignments={},
     )
 
     prep._add_group_features()
 
-    # Rows 1, 3, 5 should be connected by sample_id "s1"
+    # Rows 1, 3, 5 should be connected by sample_id_col "s1"
     assert prep.data.loc[1, "group_sample_and_features"] == prep.data.loc[3, "group_sample_and_features"]
     assert prep.data.loc[3, "group_sample_and_features"] == prep.data.loc[5, "group_sample_and_features"]
 
@@ -742,16 +742,16 @@ def test_add_group_features_single_row():
             "feat1": [1],
             "feat2": ["a"],
             "target": [0],
-            "sample_id": ["s1"],
+            "sample_id_col": ["s1"],
         }
     )
 
     prep = OctoDataPreparator(
         data=data,
-        feature_columns=["feat1", "feat2"],
-        target_columns=["target"],
-        sample_id="sample_id",
-        row_id=None,
+        feature_cols=["feat1", "feat2"],
+        target_cols=["target"],
+        sample_id_col="sample_id_col",
+        row_id_col=None,
         target_assignments={},
     )
 
@@ -766,7 +766,7 @@ def test_add_group_features_single_row():
 
 
 def test_add_group_features_all_same_sample():
-    """Test: All rows have the same sample_id.
+    """Test: All rows have the same sample_id_col.
 
     All rows should be in one group for group_sample_and_features,
     even if they have different features.
@@ -776,16 +776,16 @@ def test_add_group_features_all_same_sample():
             "feat1": [1, 2, 3, 4, 5],
             "feat2": ["a", "b", "c", "d", "e"],
             "target": [0, 1, 0, 1, 0],
-            "sample_id": ["s1", "s1", "s1", "s1", "s1"],
+            "sample_id_col": ["s1", "s1", "s1", "s1", "s1"],
         }
     )
 
     prep = OctoDataPreparator(
         data=data,
-        feature_columns=["feat1", "feat2"],
-        target_columns=["target"],
-        sample_id="sample_id",
-        row_id=None,
+        feature_cols=["feat1", "feat2"],
+        target_cols=["target"],
+        sample_id_col="sample_id_col",
+        row_id_col=None,
         target_assignments={},
     )
 
@@ -801,7 +801,7 @@ def test_add_group_features_all_same_sample():
 
 
 def test_add_group_features_all_different():
-    """Test: All rows have unique sample_id and unique features.
+    """Test: All rows have unique sample_id_col and unique features.
 
     Each row should be in its own separate group.
     """
@@ -810,16 +810,16 @@ def test_add_group_features_all_different():
             "feat1": [1, 2, 3, 4, 5],
             "feat2": ["a", "b", "c", "d", "e"],
             "target": [0, 1, 0, 1, 0],
-            "sample_id": ["s1", "s2", "s3", "s4", "s5"],
+            "sample_id_col": ["s1", "s2", "s3", "s4", "s5"],
         }
     )
 
     prep = OctoDataPreparator(
         data=data,
-        feature_columns=["feat1", "feat2"],
-        target_columns=["target"],
-        sample_id="sample_id",
-        row_id=None,
+        feature_cols=["feat1", "feat2"],
+        target_cols=["target"],
+        sample_id_col="sample_id_col",
+        row_id_col=None,
         target_assignments={},
     )
 
@@ -837,7 +837,7 @@ def test_add_group_features_multiple_independent_groups():
     """Test: Multiple independent groups with no connections between them.
 
     Should correctly identify the exact number of independent groups.
-    Group A: rows 0, 1, 2 (same sample_id)
+    Group A: rows 0, 1, 2 (same sample_id_col)
     Group B: rows 3, 4 (same features)
     Group C: row 5 (alone)
     Group D: row 6 (alone)
@@ -847,16 +847,16 @@ def test_add_group_features_multiple_independent_groups():
             "feat1": [1, 2, 3, 10, 10, 20, 30],
             "feat2": ["a", "b", "c", "x", "x", "z", "w"],
             "target": [0, 1, 0, 1, 0, 1, 0],
-            "sample_id": ["s1", "s1", "s1", "s2", "s3", "s4", "s5"],
+            "sample_id_col": ["s1", "s1", "s1", "s2", "s3", "s4", "s5"],
         }
     )
 
     prep = OctoDataPreparator(
         data=data,
-        feature_columns=["feat1", "feat2"],
-        target_columns=["target"],
-        sample_id="sample_id",
-        row_id=None,
+        feature_cols=["feat1", "feat2"],
+        target_cols=["target"],
+        sample_id_col="sample_id_col",
+        row_id_col=None,
         target_assignments={},
     )
 
@@ -891,7 +891,7 @@ def test_add_group_features_data_integrity():
             "feat1": [1, 2, 3, 4],
             "feat2": ["a", "b", "c", "d"],
             "target": [0, 1, 0, 1],
-            "sample_id": ["s1", "s2", "s1", "s2"],
+            "sample_id_col": ["s1", "s2", "s1", "s2"],
         }
     )
 
@@ -899,14 +899,14 @@ def test_add_group_features_data_integrity():
     original_feat1 = data["feat1"].copy()
     original_feat2 = data["feat2"].copy()
     original_target = data["target"].copy()
-    original_sample_id = data["sample_id"].copy()
+    original_sample_id_col = data["sample_id_col"].copy()
 
     prep = OctoDataPreparator(
         data=data,
-        feature_columns=["feat1", "feat2"],
-        target_columns=["target"],
-        sample_id="sample_id",
-        row_id=None,
+        feature_cols=["feat1", "feat2"],
+        target_cols=["target"],
+        sample_id_col="sample_id_col",
+        row_id_col=None,
         target_assignments={},
     )
 
@@ -916,7 +916,7 @@ def test_add_group_features_data_integrity():
     assert prep.data["feat1"].equals(original_feat1)
     assert prep.data["feat2"].equals(original_feat2)
     assert prep.data["target"].equals(original_target)
-    assert prep.data["sample_id"].equals(original_sample_id)
+    assert prep.data["sample_id_col"].equals(original_sample_id_col)
 
     # Verify new columns exist
     assert "group_features" in prep.data.columns
@@ -933,16 +933,16 @@ def test_add_group_features_sequential_numbering():
             "feat1": [1, 2, 3, 4, 5],
             "feat2": ["a", "b", "c", "d", "e"],
             "target": [0, 1, 0, 1, 0],
-            "sample_id": ["s1", "s2", "s3", "s4", "s5"],
+            "sample_id_col": ["s1", "s2", "s3", "s4", "s5"],
         }
     )
 
     prep = OctoDataPreparator(
         data=data,
-        feature_columns=["feat1", "feat2"],
-        target_columns=["target"],
-        sample_id="sample_id",
-        row_id=None,
+        feature_cols=["feat1", "feat2"],
+        target_cols=["target"],
+        sample_id_col="sample_id_col",
+        row_id_col=None,
         target_assignments={},
     )
 
@@ -958,10 +958,10 @@ def test_add_group_features_sequential_numbering():
     assert feature_group_values[0] == 0
 
 
-def test_add_group_features_nan_in_sample_id():
-    """Test: Handle NaN values in sample_id column.
+def test_add_group_features_nan_in_sample_id_col():
+    """Test: Handle NaN values in sample_id_col column.
 
-    Rows with NaN sample_id should NOT be grouped together unless they share features.
+    Rows with NaN sample_id_col should NOT be grouped together unless they share features.
     Each NaN is treated as a unique value by pandas groupby with dropna=False.
     """
     data = pd.DataFrame(
@@ -969,25 +969,25 @@ def test_add_group_features_nan_in_sample_id():
             "feat1": [1, 2, 3, 4, 5],
             "feat2": ["a", "b", "c", "d", "e"],
             "target": [0, 1, 0, 1, 0],
-            "sample_id": [np.nan, "s1", np.nan, "s1", np.nan],
+            "sample_id_col": [np.nan, "s1", np.nan, "s1", np.nan],
         }
     )
 
     prep = OctoDataPreparator(
         data=data,
-        feature_columns=["feat1", "feat2"],
-        target_columns=["target"],
-        sample_id="sample_id",
-        row_id=None,
+        feature_cols=["feat1", "feat2"],
+        target_cols=["target"],
+        sample_id_col="sample_id_col",
+        row_id_col=None,
         target_assignments={},
     )
 
     prep._add_group_features()
 
-    # Rows 1 and 3 should be grouped (same sample_id "s1")
+    # Rows 1 and 3 should be grouped (same sample_id_col "s1")
     assert prep.data.loc[1, "group_sample_and_features"] == prep.data.loc[3, "group_sample_and_features"]
 
-    # Rows 0, 2, 4 have NaN sample_id and different features, should be separate
+    # Rows 0, 2, 4 have NaN sample_id_col and different features, should be separate
     # (pandas groupby treats each NaN as separate group)
     assert prep.data.loc[0, "group_sample_and_features"] != prep.data.loc[1, "group_sample_and_features"]
     assert prep.data.loc[2, "group_sample_and_features"] != prep.data.loc[1, "group_sample_and_features"]

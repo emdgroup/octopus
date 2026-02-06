@@ -20,18 +20,18 @@ class OctoDataPreparator:
     data: pd.DataFrame
     """DataFrame containing the dataset."""
 
-    feature_columns: list[str]
+    feature_cols: list[str]
     """List of all feature columns in the dataset."""
 
-    target_columns: list[str]
+    target_cols: list[str]
     """List of target columns in the dataset. For regression and classification,
     only one target is allowed. For time-to-event, two targets need to be provided.
     """
 
-    sample_id: str
+    sample_id_col: str
     """Identifier for sample instances."""
 
-    row_id: str | None
+    row_id_col: str | None
     """Unique row identifier."""
 
     target_assignments: dict[str, str]
@@ -41,7 +41,7 @@ class OctoDataPreparator:
         """Run all data preparation steps and return PreparedData instance.
 
         Returns:
-            PreparedData: The transformed data with effective feature columns, row_id, etc.
+            PreparedData: The transformed data with effective feature columns, row_id_col, etc.
         """
         self._sort_features()
         self._standardize_null_values()
@@ -49,19 +49,19 @@ class OctoDataPreparator:
         self._set_target_assignments()
         self._remove_singlevalue_features()
         self._transform_bool_to_int()
-        self._create_row_id()
+        self._create_row_id_col()
         self._add_group_features()  # needs to be done at the end
 
         return PreparedData(
             data=self.data,
-            feature_columns=self.feature_columns,
-            row_id=self.row_id,  # type: ignore[arg-type]  # row_id is always set after _create_row_id
+            feature_cols=self.feature_cols,
+            row_id_col=self.row_id_col,  # type: ignore[arg-type]  # row_id_col is always set after _create_row_id_col
             target_assignments=self.target_assignments,
         )
 
     def _sort_features(self):
         """Sort feature columns deterministically by length and lexicographically."""
-        self.feature_columns = sorted(self.feature_columns, key=lambda col: (len(s := str(col)), s))
+        self.feature_cols = sorted(self.feature_cols, key=lambda col: (len(s := str(col)), s))
 
     def _set_target_assignments(self):
         """Set default target assignment for single-target scenarios.
@@ -75,34 +75,34 @@ class OctoDataPreparator:
             target_assignments is empty. Multi-target scenarios must have
             explicit assignments defined by the user.
         """
-        if len(self.target_columns) == 1 and not self.target_assignments:
-            self.target_assignments["default"] = self.target_columns[0]
+        if len(self.target_cols) == 1 and not self.target_assignments:
+            self.target_assignments["default"] = self.target_cols[0]
 
     def _remove_singlevalue_features(self):
         """Remove features that contain only a single unique value."""
-        removed_features = [feature for feature in self.feature_columns if self.data[feature].nunique() <= 1]
+        removed_features = [feature for feature in self.feature_cols if self.data[feature].nunique() <= 1]
         if removed_features:
             logger.info(f"Removing {len(removed_features)} feature(s) with single unique value: {removed_features}")
-        self.feature_columns = [feature for feature in self.feature_columns if self.data[feature].nunique() > 1]
+        self.feature_cols = [feature for feature in self.feature_cols if self.data[feature].nunique() > 1]
 
     def _transform_bool_to_int(self):
         """Convert all boolean columns to integer."""
         bool_cols = self.data.select_dtypes(include="bool").columns
         self.data[bool_cols] = self.data[bool_cols].astype(int)
 
-    def _create_row_id(self):
+    def _create_row_id_col(self):
         """Create a unique row identifier if not provided."""
-        if not self.row_id:
-            self.data["row_id"] = list(range(len(self.data)))
-            self.row_id = "row_id"
+        if not self.row_id_col:
+            self.data["row_id_col"] = list(range(len(self.data)))
+            self.row_id_col = "row_id_col"
 
     def _add_group_features(self):
         """Add group feature columns for data splitting and tracking.
 
         Creates two grouping columns used for data splitting strategies:
         - group_features: Groups rows with identical feature values
-        - group_sample_and_features: Groups rows by sample_id OR identical features
-          using transitive closure (if row A and B share sample_id, and B and C
+        - group_sample_and_features: Groups rows by sample_id_col OR identical features
+          using transitive closure (if row A and B share sample_id_col, and B and C
           share features, then A, B, and C are all in the same group)
 
         The DataFrame index is reset after adding these columns.
@@ -113,7 +113,7 @@ class OctoDataPreparator:
         """
         # Step 1: Create group_features column (groups by identical feature values)
         self.data = self.data.assign(
-            group_features=lambda df_: df_.groupby(self.feature_columns, dropna=False, observed=True).ngroup()
+            group_features=lambda df_: df_.groupby(self.feature_cols, dropna=False, observed=True).ngroup()
         )
 
         # Step 2: Initialize Union-Find data structure
@@ -148,13 +148,13 @@ class OctoDataPreparator:
                 # Make root_x point to root_y (could be reversed, doesn't matter)
                 parent[root_x] = root_y
 
-        # Step 3: Union rows with the same sample_id
-        # All rows with same sample_id must be in the same group
-        sample_groups = self.data.groupby(self.sample_id, dropna=False).indices
+        # Step 3: Union rows with the same sample_id_col
+        # All rows with same sample_id_col must be in the same group
+        sample_groups = self.data.groupby(self.sample_id_col, dropna=False).indices
         for indices in sample_groups.values():
             indices_list = list(indices)
-            # Connect all rows in this sample_id group by linking them sequentially
-            # e.g., if rows [2, 5, 7] have same sample_id, do: union(2,5), union(5,7)
+            # Connect all rows in this sample_id_col group by linking them sequentially
+            # e.g., if rows [2, 5, 7] have same sample_id_col, do: union(2,5), union(5,7)
             for i in range(1, len(indices_list)):
                 union(indices_list[0], indices_list[i])
 

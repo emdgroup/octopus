@@ -7,7 +7,7 @@ import pandas as pd
 import pytest
 from sklearn.datasets import make_classification
 
-from octopus import OctoStudy
+from octopus import OctoClassification
 from octopus.modules import Octo
 
 
@@ -61,22 +61,21 @@ class TestOctoIntroClassification:
         _, features = breast_cancer_dataset
 
         with tempfile.TemporaryDirectory() as temp_dir:
-            study = OctoStudy(
+            study = OctoClassification(
                 name="test_classification",
-                ml_type="classification",
                 target_metric="ACCBAL",
-                feature_columns=features,
-                target_columns=["target"],
-                sample_id="index",
-                stratification_column="target",
+                feature_cols=features,
+                target="target",
+                sample_id_col="index",
+                stratification_col="target",
                 path=temp_dir,
                 ignore_data_health_warning=True,
             )
 
-            assert study.target_columns == ["target"]
-            assert len(study.feature_columns) == 5
-            assert study.sample_id == "index"
-            assert study.stratification_column == "target"
+            assert study.target_cols == ["target"]
+            assert len(study.feature_cols) == 5
+            assert study.sample_id_col == "index"
+            assert study.stratification_col == "target"
 
     def test_octo_task_configuration(self):
         """Test that Octo task can be properly configured."""
@@ -190,14 +189,13 @@ class TestOctoIntroClassification:
         df, features = breast_cancer_dataset
 
         with tempfile.TemporaryDirectory() as temp_dir:
-            study = OctoStudy(
+            study = OctoClassification(
                 name="test_octo_intro_execution",
-                ml_type="classification",
                 target_metric="ACCBAL",
-                feature_columns=features,
-                target_columns=["target"],
-                sample_id="index",
-                stratification_column="target",
+                feature_cols=features,
+                target="target",
+                sample_id_col="index",
+                stratification_col="target",
                 metrics=["AUCROC", "ACCBAL", "ACC", "LOGLOSS"],
                 datasplit_seed_outer=1234,
                 n_folds_outer=2,

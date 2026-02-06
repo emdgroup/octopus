@@ -9,7 +9,7 @@ import pandas as pd
 from attrs import define, field
 from sklearn.datasets import make_classification
 
-from octopus import OctoStudy
+from octopus import OctoClassification
 from octopus.modules import Octo
 
 
@@ -43,8 +43,8 @@ class DataFrameGenerator:
         )
 
         # Create DataFrame from features
-        feature_names = [f"feature_{i + 1}" for i in range(self.n_features)]
-        self.df = pd.DataFrame(X, columns=feature_names)
+        feature_cols = [f"feature_{i + 1}" for i in range(self.n_features)]
+        self.df = pd.DataFrame(X, columns=feature_cols)
 
         # Add the target column
         self.df["target"] = y
@@ -170,7 +170,7 @@ generator_errors = DataFrameGenerator(random_state=42)
 generator_errors.add_nan_to_features()
 generator_errors.add_nan_to_target(num_nan=10)
 generator_errors.add_id_column(unique=True, include_nans=True)
-generator_errors.add_id_column(column_name="sample_id", prefix="Sample", unique=True, include_nans=True)
+generator_errors.add_id_column(column_name="sample_id_col", prefix="Sample", unique=True, include_nans=True)
 generator_errors.add_id_column(
     column_name="stratification",
     prefix="Strat_",
@@ -187,7 +187,7 @@ df_error = generator_errors.get_dataframe()
 generator_warnings = DataFrameGenerator(random_state=42, n_classes=2)
 generator_warnings.add_fixed_unique_values_column()
 generator_warnings.add_id_column(unique=True, include_nans=False)
-generator_warnings.add_id_column(column_name="sample_id", prefix="Sample", unique=True, include_nans=False)
+generator_warnings.add_id_column(column_name="sample_id_col", prefix="Sample", unique=True, include_nans=False)
 generator_warnings.add_id_column(
     column_name="stratification",
     prefix=None,
@@ -200,18 +200,17 @@ df_warnings = generator_warnings.get_dataframe()
 
 print(df_warnings)
 
-### Create and run OctoStudy with health check
+### Create and run OctoClassification with health check
 
-study = OctoStudy(
+study = OctoClassification(
     name="health_check",
     path=os.environ.get("STUDIES_PATH", "./studies"),
-    ml_type="classification",
     target_metric="AUCROC",
-    feature_columns=df_warnings.columns.drop("target").drop("id").drop("sample_id").drop("stratification").tolist(),
-    target_columns=["target"],
-    sample_id="sample_id",
+    feature_cols=df_warnings.columns.drop("target").drop("id").drop("sample_id_col").drop("stratification").tolist(),
+    target="target",
+    sample_id_col="sample_id_col",
     datasplit_type="group_sample_and_features",
-    stratification_column="target",
+    stratification_col="target",
     ignore_data_health_warning=False,  # Will stop if health check finds issues
     outer_parallelization=True,
     workflow=[

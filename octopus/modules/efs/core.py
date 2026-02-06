@@ -101,7 +101,7 @@ class EfsCore(ModuleBaseCore[Efs]):
     @property
     def row_ids_traindev(self) -> pd.Series:
         """Row IDs for traindev."""
-        return self.experiment.data_traindev[self.row_column]
+        return self.experiment.row_traindev
 
     @property
     def max_n_iterations(self) -> int:
@@ -169,7 +169,7 @@ class EfsCore(ModuleBaseCore[Efs]):
         random.seed(0)
 
         # print()
-        # print("features: ", self.feature_columns)
+        # print("features: ", self.feature_cols)
 
         # Configuration, define default model
         if self.ml_type == "classification":
@@ -195,8 +195,8 @@ class EfsCore(ModuleBaseCore[Efs]):
 
         # needs general improvements (consider groups and stratification column)
         cv: KFold | StratifiedKFold
-        stratification_column = self.experiment.stratification_column
-        if stratification_column:
+        stratification_col = self.experiment.stratification_col
+        if stratification_col:
             cv = StratifiedKFold(n_splits=self.config.cv, shuffle=True, random_state=42)
         else:
             cv = KFold(n_splits=self.config.cv, shuffle=True, random_state=42)
@@ -219,7 +219,7 @@ class EfsCore(ModuleBaseCore[Efs]):
 
         subsets = []
         for _ in range(self.config.n_subsets):
-            subset = random.sample(self.feature_columns, self.config.subset_size)
+            subset = random.sample(self.feature_cols, self.config.subset_size)
             subsets.append(subset)
 
         # (A) create model table

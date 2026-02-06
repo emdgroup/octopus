@@ -29,7 +29,7 @@ class TestGetPerformanceFromModel:
         performance = get_performance_from_model(
             model=model,
             data=data,
-            feature_columns=X.columns.tolist(),
+            feature_cols=X.columns.tolist(),
             target_metric="AUCROC",
             target_assignments={"default": "target"},
             positive_class=1,
@@ -51,7 +51,7 @@ class TestGetPerformanceFromModel:
         performance = get_performance_from_model(
             model=model,
             data=data,
-            feature_columns=X.columns.tolist(),
+            feature_cols=X.columns.tolist(),
             target_metric="ACCBAL_MC",
             target_assignments={"default": "target"},
         )
@@ -72,7 +72,7 @@ class TestGetPerformanceFromModel:
         performance = get_performance_from_model(
             model=model,
             data=data,
-            feature_columns=X.columns.tolist(),
+            feature_cols=X.columns.tolist(),
             target_metric="R2",
             target_assignments={"default": "target"},
         )
@@ -136,13 +136,13 @@ class TestGetPerformanceFromPredictions:
         assert "training_0" in performance
         assert isinstance(performance["training_0"]["dev"], float)
 
-    def test_multiclass_with_row_id_column(self):
-        """Test multiclass with numeric 'row_id' column (should be excluded from probabilities)."""
+    def test_multiclass_with_row_id_col(self):
+        """Test multiclass with numeric 'row_id_col' column (should be excluded from probabilities)."""
         predictions = {
             "training_0": {
                 "dev": pd.DataFrame(
                     {
-                        "row_id": [10, 20, 30, 40, 50],  # numeric row identifier
+                        "row_id_col": [10, 20, 30, 40, 50],  # numeric row identifier
                         "prediction": [0, 1, 2, 0, 1],
                         "target": [0, 1, 2, 0, 2],
                         0: [0.7, 0.2, 0.1, 0.8, 0.3],
@@ -160,13 +160,13 @@ class TestGetPerformanceFromPredictions:
         assert "training_0" in performance
         assert isinstance(performance["training_0"]["dev"], float)
 
-    def test_multiclass_with_sample_id_column(self):
-        """Test multiclass with numeric 'sample_id' column (should be excluded from probabilities)."""
+    def test_multiclass_with_sample_id_col_column(self):
+        """Test multiclass with numeric 'sample_id_col' column (should be excluded from probabilities)."""
         predictions = {
             "training_0": {
                 "dev": pd.DataFrame(
                     {
-                        "sample_id": [100, 101, 102, 103, 104],  # another numeric identifier
+                        "sample_id_col": [100, 101, 102, 103, 104],  # another numeric identifier
                         "prediction": [0, 1, 2, 0, 1],
                         "target": [0, 1, 2, 0, 2],
                         0: [0.7, 0.2, 0.1, 0.8, 0.3],
@@ -294,7 +294,7 @@ class TestGetScoreFromModel:
         score = get_score_from_model(
             model=model,
             data=data,
-            feature_columns=X.columns.tolist(),
+            feature_cols=X.columns.tolist(),
             target_metric="AUCROC",
             target_assignments={"default": "target"},
             positive_class=1,
@@ -316,7 +316,7 @@ class TestGetScoreFromModel:
         score = get_score_from_model(
             model=model,
             data=data,
-            feature_columns=X.columns.tolist(),
+            feature_cols=X.columns.tolist(),
             target_metric="MSE",
             target_assignments={"default": "target"},
         )

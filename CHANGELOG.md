@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - refactor: rename sequence to workflow
 - changed name of output directory
 
+### Changed
+- `Metric.calculate` no longer accepts `**kwargs`. The parameter was always silently discarded by the implementation; explicit kwargs now raise `TypeError`. Custom `Metric` subclasses that override `calculate(self, y_true, y_pred, **kwargs)` continue to work; only callers passing kwargs to the base class are affected.
+
 ## [0.1.0] -
 
 ### Added

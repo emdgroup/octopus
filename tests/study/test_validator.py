@@ -211,3 +211,241 @@ def test_validate_error_accumulation(validator_factory, sample_data):
     assert "Multiple validation errors found" in error_message
     assert "Reserved column names found in data" in error_message
     assert "Stratification column cannot be the same as sample_id_col" in error_message
+
+
+class TestClassificationTargetValidation:
+    """Test _validate_classification_target for binary and multiclass."""
+
+    @pytest.mark.parametrize(
+        "target_values, ml_type, positive_class",
+        [
+            (np.tile([0, 1], 25), MLType.BINARY, 1),
+            (np.tile([True, False], 25), MLType.BINARY, 1),
+            (np.tile([True, False], 25), MLType.BINARY, True),
+            (np.tile([1, 3, 5], 20), MLType.MULTICLASS, None),
+            (pd.array(np.tile([0, 1], 25), dtype=pd.Int64Dtype()), MLType.BINARY, 1),
+        ],
+        ids=["int-binary", "bool-binary", "bool-binary-bool-pos", "non-consec-multiclass", "nullable-int-binary"],
+    )
+    def test_accepts_valid_target(self, validator_factory, target_values, ml_type, positive_class):
+        """Valid integer/bool targets are accepted for classification."""
+        n = len(target_values)
+        data = pd.DataFrame(
+            {
+                "sample_id_col": [f"S{i}" for i in range(n)],
+                "feature1": np.linspace(0, 1, n),
+                "target": target_values,
+            }
+        )
+        validator = validator_factory(
+            data=data, feature_cols=["feature1"], ml_type=ml_type, positive_class=positive_class
+        )
+        validator._validate_classification_target()
+
+    @pytest.mark.parametrize(
+        "target_values, ml_type, match",
+        [
+            (np.tile([0.0, 1.0], 25), MLType.BINARY, "integer or boolean dtype"),
+            (np.tile([0.0, 1.0, 2.0], 20), MLType.MULTICLASS, "integer or boolean dtype"),
+            (np.tile(["cat", "dog", "fish"], 20), MLType.MULTICLASS, "integer or boolean dtype"),
+            (pd.Categorical(np.tile(["cat", "dog", "fish"], 20)), MLType.MULTICLASS, "Categorical target"),
+        ],
+        ids=["float-binary", "float-multiclass", "object-multiclass", "categorical-multiclass"],
+    )
+    def test_rejects_invalid_target_dtype(self, validator_factory, target_values, ml_type, match):
+        """Invalid target dtypes are rejected with clear error messages."""
+        n = len(target_values)
+        data = pd.DataFrame(
+            {
+                "sample_id_col": [f"S{i}" for i in range(n)],
+                "feature1": np.linspace(0, 1, n),
+                "target": target_values,
+            }
+        )
+        positive_class = 1 if ml_type == MLType.BINARY else None
+        validator = validator_factory(
+            data=data, feature_cols=["feature1"], ml_type=ml_type, positive_class=positive_class
+        )
+        with pytest.raises(ValueError, match=match):
+            validator._validate_classification_target()
+
+    @pytest.mark.parametrize("ml_type", [MLType.BINARY, MLType.MULTICLASS])
+    def test_rejects_target_with_fewer_than_2_unique_values(self, validator_factory, ml_type):
+        """Target with only 1 unique value is rejected with a clear message."""
+        data = pd.DataFrame(
+            {
+                "sample_id_col": [f"S{i}" for i in range(50)],
+                "feature1": np.random.rand(50),
+                "target": [1] * 50,
+            }
+        )
+        positive_class = 1 if ml_type == MLType.BINARY else None
+        validator = validator_factory(
+            data=data, feature_cols=["feature1"], ml_type=ml_type, positive_class=positive_class
+        )
+        with pytest.raises(ValueError, match="fewer than 2 unique values"):
+            validator._validate_classification_target()
+
+    def test_rejects_multiclass_fewer_than_3_unique(self, validator_factory):
+        """Multiclass with only 2 unique values is rejected."""
+        data = pd.DataFrame(
+            {
+                "sample_id_col": [f"S{i}" for i in range(50)],
+                "feature1": np.random.rand(50),
+                "target": np.tile([0, 1], 25),
+            }
+        )
+        validator = validator_factory(
+            data=data, feature_cols=["feature1"], ml_type=MLType.MULTICLASS, positive_class=None
+        )
+        with pytest.raises(ValueError, match="at least 3 unique target values"):
+            validator._validate_classification_target()
+
+    def test_accepts_boolean_positive_class(self, validator_factory):
+        """Boolean positive_class is normalized to int and accepted."""
+        data = pd.DataFrame(
+            {
+                "sample_id_col": [f"S{i}" for i in range(50)],
+                "feature1": np.random.rand(50),
+                "target": np.tile([0, 1], 25),
+            }
+        )
+        validator = validator_factory(data=data, feature_cols=["feature1"], ml_type=MLType.BINARY, positive_class=True)
+        assert validator.positive_class == 1
+        assert not isinstance(validator.positive_class, bool)
+        validator._validate_classification_target()
+
+    def test_raises_when_target_col_none_for_classification(self):
+        """target_col=None with classification ml_type raises ValueError."""
+        data = pd.DataFrame(
+            {
+                "sample_id_col": [f"S{i}" for i in range(50)],
+                "feature1": np.random.rand(50),
+            }
+        )
+        validator = OctoDataValidator(
+            data=data,
+            feature_cols=["feature1"],
+            target_col=None,
+            sample_id_col="sample_id_col",
+            ml_type=MLType.BINARY,
+            positive_class=1,
+        )
+        with pytest.raises(ValueError, match="target_col must be provided"):
+            validator._validate_classification_target()
+
+    def test_skips_when_target_col_missing_from_data(self, validator_factory):
+        """target_col not in DataFrame columns: skip (already reported by _validate_columns_exist)."""
+        data = pd.DataFrame(
+            {
+                "sample_id_col": [f"S{i}" for i in range(50)],
+                "feature1": np.random.rand(50),
+            }
+        )
+        validator = OctoDataValidator(
+            data=data,
+            feature_cols=["feature1"],
+            target_col="missing_col",
+            sample_id_col="sample_id_col",
+            ml_type=MLType.BINARY,
+            positive_class=1,
+        )
+        validator._validate_classification_target()
+
+    def test_validate_aggregates_missing_target_col_as_valueerror(self):
+        """validate() with missing target_col returns aggregated ValueError, not KeyError."""
+        data = pd.DataFrame(
+            {
+                "sample_id_col": [f"S{i}" for i in range(50)],
+                "feature1": np.random.rand(50),
+            }
+        )
+        validator = OctoDataValidator(
+            data=data,
+            feature_cols=["feature1"],
+            target_col="missing_col",
+            sample_id_col="sample_id_col",
+            ml_type=MLType.BINARY,
+            positive_class=1,
+        )
+        with pytest.raises(ValueError, match="Columns not found"):
+            validator.validate()
+
+
+class TestTargetNoMissingValidation:
+    """Test _validate_target_no_missing across task types."""
+
+    @pytest.mark.parametrize(
+        "ml_type, target_col, extra_cols",
+        [
+            (MLType.BINARY, "target", {}),
+            (MLType.MULTICLASS, "target", {}),
+            (MLType.REGRESSION, "target", {}),
+        ],
+        ids=["binary", "multiclass", "regression"],
+    )
+    def test_rejects_nan_in_target(self, validator_factory, ml_type, target_col, extra_cols):
+        """NaN values in target column are rejected for non-T2E task types."""
+        target = pd.array(np.tile([0, 1, 2], 17)[:50], dtype=pd.Int64Dtype())
+        data = pd.DataFrame(
+            {
+                "sample_id_col": [f"S{i}" for i in range(50)],
+                "feature1": np.random.rand(50),
+                target_col: target,
+            }
+        )
+        data.loc[5, target_col] = pd.NA
+        validator = validator_factory(
+            data=data,
+            feature_cols=["feature1"],
+            target_col=target_col,
+            ml_type=ml_type,
+            positive_class=1 if ml_type == MLType.BINARY else None,
+        )
+        with pytest.raises(ValueError, match="missing target value"):
+            validator._validate_target_no_missing()
+
+    def test_rejects_nan_in_t2e_duration(self, validator_factory):
+        """NaN in duration_col is rejected for time-to-event."""
+        data = pd.DataFrame(
+            {
+                "sample_id_col": [f"S{i}" for i in range(50)],
+                "feature1": np.random.rand(50),
+                "duration": np.random.rand(50),
+                "event": np.tile([0, 1], 25),
+            }
+        )
+        data.loc[3, "duration"] = np.nan
+        validator = OctoDataValidator(
+            data=data,
+            feature_cols=["feature1"],
+            ml_type=MLType.TIMETOEVENT,
+            duration_col="duration",
+            event_col="event",
+            sample_id_col="sample_id_col",
+        )
+        with pytest.raises(ValueError, match="missing target value"):
+            validator._validate_target_no_missing()
+
+    def test_rejects_nan_in_t2e_event(self, validator_factory):
+        """NaN in event_col is rejected for time-to-event."""
+        event = pd.array(np.tile([0, 1], 25), dtype=pd.Int64Dtype())
+        data = pd.DataFrame(
+            {
+                "sample_id_col": [f"S{i}" for i in range(50)],
+                "feature1": np.random.rand(50),
+                "duration": np.random.rand(50),
+                "event": event,
+            }
+        )
+        data.loc[3, "event"] = pd.NA
+        validator = OctoDataValidator(
+            data=data,
+            feature_cols=["feature1"],
+            ml_type=MLType.TIMETOEVENT,
+            duration_col="duration",
+            event_col="event",
+            sample_id_col="sample_id_col",
+        )
+        with pytest.raises(ValueError, match="missing target value"):
+            validator._validate_target_no_missing()

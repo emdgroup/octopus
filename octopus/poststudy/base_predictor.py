@@ -13,7 +13,7 @@ import numpy as np
 import pandas as pd
 from attrs import define, field
 
-from octopus.metrics.utils import get_performance_from_model
+from octopus.metrics.utils import binarize_target_for_positive_class, get_performance_from_model
 from octopus.poststudy.study_io import StudyInfo, load_task_artifacts
 from octopus.types import FIType, MLType, ResultType
 
@@ -291,13 +291,19 @@ class _PredictorBase:
             else:
                 proba = np.asarray(probabilities[list(self.classes_)])
 
+        target_binary: np.ndarray | None = None
+        if ml_type == MLType.BINARY and positive_class is not None:
+            target_binary = binarize_target_for_positive_class(target, positive_class)
+
         for m in metrics:
             metric = Metrics.get_instance(m)
             if metric.prediction_type == PredictionType.PROBABILITIES and proba is not None:
-                scores[m] = metric.calculate(target, proba)
+                scoring_target = target_binary if target_binary is not None else target
+                scores[m] = metric.calculate(scoring_target, proba)
             elif ml_type == MLType.BINARY and positive_class is not None:
                 thresholded = (proba >= threshold).astype(int) if proba is not None else preds
-                scores[m] = metric.calculate(target, thresholded)
+                assert target_binary is not None
+                scores[m] = metric.calculate(target_binary, thresholded)
             elif ml_type == MLType.MULTICLASS and proba is not None:
                 class_labels = list(self.classes_)
                 argmax_indices = np.argmax(proba, axis=1)

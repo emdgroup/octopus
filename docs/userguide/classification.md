@@ -39,9 +39,10 @@ Octopus also auto-converts null-like strings (`"None"`, `"null"`, `"nan"`, `"NA"
 to `NaN` in feature and target columns. The reserved column names `datasplit_group` and
 `row_id` cannot appear in your data.
 
-For binary classification, Octopus automatically sets `positive_class=1` if you
-don't specify it. If your positive class is encoded as a different value (e.g.,
-`0`), set `positive_class` explicitly.
+For binary classification, `positive_class` is auto-inferred as `1` when target
+labels are exactly `{0, 1}`. For any other binary encoding (e.g., `{-1, 1}`,
+`{0, 2}`, string labels mapped to non-`{0, 1}` integers), `positive_class` must
+be specified explicitly.
 
 ```python
 import pandas as pd
@@ -93,7 +94,7 @@ study.fit(data=df)
 | `target_metric` | Metric to optimize | `"AUCROC"` |
 | `sample_id_col` | Column identifying unique subjects (prevents correlated observation leakage) | `None` |
 | `stratification_col` | Column used to keep class ratios balanced across CV splits | `None` |
-| `positive_class` | Integer label of the positive class (binary only). Auto-detected as `1` if omitted. | `None` |
+| `positive_class` | Integer label of the positive class (binary only). Auto-inferred as `1` when labels are `{0, 1}`; required otherwise. | `None` |
 | `n_outer_splits` | Number of outer cross-validation splits | `5` |
 | `single_outer_split` | Run only one split for quick testing (e.g., `0`) | `None` |
 | `n_cpus` | Number of CPUs (`0` = all, `-1` = all but one) | `0` |

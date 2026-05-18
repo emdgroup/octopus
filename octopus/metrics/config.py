@@ -47,13 +47,12 @@ class Metric:
         """Optimization direction for Optuna ('maximize' or 'minimize')."""
         return MetricDirection.MAXIMIZE if self.higher_is_better else MetricDirection.MINIMIZE
 
-    def calculate(self, y_true: OctoArrayLike, y_pred: OctoArrayLike, **kwargs) -> float:
+    def calculate(self, y_true: OctoArrayLike, y_pred: OctoArrayLike) -> float:
         """Calculate metric for classification/regression tasks.
 
         Args:
             y_true: True target values
             y_pred: Predicted values (predictions or probabilities depending on prediction_type)
-            **kwargs: Additional keyword arguments passed to metric function
 
         Returns:
             Metric value as float

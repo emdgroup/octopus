@@ -30,6 +30,11 @@ logger = get_logger()
 
 _RUNNING_IN_TESTSUITE = "RUNNING_IN_TESTSUITE" in os.environ
 
+_DEFAULT_METRIC_BY_ML_TYPE: dict[MLType, str] = {
+    MLType.BINARY: "AUCROC",
+    MLType.MULTICLASS: "AUCROC_MACRO",
+}
+
 
 @define
 class OctoStudy(ABC):
@@ -87,8 +92,12 @@ class OctoStudy(ABC):
 
     @property
     @abstractmethod
-    def target_metric(self) -> str:
-        """Get target metric. Must be implemented in subclasses."""
+    def target_metric(self) -> str | None:
+        """Get target metric. Must be implemented in subclasses.
+
+        May be None on `OctoClassification` before fit() resolves the default;
+        non-None on all other study types and after fit().
+        """
         ...
 
     @property
@@ -253,7 +262,10 @@ class OctoStudy(ABC):
             splits_to_validate = outer_splits
 
         if ml_type in (MLType.BINARY, MLType.MULTICLASS) and hasattr(self, "target_col"):
-            validate_class_coverage(splits_to_validate, self.target_col)
+            expected_classes = (
+                set(prepared.data[self.target_col].dropna().unique()) if ml_type == MLType.MULTICLASS else None
+            )
+            validate_class_coverage(splits_to_validate, self.target_col, expected_classes=expected_classes)
         elif ml_type == MLType.TIMETOEVENT and hasattr(self, "event_col"):
             validate_class_coverage(splits_to_validate, self.event_col)
 
@@ -308,6 +320,7 @@ class OctoStudy(ABC):
         self, prepared: PreparedData, ml_type: MLType, positive_class: int | None
     ) -> StudyContext:
         """Create a frozen StudyContext from the current study state."""
+        assert self.target_metric is not None, "target_metric must be resolved before context creation"
         return StudyContext(
             ml_type=ml_type,
             target_metric=self.target_metric,
@@ -395,34 +408,53 @@ class OctoClassification(OctoStudy):
     )
     """The type of machine learning model. Can be set explicitly or auto-detected from data (binary vs multiclass)."""
 
-    target_metric: str = field(
-        default="AUCROC",
-        validator=validators.in_(Metrics.get_by_type(MLType.BINARY, MLType.MULTICLASS)),
+    target_metric: str | None = field(
+        default=None,
+        validator=validators.optional(validators.in_(Metrics.get_by_type(MLType.BINARY, MLType.MULTICLASS))),
     )
-    """The primary metric used for model evaluation. Defaults to AUCROC."""
+    """Primary metric for evaluation. When None (default), resolves to AUCROC for binary
+    and AUCROC_MACRO for multiclass at fit() time."""
 
-    positive_class: int | None = field(default=None, validator=validators.optional(validators.instance_of(int)))
-    """The positive class label for binary classification. Defaults to None. Not used for multiclass."""
+    positive_class: int | None = field(
+        default=None,
+        converter=lambda v: int(v) if isinstance(v, bool) else v,
+        validator=validators.optional(validators.instance_of(int)),
+    )
+    """The positive class label for binary classification. Auto-inferred as 1 when target labels are {0, 1}; required for other binary encodings. Not used for multiclass. Bool inputs (True/False) are normalized to int (1/0)."""
 
     def _resolve_ml_config(self, data: pd.DataFrame) -> tuple[MLType, int | None]:
+        """Resolve ml_type, positive_class, and target_metric from data.
+
+        Mutates ``self.target_metric`` when it is None, setting it to the default
+        for the resolved ml_type (AUCROC for binary, AUCROC_MACRO for multiclass).
+        """
         if self.target_col not in data.columns:
             raise ValueError(f"Target column '{self.target_col}' not found in input data.")
         ml_type = self.ml_type
         positive_class = self.positive_class
-        if not ml_type:
+        if ml_type is None:
             unique_values = data[self.target_col].dropna().unique()
-            if len(unique_values) > 2:
-                ml_type, positive_class = MLType.MULTICLASS, None
-            else:
-                ml_type, positive_class = MLType.BINARY, 1
+            ml_type = MLType.MULTICLASS if len(unique_values) > 2 else MLType.BINARY
         if ml_type == MLType.BINARY and positive_class is None:
-            raise ValueError("For binary classification, `positive_class` must be specified.")
+            sorted_unique = sorted(data[self.target_col].dropna().unique())
+            if sorted_unique == [0, 1]:
+                positive_class = 1
+            else:
+                raise ValueError(
+                    f"positive_class must be specified for binary classification "
+                    f"with non-{{0, 1}} labels. Got unique target values {sorted_unique}. "
+                    f"Auto-inference is only supported for labels exactly equal to {{0, 1}}; "
+                    f"pass `positive_class=<label>` explicitly."
+                )
+        if self.target_metric is None:
+            self.target_metric = _DEFAULT_METRIC_BY_ML_TYPE[ml_type]
+        metric = Metrics.get_instance(self.target_metric)
+        if not metric.supports_ml_type(ml_type):
+            raise ValueError(
+                f"target_metric '{self.target_metric}' does not support {ml_type.value}. "
+                f"Compatible metrics: {Metrics.get_by_type(ml_type)}"
+            )
         return ml_type, positive_class
-
-    def _validate_data(self, data: pd.DataFrame, ml_type: MLType, positive_class: int | None) -> None:
-        if self.target_col not in data.columns:
-            raise ValueError(f"Target column '{self.target_col}' not found in input data.")
-        super()._validate_data(data, ml_type, positive_class)
 
     @property
     def target_assignments(self) -> dict[str, str]:
